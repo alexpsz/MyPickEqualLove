@@ -42,7 +42,7 @@ export default function ReplacementModal({
           </h3>
           <p className="mt-1 text-xs text-slate-500">
             Board is full. Place <span className="font-bold text-rose-600">{song.title.ja}</span>{" "}
-            into one of your Top Picks.
+            into one of your picks.
           </p>
         </div>
 
@@ -57,11 +57,8 @@ export default function ReplacementModal({
                   key={slot.id}
                   type="button"
                   onClick={() => onReplace(slot.id)}
-                  className="flex items-center gap-3 border border-slate-300 bg-white p-3 text-left transition-all hover:border-black"
+                  className="border border-slate-300 bg-white p-3 text-left transition-all hover:border-black"
                 >
-                  <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center bg-[var(--equal-love-primary)] text-xs font-black text-white">
-                    {slot.label}
-                  </span>
                   <div className="min-w-0">
                     <div className="truncate text-sm font-bold text-slate-900">
                       {currentSong?.title.ja ?? "Empty Slot"}

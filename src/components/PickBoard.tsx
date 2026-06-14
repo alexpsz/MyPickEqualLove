@@ -39,7 +39,6 @@ export default function PickBoard({
           .map((slot) => (
             <PickSlotCard
               key={slot.id}
-              slot={slot}
               song={picks[slot.id]}
               membersById={membersById}
               onClick={() => onSlotClick(slot.id)}

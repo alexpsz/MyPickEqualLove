@@ -4,7 +4,6 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { RELEASE_TYPE_LABELS, TRACK_TYPE_LABELS } from "../config/equalLove";
 import type {
   Member,
-  PickSlot,
   ReleaseType,
   Song,
   TrackType,
@@ -14,7 +13,6 @@ type ReleaseFilter = "all" | ReleaseType;
 type TrackFilter = "all" | TrackType;
 
 interface SearchModalProps {
-  activeSlot?: PickSlot;
   songs: Song[];
   members: Member[];
   releaseTypes: ReleaseType[];
@@ -44,7 +42,6 @@ const getMemberNames = (song: Song, membersById: Record<string, Member>) =>
     ]);
 
 export default function SearchModal({
-  activeSlot,
   songs,
   members,
   releaseTypes,
@@ -195,9 +192,7 @@ export default function SearchModal({
         <div className="flex items-start justify-between gap-4 border-b border-black bg-white p-5">
           <div>
             <h3 className="text-lg font-bold uppercase tracking-[0.22em] text-black">
-              {activeSlot
-                ? `Select Song for ${activeSlot.label}`
-                : "Search All Songs"}
+              Select Song
             </h3>
             <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--equal-love-primary)]">
               Top Picks board · {filteredSongs.length} matching songs

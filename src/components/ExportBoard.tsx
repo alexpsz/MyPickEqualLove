@@ -152,28 +152,6 @@ export default function ExportBoard({
                 position: "relative",
               }}
             >
-              <div
-                style={{
-                  position: "absolute",
-                  left: "0",
-                  top: "0",
-                  zIndex: 4,
-                  width: "58px",
-                  height: "34px",
-                  background: EQUAL_LOVE_TEAM_COLOR,
-                  color: "#fff",
-                  display: "grid",
-                  placeItems: "center",
-                  fontWeight: 900,
-                  fontSize: "16px",
-                  lineHeight: 1,
-                  borderRight: "2px solid #000",
-                  borderBottom: "2px solid #000",
-                }}
-              >
-                <span style={exportRankTextStyle}>{slot.label}</span>
-              </div>
-
               {song ? (
                 <>
                   <img
@@ -279,12 +257,6 @@ export default function ExportBoard({
     </div>
   );
 }
-
-const exportRankTextStyle: React.CSSProperties = {
-  display: "block",
-  lineHeight: 1,
-  transform: "translateY(-8px)",
-};
 
 const exportTagStyle: React.CSSProperties = {
   display: "inline-flex",

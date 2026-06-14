@@ -47,10 +47,6 @@ export default function Home() {
     return Object.fromEntries(entries);
   }, [storedPicks]);
 
-  const activeSlot = activeSlotId
-    ? DEFAULT_PICK_SLOTS.find((slot) => slot.id === activeSlotId)
-    : undefined;
-
   useEffect(() => {
     const timer = window.setTimeout(() => {
       const savedPicks = localStorage.getItem(STORAGE_KEYS.picks);
@@ -228,8 +224,6 @@ export default function Home() {
         generating={generating}
         hasPicks={Object.keys(picks).length > 0}
         totalSongs={SONGS_COUNT}
-        totalMembers={MEMBERS.length}
-        totalYears={RELEASE_YEARS.length}
       />
 
       <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-3 sm:px-6">
@@ -246,7 +240,6 @@ export default function Home() {
 
       {showModal && (
         <SearchModal
-          activeSlot={activeSlot}
           songs={SONGS}
           members={MEMBERS}
           releaseTypes={RELEASE_TYPES}

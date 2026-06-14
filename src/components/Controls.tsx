@@ -9,8 +9,6 @@ interface ControlsProps {
   generating: boolean;
   hasPicks: boolean;
   totalSongs: number;
-  totalMembers: number;
-  totalYears: number;
 }
 
 export default function Controls({
@@ -20,15 +18,11 @@ export default function Controls({
   generating,
   hasPicks,
   totalSongs,
-  totalMembers,
-  totalYears,
 }: ControlsProps) {
   return (
     <div className="relative z-10 mx-auto mb-8 grid w-full max-w-7xl gap-4 px-5 md:mb-12 md:grid-cols-[1fr_auto] md:px-8">
       <div className="official-panel-soft official-stripe flex flex-wrap items-center gap-4 px-4 py-3">
         <Metric label="Songs" value={totalSongs} color="var(--equal-love-primary)" />
-        <Metric label="Years" value={totalYears} color="var(--equal-love-blue)" />
-        <Metric label="Members" value={totalMembers} color="var(--equal-love-mint)" />
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
