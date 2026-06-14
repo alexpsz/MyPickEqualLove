@@ -972,6 +972,60 @@
     "creditSourceUrl": "https://www.uta-net.com/song/276644/"
   },
   {
+    "id": "tsugini-ae-ta-toki-naniwo-hanaso-ukana",
+    "title": {
+      "ja": "次に会えた時 何を話そうかな",
+      "romaji": "tsugini ae ta toki naniwo hanaso ukana"
+    },
+    "artist": {
+      "ja": "=LOVE、≠ME",
+      "romaji": "=LOVE , ≠ ME"
+    },
+    "releaseId": "2020-04-15-tsugini-ae-ta-toki-naniwo-hanaso-ukana",
+    "releaseTitle": {
+      "ja": "次に会えた時 何を話そうかな",
+      "romaji": "tsugini ae ta toki naniwo hanaso ukana"
+    },
+    "releaseType": "digital",
+    "releaseDate": "2020-04-15",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/equal-love/tsugini-ae-ta-toki-naniwo-hanaso-ukana.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2020",
+      "digital",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "田辺望・長沢知亜紀",
+        "romaji": "tanabe bou ・ nagasawa chi aki"
+      },
+      "arranger": {
+        "ja": "湯浅篤",
+        "romaji": "yuasa atsushi"
+      }
+    },
+    "officialUrl": "https://www.youtube.com/watch?v=aC4CdVDFzB4",
+    "creditSourceUrl": "https://natalie.mu/music/news/375537"
+  },
+  {
     "id": "cameo",
     "title": {
       "ja": "CAMEO",
@@ -1682,6 +1736,59 @@
     "creditSourceUrl": "https://www.uta-net.com/song/301966/"
   },
   {
+    "id": "866",
+    "title": {
+      "ja": "866",
+      "romaji": "866"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2021-05-12-zenbu-naisho-special-edition",
+    "releaseTitle": {
+      "ja": "全部、内緒。 (Special Edition)",
+      "romaji": "zenbu , naisho . (Special Edition )"
+    },
+    "releaseType": "album",
+    "releaseDate": "2021-05-12",
+    "trackNo": 18,
+    "trackType": "album",
+    "coverUrl": "/covers/equal-love/866.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2021",
+      "album"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "田辺望・The Answer・ONE17・Ryo Ito",
+        "romaji": "tanabe bou ・ The Answer ・ ONE17 ・ Ryo Ito"
+      },
+      "arranger": {
+        "ja": "The Answer",
+        "romaji": "The Answer"
+      }
+    },
+    "officialUrl": "https://music.apple.com/jp/song/866/1564058212",
+    "creditSourceUrl": "https://www.youtube.com/watch?v=8hsjYIlJbQE"
+  },
+  {
     "id": "weekend-citron",
     "title": {
       "ja": "ウィークエンドシトロン",
@@ -2317,6 +2424,60 @@
     },
     "officialUrl": "https://equal-love.jp/discography/detail/43/",
     "creditSourceUrl": "https://www.uta-net.com/song/319088/"
+  },
+  {
+    "id": "toripurudeeto",
+    "title": {
+      "ja": "トリプルデート",
+      "romaji": "toripurudeeto"
+    },
+    "artist": {
+      "ja": "イコノイジョイ",
+      "romaji": "ikonoijoi"
+    },
+    "releaseId": "2022-07-20-toripurudeeto",
+    "releaseTitle": {
+      "ja": "トリプルデート",
+      "romaji": "toripurudeeto"
+    },
+    "releaseType": "digital",
+    "releaseDate": "2022-07-20",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/equal-love/toripurudeeto.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2022",
+      "digital",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "本多友紀",
+        "romaji": "honda yuki"
+      },
+      "arranger": {
+        "ja": "脇眞富",
+        "romaji": "waki makoto tomi"
+      }
+    },
+    "officialUrl": "https://www.youtube.com/watch?v=gkabNNfTjX4",
+    "creditSourceUrl": "https://www.uta-net.com/song/321975/"
   },
   {
     "id": "be-selfish",

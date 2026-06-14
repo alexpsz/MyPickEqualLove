@@ -67,6 +67,62 @@ CREDIT_OVERRIDES = {
     "The 5th": {"arranger": "ArmySlick・YUU for YOU"},
 }
 
+SPECIAL_DIGITAL_TRACKS = [
+    {
+        "title": "866",
+        "releaseTitle": "全部、内緒。 (Special Edition)",
+        "releaseType": "album",
+        "releaseDate": "2021-05-12",
+        "trackNo": 18,
+        "trackType": "album",
+        "coverReleaseUrl": f"{OFFICIAL_BASE}/discography/detail/31/",
+        "officialUrl": "https://music.apple.com/jp/song/866/1564058212",
+        "credit": {
+            "title": "866",
+            "artist": "=LOVE",
+            "lyricist": "指原莉乃",
+            "composer": "田辺望・The Answer・ONE17・Ryo Ito",
+            "arranger": "The Answer",
+            "url": "https://www.youtube.com/watch?v=8hsjYIlJbQE",
+        },
+    },
+    {
+        "title": "次に会えた時 何を話そうかな",
+        "releaseTitle": "次に会えた時 何を話そうかな",
+        "releaseType": "digital",
+        "releaseDate": "2020-04-15",
+        "trackNo": 1,
+        "trackType": "title",
+        "coverSourceUrl": "https://i.ytimg.com/vi/aC4CdVDFzB4/maxresdefault.jpg",
+        "officialUrl": "https://www.youtube.com/watch?v=aC4CdVDFzB4",
+        "credit": {
+            "title": "次に会えた時 何を話そうかな",
+            "artist": "=LOVE、≠ME",
+            "lyricist": "指原莉乃",
+            "composer": "田辺望・長沢知亜紀",
+            "arranger": "湯浅篤",
+            "url": "https://natalie.mu/music/news/375537",
+        },
+    },
+    {
+        "title": "トリプルデート",
+        "releaseTitle": "トリプルデート",
+        "releaseType": "digital",
+        "releaseDate": "2022-07-20",
+        "trackNo": 1,
+        "trackType": "title",
+        "officialUrl": "https://www.youtube.com/watch?v=gkabNNfTjX4",
+        "credit": {
+            "title": "トリプルデート",
+            "artist": "イコノイジョイ",
+            "lyricist": "指原莉乃",
+            "composer": "本多友紀",
+            "arranger": "脇眞富",
+            "url": "https://www.uta-net.com/song/321975/",
+        },
+    },
+]
+
 RELEASE_TITLE_ALIASES = {
     "青春”サブリミナル”": "青春“サブリミナル”",
 }
@@ -162,6 +218,18 @@ def slugify(value: str) -> str:
 
 def localized(value: str) -> dict[str, str]:
     return {"ja": normalize(value), "romaji": romanize(value)}
+
+
+def is_equal_love_group_artist(artist: str) -> bool:
+    artist = normalize(artist)
+    if "イコノイジョイ" in artist:
+        return True
+    return "(=LOVE)" not in artist and ("=LOVE" in artist or "＝LOVE" in artist)
+
+
+def is_equal_love_participating_artist(artist: str) -> bool:
+    artist = normalize(artist)
+    return is_equal_love_group_artist(artist) or "(=LOVE)" in artist
 
 
 def get_soup(url: str, *, params: dict[str, str | int] | None = None) -> BeautifulSoup:
@@ -303,7 +371,7 @@ def parse_utanet_artist_rows() -> list[dict[str, str]]:
     return [
         row
         for row in parse_utanet_rows_from_soup(soup)
-        if row["artist"] == "=LOVE"
+        if is_equal_love_participating_artist(row["artist"])
     ]
 
 
@@ -315,9 +383,7 @@ def search_utanet_credit(title: str) -> dict[str, str] | None:
     for row in parse_utanet_rows_from_soup(soup):
         if (
             title_key(row["title"]) == title_key(title)
-            and "=LOVE" in row["artist"]
-            and "≠ME" not in row["artist"]
-            and "≒JOY" not in row["artist"]
+            and is_equal_love_participating_artist(row["artist"])
         ):
             return row
     return None
@@ -429,6 +495,11 @@ def build_song_data() -> tuple[list[dict], dict[str, int]]:
         for detail_path in list_official_detail_paths(kind):
             releases.append(parse_release(detail_path))
             time.sleep(0.08)
+    release_cover_sources = {
+        release.url: release.cover_source_url
+        for release in releases
+        if release.cover_source_url
+    }
 
     official_songs: dict[str, dict] = {}
     for release in releases:
@@ -482,7 +553,9 @@ def build_song_data() -> tuple[list[dict], dict[str, int]]:
     # Add =LOVE songs that exist in Uta-Net but not in the official single/album
     # discography page, such as digital-only/tie-up releases.
     for key, credit in credit_rows.items():
-        if key in final_songs or credit["artist"] != "=LOVE":
+        if key in final_songs or not is_equal_love_participating_artist(
+            credit["artist"],
+        ):
             continue
         release_date, cover_source_url = parse_utanet_song_detail(credit["url"])
         final_songs[key] = {
@@ -497,6 +570,28 @@ def build_song_data() -> tuple[list[dict], dict[str, int]]:
             "credit": credit,
         }
         time.sleep(0.08)
+
+    special_digital_tracks_added = 0
+    for track in SPECIAL_DIGITAL_TRACKS:
+        key = title_key(track["title"])
+        if key in final_songs:
+            continue
+
+        cover_source_url = track.get("coverSourceUrl") or release_cover_sources.get(
+            track.get("coverReleaseUrl"),
+        )
+        final_songs[key] = {
+            "title": localized(track["title"]),
+            "releaseTitle": localized(track["releaseTitle"]),
+            "releaseType": track["releaseType"],
+            "releaseDate": track["releaseDate"],
+            "trackNo": track["trackNo"],
+            "trackType": track["trackType"],
+            "coverSourceUrl": cover_source_url,
+            "officialUrl": track["officialUrl"],
+            "credit": track["credit"],
+        }
+        special_digital_tracks_added += 1
 
     used_ids: set[str] = set()
     output: list[dict] = []
@@ -524,7 +619,7 @@ def build_song_data() -> tuple[list[dict], dict[str, int]]:
         credit = song["credit"]
         artist = credit["artist"] or "=LOVE"
         artist_member_ids = split_artist_members(artist, member_name_to_id)
-        is_group_song = artist == "=LOVE"
+        is_group_song = is_equal_love_group_artist(artist)
 
         source_cover = song.get("coverSourceUrl")
         if not source_cover and credit.get("url"):
@@ -540,7 +635,7 @@ def build_song_data() -> tuple[list[dict], dict[str, int]]:
             song["trackType"],
             song["releaseDate"][:4] if song.get("releaseDate") else "date-tbd",
         ]
-        if artist != "=LOVE":
+        if not is_group_song and is_equal_love_participating_artist(artist):
             tags.append("solo" if len(artist_member_ids) <= 1 else "unit")
 
         output_song = {
@@ -580,6 +675,7 @@ def build_song_data() -> tuple[list[dict], dict[str, int]]:
         "creditRows": len(credit_rows),
         "searchedCreditRows": searched_credit_count,
         "excludedOfficialWithoutCredits": excluded_official_without_credits,
+        "specialDigitalTracksAdded": special_digital_tracks_added,
         "finalSongs": len(output),
     }
     return output, stats

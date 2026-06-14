@@ -256,6 +256,7 @@ export default function Home() {
           releaseTypes={RELEASE_TYPES}
           trackTypes={TRACK_TYPES}
           years={RELEASE_YEARS}
+          autoFocusSearch={activeSlotId === null}
           onClose={() => {
             setShowModal(false);
             setActiveSlotId(null);

@@ -13,6 +13,7 @@ interface SearchModalProps {
   releaseTypes: ReleaseType[];
   trackTypes: TrackType[];
   years: string[];
+  autoFocusSearch?: boolean;
   onClose: () => void;
   onSelect: (song: Song) => void;
 }
@@ -64,6 +65,7 @@ export default function SearchModal({
   releaseTypes,
   trackTypes,
   years,
+  autoFocusSearch = true,
   onClose,
   onSelect,
 }: SearchModalProps) {
@@ -74,6 +76,7 @@ export default function SearchModal({
   const [yearFilter, setYearFilter] = useState("all");
   const [memberFilters, setMemberFilters] = useState<string[]>([]);
   const [isMoreFiltersOpen, setIsMoreFiltersOpen] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const membersById = useMemo(
@@ -96,9 +99,16 @@ export default function SearchModal({
   }, [onClose]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => searchInputRef.current?.focus(), 0);
+    const timer = window.setTimeout(() => {
+      if (autoFocusSearch && !shouldAvoidSearchAutoFocus()) {
+        searchInputRef.current?.focus();
+        return;
+      }
+
+      panelRef.current?.focus();
+    }, 0);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [autoFocusSearch]);
 
   const filteredSongs = useMemo(() => {
     const q = normalizeStr(searchQuery);
@@ -212,7 +222,11 @@ export default function SearchModal({
         aria-label="Close search modal"
       />
 
-      <div className="official-panel relative z-10 flex max-h-[86vh] w-full max-w-4xl flex-col overflow-hidden bg-white">
+      <div
+        ref={panelRef}
+        tabIndex={-1}
+        className="official-panel relative z-10 flex max-h-[86vh] w-full max-w-4xl flex-col overflow-hidden bg-white focus:outline-none"
+      >
         <div className="flex items-start justify-between gap-4 border-b border-black bg-white p-5">
           <div>
             <h3 className="text-lg font-bold uppercase tracking-[0.22em] text-black">
@@ -442,6 +456,14 @@ export default function SearchModal({
         </div>
       </div>
     </div>
+  );
+}
+
+function shouldAvoidSearchAutoFocus() {
+  return (
+    window.matchMedia("(pointer: coarse)").matches ||
+    window.matchMedia("(hover: none)").matches ||
+    /Android|iP(hone|ad|od)|Mobile/i.test(navigator.userAgent)
   );
 }
 

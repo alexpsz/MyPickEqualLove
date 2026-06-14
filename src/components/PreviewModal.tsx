@@ -97,7 +97,9 @@ export default function PreviewModal({
           </button>
           <button
             type="button"
-            onClick={() => downloadImage(previewUrl)}
+            onClick={() => {
+              void downloadImage(previewUrl);
+            }}
             className="official-button official-button-primary"
           >
             <svg className="h-3.5 w-3.5 fill-current" viewBox="0 0 20 20" aria-hidden="true">
@@ -153,39 +155,207 @@ function ToggleOption({
 }
 
 async function downloadImage(previewUrl: string) {
-  const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent);
+  try {
+    const fileName = APP_BRAND.imageFileName;
+    const browser = getBrowserProfile();
+    const blobResult = toImageBlob(previewUrl);
+    const blob = blobResult instanceof Blob ? blobResult : await blobResult;
+    const shareResult = shareImage(blob, fileName, browser);
 
-  if (isIOS && navigator.share) {
-    try {
-      const response = await fetch(previewUrl);
-      const blob = await response.blob();
-      const file = new File([blob], APP_BRAND.imageFileName, {
-        type: "image/png",
-      });
-      await navigator.share({ files: [file] });
+    if (shareResult instanceof Promise ? await shareResult : shareResult) {
       return;
-    } catch {
-      // User cancelled or share failed; continue to fallback.
     }
+
+    const legacyNavigator = navigator as NavigatorWithLegacySave;
+    if (typeof legacyNavigator.msSaveOrOpenBlob === "function") {
+      legacyNavigator.msSaveOrOpenBlob(blob, fileName);
+      return;
+    }
+    if (typeof legacyNavigator.msSaveBlob === "function") {
+      legacyNavigator.msSaveBlob(blob, fileName);
+      return;
+    }
+
+    if (!browser.prefersOpenImageFallback && supportsAnchorDownload()) {
+      triggerAnchorDownload(blob, fileName);
+      return;
+    }
+
+    openImageFallback(blob);
+  } catch (error) {
+    console.error("Failed to download image", error);
+    window.alert(
+      "This browser could not start the download. Please long-press or right-click the preview image to save it.",
+    );
+  }
+}
+
+function toImageBlob(previewUrl: string): Blob | Promise<Blob> {
+  if (previewUrl.startsWith("data:")) {
+    return dataUrlToBlob(previewUrl);
   }
 
-  if (isIOS) {
-    const byteString = atob(previewUrl.split(",")[1]);
-    const mimeType =
-      previewUrl.split(",")[0].match(/:(.*?);/)?.[1] || "image/png";
-    const arrayBuffer = new ArrayBuffer(byteString.length);
-    const uintArray = new Uint8Array(arrayBuffer);
-    for (let index = 0; index < byteString.length; index += 1) {
-      uintArray[index] = byteString.charCodeAt(index);
+  return fetch(previewUrl).then((response) => response.blob());
+}
+
+function dataUrlToBlob(dataUrl: string) {
+  const [header, data = ""] = dataUrl.split(",");
+  const mimeType = header.match(/data:([^;]+)/)?.[1] || "image/png";
+  const byteString = header.includes(";base64")
+    ? atob(data)
+    : decodeURIComponent(data);
+  const bytes = new Uint8Array(byteString.length);
+
+  for (let index = 0; index < byteString.length; index += 1) {
+    bytes[index] = byteString.charCodeAt(index);
+  }
+
+  return new Blob([bytes], { type: mimeType });
+}
+
+function shareImage(
+  blob: Blob,
+  fileName: string,
+  browser: BrowserProfile,
+): boolean | Promise<boolean> {
+  if (
+    !browser.prefersShareFallback ||
+    typeof navigator.share !== "function"
+  ) {
+    return false;
+  }
+
+  try {
+    const file = new File([blob], fileName, {
+      type: blob.type || "image/png",
+    });
+    const shareData: ShareData = {
+      files: [file],
+      title: APP_BRAND.displayName,
+    };
+
+    if (
+      typeof navigator.canShare === "function" &&
+      !navigator.canShare(shareData)
+    ) {
+      return false;
     }
-    const blob = new Blob([arrayBuffer], { type: mimeType });
-    const blobUrl = URL.createObjectURL(blob);
-    window.open(blobUrl, "_blank");
+
+    return navigator.share(shareData).then(
+      () => true,
+      () => false,
+    );
+  } catch {
+    return false;
+  }
+}
+
+function triggerAnchorDownload(blob: Blob, fileName: string) {
+  const blobUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = blobUrl;
+  link.download = fileName;
+  link.rel = "noopener";
+  link.style.display = "none";
+  document.body.appendChild(link);
+  link.dispatchEvent(
+    new MouseEvent("click", {
+      bubbles: true,
+      cancelable: true,
+      view: window,
+    }),
+  );
+  link.remove();
+
+  window.setTimeout(() => {
+    URL.revokeObjectURL(blobUrl);
+  }, 30_000);
+}
+
+function openImageFallback(blob: Blob) {
+  const blobUrl = URL.createObjectURL(blob);
+  const openedWindow = window.open(blobUrl, "_blank");
+
+  if (!openedWindow) {
+    window.alert(
+      "This browser blocked the automatic download. Please long-press or right-click the preview image to save it.",
+    );
+    URL.revokeObjectURL(blobUrl);
     return;
   }
 
-  const link = document.createElement("a");
-  link.download = APP_BRAND.imageFileName;
-  link.href = previewUrl;
-  link.click();
+  try {
+    openedWindow.opener = null;
+  } catch {
+    // Some mobile browsers expose a restricted WindowProxy here.
+  }
+
+  window.setTimeout(() => {
+    URL.revokeObjectURL(blobUrl);
+  }, 60_000);
+}
+
+function supportsAnchorDownload() {
+  return (
+    typeof HTMLAnchorElement !== "undefined" &&
+    "download" in HTMLAnchorElement.prototype
+  );
+}
+
+function getBrowserProfile(): BrowserProfile {
+  const userAgent = navigator.userAgent;
+  const lowerUserAgent = userAgent.toLowerCase();
+  const isIOS = /iP(hone|ad|od)/i.test(userAgent);
+  const isAndroid = /Android/i.test(userAgent);
+  const hasUnreliableAndroidDownload =
+    UNRELIABLE_ANDROID_DOWNLOAD_AGENTS.some((agent) =>
+      lowerUserAgent.includes(agent),
+    ) || /; wv\)/i.test(userAgent);
+  const prefersFallback =
+    isIOS || (isAndroid && hasUnreliableAndroidDownload);
+
+  return {
+    prefersOpenImageFallback: prefersFallback,
+    prefersShareFallback: prefersFallback,
+  };
+}
+
+const UNRELIABLE_ANDROID_DOWNLOAD_AGENTS = [
+  "vivobrowser",
+  "heytapbrowser",
+  "oppobrowser",
+  "realmebrowser",
+  "miuibrowser",
+  "huaweibrowser",
+  "honorbrowser",
+  "arkweb",
+  "quark",
+  "ucbrowser",
+  "mqqbrowser",
+  "qqbrowser",
+  "baidubrowser",
+  "baiduhd",
+  "sogoumobilebrowser",
+  "aphonebrowser",
+  "360 aphone browser",
+  "2345explorer",
+  "liebaofast",
+  "mb2345browser",
+  "micromessenger",
+  "weibo",
+  "dingtalk",
+  "alipayclient",
+  "lark",
+  "feishu",
+  "bytedancewebview",
+] as const;
+
+interface BrowserProfile {
+  prefersOpenImageFallback: boolean;
+  prefersShareFallback: boolean;
+}
+
+interface NavigatorWithLegacySave extends Navigator {
+  msSaveBlob?: (blob: Blob, defaultName?: string) => boolean;
+  msSaveOrOpenBlob?: (blob: Blob, defaultName?: string) => boolean;
 }
