@@ -1,0 +1,4033 @@
+[
+  {
+    "id": "equal-love",
+    "title": {
+      "ja": "=LOVE",
+      "romaji": "Equal Love"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2017-09-06-equallove-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "=LOVE [CD+DVD/Type-A]",
+      "romaji": "=LOVE [CD+DVD/Type-A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2017-09-06",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/equal-love/equal-love.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2017",
+      "single",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "渡辺尚",
+        "romaji": "watanabe takashi"
+      },
+      "arranger": {
+        "ja": "古川貴浩",
+        "romaji": "furukawa takahiro"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/1/",
+    "creditSourceUrl": "https://www.uta-net.com/song/235495/"
+  },
+  {
+    "id": "sutaato",
+    "title": {
+      "ja": "スタート!",
+      "romaji": "sutaato !"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2017-09-06-equallove-cd-dvd-type-b",
+    "releaseTitle": {
+      "ja": "=LOVE [CD+DVD/Type-B]",
+      "romaji": "=LOVE [CD+DVD/Type-B ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2017-09-06",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/sutaato.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2017",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "田靡達也",
+        "romaji": "ta bi tatsuya"
+      },
+      "arranger": {
+        "ja": "前口渉",
+        "romaji": "maekuchi wataru"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/2/",
+    "creditSourceUrl": "https://www.uta-net.com/song/235493/"
+  },
+  {
+    "id": "kioku-nodokokade",
+    "title": {
+      "ja": "記憶のどこかで",
+      "romaji": "kioku nodokokade"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2017-09-06-equallove-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "=LOVE [CD+DVD/Type-A]",
+      "romaji": "=LOVE [CD+DVD/Type-A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2017-09-06",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/kioku-nodokokade.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2017",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "中村望",
+        "romaji": "nakamura bou"
+      },
+      "arranger": {
+        "ja": "福田貴史",
+        "romaji": "fukuda takashi"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/1/",
+    "creditSourceUrl": "https://www.uta-net.com/song/235494/"
+  },
+  {
+    "id": "bokura-no-seifuku-christmas",
+    "title": {
+      "ja": "僕らの制服クリスマス",
+      "romaji": "Bokura no Seifuku Christmas"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2017-12-06-bokura-no-seifuku-kurisumasu-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "僕らの制服クリスマス [CD+DVD/Type-A]",
+      "romaji": "bokura no seifuku kurisumasu [CD+DVD/Type-A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2017-12-06",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/equal-love/bokura-no-seifuku-christmas.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2017",
+      "single",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "加藤大和",
+        "romaji": "katou yamato"
+      },
+      "arranger": {
+        "ja": "湯浅篤",
+        "romaji": "yuasa atsushi"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/4/",
+    "creditSourceUrl": "https://www.uta-net.com/song/240696/"
+  },
+  {
+    "id": "youkoso-ikorabu-numa",
+    "title": {
+      "ja": "ようこそ!イコラブ沼",
+      "romaji": "youkoso ! ikorabu numa"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2017-12-06-bokura-no-seifuku-kurisumasu-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "僕らの制服クリスマス [CD+DVD/Type-A]",
+      "romaji": "bokura no seifuku kurisumasu [CD+DVD/Type-A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2017-12-06",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/youkoso-ikorabu-numa.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2017",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "渡辺剛",
+        "romaji": "watanabe tsuyoshi"
+      },
+      "arranger": {
+        "ja": "清水哲平",
+        "romaji": "shimizu teppei"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/4/",
+    "creditSourceUrl": "https://www.uta-net.com/song/240694/"
+  },
+  {
+    "id": "todoi-te-love-you",
+    "title": {
+      "ja": "届いてLOVE YOU",
+      "romaji": "todoi te LOVE YOU"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2017-12-06-bokura-no-seifuku-kurisumasu-cd-dvd-type-b",
+    "releaseTitle": {
+      "ja": "僕らの制服クリスマス [CD+DVD/Type-B]",
+      "romaji": "bokura no seifuku kurisumasu [CD+DVD/Type-B ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2017-12-06",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/todoi-te-love-you.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2017",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "成本智美",
+        "romaji": "narimoto tomomi"
+      },
+      "arranger": {
+        "ja": "古川貴浩",
+        "romaji": "furukawa takahiro"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/5/",
+    "creditSourceUrl": "https://www.uta-net.com/song/240695/"
+  },
+  {
+    "id": "teokure-caution",
+    "title": {
+      "ja": "手遅れcaution",
+      "romaji": "Teokure Caution"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2018-05-16-teokure-caution-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "手遅れcaution [CD+DVD/Type-A]",
+      "romaji": "teokure caution [CD+DVD/Type-A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2018-05-16",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/equal-love/teokure-caution.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2018",
+      "single",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "今井ひろし",
+        "romaji": "imai hiroshi"
+      },
+      "arranger": {
+        "ja": "倉内達矢",
+        "romaji": "kurauchi tatsuya"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/7/",
+    "creditSourceUrl": "https://www.uta-net.com/song/249120/"
+  },
+  {
+    "id": "bukatsu-nakani-me-ga-au-natte-omotte-tanda",
+    "title": {
+      "ja": "部活中に目が合うなって思ってたんだ",
+      "romaji": "bukatsu nakani me ga au natte omotte tanda"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2018-05-16-teokure-caution-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "手遅れcaution [CD+DVD/Type-A]",
+      "romaji": "teokure caution [CD+DVD/Type-A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2018-05-16",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/bukatsu-nakani-me-ga-au-natte-omotte-tanda.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2018",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "NaO・MATCH",
+        "romaji": "NaO ・ MATCH"
+      },
+      "arranger": {
+        "ja": "古川貴浩",
+        "romaji": "furukawa takahiro"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/7/",
+    "creditSourceUrl": "https://www.uta-net.com/song/249119/"
+  },
+  {
+    "id": "ki-ai-ra-tasuke-ni-kita-zo",
+    "title": {
+      "ja": "樹愛羅、助けに来たぞ",
+      "romaji": "ki ai ra , tasuke ni kita zo"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2018-05-16-teokure-caution-cd-type-c",
+    "releaseTitle": {
+      "ja": "手遅れcaution[CD/Type-C]",
+      "romaji": "teokure Caution[CD/Type-C ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2018-05-16",
+    "trackNo": 3,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/ki-ai-ra-tasuke-ni-kita-zo.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2018",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "前山田健一",
+        "romaji": "maeyama ta Ken'ichi"
+      },
+      "arranger": {
+        "ja": "前山田健一",
+        "romaji": "maeyama ta Ken'ichi"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/9/",
+    "creditSourceUrl": "https://www.uta-net.com/song/249118/"
+  },
+  {
+    "id": "want-you-want-you",
+    "title": {
+      "ja": "Want you!Want you!",
+      "romaji": "Want you! Want you!"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2018-10-17-want-you-want-you-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "Want  you!Want  you![CD+DVD/Type-A]",
+      "romaji": "Want you ! Want you ! [CD+DVD/Type-A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2018-10-17",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/equal-love/want-you-want-you.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2018",
+      "single",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "ArmySlick・Yu-ki Kokubo・YHANAEL・YUU for YOU",
+        "romaji": "ArmySlick ・ Yu-ki Kokubo ・ YHANAEL ・ YUU for YOU"
+      },
+      "arranger": {
+        "ja": "ArmySlick・YUU for YOU",
+        "romaji": "ArmySlick ・ YUU for YOU"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/10/",
+    "creditSourceUrl": "https://www.uta-net.com/song/257001/"
+  },
+  {
+    "id": "ima-kono-fune-ni-nore",
+    "title": {
+      "ja": "今、この船に乗れ!",
+      "romaji": "ima , kono fune ni nore !"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2018-10-17-want-you-want-you-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "Want  you!Want  you![CD+DVD/Type-A]",
+      "romaji": "Want you ! Want you ! [CD+DVD/Type-A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2018-10-17",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/ima-kono-fune-ni-nore.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2018",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "加藤肇",
+        "romaji": "katou hajime"
+      },
+      "arranger": {
+        "ja": "河田貴央",
+        "romaji": "kawata takashi ou"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/10/",
+    "creditSourceUrl": "https://www.uta-net.com/song/257000/"
+  },
+  {
+    "id": "aikatsuhappiiendo",
+    "title": {
+      "ja": "アイカツハッピーエンド",
+      "romaji": "aikatsuhappiiendo"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2018-10-17-want-you-want-you-cd-type-c",
+    "releaseTitle": {
+      "ja": "Want you!Want you![CD/Type-C]",
+      "romaji": "Want you ! Want you ! [CD/Type-C ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2018-10-17",
+    "trackNo": 3,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/aikatsuhappiiendo.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2018",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "HoneyWorks",
+        "romaji": "HoneyWorks"
+      },
+      "composer": {
+        "ja": "HoneyWorks",
+        "romaji": "HoneyWorks"
+      },
+      "arranger": {
+        "ja": "HoneyWorks",
+        "romaji": "HoneyWorks"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/12/",
+    "creditSourceUrl": "https://www.uta-net.com/song/256999/"
+  },
+  {
+    "id": "sagase-diamond-lily",
+    "title": {
+      "ja": "探せ ダイヤモンドリリー",
+      "romaji": "Sagase Diamond Lily"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2019-04-24-sagase-daiyamondoririi-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "探せ ダイヤモンドリリー[CD+DVD/Type-A]",
+      "romaji": "sagase daiyamondoririi [CD+DVD/Type-A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2019-04-24",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/equal-love/sagase-diamond-lily.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2019",
+      "single",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "ArmySlick・Yu-ki Kokubo・YHANAEL・YUU for YOU",
+        "romaji": "ArmySlick ・ Yu-ki Kokubo ・ YHANAEL ・ YUU for YOU"
+      },
+      "arranger": {
+        "ja": "ArmySlick・YUU for YOU",
+        "romaji": "ArmySlick ・ YUU for YOU"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/13/",
+    "creditSourceUrl": "https://www.uta-net.com/song/266660/"
+  },
+  {
+    "id": "iranai-tsuinteeru",
+    "title": {
+      "ja": "いらない ツインテール",
+      "romaji": "iranai tsuinteeru"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2019-04-24-sagase-daiyamondoririi-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "探せ ダイヤモンドリリー[CD+DVD/Type-A]",
+      "romaji": "sagase daiyamondoririi [CD+DVD/Type-A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2019-04-24",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/iranai-tsuinteeru.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2019",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "和田耕平",
+        "romaji": "wada kouhei"
+      },
+      "arranger": {
+        "ja": "増田武史",
+        "romaji": "masuda takeshi"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/13/",
+    "creditSourceUrl": "https://www.uta-net.com/song/266659/"
+  },
+  {
+    "id": "niji-no-moto",
+    "title": {
+      "ja": "虹の素",
+      "romaji": "niji no moto"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2019-04-24-sagase-daiyamondoririi-cd-type-c",
+    "releaseTitle": {
+      "ja": "探せ ダイヤモンドリリー[CD/Type-C]",
+      "romaji": "sagase daiyamondoririi [CD/Type-C ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2019-04-24",
+    "trackNo": 3,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/niji-no-moto.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2019",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "増谷賢",
+        "romaji": "masutani satoshi"
+      },
+      "arranger": {
+        "ja": "渡辺和紀",
+        "romaji": "watanabe kazunori"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/15/",
+    "creditSourceUrl": "https://www.uta-net.com/song/266658/"
+  },
+  {
+    "id": "zuruiyo-zuruine",
+    "title": {
+      "ja": "ズルいよ ズルいね",
+      "romaji": "Zuruiyo Zuruine"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2019-10-30-zuru-iyo-zuru-ine-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "ズルいよ ズルいね[CD+DVD/Type-A]",
+      "romaji": "zuru iyo zuru ine [CD+DVD/Type-A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2019-10-30",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/equal-love/zuruiyo-zuruine.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2019",
+      "single",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "長沢知亜紀・永野小織",
+        "romaji": "nagasawa chi aki ・ nagano saori"
+      },
+      "arranger": {
+        "ja": "湯浅篤",
+        "romaji": "yuasa atsushi"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/16/",
+    "creditSourceUrl": "https://www.uta-net.com/song/276603/"
+  },
+  {
+    "id": "sweetest-girl",
+    "title": {
+      "ja": "Sweetest girl",
+      "romaji": "Sweetest girl"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2019-10-30-zuru-iyo-zuru-ine-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "ズルいよ ズルいね[CD+DVD/Type-A]",
+      "romaji": "zuru iyo zuru ine [CD+DVD/Type-A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2019-10-30",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/sweetest-girl.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2019",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "Yu-ki Kokubo・YUU for YOU",
+        "romaji": "Yu-ki Kokubo ・ YUU for YOU"
+      },
+      "arranger": {
+        "ja": "YUU for YOU",
+        "romaji": "YUU for YOU"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/16/",
+    "creditSourceUrl": "https://www.uta-net.com/song/276692/"
+  },
+  {
+    "id": "oshi-noiru-sekai",
+    "title": {
+      "ja": "推しのいる世界",
+      "romaji": "oshi noiru sekai"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2019-10-30-zuru-iyo-zuru-ine-cd-only-type-d",
+    "releaseTitle": {
+      "ja": "ズルいよ ズルいね[CD Only/Type-D]",
+      "romaji": "zuru iyo zuru ine [CD Only/Type-D ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2019-10-30",
+    "trackNo": 3,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/oshi-noiru-sekai.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2019",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "田畑健",
+        "romaji": "tahata takeshi"
+      },
+      "arranger": {
+        "ja": "古川貴浩",
+        "romaji": "furukawa takahiro"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/19/",
+    "creditSourceUrl": "https://www.uta-net.com/song/276644/"
+  },
+  {
+    "id": "cameo",
+    "title": {
+      "ja": "CAMEO",
+      "romaji": "Cameo"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2020-07-08-cameo-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "CAMEO[CD+DVD/Type-A]",
+      "romaji": "CAMEO[CD+DVD/Type-A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2020-07-08",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/equal-love/cameo.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2020",
+      "single",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "田尻知之(note native)・本澤尚之",
+        "romaji": "tajiri tomoyuki (note native ) ・ honzawa naoyuki"
+      },
+      "arranger": {
+        "ja": "田尻知之・本澤尚之",
+        "romaji": "tajiri tomoyuki ・ honzawa naoyuki"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/20/",
+    "creditSourceUrl": "https://www.uta-net.com/song/287669/"
+  },
+  {
+    "id": "kun-to-watashi-no-uta",
+    "title": {
+      "ja": "君と私の歌",
+      "romaji": "kun to watashi no uta"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2020-07-08-cameo-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "CAMEO[CD+DVD/Type-A]",
+      "romaji": "CAMEO[CD+DVD/Type-A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2020-07-08",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/kun-to-watashi-no-uta.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2020",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "塚田耕平",
+        "romaji": "tsukada kouhei"
+      },
+      "arranger": {
+        "ja": "古川貴浩",
+        "romaji": "furukawa takahiro"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/20/",
+    "creditSourceUrl": "https://www.uta-net.com/song/287668/"
+  },
+  {
+    "id": "my-voice-is-for-you",
+    "title": {
+      "ja": "My Voice Is For You",
+      "romaji": "My Voice Is For You"
+    },
+    "artist": {
+      "ja": "諸橋沙夏(=LOVE)",
+      "romaji": "morohashi sa natsu (=LOVE )"
+    },
+    "releaseId": "2020-07-08-cameo-cd-only-type-d",
+    "releaseTitle": {
+      "ja": "CAMEO[CD Only/Type-D]",
+      "romaji": "CAMEO[CD Only/Type-D ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2020-07-08",
+    "trackNo": 3,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/my-voice-is-for-you.jpg",
+    "memberIds": [
+      "morohashi-sana"
+    ],
+    "tags": [
+      "2020",
+      "coupling",
+      "single",
+      "solo"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "春日章宏",
+        "romaji": "kasuga akihiro"
+      },
+      "arranger": {
+        "ja": "清水哲平",
+        "romaji": "shimizu teppei"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/23/",
+    "creditSourceUrl": "https://www.uta-net.com/song/287667/"
+  },
+  {
+    "id": "seishun-subliminal",
+    "title": {
+      "ja": "青春”サブリミナル”",
+      "romaji": "Seishun Subliminal"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2020-11-25-seishun-saburiminaru-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "青春“サブリミナル”[CD+DVD/Type-A]",
+      "romaji": "seishun “ saburiminaru ” [CD+DVD/Type-A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2020-11-25",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/equal-love/seishun-subliminal.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2020",
+      "single",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "塚田耕平",
+        "romaji": "tsukada kouhei"
+      },
+      "arranger": {
+        "ja": "古川貴浩",
+        "romaji": "furukawa takahiro"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/24/",
+    "creditSourceUrl": "https://www.uta-net.com/song/294208/"
+  },
+  {
+    "id": "shukipi",
+    "title": {
+      "ja": "しゅきぴ",
+      "romaji": "shukipi"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2020-11-25-seishun-saburiminaru-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "青春“サブリミナル”[CD+DVD/Type-A]",
+      "romaji": "seishun “ saburiminaru ” [CD+DVD/Type-A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2020-11-25",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/shukipi.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2020",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "JUNKOO・minami rumi",
+        "romaji": "JUNKOO ・ minami rumi"
+      },
+      "arranger": {
+        "ja": "河田貴央",
+        "romaji": "kawata takashi ou"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/24/",
+    "creditSourceUrl": "https://www.uta-net.com/song/294207/"
+  },
+  {
+    "id": "ryuuseigun",
+    "title": {
+      "ja": "流星群",
+      "romaji": "ryuuseigun"
+    },
+    "artist": {
+      "ja": "高松瞳、齊藤なぎさ(=LOVE)",
+      "romaji": "takamatsu hitomi , saitou nagisa (=LOVE )"
+    },
+    "releaseId": "2020-11-25-seishun-saburiminaru-cd-only-type-d",
+    "releaseTitle": {
+      "ja": "青春“サブリミナル”[CD Only/Type-D]",
+      "romaji": "seishun “ saburiminaru ” [CD Only/Type-D ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2020-11-25",
+    "trackNo": 3,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/ryuuseigun.jpg",
+    "tags": [
+      "2020",
+      "coupling",
+      "single",
+      "solo"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "HaTo",
+        "romaji": "HaTo"
+      },
+      "arranger": {
+        "ja": "若田部誠",
+        "romaji": "wakatabe makoto"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/27/",
+    "creditSourceUrl": "https://www.uta-net.com/song/294206/"
+  },
+  {
+    "id": "sakura-no-saku-oto-gashita",
+    "title": {
+      "ja": "桜の咲く音がした",
+      "romaji": "sakura no saku oto gashita"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2021-05-12-zenbu-naisho-cd-bd-type-a",
+    "releaseTitle": {
+      "ja": "全部、内緒。[CD+BD/Type-A]",
+      "romaji": "zenbu , naisho . [CD+BD/Type-A ]"
+    },
+    "releaseType": "album",
+    "releaseDate": "2021-05-12",
+    "trackNo": 2,
+    "trackType": "album",
+    "coverUrl": "/covers/equal-love/sakura-no-saku-oto-gashita.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2021",
+      "album"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "水流雄一朗・室屋優美・KIKI",
+        "romaji": "suiryuu yuuichirou ・ muroya yumi ・ KIKI"
+      },
+      "arranger": {
+        "ja": "湯浅篤",
+        "romaji": "yuasa atsushi"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/31/",
+    "creditSourceUrl": "https://www.uta-net.com/song/301971/"
+  },
+  {
+    "id": "oh-darling",
+    "title": {
+      "ja": "Oh!Darling",
+      "romaji": "Oh ! Darling"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2021-05-12-zenbu-naisho-cd-bd-type-a",
+    "releaseTitle": {
+      "ja": "全部、内緒。[CD+BD/Type-A]",
+      "romaji": "zenbu , naisho . [CD+BD/Type-A ]"
+    },
+    "releaseType": "album",
+    "releaseDate": "2021-05-12",
+    "trackNo": 4,
+    "trackType": "album",
+    "coverUrl": "/covers/equal-love/oh-darling.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2021",
+      "album"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "磯崎健史",
+        "romaji": "isozaki takeshi"
+      },
+      "arranger": {
+        "ja": "清水哲平",
+        "romaji": "shimizu teppei"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/31/",
+    "creditSourceUrl": "https://www.uta-net.com/song/301970/"
+  },
+  {
+    "id": "senobiiinrabu",
+    "title": {
+      "ja": "セノビーインラブ",
+      "romaji": "senobiiinrabu"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2021-05-12-zenbu-naisho-cd-bd-type-a",
+    "releaseTitle": {
+      "ja": "全部、内緒。[CD+BD/Type-A]",
+      "romaji": "zenbu , naisho . [CD+BD/Type-A ]"
+    },
+    "releaseType": "album",
+    "releaseDate": "2021-05-12",
+    "trackNo": 6,
+    "trackType": "album",
+    "coverUrl": "/covers/equal-love/senobiiinrabu.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2021",
+      "album"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "NA.ZU.NA・Yu-ki Kokubo",
+        "romaji": "NA . ZU . NA ・ Yu-ki Kokubo"
+      },
+      "arranger": {
+        "ja": "ArmySlick・NA.ZU.NA",
+        "romaji": "ArmySlick ・ NA . ZU . NA"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/31/",
+    "creditSourceUrl": "https://www.uta-net.com/song/301969/"
+  },
+  {
+    "id": "haikei-kihousama",
+    "title": {
+      "ja": "拝啓 貴方様",
+      "romaji": "haikei kihousama"
+    },
+    "artist": {
+      "ja": "野口衣織(=LOVE)",
+      "romaji": "noguchi koromo shoku (=LOVE )"
+    },
+    "releaseId": "2021-05-12-zenbu-naisho-cd-bd-type-b",
+    "releaseTitle": {
+      "ja": "全部、内緒。[CD+BD/Type-B]",
+      "romaji": "zenbu , naisho . [CD+BD/Type-B ]"
+    },
+    "releaseType": "album",
+    "releaseDate": "2021-05-12",
+    "trackNo": 10,
+    "trackType": "album",
+    "coverUrl": "/covers/equal-love/haikei-kihousama.jpg",
+    "memberIds": [
+      "noguchi-iori"
+    ],
+    "tags": [
+      "2021",
+      "album",
+      "solo"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "原一博",
+        "romaji": "motokazu hiroshi"
+      },
+      "arranger": {
+        "ja": "原一博",
+        "romaji": "motokazu hiroshi"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/32/",
+    "creditSourceUrl": "https://www.uta-net.com/song/301986/"
+  },
+  {
+    "id": "gen-eki-aidoru-chu",
+    "title": {
+      "ja": "現役アイドルちゅ~",
+      "romaji": "Gen'eki aidoru chu ~"
+    },
+    "artist": {
+      "ja": "齊藤なぎさ(=LOVE)",
+      "romaji": "saitou nagisa (=LOVE )"
+    },
+    "releaseId": "2021-05-12-zenbu-naisho-cd-bd-type-a",
+    "releaseTitle": {
+      "ja": "全部、内緒。[CD+BD/Type-A]",
+      "romaji": "zenbu , naisho . [CD+BD/Type-A ]"
+    },
+    "releaseType": "album",
+    "releaseDate": "2021-05-12",
+    "trackNo": 10,
+    "trackType": "album",
+    "coverUrl": "/covers/equal-love/gen-eki-aidoru-chu.jpg",
+    "tags": [
+      "2021",
+      "album",
+      "solo"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "悠木真一",
+        "romaji": "yuuki Shin'ichi"
+      },
+      "arranger": {
+        "ja": "悠木真一",
+        "romaji": "yuuki Shin'ichi"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/31/",
+    "creditSourceUrl": "https://www.uta-net.com/song/301987/"
+  },
+  {
+    "id": "24-7",
+    "title": {
+      "ja": "24/7",
+      "romaji": "24/7"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2021-05-12-zenbu-naisho-cd-bd-type-a",
+    "releaseTitle": {
+      "ja": "全部、内緒。[CD+BD/Type-A]",
+      "romaji": "zenbu , naisho . [CD+BD/Type-A ]"
+    },
+    "releaseType": "album",
+    "releaseDate": "2021-05-12",
+    "trackNo": 11,
+    "trackType": "album",
+    "coverUrl": "/covers/equal-love/24-7.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2021",
+      "album"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "Daisy.O・The Answer・R!N・Ryo Ito",
+        "romaji": "Daisy . O ・ The Answer ・ R ! N ・ Ryo Ito"
+      },
+      "arranger": {
+        "ja": "The Answer",
+        "romaji": "The Answer"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/31/",
+    "creditSourceUrl": "https://www.uta-net.com/song/301968/"
+  },
+  {
+    "id": "o-neesan-ja-dame-desuka",
+    "title": {
+      "ja": "お姉さんじゃダメですか?",
+      "romaji": "o neesan ja dame desuka ?"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2021-05-12-zenbu-naisho-cd-bd-type-a",
+    "releaseTitle": {
+      "ja": "全部、内緒。[CD+BD/Type-A]",
+      "romaji": "zenbu , naisho . [CD+BD/Type-A ]"
+    },
+    "releaseType": "album",
+    "releaseDate": "2021-05-12",
+    "trackNo": 12,
+    "trackType": "album",
+    "coverUrl": "/covers/equal-love/o-neesan-ja-dame-desuka.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2021",
+      "album"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "菊池諒・RYOKO",
+        "romaji": "kikuchi ryou ・ RYOKO"
+      },
+      "arranger": {
+        "ja": "若田部誠",
+        "romaji": "wakatabe makoto"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/31/",
+    "creditSourceUrl": "https://www.uta-net.com/song/301967/"
+  },
+  {
+    "id": "cinema",
+    "title": {
+      "ja": "cinema",
+      "romaji": "cinema"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2021-05-12-zenbu-naisho-cd-bd-type-a",
+    "releaseTitle": {
+      "ja": "全部、内緒。[CD+BD/Type-A]",
+      "romaji": "zenbu , naisho . [CD+BD/Type-A ]"
+    },
+    "releaseType": "album",
+    "releaseDate": "2021-05-12",
+    "trackNo": 14,
+    "trackType": "album",
+    "coverUrl": "/covers/equal-love/cinema.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2021",
+      "album"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "YUU for YOU・Giz'Mo (from Jam9)",
+        "romaji": "YUU for YOU ・ Giz'Mo (from Jam9 )"
+      },
+      "arranger": {
+        "ja": "YUU for YOU",
+        "romaji": "YUU for YOU"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/31/",
+    "creditSourceUrl": "https://www.uta-net.com/song/301966/"
+  },
+  {
+    "id": "weekend-citron",
+    "title": {
+      "ja": "ウィークエンドシトロン",
+      "romaji": "Weekend Citron"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2021-08-25-uiikuendoshitoron-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "ウィークエンドシトロン[CD+DVD/Type-A]",
+      "romaji": "uiikuendoshitoron [CD+DVD/Type-A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2021-08-25",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/equal-love/weekend-citron.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2021",
+      "single",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃・FUWACHAN",
+        "romaji": "sasuhara rino ・ FUWACHAN"
+      },
+      "composer": {
+        "ja": "ArmySlick・Yu-ki Kokubo・YUU for YOU",
+        "romaji": "ArmySlick ・ Yu-ki Kokubo ・ YUU for YOU"
+      },
+      "arranger": {
+        "ja": "ArmySlick・YUU for YOU",
+        "romaji": "ArmySlick ・ YUU for YOU"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/35/",
+    "creditSourceUrl": "https://www.uta-net.com/song/306744/"
+  },
+  {
+    "id": "zutsu-tomo-anken",
+    "title": {
+      "ja": "ズッ友案件",
+      "romaji": "zutsu tomo anken"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2021-08-25-uiikuendoshitoron-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "ウィークエンドシトロン[CD+DVD/Type-A]",
+      "romaji": "uiikuendoshitoron [CD+DVD/Type-A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2021-08-25",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/zutsu-tomo-anken.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2021",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "宮脇咲良・村重杏奈",
+        "romaji": "miyawaki sakura ・ murashige anna"
+      },
+      "composer": {
+        "ja": "NA.ZU.NA",
+        "romaji": "NA . ZU . NA"
+      },
+      "arranger": {
+        "ja": "NA.ZU.NA",
+        "romaji": "NA . ZU . NA"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/35/",
+    "creditSourceUrl": "https://www.uta-net.com/song/306743/"
+  },
+  {
+    "id": "natsumatsuri-renbo-u",
+    "title": {
+      "ja": "夏祭り恋慕う",
+      "romaji": "natsumatsuri renbo u"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2021-08-25-uiikuendoshitoron-cd-only-type-d",
+    "releaseTitle": {
+      "ja": "ウィークエンドシトロン[CD Only/Type-D]",
+      "romaji": "uiikuendoshitoron [CD Only/Type-D ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2021-08-25",
+    "trackNo": 3,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/natsumatsuri-renbo-u.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2021",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "塚田耕平",
+        "romaji": "tsukada kouhei"
+      },
+      "arranger": {
+        "ja": "古川貴浩",
+        "romaji": "furukawa takahiro"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/38/",
+    "creditSourceUrl": "https://www.uta-net.com/song/306742/"
+  },
+  {
+    "id": "shukusai",
+    "title": {
+      "ja": "祝祭",
+      "romaji": "shukusai"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2021-08-25-uiikuendoshitoron-cd-only-type-d",
+    "releaseTitle": {
+      "ja": "ウィークエンドシトロン[CD Only/Type-D]",
+      "romaji": "uiikuendoshitoron [CD Only/Type-D ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2021-08-25",
+    "trackNo": 4,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/shukusai.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2021",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "重永亮介",
+        "romaji": "shigenaga ryousuke"
+      },
+      "arranger": {
+        "ja": "重永亮介",
+        "romaji": "shigenaga ryousuke"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/38/",
+    "creditSourceUrl": "https://www.uta-net.com/song/306741/"
+  },
+  {
+    "id": "the-5th",
+    "title": {
+      "ja": "The 5th",
+      "romaji": "The 5th"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2021-12-15-the-5th-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "The 5th[CD+DVD/Type-A]",
+      "romaji": "The 5th[CD+DVD/Type-A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2021-12-15",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/equal-love/the-5th.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2021",
+      "single",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "ArmySlick・Yu-ki Kokubo・YUU for YOU・YHANAEL",
+        "romaji": "ArmySlick ・ Yu-ki Kokubo ・ YUU for YOU ・ YHANAEL"
+      },
+      "arranger": {
+        "ja": "ArmySlick・YUU for YOU",
+        "romaji": "ArmySlick ・ YUU for YOU"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/39/",
+    "creditSourceUrl": "https://www.uta-net.com/song/312135/"
+  },
+  {
+    "id": "o-himesama-nishiteyo",
+    "title": {
+      "ja": "お姫様にしてよ!",
+      "romaji": "o himesama nishiteyo !"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2021-12-15-the-5th-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "The 5th[CD+DVD/Type-A]",
+      "romaji": "The 5th[CD+DVD/Type-A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2021-12-15",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/o-himesama-nishiteyo.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2021",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "Gou Ishikuro・Yu-ki Kokubo",
+        "romaji": "Gou Ishikuro ・ Yu-ki Kokubo"
+      },
+      "arranger": {
+        "ja": "ArmySlick・Gou Ishikuro",
+        "romaji": "ArmySlick ・ Gou Ishikuro"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/39/",
+    "creditSourceUrl": "https://www.uta-net.com/song/312134/"
+  },
+  {
+    "id": "poison-girl",
+    "title": {
+      "ja": "Poison Girl",
+      "romaji": "Poison Girl"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2021-12-15-the-5th-cd-only-type-d",
+    "releaseTitle": {
+      "ja": "The 5th[CD Only/Type-D]",
+      "romaji": "The 5th[CD Only/Type-D ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2021-12-15",
+    "trackNo": 3,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/poison-girl.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2021",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "原一博",
+        "romaji": "motokazu hiroshi"
+      },
+      "arranger": {
+        "ja": "原一博",
+        "romaji": "motokazu hiroshi"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/42/",
+    "creditSourceUrl": "https://www.uta-net.com/song/312133/"
+  },
+  {
+    "id": "bpm170-no-kun-he",
+    "title": {
+      "ja": "BPM170の君へ",
+      "romaji": "BPM170 no kun he"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2021-12-15-the-5th-cd-only-type-d",
+    "releaseTitle": {
+      "ja": "The 5th[CD Only/Type-D]",
+      "romaji": "The 5th[CD Only/Type-D ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2021-12-15",
+    "trackNo": 4,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/bpm170-no-kun-he.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2021",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "悠木真一",
+        "romaji": "yuuki Shin'ichi"
+      },
+      "arranger": {
+        "ja": "若田部誠",
+        "romaji": "wakatabe makoto"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/42/",
+    "creditSourceUrl": "https://www.uta-net.com/song/312132/"
+  },
+  {
+    "id": "ano-ko-complex",
+    "title": {
+      "ja": "あの子コンプレックス",
+      "romaji": "Ano Ko Complex"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2022-05-25-ano-ko-konpurekkusu-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "あの子コンプレックス[CD+DVD/Type-A]",
+      "romaji": "ano ko konpurekkusu [CD+DVD/Type-A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2022-05-25",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/equal-love/ano-ko-complex.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2022",
+      "single",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "高橋涼",
+        "romaji": "takahashi ryou"
+      },
+      "arranger": {
+        "ja": "湯浅篤",
+        "romaji": "yuasa atsushi"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/43/",
+    "creditSourceUrl": "https://www.uta-net.com/song/319089/"
+  },
+  {
+    "id": "boku-no-hiroin",
+    "title": {
+      "ja": "僕のヒロイン",
+      "romaji": "boku no hiroin"
+    },
+    "artist": {
+      "ja": "高松瞳(=LOVE)",
+      "romaji": "takamatsu hitomi (=LOVE )"
+    },
+    "releaseId": "2022-05-25-ano-ko-konpurekkusu-cd-dvd-type-c",
+    "releaseTitle": {
+      "ja": "あの子コンプレックス[CD+DVD/Type-C]",
+      "romaji": "ano ko konpurekkusu [CD+DVD/Type-C ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2022-05-25",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/boku-no-hiroin.jpg",
+    "tags": [
+      "2022",
+      "coupling",
+      "single",
+      "solo"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "塚田耕平",
+        "romaji": "tsukada kouhei"
+      },
+      "arranger": {
+        "ja": "めんま",
+        "romaji": "menma"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/45/",
+    "creditSourceUrl": "https://www.uta-net.com/song/319086/"
+  },
+  {
+    "id": "shira-nkedo",
+    "title": {
+      "ja": "知らんけど",
+      "romaji": "shira nkedo"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2022-05-25-ano-ko-konpurekkusu-cd-dvd-type-b",
+    "releaseTitle": {
+      "ja": "あの子コンプレックス[CD+DVD/Type-B]",
+      "romaji": "ano ko konpurekkusu [CD+DVD/Type-B ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2022-05-25",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/shira-nkedo.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2022",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "SHIBU",
+        "romaji": "SHIBU"
+      },
+      "arranger": {
+        "ja": "SHIBU",
+        "romaji": "SHIBU"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/44/",
+    "creditSourceUrl": "https://www.uta-net.com/song/319087/"
+  },
+  {
+    "id": "egao-no-reshipi",
+    "title": {
+      "ja": "笑顔のレシピ",
+      "romaji": "egao no reshipi"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2022-05-25-ano-ko-konpurekkusu-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "あの子コンプレックス[CD+DVD/Type-A]",
+      "romaji": "ano ko konpurekkusu [CD+DVD/Type-A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2022-05-25",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/egao-no-reshipi.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2022",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "中村瑛彦",
+        "romaji": "nakamura ei hiko"
+      },
+      "arranger": {
+        "ja": "脇眞富",
+        "romaji": "waki makoto tomi"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/43/",
+    "creditSourceUrl": "https://www.uta-net.com/song/319088/"
+  },
+  {
+    "id": "be-selfish",
+    "title": {
+      "ja": "Be Selfish",
+      "romaji": "Be Selfish"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2022-09-28-be-selfish-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "Be Selfish[CD+DVD/Type-A]",
+      "romaji": "Be Selfish[CD+DVD/Type-A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2022-09-28",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/equal-love/be-selfish.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2022",
+      "single",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "本多友紀",
+        "romaji": "honda yuki"
+      },
+      "arranger": {
+        "ja": "河合泰志",
+        "romaji": "kawai yasushi"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/47/",
+    "creditSourceUrl": "https://www.uta-net.com/song/325458/"
+  },
+  {
+    "id": "suki-tte-ie-nakatta",
+    "title": {
+      "ja": "好きって、言えなかった",
+      "romaji": "suki tte , ie nakatta"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2022-09-28-be-selfish-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "Be Selfish[CD+DVD/Type-A]",
+      "romaji": "Be Selfish[CD+DVD/Type-A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2022-09-28",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/suki-tte-ie-nakatta.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2022",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "塚田耕平",
+        "romaji": "tsukada kouhei"
+      },
+      "arranger": {
+        "ja": "湯浅篤",
+        "romaji": "yuasa atsushi"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/47/",
+    "creditSourceUrl": "https://www.uta-net.com/song/325457/"
+  },
+  {
+    "id": "watashi-mahoutsukai",
+    "title": {
+      "ja": "わたし、魔法使い",
+      "romaji": "watashi , mahoutsukai"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2022-09-28-be-selfish-cd-only-type-e",
+    "releaseTitle": {
+      "ja": "Be Selfish[CD Only/Type-E]",
+      "romaji": "Be Selfish[CD Only/Type-E ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2022-09-28",
+    "trackNo": 3,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/watashi-mahoutsukai.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2022",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "大熊淳生",
+        "romaji": "ookuma atsuo"
+      },
+      "arranger": {
+        "ja": "YUU for YOU",
+        "romaji": "YUU for YOU"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/51/",
+    "creditSourceUrl": "https://www.uta-net.com/song/325454/"
+  },
+  {
+    "id": "mayonaka-maameido",
+    "title": {
+      "ja": "真夜中マーメイド",
+      "romaji": "mayonaka maameido"
+    },
+    "artist": {
+      "ja": "佐々木舞香(=LOVE)",
+      "romaji": "sasaki maika (=LOVE )"
+    },
+    "releaseId": "2022-09-28-be-selfish-cd-only-type-e",
+    "releaseTitle": {
+      "ja": "Be Selfish[CD Only/Type-E]",
+      "romaji": "Be Selfish[CD Only/Type-E ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2022-09-28",
+    "trackNo": 4,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/mayonaka-maameido.jpg",
+    "memberIds": [
+      "sasaki-maika"
+    ],
+    "tags": [
+      "2022",
+      "coupling",
+      "single",
+      "solo"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "鈴木エレカ・めんま",
+        "romaji": "suzuki Ereka・ menma"
+      },
+      "arranger": {
+        "ja": "めんま",
+        "romaji": "menma"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/51/",
+    "creditSourceUrl": "https://www.uta-net.com/song/325456/"
+  },
+  {
+    "id": "kono-sora-ga-trigger",
+    "title": {
+      "ja": "この空がトリガー",
+      "romaji": "Kono Sora ga Trigger"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2023-02-22-kono-sora-ga-torigaa-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "この空がトリガー[CD+DVD/Type-A]",
+      "romaji": "kono sora ga torigaa [CD+DVD/Type-A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2023-02-22",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/equal-love/kono-sora-ga-trigger.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2023",
+      "single",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "塚田耕平",
+        "romaji": "tsukada kouhei"
+      },
+      "arranger": {
+        "ja": "古川貴浩",
+        "romaji": "furukawa takahiro"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/52/",
+    "creditSourceUrl": "https://www.uta-net.com/song/331889/"
+  },
+  {
+    "id": "junkies",
+    "title": {
+      "ja": "Junkies",
+      "romaji": "Junkies"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2023-02-22-kono-sora-ga-torigaa-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "この空がトリガー[CD+DVD/Type-A]",
+      "romaji": "kono sora ga torigaa [CD+DVD/Type-A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2023-02-22",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/junkies.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2023",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "増田武史",
+        "romaji": "masuda takeshi"
+      },
+      "arranger": {
+        "ja": "増田武史",
+        "romaji": "masuda takeshi"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/52/",
+    "creditSourceUrl": "https://www.uta-net.com/song/333056/"
+  },
+  {
+    "id": "rabukurieito",
+    "title": {
+      "ja": "ラブクリエイト",
+      "romaji": "rabukurieito"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2023-02-22-kono-sora-ga-torigaa-cd-only-type-e",
+    "releaseTitle": {
+      "ja": "この空がトリガー [CD Only/Type-E]",
+      "romaji": "kono sora ga torigaa [CD Only/Type-E ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2023-02-22",
+    "trackNo": 3,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/rabukurieito.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2023",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "板垣祐介",
+        "romaji": "itagaki yuusuke"
+      },
+      "arranger": {
+        "ja": "脇眞富",
+        "romaji": "waki makoto tomi"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/56/",
+    "creditSourceUrl": "https://www.uta-net.com/song/333055/"
+  },
+  {
+    "id": "kiara-tiara",
+    "title": {
+      "ja": "Kiara Tiara",
+      "romaji": "Kiara Tiara"
+    },
+    "artist": {
+      "ja": "齋藤樹愛羅(=LOVE)",
+      "romaji": "saitou ki ai ra (=LOVE )"
+    },
+    "releaseId": "2023-02-22-kono-sora-ga-torigaa-cd-only-type-e",
+    "releaseTitle": {
+      "ja": "この空がトリガー [CD Only/Type-E]",
+      "romaji": "kono sora ga torigaa [CD Only/Type-E ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2023-02-22",
+    "trackNo": 4,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/kiara-tiara.jpg",
+    "memberIds": [
+      "saito-kiara"
+    ],
+    "tags": [
+      "2023",
+      "coupling",
+      "single",
+      "solo"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "Ryu",
+        "romaji": "Ryu"
+      },
+      "arranger": {
+        "ja": "Ryu",
+        "romaji": "Ryu"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/56/",
+    "creditSourceUrl": "https://www.uta-net.com/song/333054/"
+  },
+  {
+    "id": "natsumatope",
+    "title": {
+      "ja": "ナツマトぺ",
+      "romaji": "Natsumatope"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2023-07-19-natsumatope-cd-only-type-e",
+    "releaseTitle": {
+      "ja": "ナツマトペ[CD Only/Type-E]",
+      "romaji": "natsumatope [CD Only/Type-E ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2023-07-19",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/equal-love/natsumatope.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2023",
+      "single",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "庄司夏葵",
+        "romaji": "shouji natsu aoi"
+      },
+      "arranger": {
+        "ja": "庄司夏葵",
+        "romaji": "shouji natsu aoi"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/82/",
+    "creditSourceUrl": "https://www.uta-net.com/song/339474/"
+  },
+  {
+    "id": "dakaratote",
+    "title": {
+      "ja": "だからとて",
+      "romaji": "dakaratote"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2023-07-19-natsumatope-cd-only-type-e",
+    "releaseTitle": {
+      "ja": "ナツマトペ[CD Only/Type-E]",
+      "romaji": "natsumatope [CD Only/Type-E ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2023-07-19",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/dakaratote.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2023",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "高橋リュウセイ",
+        "romaji": "takahashi ryuusei"
+      },
+      "arranger": {
+        "ja": "脇眞富",
+        "romaji": "waki makoto tomi"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/82/",
+    "creditSourceUrl": "https://www.uta-net.com/song/340761/"
+  },
+  {
+    "id": "hiroinzu",
+    "title": {
+      "ja": "ヒロインズ",
+      "romaji": "hiroinzu"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2023-07-19-natsumatope-cd-only-type-e",
+    "releaseTitle": {
+      "ja": "ナツマトペ[CD Only/Type-E]",
+      "romaji": "natsumatope [CD Only/Type-E ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2023-07-19",
+    "trackNo": 3,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/hiroinzu.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2023",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃・=LOVE",
+        "romaji": "sasuhara rino ・ =LOVE"
+      },
+      "composer": {
+        "ja": "Yu-ki Kokubo・YUU for YOU",
+        "romaji": "Yu-ki Kokubo ・ YUU for YOU"
+      },
+      "arranger": {
+        "ja": "YUU for YOU",
+        "romaji": "YUU for YOU"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/82/",
+    "creditSourceUrl": "https://www.uta-net.com/song/340760/"
+  },
+  {
+    "id": "raburoke",
+    "title": {
+      "ja": "ラブロケ",
+      "romaji": "raburoke"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2023-07-19-natsumatope-cd-only-type-e",
+    "releaseTitle": {
+      "ja": "ナツマトペ[CD Only/Type-E]",
+      "romaji": "natsumatope [CD Only/Type-E ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2023-07-19",
+    "trackNo": 4,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/raburoke.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2023",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "庄司夏葵",
+        "romaji": "shouji natsu aoi"
+      },
+      "arranger": {
+        "ja": "庄司夏葵",
+        "romaji": "shouji natsu aoi"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/82/",
+    "creditSourceUrl": "https://www.uta-net.com/song/340759/"
+  },
+  {
+    "id": "last-note-shika-shiranai",
+    "title": {
+      "ja": "ラストノートしか知らない",
+      "romaji": "Last Note Shika Shiranai"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2023-11-29-rasutonooto-shika-shira-nai-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "ラストノートしか知らない[CD+DVD/Type-A]",
+      "romaji": "rasutonooto shika shira nai [CD+DVD/Type-A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2023-11-29",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/equal-love/last-note-shika-shiranai.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2023",
+      "single",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "塚田耕平",
+        "romaji": "tsukada kouhei"
+      },
+      "arranger": {
+        "ja": "湯浅篤",
+        "romaji": "yuasa atsushi"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/83/",
+    "creditSourceUrl": "https://www.uta-net.com/song/345108/"
+  },
+  {
+    "id": "doraibu-deeto-tonai",
+    "title": {
+      "ja": "ドライブ デート 都内",
+      "romaji": "doraibu deeto tonai"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2023-11-29-rasutonooto-shika-shira-nai-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "ラストノートしか知らない[CD+DVD/Type-A]",
+      "romaji": "rasutonooto shika shira nai [CD+DVD/Type-A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2023-11-29",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/doraibu-deeto-tonai.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2023",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "本多友紀",
+        "romaji": "honda yuki"
+      },
+      "arranger": {
+        "ja": "脇眞富",
+        "romaji": "waki makoto tomi"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/83/",
+    "creditSourceUrl": "https://www.uta-net.com/song/346775/"
+  },
+  {
+    "id": "kyousou-katasutorofi",
+    "title": {
+      "ja": "狂想カタストロフィ",
+      "romaji": "kyousou katasutorofi"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2023-11-29-rasutonooto-shika-shira-nai-cd-only-type-e",
+    "releaseTitle": {
+      "ja": "ラストノートしか知らない[CD Only/Type-E]",
+      "romaji": "rasutonooto shika shira nai [CD Only/Type-E ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2023-11-29",
+    "trackNo": 3,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/kyousou-katasutorofi.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2023",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "古川貴浩",
+        "romaji": "furukawa takahiro"
+      },
+      "arranger": {
+        "ja": "古川貴浩",
+        "romaji": "furukawa takahiro"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/87/",
+    "creditSourceUrl": "https://www.uta-net.com/song/346774/"
+  },
+  {
+    "id": "dokoga-suki-ka-itte",
+    "title": {
+      "ja": "どこが好きか言って",
+      "romaji": "dokoga suki ka itte"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2023-11-29-rasutonooto-shika-shira-nai-cd-only-type-e",
+    "releaseTitle": {
+      "ja": "ラストノートしか知らない[CD Only/Type-E]",
+      "romaji": "rasutonooto shika shira nai [CD Only/Type-E ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2023-11-29",
+    "trackNo": 4,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/dokoga-suki-ka-itte.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2023",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "齋藤奏太",
+        "romaji": "saitou souta"
+      },
+      "arranger": {
+        "ja": "齋藤奏太",
+        "romaji": "saitou souta"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/87/",
+    "creditSourceUrl": "https://www.uta-net.com/song/346773/"
+  },
+  {
+    "id": "norotte-norotte",
+    "title": {
+      "ja": "呪って呪って",
+      "romaji": "Norotte Norotte"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2024-03-06-norotsu-te-norotsu-te-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "呪って呪って[CD+DVD/Type-A]",
+      "romaji": "norotsu te norotsu te [CD+DVD/Type-A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2024-03-06",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/equal-love/norotte-norotte.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2024",
+      "single",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "白根一成",
+        "romaji": "shirone kazunari"
+      },
+      "arranger": {
+        "ja": "APAZZI",
+        "romaji": "APAZZI"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/88/",
+    "creditSourceUrl": "https://www.uta-net.com/song/349861/"
+  },
+  {
+    "id": "dare-nimo-bare-zuni",
+    "title": {
+      "ja": "誰にもバレずに",
+      "romaji": "dare nimo bare zuni"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2024-03-06-norotsu-te-norotsu-te-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "呪って呪って[CD+DVD/Type-A]",
+      "romaji": "norotsu te norotsu te [CD+DVD/Type-A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2024-03-06",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/dare-nimo-bare-zuni.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2024",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "水流雄一朗",
+        "romaji": "suiryuu yuuichirou"
+      },
+      "arranger": {
+        "ja": "水流雄一朗",
+        "romaji": "suiryuu yuuichirou"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/88/",
+    "creditSourceUrl": "https://www.uta-net.com/song/351319/"
+  },
+  {
+    "id": "kun-no-dai-3-botan",
+    "title": {
+      "ja": "君の第3ボタン",
+      "romaji": "kun no dai 3 botan"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2024-03-06-norotsu-te-norotsu-te-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "呪って呪って[CD+DVD/Type-A]",
+      "romaji": "norotsu te norotsu te [CD+DVD/Type-A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2024-03-06",
+    "trackNo": 3,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/kun-no-dai-3-botan.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2024",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "yuma",
+        "romaji": "yuma"
+      },
+      "arranger": {
+        "ja": "めんま",
+        "romaji": "menma"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/88/",
+    "creditSourceUrl": "https://www.uta-net.com/song/351318/"
+  },
+  {
+    "id": "zettai-idol-yamenaide",
+    "title": {
+      "ja": "絶対アイドル辞めないで",
+      "romaji": "Zettai Idol Yamenaide"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2024-07-31-zettai-aidoru-yame-naide-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "絶対アイドル辞めないで[CD+DVD/Type-A]",
+      "romaji": "zettai aidoru yame naide [CD+DVD/Type-A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2024-07-31",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/equal-love/zettai-idol-yamenaide.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2024",
+      "single",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "小池竜暉・菊池博人",
+        "romaji": "koike ryuu ki ・ kikuchi hirohito"
+      },
+      "arranger": {
+        "ja": "菊池博人・小池竜暉",
+        "romaji": "kikuchi hirohito ・ koike ryuu ki"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/96/",
+    "creditSourceUrl": "https://www.uta-net.com/song/356403/"
+  },
+  {
+    "id": "nakanaori-shuukuriimu",
+    "title": {
+      "ja": "仲直りシュークリーム",
+      "romaji": "nakanaori shuukuriimu"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2024-07-31-zettai-aidoru-yame-naide-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "絶対アイドル辞めないで[CD+DVD/Type-A]",
+      "romaji": "zettai aidoru yame naide [CD+DVD/Type-A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2024-07-31",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/nakanaori-shuukuriimu.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2024",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "ふるっぺ(ケラケラ)・吉村隆行",
+        "romaji": "furuppe ( kerakera ) ・ yoshimura takayuki"
+      },
+      "arranger": {
+        "ja": "吉村隆行",
+        "romaji": "yoshimura takayuki"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/96/",
+    "creditSourceUrl": "https://www.uta-net.com/song/358247/"
+  },
+  {
+    "id": "umi-to-remonteii",
+    "title": {
+      "ja": "海とレモンティー",
+      "romaji": "umi to remonteii"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2024-07-31-zettai-aidoru-yame-naide-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "絶対アイドル辞めないで[CD+DVD/Type-A]",
+      "romaji": "zettai aidoru yame naide [CD+DVD/Type-A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2024-07-31",
+    "trackNo": 3,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/umi-to-remonteii.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2024",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "岩崎哲也",
+        "romaji": "iwasaki tetsuya"
+      },
+      "arranger": {
+        "ja": "岩崎哲也",
+        "romaji": "iwasaki tetsuya"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/96/",
+    "creditSourceUrl": "https://www.uta-net.com/song/358246/"
+  },
+  {
+    "id": "tokubechu-shite",
+    "title": {
+      "ja": "とくべチュ、して",
+      "romaji": "Tokubechu, Shite"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2025-02-26-tokube-chu-shite-koibito-ijou-suki-miman-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "とくべチュ、して/恋人以上、好き未満[CD+DVD/Type-A]",
+      "romaji": "tokube chu , shite / koibito ijou , suki miman [CD+DVD/Type-A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2025-02-26",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/equal-love/tokubechu-shite.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2025",
+      "single",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "浦島健太・菊池博人",
+        "romaji": "urashima kenta ・ kikuchi hirohito"
+      },
+      "arranger": {
+        "ja": "菊池博人",
+        "romaji": "kikuchi hirohito"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/110/",
+    "creditSourceUrl": "https://www.uta-net.com/song/368288/"
+  },
+  {
+    "id": "koibito-ijo-suki-miman",
+    "title": {
+      "ja": "恋人以上、好き未満",
+      "romaji": "Koibito Ijo, Suki Miman"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2025-02-26-tokube-chu-shite-koibito-ijou-suki-miman-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "とくべチュ、して/恋人以上、好き未満[CD+DVD/Type-A]",
+      "romaji": "tokube chu , shite / koibito ijou , suki miman [CD+DVD/Type-A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2025-02-26",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/koibito-ijo-suki-miman.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2025",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "中村瑛彦",
+        "romaji": "nakamura ei hiko"
+      },
+      "arranger": {
+        "ja": "古川貴浩",
+        "romaji": "furukawa takahiro"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/110/",
+    "creditSourceUrl": "https://www.uta-net.com/song/367679/"
+  },
+  {
+    "id": "choutokkyuu-tousou-naka",
+    "title": {
+      "ja": "超特急逃走中",
+      "romaji": "choutokkyuu tousou naka"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2025-02-26-tokube-chu-shite-koibito-ijou-suki-miman-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "とくべチュ、して/恋人以上、好き未満[CD+DVD/Type-A]",
+      "romaji": "tokube chu , shite / koibito ijou , suki miman [CD+DVD/Type-A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2025-02-26",
+    "trackNo": 3,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/choutokkyuu-tousou-naka.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2025",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "YUU for YOU・Giz'Mo(from Jam9)",
+        "romaji": "YUU for YOU ・ Giz'Mo(from Jam9 )"
+      },
+      "arranger": {
+        "ja": "YUU for YOU",
+        "romaji": "YUU for YOU"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/110/",
+    "creditSourceUrl": "https://www.uta-net.com/song/369033/"
+  },
+  {
+    "id": "naisho-banashi",
+    "title": {
+      "ja": "内緒バナシ",
+      "romaji": "naisho banashi"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2025-08-22-naisho-banashi",
+    "releaseTitle": {
+      "ja": "内緒バナシ",
+      "romaji": "naisho banashi"
+    },
+    "releaseType": "digital",
+    "releaseDate": "2025-08-22",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/equal-love/naisho-banashi.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2025",
+      "digital",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "kijibato",
+        "romaji": "kijibato"
+      },
+      "arranger": {
+        "ja": "kijibato",
+        "romaji": "kijibato"
+      }
+    },
+    "officialUrl": "https://www.uta-net.com/song/378677/",
+    "creditSourceUrl": "https://www.uta-net.com/song/378677/"
+  },
+  {
+    "id": "love-song-ni-osowareru",
+    "title": {
+      "ja": "ラブソングに襲われる",
+      "romaji": "Love Song ni Osowareru"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2025-10-08-rabusongu-ni-osowa-reru-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "ラブソングに襲われる[CD+DVD/Type-A]",
+      "romaji": "rabusongu ni osowa reru [CD+DVD/Type-A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2025-10-08",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/equal-love/love-song-ni-osowareru.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2025",
+      "single",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "Yu-ki Kokubo・YUU for YOU",
+        "romaji": "Yu-ki Kokubo ・ YUU for YOU"
+      },
+      "arranger": {
+        "ja": "YUU for YOU",
+        "romaji": "YUU for YOU"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/122/",
+    "creditSourceUrl": "https://www.uta-net.com/song/379846/"
+  },
+  {
+    "id": "queens",
+    "title": {
+      "ja": "Queens",
+      "romaji": "Queens"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2025-10-08-rabusongu-ni-osowa-reru-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "ラブソングに襲われる[CD+DVD/Type-A]",
+      "romaji": "rabusongu ni osowa reru [CD+DVD/Type-A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2025-10-08",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/queens.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2025",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "小池竜暉・野口大志",
+        "romaji": "koike ryuu ki ・ noguchi taishi"
+      },
+      "arranger": {
+        "ja": "野口大志",
+        "romaji": "noguchi taishi"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/122/",
+    "creditSourceUrl": "https://www.uta-net.com/song/381357/"
+  },
+  {
+    "id": "ki-more-nichi-mezoforute",
+    "title": {
+      "ja": "木漏れ日メゾフォルテ",
+      "romaji": "ki more nichi mezoforute"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2025-10-08-rabusongu-ni-osowa-reru-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "ラブソングに襲われる[CD+DVD/Type-A]",
+      "romaji": "rabusongu ni osowa reru [CD+DVD/Type-A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2025-10-08",
+    "trackNo": 3,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/ki-more-nichi-mezoforute.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2025",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "齋藤奏太",
+        "romaji": "saitou souta"
+      },
+      "arranger": {
+        "ja": "齋藤奏太",
+        "romaji": "saitou souta"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/122/",
+    "creditSourceUrl": "https://www.uta-net.com/song/381356/"
+  },
+  {
+    "id": "gekiyaku-chuudoku",
+    "title": {
+      "ja": "劇薬中毒",
+      "romaji": "gekiyaku chuudoku"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2026-04-01-gekiyaku-chuudoku-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "劇薬中毒[CD+DVD/Type-A]",
+      "romaji": "gekiyaku chuudoku [CD+DVD/Type-A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2026-04-01",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/equal-love/gekiyaku-chuudoku.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2026",
+      "single",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "齋藤奏太",
+        "romaji": "saitou souta"
+      },
+      "arranger": {
+        "ja": "APAZZI",
+        "romaji": "APAZZI"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/135/",
+    "creditSourceUrl": "https://www.uta-net.com/song/388309/"
+  },
+  {
+    "id": "moratoriamu",
+    "title": {
+      "ja": "モラトリアム",
+      "romaji": "moratoriamu"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2026-04-01-gekiyaku-chuudoku-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "劇薬中毒[CD+DVD/Type-A]",
+      "romaji": "gekiyaku chuudoku [CD+DVD/Type-A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2026-04-01",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/moratoriamu.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2026",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "杉山勝彦・oni",
+        "romaji": "sugiyama katsuhiko ・ oni"
+      },
+      "arranger": {
+        "ja": "oni",
+        "romaji": "oni"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/135/",
+    "creditSourceUrl": "https://www.uta-net.com/song/390403/"
+  },
+  {
+    "id": "o-himesama-no-tsukurikata",
+    "title": {
+      "ja": "お姫様の作り方",
+      "romaji": "o himesama no tsukurikata"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2026-04-01-gekiyaku-chuudoku-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "劇薬中毒[CD+DVD/Type-A]",
+      "romaji": "gekiyaku chuudoku [CD+DVD/Type-A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2026-04-01",
+    "trackNo": 3,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/o-himesama-no-tsukurikata.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": [
+      "2026",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "敬也-amazuti-・菊池博人",
+        "romaji": "akiya -amazuti- ・ kikuchi hirohito"
+      },
+      "arranger": {
+        "ja": "菊池博人",
+        "romaji": "kikuchi hirohito"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/discography/detail/135/",
+    "creditSourceUrl": "https://www.uta-net.com/song/390404/"
+  }
+]

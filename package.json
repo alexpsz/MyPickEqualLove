@@ -1,0 +1,43 @@
+{
+  "name": "mypickequallove",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "node scripts/clean-static-export.mjs && next build && node scripts/copy-public-assets.mjs",
+    "start": "next start",
+    "lint": "eslint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "sync:data": "python3 scripts/sync-equal-love-discography.py",
+    "validate:data": "node scripts/validate-equal-love-data.mjs"
+  },
+  "dependencies": {
+    "html2canvas": "^1.4.1",
+    "next": "^16.2.7",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.0",
+    "@types/node": "^25.9.1",
+    "@types/react": "^19.2.16",
+    "@types/react-dom": "^19.2.3",
+    "eslint": "^10.4.1",
+    "eslint-config-next": "^16.2.7",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.6.0",
+    "prettier": "^3.8.3",
+    "tailwindcss": "^4.3.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.60.1"
+  },
+  "optionalDependencies": {
+    "@tailwindcss/oxide-darwin-arm64": "^4.3.1"
+  }
+}

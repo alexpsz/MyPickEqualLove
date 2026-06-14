@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="MY PICK =LOVE">
+  <defs>
+    <linearGradient id="bg" x1="64" x2="448" y1="48" y2="464" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff8fb"/>
+      <stop offset="0.55" stop-color="#ffe6f0"/>
+      <stop offset="1" stop-color="#e4fbf8"/>
+    </linearGradient>
+    <linearGradient id="mark" x1="112" x2="400" y1="104" y2="408" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#e84b8a"/>
+      <stop offset="0.52" stop-color="#a45ad4"/>
+      <stop offset="1" stop-color="#55b7b2"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <path fill="url(#mark)" d="M256 388c-6 0-12-2-17-7l-94-85c-45-40-50-110-10-155 36-40 96-43 137-9 41-34 101-31 137 9 40 45 35 115-10 155l-94 85c-5 5-11 7-17 7h-32Z"/>
+  <rect x="126" y="228" width="260" height="28" rx="14" fill="#fff"/>
+  <rect x="126" y="274" width="260" height="28" rx="14" fill="#fff" opacity="0.88"/>
+  <text x="256" y="198" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="54" font-weight="900" fill="#fff">=LOVE</text>
+</svg>

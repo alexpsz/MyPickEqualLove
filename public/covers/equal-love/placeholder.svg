@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" role="img" aria-label="=LOVE cover placeholder">
+  <defs>
+    <linearGradient id="cover-bg" x1="86" x2="714" y1="74" y2="726" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff8fb"/>
+      <stop offset="0.45" stop-color="#ffd8e8"/>
+      <stop offset="1" stop-color="#d9fbf5"/>
+    </linearGradient>
+    <linearGradient id="cover-mark" x1="170" x2="630" y1="164" y2="638" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#e84b8a"/>
+      <stop offset="0.5" stop-color="#a86dd7"/>
+      <stop offset="1" stop-color="#55b7b2"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="800" fill="url(#cover-bg)"/>
+  <rect x="62" y="62" width="676" height="676" rx="42" fill="#ffffff" opacity="0.42"/>
+  <path fill="url(#cover-mark)" d="M400 604c-10 0-20-4-28-11L226 461c-70-63-78-173-16-243 56-63 149-67 212-14 63-53 156-49 212 14 62 70 54 180-16 243L472 593c-8 7-18 11-28 11h-44Z"/>
+  <rect x="208" y="358" width="384" height="44" rx="22" fill="#fff"/>
+  <rect x="208" y="430" width="384" height="44" rx="22" fill="#fff" opacity="0.88"/>
+  <text x="400" y="322" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="88" font-weight="900" fill="#fff">=LOVE</text>
+  <text x="400" y="676" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="800" letter-spacing="6" fill="#7f5269">LOCAL COVER PLACEHOLDER</text>
+</svg>

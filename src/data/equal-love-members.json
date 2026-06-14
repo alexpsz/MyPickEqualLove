@@ -1,0 +1,82 @@
+[
+  {
+    "id": "otani-emiri",
+    "name": { "ja": "大谷 映美里", "romaji": "Otani Emiri" },
+    "color": "#e84b8a",
+    "profileUrl": "https://sp.equal-love.jp/feature/profile_fs",
+    "active": true,
+    "sortOrder": 1
+  },
+  {
+    "id": "oba-hana",
+    "name": { "ja": "大場 花菜", "romaji": "Oba Hana" },
+    "color": "#f5b14c",
+    "profileUrl": "https://sp.equal-love.jp/feature/profile_fs",
+    "active": true,
+    "sortOrder": 2
+  },
+  {
+    "id": "otoshima-risa",
+    "name": { "ja": "音嶋 莉沙", "romaji": "Otoshima Risa" },
+    "color": "#55b7b2",
+    "profileUrl": "https://sp.equal-love.jp/feature/profile_fs",
+    "active": true,
+    "sortOrder": 3
+  },
+  {
+    "id": "saito-kiara",
+    "name": { "ja": "齋藤 樹愛羅", "romaji": "Saito Kiara" },
+    "color": "#f0cf5b",
+    "profileUrl": "https://sp.equal-love.jp/feature/profile_fs",
+    "active": true,
+    "sortOrder": 4
+  },
+  {
+    "id": "sasaki-maika",
+    "name": { "ja": "佐々木 舞香", "romaji": "Sasaki Maika" },
+    "color": "#986ad6",
+    "profileUrl": "https://sp.equal-love.jp/feature/profile_fs",
+    "active": true,
+    "sortOrder": 5
+  },
+  {
+    "id": "takamatsu-hitomi",
+    "name": { "ja": "髙松 瞳", "romaji": "Takamatsu Hitomi" },
+    "color": "#ef6f4f",
+    "profileUrl": "https://sp.equal-love.jp/feature/profile_fs",
+    "active": true,
+    "sortOrder": 6
+  },
+  {
+    "id": "takiwaki-shoko",
+    "name": { "ja": "瀧脇 笙古", "romaji": "Takiwaki Shoko" },
+    "color": "#91c95d",
+    "profileUrl": "https://sp.equal-love.jp/feature/profile_fs",
+    "active": true,
+    "sortOrder": 7
+  },
+  {
+    "id": "noguchi-iori",
+    "name": { "ja": "野口 衣織", "romaji": "Noguchi Iori" },
+    "color": "#5d8bd7",
+    "profileUrl": "https://sp.equal-love.jp/feature/profile_fs",
+    "active": true,
+    "sortOrder": 8
+  },
+  {
+    "id": "morohashi-sana",
+    "name": { "ja": "諸橋 沙夏", "romaji": "Morohashi Sana" },
+    "color": "#a86dd7",
+    "profileUrl": "https://sp.equal-love.jp/feature/profile_fs",
+    "active": true,
+    "sortOrder": 9
+  },
+  {
+    "id": "yamamoto-anna",
+    "name": { "ja": "山本 杏奈", "romaji": "Yamamoto Anna" },
+    "color": "#eb6f92",
+    "profileUrl": "https://sp.equal-love.jp/feature/profile_fs",
+    "active": true,
+    "sortOrder": 10
+  }
+]
