@@ -33,18 +33,12 @@ export const DEFAULT_PICK_SLOTS: PickSlot[] = Array.from(
   }),
 );
 
-export const THEME_STRIP_COLORS = [
-  "#ea6c81",
-  "#f19bc2",
-  "#6ce0b6",
-  "#986ad6",
-  "#0089ff",
-  "#66c0e2",
-  "#fdbf0f",
-  "#ff7c7c",
-  "#777777",
-  "#00d9f3",
-];
+export const EQUAL_LOVE_TEAM_COLOR = "#ea6c81";
+
+export const THEME_STRIP_COLORS = Array.from(
+  { length: 10 },
+  () => EQUAL_LOVE_TEAM_COLOR,
+);
 
 export const RELEASE_TYPE_LABELS: Record<string, string> = {
   all: "All",

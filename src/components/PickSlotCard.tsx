@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { EQUAL_LOVE_TEAM_COLOR } from "../config/equalLove";
 import type { Member, PickSlot, Song } from "../schema/music";
 
 interface PickSlotCardProps {
@@ -10,14 +11,6 @@ interface PickSlotCardProps {
   onClick: () => void;
   onClear: (event: React.MouseEvent) => void;
 }
-
-const categoryColors = [
-  "var(--equal-love-primary)",
-  "var(--equal-love-mint)",
-  "var(--equal-love-purple)",
-  "var(--equal-love-blue)",
-  "var(--equal-love-yellow)",
-];
 
 const getYear = (song: Song) => song.releaseDate?.slice(0, 4) ?? "TBD";
 
@@ -35,8 +28,7 @@ export default function PickSlotCard({
   onClear,
 }: PickSlotCardProps) {
   const centerNames = song ? getMemberNames(song, membersById) : "";
-  const color =
-    categoryColors[(Math.max(slot.sortOrder, 1) - 1) % categoryColors.length];
+  const color = EQUAL_LOVE_TEAM_COLOR;
 
   return (
     <div
@@ -49,7 +41,7 @@ export default function PickSlotCard({
           onClick();
         }
       }}
-      className="group relative grid min-h-[292px] cursor-pointer grid-rows-[auto_1fr] border border-black bg-white transition-transform duration-300 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-[var(--equal-love-primary)]"
+      className="group relative grid min-h-[292px] min-w-0 cursor-pointer grid-rows-[auto_1fr] overflow-hidden border border-black bg-white transition-transform duration-300 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-[var(--equal-love-primary)]"
       aria-label={
         song ? `Replace ${slot.label}: ${song.title.ja}` : `Pick song for ${slot.label}`
       }
@@ -67,36 +59,37 @@ export default function PickSlotCard({
       </div>
 
       {song ? (
-        <div className="grid grid-rows-[minmax(0,1fr)_auto]">
-          <div className="relative min-h-[170px] overflow-hidden border-b border-black bg-[var(--paper-soft)]">
+        <div className="grid min-w-0 max-w-full grid-rows-[minmax(0,1fr)_auto] overflow-hidden">
+          <div className="relative min-h-[170px] min-w-0 max-w-full overflow-hidden border-b border-black bg-[var(--paper-soft)]">
             <img
               src={song.coverUrl}
               alt={`${song.title.ja} cover`}
-              className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+              className="absolute inset-0 block h-full w-full max-w-none object-cover transition-transform duration-500 group-hover:scale-105"
               loading="lazy"
             />
-            <div className="absolute inset-x-0 bottom-0 bg-white/92 p-3">
-              <div className="line-clamp-2 text-base font-bold leading-tight text-black">
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/85 via-black/45 to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 p-3 text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.8)]">
+              <div className="line-clamp-2 text-base font-bold leading-tight">
                 {song.title.ja}
               </div>
-              <div className="mt-1 truncate text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
+              <div className="mt-1 truncate text-[10px] font-bold uppercase tracking-[0.16em] text-white/80">
                 {song.title.romaji}
               </div>
             </div>
           </div>
 
-          <div className="space-y-3 p-3">
+          <div className="min-w-0 space-y-3 overflow-hidden p-3">
             <div className="flex flex-wrap gap-1.5">
               <span className="official-chip" style={{ color }}>
                 {getYear(song)}
               </span>
               {song.trackType && (
-                <span className="official-chip text-[var(--equal-love-blue)]">
+                <span className="official-chip" style={{ color }}>
                   {song.trackType}
                 </span>
               )}
               {(song.tags ?? []).slice(0, 2).map((tag) => (
-                <span key={tag} className="official-chip text-slate-500">
+                <span key={tag} className="official-chip" style={{ color }}>
                   {tag}
                 </span>
               ))}

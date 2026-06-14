@@ -30,24 +30,9 @@ export default function PickBoard({
             {selectedCount}/{slots.length} songs selected
           </p>
         </div>
-        <div className="grid grid-cols-5 border border-black bg-white" aria-hidden="true">
-          {[
-            "var(--equal-love-primary)",
-            "var(--equal-love-mint)",
-            "var(--equal-love-purple)",
-            "var(--equal-love-blue)",
-            "var(--equal-love-yellow)",
-          ].map((color) => (
-            <span
-              key={color}
-              className="h-7 w-10 border-r border-black last:border-r-0"
-              style={{ backgroundColor: color }}
-            />
-          ))}
-        </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {slots
           .slice()
           .sort((a, b) => a.sortOrder - b.sortOrder)

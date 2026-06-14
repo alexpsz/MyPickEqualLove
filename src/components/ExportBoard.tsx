@@ -1,5 +1,10 @@
 import React from "react";
-import { APP_BRAND, EXPORT_CONFIG, THEME_STRIP_COLORS } from "../config/equalLove";
+import {
+  APP_BRAND,
+  EQUAL_LOVE_TEAM_COLOR,
+  EXPORT_CONFIG,
+} from "../config/equalLove";
+import { MEMBERS } from "../data/songs";
 import type { PickSlot, Picks } from "../schema/music";
 import { SITE_DOMAIN } from "../utils/constants";
 
@@ -9,6 +14,17 @@ interface ExportBoardProps {
   showTitles?: boolean;
   transparentBg?: boolean;
 }
+
+const EXPORT_FONT_FAMILY = '"Comfortaa", "Work Sans", "Noto Sans JP", sans-serif';
+
+const MEMBER_COLOR_STRIP = MEMBERS.slice()
+  .sort((a, b) => a.sortOrder - b.sortOrder)
+  .slice(0, 10)
+  .map((member) => ({
+    id: member.id,
+    label: member.name.ja,
+    color: member.color ?? EQUAL_LOVE_TEAM_COLOR,
+  }));
 
 export default function ExportBoard({
   slots,
@@ -32,6 +48,7 @@ export default function ExportBoard({
         flexDirection: "column",
         gap: "20px",
         border: "2px solid #000",
+        fontFamily: EXPORT_FONT_FAMILY,
       }}
     >
       <div
@@ -45,65 +62,63 @@ export default function ExportBoard({
       />
 
       <header
+        data-export-header="hasunosora-style"
         style={{
           position: "relative",
           zIndex: 1,
-          display: "flex",
-          alignItems: "stretch",
-          justifyContent: "space-between",
-          gap: "20px",
-          borderBottom: "2px solid #000",
-          paddingBottom: "20px",
+          border: "3px solid #d8dadd",
+          borderRadius: "56px 56px 0 0",
+          background: "#ffffff",
+          padding: "30px 34px 24px",
+          textAlign: "center",
+          boxShadow: "0 14px 28px rgba(10, 21, 32, 0.1)",
         }}
       >
-        <div style={{ display: "flex", alignItems: "flex-end", gap: "18px" }}>
-          <div
-            style={{
-              fontSize: "54px",
-              lineHeight: 0.95,
-              fontWeight: 300,
-              letterSpacing: "0",
-              color: "#000",
-              textTransform: "uppercase",
-            }}
-          >
-            MY PICK
-            <span
-              style={{
-                display: "block",
-                color: "#00d9f3",
-                fontWeight: 700,
-              }}
-            >
-              =LOVE
-            </span>
-          </div>
-          <div
-            style={{
-              border: "2px solid #000",
-              background: "#ea6c81",
-              color: "#fff",
-              padding: "8px 12px",
-              fontSize: "14px",
-              fontWeight: 800,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-              marginBottom: "8px",
-            }}
-          >
-            Favorite Songs
-          </div>
+        <div
+          style={{
+            color: "#07182a",
+            fontFamily: EXPORT_FONT_FAMILY,
+            fontSize: "40px",
+            fontWeight: 700,
+            letterSpacing: "0.18em",
+            lineHeight: 1,
+            textIndent: "0.18em",
+            textTransform: "uppercase",
+          }}
+        >
+          {APP_BRAND.displayName}
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(10, 1fr)", border: "2px solid #000" }}>
-          {THEME_STRIP_COLORS.map((color, index) => (
+        <div
+          style={{
+            marginTop: "12px",
+            color: "#6f8199",
+            fontSize: "14px",
+            fontWeight: 900,
+            letterSpacing: "0.2em",
+            textIndent: "0.2em",
+          }}
+        >
+          ＝LOVE お気に入り楽曲選
+        </div>
+        <div
+          data-member-color-strip="true"
+          style={{
+            marginTop: "14px",
+            display: "flex",
+            justifyContent: "center",
+            gap: "8px",
+          }}
+        >
+          {MEMBER_COLOR_STRIP.map((member) => (
             <span
-              key={`${color}-${index}`}
+              key={member.id}
+              title={member.label}
+              data-member-color={member.color}
               style={{
-                width: "52px",
-                height: "24px",
-                backgroundColor: color,
-                borderRight:
-                  index === THEME_STRIP_COLORS.length - 1 ? "none" : "2px solid #000",
+                width: "22px",
+                height: "8px",
+                borderRadius: "999px",
+                backgroundColor: member.color,
               }}
             />
           ))}
@@ -143,7 +158,7 @@ export default function ExportBoard({
                   zIndex: 4,
                   minWidth: "58px",
                   height: "34px",
-                  background: THEME_STRIP_COLORS[(slot.sortOrder - 1) % THEME_STRIP_COLORS.length],
+                  background: EQUAL_LOVE_TEAM_COLOR,
                   color: "#fff",
                   display: "flex",
                   alignItems: "center",
@@ -184,39 +199,21 @@ export default function ExportBoard({
                     }}
                   >
                     {showTitles && (
-                      <>
-                        <div
-                          style={{
-                            fontSize: "22px",
-                            lineHeight: 1.15,
-                            fontWeight: 900,
-                            color: "#000",
-                            wordBreak: "break-word",
-                          }}
-                        >
-                          {song.title.ja}
-                        </div>
-                        <div
-                          style={{
-                            marginTop: "6px",
-                            fontSize: "11px",
-                            lineHeight: 1.3,
-                            fontWeight: 800,
-                            letterSpacing: "0.08em",
-                            color: "#777",
-                            textTransform: "uppercase",
-                            whiteSpace: "nowrap",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                          }}
-                        >
-                          {song.title.romaji}
-                        </div>
-                      </>
+                      <div
+                        style={{
+                          fontSize: "24px",
+                          lineHeight: 1.18,
+                          fontWeight: 900,
+                          color: "#000",
+                          wordBreak: "break-word",
+                        }}
+                      >
+                        {song.title.ja}
+                      </div>
                     )}
                     <div
                       style={{
-                        marginTop: showTitles ? "12px" : 0,
+                        marginTop: showTitles ? "14px" : 0,
                         display: "flex",
                         flexWrap: "wrap",
                         gap: "8px",
@@ -275,9 +272,9 @@ export default function ExportBoard({
 }
 
 const exportTagStyle: React.CSSProperties = {
-  border: "1px solid #ea6c81",
+  border: `1px solid ${EQUAL_LOVE_TEAM_COLOR}`,
   background: "#fff",
-  color: "#ea6c81",
+  color: EQUAL_LOVE_TEAM_COLOR,
   padding: "4px 8px",
   fontSize: "10px",
   fontWeight: 900,
