@@ -1,10 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import {
-  RELEASE_TYPE_LABELS,
-  TRACK_TYPE_LABELS,
-} from "../config/equalLove";
+import { RELEASE_TYPE_LABELS, TRACK_TYPE_LABELS } from "../config/equalLove";
 import type {
   Member,
   PickSlot,
@@ -40,7 +37,11 @@ const getMemberNames = (song: Song, membersById: Record<string, Member>) =>
   [...(song.memberIds ?? []), ...(song.centerMemberIds ?? [])]
     .map((memberId) => membersById[memberId])
     .filter(Boolean)
-    .flatMap((member) => [member.name.ja, member.name.romaji, member.name.en ?? ""]);
+    .flatMap((member) => [
+      member.name.ja,
+      member.name.romaji,
+      member.name.en ?? "",
+    ]);
 
 export default function SearchModal({
   activeSlot,
@@ -58,8 +59,9 @@ export default function SearchModal({
     useState<ReleaseFilter>("all");
   const [trackTypeFilter, setTrackTypeFilter] = useState<TrackFilter>("all");
   const [yearFilter, setYearFilter] = useState("all");
-  const [memberFilter, setMemberFilter] = useState("all");
+  const [memberFilters, setMemberFilters] = useState<string[]>([]);
   const [tagFilter, setTagFilter] = useState("all");
+  const [isSearchOpen, setIsSearchOpen] = useState(true);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const membersById = useMemo(
@@ -76,9 +78,10 @@ export default function SearchModal({
   }, [onClose]);
 
   useEffect(() => {
+    if (!isSearchOpen) return;
     const timer = window.setTimeout(() => searchInputRef.current?.focus(), 0);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [isSearchOpen]);
 
   const filteredSongs = useMemo(() => {
     const q = normalizeStr(searchQuery);
@@ -100,9 +103,12 @@ export default function SearchModal({
       }
 
       if (
-        memberFilter !== "all" &&
-        !song.memberIds?.includes(memberFilter) &&
-        !song.centerMemberIds?.includes(memberFilter)
+        memberFilters.length > 0 &&
+        !memberFilters.some(
+          (memberId) =>
+            song.memberIds?.includes(memberId) ||
+            song.centerMemberIds?.includes(memberId),
+        )
       ) {
         return false;
       }
@@ -139,7 +145,7 @@ export default function SearchModal({
       return searchableParts.some((part) => normalizeStr(part).includes(q));
     });
   }, [
-    memberFilter,
+    memberFilters,
     membersById,
     releaseTypeFilter,
     searchQuery,
@@ -153,9 +159,28 @@ export default function SearchModal({
     setReleaseTypeFilter("all");
     setTrackTypeFilter("all");
     setYearFilter("all");
-    setMemberFilter("all");
+    setMemberFilters([]);
     setTagFilter("all");
   };
+
+  const toggleMemberFilter = (memberId: string) => {
+    setMemberFilters((currentMemberFilters) =>
+      currentMemberFilters.includes(memberId)
+        ? currentMemberFilters.filter(
+            (currentMemberId) => currentMemberId !== memberId,
+          )
+        : [...currentMemberFilters, memberId],
+    );
+  };
+
+  const activeCriteriaCount = [
+    searchQuery.trim(),
+    releaseTypeFilter !== "all",
+    trackTypeFilter !== "all",
+    yearFilter !== "all",
+    memberFilters.length > 0,
+    tagFilter !== "all",
+  ].filter(Boolean).length;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
@@ -170,7 +195,9 @@ export default function SearchModal({
         <div className="flex items-start justify-between gap-4 border-b border-black bg-white p-5">
           <div>
             <h3 className="text-lg font-bold uppercase tracking-[0.22em] text-black">
-              {activeSlot ? `Select Song for ${activeSlot.label}` : "Search All Songs"}
+              {activeSlot
+                ? `Select Song for ${activeSlot.label}`
+                : "Search All Songs"}
             </h3>
             <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--equal-love-primary)]">
               Top Picks board · {filteredSongs.length} matching songs
@@ -182,120 +209,178 @@ export default function SearchModal({
             className="flex h-8 w-8 items-center justify-center border border-black bg-white text-black transition-colors hover:bg-black hover:text-white"
             aria-label="Close search modal"
           >
-            <svg className="h-4 w-4 fill-current" viewBox="0 0 20 20" aria-hidden="true">
+            <svg
+              className="h-4 w-4 fill-current"
+              viewBox="0 0 20 20"
+              aria-hidden="true"
+            >
               <path d="M10 8.586L2.929 1.515 1.515 2.929 8.586 10l-7.071 7.071 1.414 1.414L10 11.414l7.071 7.071 1.414-1.414L11.414 10l7.071-7.071-1.414-1.414L10 8.586z" />
             </svg>
           </button>
         </div>
 
         <div className="official-stripe border-b border-black p-4">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search by title, romaji, release, member, credits, or tags..."
-              ref={searchInputRef}
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && filteredSongs[0]) {
-                  onSelect(filteredSongs[0]);
-                }
-              }}
-              className="w-full border border-black bg-white py-3 pl-11 pr-4 text-sm text-black transition-all duration-300 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[var(--equal-love-primary)]"
-            />
+          <button
+            type="button"
+            onClick={() =>
+              setIsSearchOpen((currentIsSearchOpen) => !currentIsSearchOpen)
+            }
+            className="flex w-full items-center justify-between gap-3 border border-black bg-white px-4 py-3 text-left text-black transition-colors hover:bg-black hover:text-white"
+            aria-controls="song-search-panel"
+            aria-expanded={isSearchOpen}
+          >
+            <span className="flex min-w-0 items-center gap-3">
+              <svg
+                className="h-4 w-4 flex-shrink-0 stroke-current"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth="2"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+              <span className="truncate text-xs font-black uppercase tracking-[0.14em]">
+                Search & Filters
+                {activeCriteriaCount > 0
+                  ? ` · ${activeCriteriaCount} active`
+                  : ""}
+              </span>
+            </span>
             <svg
-              className="absolute left-4 top-3.5 h-4 w-4 text-slate-400"
+              className={`h-4 w-4 flex-shrink-0 fill-none stroke-current transition-transform ${
+                isSearchOpen ? "rotate-180" : ""
+              }`}
               fill="none"
               viewBox="0 0 24 24"
-              stroke="currentColor"
               strokeWidth="2"
               aria-hidden="true"
             >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                d="M19 9l-7 7-7-7"
               />
             </svg>
-          </div>
+          </button>
 
-          <div className="mt-4 flex flex-col gap-3">
-            <FilterRow label="Release">
-              {(["all", ...releaseTypes] as ReleaseFilter[]).map((type) => (
-                <FilterChip
-                  key={type}
-                  active={releaseTypeFilter === type}
-                  onClick={() => setReleaseTypeFilter(type)}
+          {isSearchOpen ? (
+            <div id="song-search-panel" className="mt-4">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search by title, romaji, release, member, credits, or tags..."
+                  ref={searchInputRef}
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && filteredSongs[0]) {
+                      onSelect(filteredSongs[0]);
+                    }
+                  }}
+                  className="w-full border border-black bg-white py-3 pl-11 pr-4 text-sm text-black transition-all duration-300 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[var(--equal-love-primary)]"
+                />
+                <svg
+                  className="absolute left-4 top-3.5 h-4 w-4 text-slate-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  aria-hidden="true"
                 >
-                  {RELEASE_TYPE_LABELS[type] ?? type}
-                </FilterChip>
-              ))}
-            </FilterRow>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+              </div>
 
-            <FilterRow label="Track">
-              {(["all", ...trackTypes] as TrackFilter[]).map((type) => (
-                <FilterChip
-                  key={type}
-                  active={trackTypeFilter === type}
-                  onClick={() => setTrackTypeFilter(type)}
-                >
-                  {TRACK_TYPE_LABELS[type] ?? type}
-                </FilterChip>
-              ))}
-            </FilterRow>
+              <div className="mt-4 flex flex-col gap-3">
+                <FilterRow label="Release">
+                  {(["all", ...releaseTypes] as ReleaseFilter[]).map((type) => (
+                    <FilterChip
+                      key={type}
+                      active={releaseTypeFilter === type}
+                      onClick={() => setReleaseTypeFilter(type)}
+                    >
+                      {RELEASE_TYPE_LABELS[type] ?? type}
+                    </FilterChip>
+                  ))}
+                </FilterRow>
 
-            <FilterRow label="Year">
-              {["all", ...years].map((year) => (
-                <FilterChip
-                  key={year}
-                  active={yearFilter === year}
-                  onClick={() => setYearFilter(year)}
-                >
-                  {year === "all" ? "All" : year}
-                </FilterChip>
-              ))}
-            </FilterRow>
+                <FilterRow label="Track">
+                  {(["all", ...trackTypes] as TrackFilter[]).map((type) => (
+                    <FilterChip
+                      key={type}
+                      active={trackTypeFilter === type}
+                      onClick={() => setTrackTypeFilter(type)}
+                    >
+                      {TRACK_TYPE_LABELS[type] ?? type}
+                    </FilterChip>
+                  ))}
+                </FilterRow>
 
-            <FilterRow label="Member">
-              <FilterChip
-                active={memberFilter === "all"}
-                onClick={() => setMemberFilter("all")}
-              >
-                All
-              </FilterChip>
-              {members.map((member) => (
-                <FilterChip
-                  key={member.id}
-                  active={memberFilter === member.id}
-                  onClick={() => setMemberFilter(member.id)}
-                >
-                  {member.name.ja.replace(/\s+/g, "")}
-                </FilterChip>
-              ))}
-            </FilterRow>
+                <FilterRow label="Year">
+                  {["all", ...years].map((year) => (
+                    <FilterChip
+                      key={year}
+                      active={yearFilter === year}
+                      onClick={() => setYearFilter(year)}
+                    >
+                      {year === "all" ? "All" : year}
+                    </FilterChip>
+                  ))}
+                </FilterRow>
 
-            <FilterRow label="Tag">
-              <FilterChip active={tagFilter === "all"} onClick={() => setTagFilter("all")}>
-                All
-              </FilterChip>
-              {tags.map((tag) => (
-                <FilterChip
-                  key={tag}
-                  active={tagFilter === tag}
-                  onClick={() => setTagFilter(tag)}
-                >
-                  {tag}
-                </FilterChip>
-              ))}
-              <button
-                type="button"
-                onClick={resetFilters}
-                className="border border-black bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-black transition-colors hover:bg-black hover:text-white"
-              >
-                Reset
-              </button>
-            </FilterRow>
-          </div>
+                <FilterRow label="Member">
+                  <FilterChip
+                    active={memberFilters.length === 0}
+                    onClick={() => setMemberFilters([])}
+                  >
+                    All
+                  </FilterChip>
+                  {members.map((member) => (
+                    <FilterChip
+                      key={member.id}
+                      active={memberFilters.includes(member.id)}
+                      onClick={() => toggleMemberFilter(member.id)}
+                    >
+                      {member.name.ja.replace(/\s+/g, "")}
+                    </FilterChip>
+                  ))}
+                </FilterRow>
+
+                <FilterRow label="Tag">
+                  <FilterChip
+                    active={tagFilter === "all"}
+                    onClick={() => setTagFilter("all")}
+                  >
+                    All
+                  </FilterChip>
+                  {tags.map((tag) => (
+                    <FilterChip
+                      key={tag}
+                      active={tagFilter === tag}
+                      onClick={() => setTagFilter(tag)}
+                    >
+                      {tag}
+                    </FilterChip>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={resetFilters}
+                    className="border border-black bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-black transition-colors hover:bg-black hover:text-white"
+                  >
+                    Reset
+                  </button>
+                </FilterRow>
+              </div>
+            </div>
+          ) : null}
         </div>
 
         <div className="no-scrollbar flex-1 space-y-3 overflow-y-auto bg-white p-4">
@@ -325,7 +410,8 @@ export default function SearchModal({
                     </span>
                   </div>
                   <div className="mt-0.5 truncate text-[10px] font-medium text-slate-500">
-                    {song.title.romaji} · {song.releaseTitle?.ja ?? "Release TBD"}
+                    {song.title.romaji} ·{" "}
+                    {song.releaseTitle?.ja ?? "Release TBD"}
                   </div>
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {song.trackType && (
@@ -334,10 +420,7 @@ export default function SearchModal({
                       </span>
                     )}
                     {(song.tags ?? []).slice(0, 4).map((tag) => (
-                      <span
-                        key={tag}
-                        className="official-chip text-slate-500"
-                      >
+                      <span key={tag} className="official-chip text-slate-500">
                         {tag}
                       </span>
                     ))}
@@ -407,6 +490,7 @@ function FilterChip({
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={active}
       className={`whitespace-nowrap border px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-all ${
         active
           ? "border-[var(--equal-love-primary)] bg-[var(--equal-love-primary)] text-white"

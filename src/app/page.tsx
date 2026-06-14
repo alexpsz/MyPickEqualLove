@@ -184,6 +184,7 @@ export default function Home() {
       );
 
       if (exportElement) {
+        await document.fonts.ready;
         await new Promise((resolve) => window.setTimeout(resolve, 150));
         const canvas = await html2canvas(exportElement, {
           useCORS: true,

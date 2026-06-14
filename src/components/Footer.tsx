@@ -12,6 +12,18 @@ export default function Footer() {
           Song metadata is synced from public discography and credit sources;
           local covers are used for static image export.
         </p>
+        <p className="mt-1">
+          Inspired by{" "}
+          <a
+            href="https://mypick.rurino.dev/"
+            target="_blank"
+            rel="noreferrer"
+            className="font-medium text-[var(--equal-love-logo-blue)] underline-offset-2 hover:underline"
+          >
+            mypickhasunosora
+          </a>
+          .
+        </p>
       </div>
     </footer>
   );

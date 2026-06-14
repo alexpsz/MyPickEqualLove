@@ -16,6 +16,8 @@ interface ExportBoardProps {
 }
 
 const EXPORT_FONT_FAMILY = '"Comfortaa", "Work Sans", "Noto Sans JP", sans-serif';
+const EXPORT_TITLE_FONT_FAMILY =
+  '"Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif';
 
 const MEMBER_COLOR_STRIP = MEMBERS.slice()
   .sort((a, b) => a.sortOrder - b.sortOrder)
@@ -156,20 +158,20 @@ export default function ExportBoard({
                   left: "0",
                   top: "0",
                   zIndex: 4,
-                  minWidth: "58px",
+                  width: "58px",
                   height: "34px",
                   background: EQUAL_LOVE_TEAM_COLOR,
                   color: "#fff",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+                  display: "grid",
+                  placeItems: "center",
                   fontWeight: 900,
                   fontSize: "16px",
+                  lineHeight: 1,
                   borderRight: "2px solid #000",
                   borderBottom: "2px solid #000",
                 }}
               >
-                {slot.label}
+                <span style={exportRankTextStyle}>{slot.label}</span>
               </div>
 
               {song ? (
@@ -204,6 +206,7 @@ export default function ExportBoard({
                           fontSize: "24px",
                           lineHeight: 1.18,
                           fontWeight: 900,
+                          fontFamily: EXPORT_TITLE_FONT_FAMILY,
                           color: "#000",
                           wordBreak: "break-word",
                         }}
@@ -220,9 +223,15 @@ export default function ExportBoard({
                       }}
                     >
                       <span style={exportTagStyle}>
-                        {song.releaseDate?.slice(0, 4) ?? "TBD"}
+                        <span style={exportTagTextStyle}>
+                          {song.releaseDate?.slice(0, 4) ?? "TBD"}
+                        </span>
                       </span>
-                      {song.trackType && <span style={exportTagStyle}>{song.trackType}</span>}
+                      {song.trackType && (
+                        <span style={exportTagStyle}>
+                          <span style={exportTagTextStyle}>{song.trackType}</span>
+                        </span>
+                      )}
                     </div>
                   </div>
                 </>
@@ -271,13 +280,32 @@ export default function ExportBoard({
   );
 }
 
+const exportRankTextStyle: React.CSSProperties = {
+  display: "block",
+  lineHeight: 1,
+  transform: "translateY(-8px)",
+};
+
 const exportTagStyle: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minWidth: "44px",
+  height: "24px",
+  boxSizing: "border-box",
   border: `1px solid ${EQUAL_LOVE_TEAM_COLOR}`,
   background: "#fff",
   color: EQUAL_LOVE_TEAM_COLOR,
-  padding: "4px 8px",
+  padding: "0 8px",
   fontSize: "10px",
   fontWeight: 900,
   letterSpacing: "0.12em",
+  lineHeight: 1,
   textTransform: "uppercase",
+};
+
+const exportTagTextStyle: React.CSSProperties = {
+  display: "block",
+  lineHeight: 1,
+  transform: "translateY(-6px)",
 };
