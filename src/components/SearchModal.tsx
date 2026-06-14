@@ -2,12 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { RELEASE_TYPE_LABELS, TRACK_TYPE_LABELS } from "../config/equalLove";
-import type {
-  Member,
-  ReleaseType,
-  Song,
-  TrackType,
-} from "../schema/music";
+import type { Member, ReleaseType, Song, TrackType } from "../schema/music";
 
 type ReleaseFilter = "all" | ReleaseType;
 type TrackFilter = "all" | TrackType;
@@ -18,10 +13,11 @@ interface SearchModalProps {
   releaseTypes: ReleaseType[];
   trackTypes: TrackType[];
   years: string[];
-  tags: string[];
   onClose: () => void;
   onSelect: (song: Song) => void;
 }
+
+const PRIMARY_TRACK_TYPES = ["title", "coupling", "album"] as const;
 
 const normalizeStr = (value: string | undefined): string => {
   if (!value) return "";
@@ -41,13 +37,33 @@ const getMemberNames = (song: Song, membersById: Record<string, Member>) =>
       member.name.en ?? "",
     ]);
 
+const formatTypeValue = (value: string | undefined) =>
+  value?.replace(/_/g, " ").toUpperCase();
+
+const formatSongMeta = (song: Song) =>
+  [
+    song.releaseDate?.slice(0, 4),
+    formatTypeValue(song.releaseType),
+    formatTypeValue(song.trackType),
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+const formatSongCredits = (song: Song) =>
+  [
+    song.credits?.lyricist ? `Lyrics: ${song.credits.lyricist.ja}` : "",
+    song.credits?.composer ? `Music: ${song.credits.composer.ja}` : "",
+    song.credits?.arranger ? `Arrange: ${song.credits.arranger.ja}` : "",
+  ]
+    .filter(Boolean)
+    .join(" / ");
+
 export default function SearchModal({
   songs,
   members,
   releaseTypes,
   trackTypes,
   years,
-  tags,
   onClose,
   onSelect,
 }: SearchModalProps) {
@@ -57,13 +73,18 @@ export default function SearchModal({
   const [trackTypeFilter, setTrackTypeFilter] = useState<TrackFilter>("all");
   const [yearFilter, setYearFilter] = useState("all");
   const [memberFilters, setMemberFilters] = useState<string[]>([]);
-  const [tagFilter, setTagFilter] = useState("all");
-  const [isSearchOpen, setIsSearchOpen] = useState(true);
+  const [isMoreFiltersOpen, setIsMoreFiltersOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const membersById = useMemo(
     () => Object.fromEntries(members.map((member) => [member.id, member])),
     [members],
+  );
+
+  const quickTrackTypes = useMemo(
+    () =>
+      PRIMARY_TRACK_TYPES.filter((trackType) => trackTypes.includes(trackType)),
+    [trackTypes],
   );
 
   useEffect(() => {
@@ -75,10 +96,9 @@ export default function SearchModal({
   }, [onClose]);
 
   useEffect(() => {
-    if (!isSearchOpen) return;
     const timer = window.setTimeout(() => searchInputRef.current?.focus(), 0);
     return () => window.clearTimeout(timer);
-  }, [isSearchOpen]);
+  }, []);
 
   const filteredSongs = useMemo(() => {
     const q = normalizeStr(searchQuery);
@@ -110,10 +130,6 @@ export default function SearchModal({
         return false;
       }
 
-      if (tagFilter !== "all" && !song.tags?.includes(tagFilter)) {
-        return false;
-      }
-
       if (!q) return true;
 
       const searchableParts = [
@@ -123,19 +139,12 @@ export default function SearchModal({
         song.artist.ja,
         song.artist.romaji,
         song.artist.en,
-        song.releaseTitle?.ja,
-        song.releaseTitle?.romaji,
-        song.releaseTitle?.en,
-        song.releaseDate,
-        song.releaseType,
-        song.trackType,
         song.credits?.lyricist?.ja,
         song.credits?.lyricist?.romaji,
         song.credits?.composer?.ja,
         song.credits?.composer?.romaji,
         song.credits?.arranger?.ja,
         song.credits?.arranger?.romaji,
-        ...(song.tags ?? []),
         ...getMemberNames(song, membersById),
       ];
 
@@ -147,7 +156,6 @@ export default function SearchModal({
     releaseTypeFilter,
     searchQuery,
     songs,
-    tagFilter,
     trackTypeFilter,
     yearFilter,
   ]);
@@ -157,7 +165,25 @@ export default function SearchModal({
     setTrackTypeFilter("all");
     setYearFilter("all");
     setMemberFilters([]);
-    setTagFilter("all");
+  };
+
+  const selectQuickFilter = (filter: TrackFilter | "digital") => {
+    if (filter === "all") {
+      setReleaseTypeFilter("all");
+      setTrackTypeFilter("all");
+      return;
+    }
+
+    if (filter === "digital") {
+      setReleaseTypeFilter("digital");
+      setTrackTypeFilter("all");
+      return;
+    }
+
+    setTrackTypeFilter(filter);
+    if (releaseTypeFilter === "digital") {
+      setReleaseTypeFilter("all");
+    }
   };
 
   const toggleMemberFilter = (memberId: string) => {
@@ -170,13 +196,11 @@ export default function SearchModal({
     );
   };
 
-  const activeCriteriaCount = [
-    searchQuery.trim(),
+  const activeFilterCount = [
     releaseTypeFilter !== "all",
     trackTypeFilter !== "all",
     yearFilter !== "all",
     memberFilters.length > 0,
-    tagFilter !== "all",
   ].filter(Boolean).length;
 
   return (
@@ -215,59 +239,12 @@ export default function SearchModal({
         </div>
 
         <div className="official-stripe border-b border-black p-4">
-          <button
-            type="button"
-            onClick={() =>
-              setIsSearchOpen((currentIsSearchOpen) => !currentIsSearchOpen)
-            }
-            className="flex w-full items-center justify-between gap-3 border border-black bg-white px-4 py-3 text-left text-black transition-colors hover:bg-black hover:text-white"
-            aria-controls="song-search-panel"
-            aria-expanded={isSearchOpen}
-          >
-            <span className="flex min-w-0 items-center gap-3">
-              <svg
-                className="h-4 w-4 flex-shrink-0 stroke-current"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth="2"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
-              <span className="truncate text-xs font-black uppercase tracking-[0.14em]">
-                Search & Filters
-                {activeCriteriaCount > 0
-                  ? ` · ${activeCriteriaCount} active`
-                  : ""}
-              </span>
-            </span>
-            <svg
-              className={`h-4 w-4 flex-shrink-0 fill-none stroke-current transition-transform ${
-                isSearchOpen ? "rotate-180" : ""
-              }`}
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth="2"
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
-          </button>
-
-          {isSearchOpen ? (
-            <div id="song-search-panel" className="mt-4">
-              <div className="relative">
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <div className="relative min-w-0 flex-1">
                 <input
                   type="text"
-                  placeholder="Search by title, romaji, release, member, credits, or tags..."
+                  placeholder="Search by title, romaji, member, credits..."
                   ref={searchInputRef}
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.target.value)}
@@ -293,32 +270,70 @@ export default function SearchModal({
                   />
                 </svg>
               </div>
+              <button
+                type="button"
+                onClick={() =>
+                  setIsMoreFiltersOpen(
+                    (currentIsMoreFiltersOpen) => !currentIsMoreFiltersOpen,
+                  )
+                }
+                className="flex shrink-0 items-center justify-center gap-2 border border-slate-300 bg-white px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-600 transition-colors hover:border-black hover:text-black"
+                aria-controls="song-more-filters"
+                aria-expanded={isMoreFiltersOpen}
+              >
+                Filters
+                {activeFilterCount > 0 ? ` · ${activeFilterCount}` : ""}
+                <svg
+                  className={`h-3.5 w-3.5 fill-none stroke-current transition-transform ${
+                    isMoreFiltersOpen ? "rotate-180" : ""
+                  }`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth="2"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </button>
+            </div>
 
-              <div className="mt-4 flex flex-col gap-3">
-                <FilterRow label="Release">
-                  {(["all", ...releaseTypes] as ReleaseFilter[]).map((type) => (
-                    <FilterChip
-                      key={type}
-                      active={releaseTypeFilter === type}
-                      onClick={() => setReleaseTypeFilter(type)}
-                    >
-                      {RELEASE_TYPE_LABELS[type] ?? type}
-                    </FilterChip>
-                  ))}
-                </FilterRow>
+            <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
+              <FilterChip
+                active={
+                  releaseTypeFilter === "all" && trackTypeFilter === "all"
+                }
+                onClick={() => selectQuickFilter("all")}
+              >
+                All
+              </FilterChip>
+              {quickTrackTypes.map((trackType) => (
+                <FilterChip
+                  key={trackType}
+                  active={trackTypeFilter === trackType}
+                  onClick={() => selectQuickFilter(trackType)}
+                >
+                  {TRACK_TYPE_LABELS[trackType] ?? trackType}
+                </FilterChip>
+              ))}
+              <FilterChip
+                active={
+                  releaseTypeFilter === "digital" && trackTypeFilter === "all"
+                }
+                onClick={() => selectQuickFilter("digital")}
+              >
+                Digital
+              </FilterChip>
+            </div>
 
-                <FilterRow label="Track">
-                  {(["all", ...trackTypes] as TrackFilter[]).map((type) => (
-                    <FilterChip
-                      key={type}
-                      active={trackTypeFilter === type}
-                      onClick={() => setTrackTypeFilter(type)}
-                    >
-                      {TRACK_TYPE_LABELS[type] ?? type}
-                    </FilterChip>
-                  ))}
-                </FilterRow>
-
+            {isMoreFiltersOpen ? (
+              <div
+                id="song-more-filters"
+                className="flex flex-col gap-3 border border-slate-200 bg-white p-3"
+              >
                 <FilterRow label="Year">
                   {["all", ...years].map((year) => (
                     <FilterChip
@@ -349,22 +364,19 @@ export default function SearchModal({
                   ))}
                 </FilterRow>
 
-                <FilterRow label="Tag">
-                  <FilterChip
-                    active={tagFilter === "all"}
-                    onClick={() => setTagFilter("all")}
-                  >
-                    All
-                  </FilterChip>
-                  {tags.map((tag) => (
+                <FilterRow label="Release Type">
+                  {(["all", ...releaseTypes] as ReleaseFilter[]).map((type) => (
                     <FilterChip
-                      key={tag}
-                      active={tagFilter === tag}
-                      onClick={() => setTagFilter(tag)}
+                      key={type}
+                      active={releaseTypeFilter === type}
+                      onClick={() => setReleaseTypeFilter(type)}
                     >
-                      {tag}
+                      {RELEASE_TYPE_LABELS[type] ?? type}
                     </FilterChip>
                   ))}
+                </FilterRow>
+
+                <div className="flex justify-end">
                   <button
                     type="button"
                     onClick={resetFilters}
@@ -372,10 +384,10 @@ export default function SearchModal({
                   >
                     Reset
                   </button>
-                </FilterRow>
+                </div>
               </div>
-            </div>
-          ) : null}
+            ) : null}
+          </div>
         </div>
 
         <div className="no-scrollbar flex-1 space-y-3 overflow-y-auto bg-white p-4">
@@ -405,36 +417,16 @@ export default function SearchModal({
                     </span>
                   </div>
                   <div className="mt-0.5 truncate text-[10px] font-medium text-slate-500">
-                    {song.title.romaji} ·{" "}
-                    {song.releaseTitle?.ja ?? "Release TBD"}
+                    {song.title.romaji}
                   </div>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {song.trackType && (
-                      <span className="official-chip text-[var(--equal-love-blue)]">
-                        {song.trackType}
-                      </span>
-                    )}
-                    {(song.tags ?? []).slice(0, 4).map((tag) => (
-                      <span key={tag} className="official-chip text-slate-500">
-                        {tag}
-                      </span>
-                    ))}
-                    {song.credits?.lyricist && (
-                      <span className="official-chip text-[var(--equal-love-yellow)]">
-                        Lyrics: {song.credits.lyricist.ja}
-                      </span>
-                    )}
-                    {song.credits?.composer && (
-                      <span className="official-chip text-[var(--equal-love-primary)]">
-                        Music: {song.credits.composer.ja}
-                      </span>
-                    )}
-                    {song.credits?.arranger && (
-                      <span className="official-chip text-[var(--equal-love-purple)]">
-                        Arrange: {song.credits.arranger.ja}
-                      </span>
-                    )}
+                  <div className="mt-1 text-[10px] font-bold uppercase tracking-wider text-slate-700">
+                    {formatSongMeta(song)}
                   </div>
+                  {formatSongCredits(song) ? (
+                    <div className="mt-2 line-clamp-2 text-[10px] font-medium leading-5 text-slate-500">
+                      {formatSongCredits(song)}
+                    </div>
+                  ) : null}
                 </div>
               </button>
             ))
@@ -462,7 +454,7 @@ function FilterRow({
 }) {
   return (
     <div className="flex gap-2">
-      <div className="w-16 flex-shrink-0 pt-1.5 text-[10px] font-black uppercase tracking-wider text-black">
+      <div className="w-24 flex-shrink-0 pt-1.5 text-[10px] font-black uppercase tracking-wider text-black">
         {label}
       </div>
       <div className="no-scrollbar flex flex-1 gap-2 overflow-x-auto pb-1">
@@ -486,7 +478,7 @@ function FilterChip({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`whitespace-nowrap border px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-all ${
+      className={`shrink-0 whitespace-nowrap border px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-all ${
         active
           ? "border-[var(--equal-love-primary)] bg-[var(--equal-love-primary)] text-white"
           : "border-slate-300 bg-white text-slate-500 hover:border-black hover:text-black"

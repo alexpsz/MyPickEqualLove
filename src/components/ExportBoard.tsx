@@ -6,7 +6,6 @@ import {
 } from "../config/equalLove";
 import { MEMBERS } from "../data/songs";
 import type { PickSlot, Picks } from "../schema/music";
-import { SITE_DOMAIN } from "../utils/constants";
 
 interface ExportBoardProps {
   slots: PickSlot[];
@@ -15,9 +14,11 @@ interface ExportBoardProps {
   transparentBg?: boolean;
 }
 
-const EXPORT_FONT_FAMILY = '"Comfortaa", "Work Sans", "Noto Sans JP", sans-serif';
+const EXPORT_FONT_FAMILY =
+  '"Comfortaa", "Work Sans", "Noto Sans JP", sans-serif';
 const EXPORT_TITLE_FONT_FAMILY =
   '"Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif';
+const EXPORT_SITE_LABEL = APP_BRAND.repoUrl.replace(/^https?:\/\//, "");
 
 const MEMBER_COLOR_STRIP = MEMBERS.slice()
   .sort((a, b) => a.sortOrder - b.sortOrder)
@@ -41,9 +42,10 @@ export default function ExportBoard({
       id="mypick-equal-love-export-canvas"
       className="relative overflow-hidden font-sans"
       style={{
-        backgroundColor: transparentBg ? "transparent" : EXPORT_CONFIG.background,
+        backgroundColor: transparentBg
+          ? "transparent"
+          : EXPORT_CONFIG.background,
         width: `${EXPORT_CONFIG.width}px`,
-        height: `${EXPORT_CONFIG.height}px`,
         boxSizing: "border-box",
         padding: "44px 54px 34px",
         display: "flex",
@@ -135,7 +137,7 @@ export default function ExportBoard({
           gridTemplateColumns: "repeat(2, 1fr)",
           gridTemplateRows: "repeat(5, 154px)",
           gap: "14px",
-          flex: 1,
+          flex: "0 0 auto",
         }}
       >
         {sortedSlots.map((slot) => {
@@ -173,8 +175,7 @@ export default function ExportBoard({
                       display: "flex",
                       flexDirection: "column",
                       justifyContent: "flex-end",
-                      background:
-                        "#fff",
+                      background: "#fff",
                       borderLeft: "2px solid #000",
                     }}
                   >
@@ -205,11 +206,6 @@ export default function ExportBoard({
                           {song.releaseDate?.slice(0, 4) ?? "TBD"}
                         </span>
                       </span>
-                      {song.trackType && (
-                        <span style={exportTagStyle}>
-                          <span style={exportTagTextStyle}>{song.trackType}</span>
-                        </span>
-                      )}
                     </div>
                   </div>
                 </>
@@ -252,7 +248,7 @@ export default function ExportBoard({
         }}
       >
         <span>{APP_BRAND.appName}</span>
-        <span>{SITE_DOMAIN}</span>
+        <span>{EXPORT_SITE_LABEL}</span>
       </footer>
     </div>
   );

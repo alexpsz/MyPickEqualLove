@@ -1,13 +1,12 @@
 "use client";
 
 import React from "react";
-import type { Member, PickSlot, PickSlotId, Picks } from "../schema/music";
+import type { PickSlot, PickSlotId, Picks } from "../schema/music";
 import PickSlotCard from "./PickSlotCard";
 
 interface PickBoardProps {
   slots: PickSlot[];
   picks: Picks;
-  membersById: Record<string, Member>;
   onSlotClick: (slotId: PickSlotId) => void;
   onClearSlot: (slotId: PickSlotId, event: React.MouseEvent) => void;
 }
@@ -15,7 +14,6 @@ interface PickBoardProps {
 export default function PickBoard({
   slots,
   picks,
-  membersById,
   onSlotClick,
   onClearSlot,
 }: PickBoardProps) {
@@ -40,7 +38,6 @@ export default function PickBoard({
             <PickSlotCard
               key={slot.id}
               song={picks[slot.id]}
-              membersById={membersById}
               onClick={() => onSlotClick(slot.id)}
               onClear={(event) => onClearSlot(slot.id, event)}
             />

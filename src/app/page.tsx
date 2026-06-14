@@ -4,12 +4,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DEFAULT_PICK_SLOTS, EXPORT_CONFIG, STORAGE_KEYS } from "../config/equalLove";
 import {
   MEMBERS,
-  MEMBERS_BY_ID,
   RELEASE_TYPES,
   RELEASE_YEARS,
   SONGS,
   SONGS_BY_ID,
-  TAGS,
   TRACK_TYPES,
 } from "../data/songs";
 import type { PickSlotId, Picks, Song, StoredPicks } from "../schema/music";
@@ -230,7 +228,6 @@ export default function Home() {
         <PickBoard
           slots={DEFAULT_PICK_SLOTS}
           picks={picks}
-          membersById={MEMBERS_BY_ID}
           onSlotClick={handleSlotClick}
           onClearSlot={handleClearSlot}
         />
@@ -245,7 +242,6 @@ export default function Home() {
           releaseTypes={RELEASE_TYPES}
           trackTypes={TRACK_TYPES}
           years={RELEASE_YEARS}
-          tags={TAGS}
           onClose={() => {
             setShowModal(false);
             setActiveSlotId(null);
