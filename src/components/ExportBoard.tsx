@@ -12,13 +12,14 @@ interface ExportBoardProps {
   picks: Picks;
   showTitles?: boolean;
   transparentBg?: boolean;
+  selectedBy?: string;
 }
 
 const EXPORT_FONT_FAMILY =
   '"Comfortaa", "Work Sans", "Noto Sans JP", sans-serif';
 const EXPORT_TITLE_FONT_FAMILY =
   '"Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif';
-const EXPORT_SITE_LABEL = APP_BRAND.repoUrl.replace(/^https?:\/\//, "");
+const EXPORT_SITE_LABEL = "MYPICK.KOZUEGINKO.COM";
 
 const MEMBER_COLOR_STRIP = MEMBERS.slice()
   .sort((a, b) => a.sortOrder - b.sortOrder)
@@ -34,8 +35,10 @@ export default function ExportBoard({
   picks,
   showTitles = true,
   transparentBg = false,
+  selectedBy = "",
 }: ExportBoardProps) {
   const sortedSlots = slots.slice().sort((a, b) => a.sortOrder - b.sortOrder);
+  const selectedByLabel = selectedBy.trim();
 
   return (
     <div
@@ -70,12 +73,9 @@ export default function ExportBoard({
         style={{
           position: "relative",
           zIndex: 1,
-          border: "3px solid #d8dadd",
-          borderRadius: "56px 56px 0 0",
           background: "#ffffff",
           padding: "30px 34px 24px",
           textAlign: "center",
-          boxShadow: "0 14px 28px rgba(10, 21, 32, 0.1)",
         }}
       >
         <div
@@ -92,9 +92,26 @@ export default function ExportBoard({
         >
           {APP_BRAND.displayName}
         </div>
+        {selectedByLabel && (
+          <div
+            data-export-selected-by="true"
+            style={{
+              margin: "14px auto 0",
+              maxWidth: "860px",
+              color: "#6f8199",
+              fontSize: "20px",
+              fontWeight: 900,
+              letterSpacing: "0.08em",
+              lineHeight: 1.25,
+              overflowWrap: "anywhere",
+            }}
+          >
+            Selected by {selectedByLabel}
+          </div>
+        )}
         <div
           style={{
-            marginTop: "12px",
+            marginTop: selectedByLabel ? "10px" : "12px",
             color: "#6f8199",
             fontSize: "14px",
             fontWeight: 900,

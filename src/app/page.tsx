@@ -23,6 +23,7 @@ import ReplacementModal from "../components/ReplacementModal";
 import SearchModal from "../components/SearchModal";
 
 const SLOT_IDS = new Set(DEFAULT_PICK_SLOTS.map((slot) => slot.id));
+const MAX_NICKNAME_LENGTH = 32;
 
 export default function Home() {
   const [storedPicks, setStoredPicks] = useState<StoredPicks>({});
@@ -34,6 +35,7 @@ export default function Home() {
   const [generating, setGenerating] = useState(false);
   const [showTitles, setShowTitles] = useState(true);
   const [transparentBg, setTransparentBg] = useState(false);
+  const [nicknameDraft, setNicknameDraft] = useState("");
   const [hydrated, setHydrated] = useState(false);
   const generatingRef = useRef(false);
 
@@ -44,6 +46,11 @@ export default function Home() {
 
     return Object.fromEntries(entries);
   }, [storedPicks]);
+
+  const exportNickname = useMemo(
+    () => normalizeNickname(nicknameDraft),
+    [nicknameDraft],
+  );
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -101,6 +108,10 @@ export default function Home() {
   const handleGlobalSearchClick = () => {
     setActiveSlotId(null);
     setShowModal(true);
+  };
+
+  const handleNicknameChange = (nickname: string) => {
+    setNicknameDraft(nickname.slice(0, MAX_NICKNAME_LENGTH));
   };
 
   const handleSelectSong = (song: Song) => {
@@ -219,6 +230,9 @@ export default function Home() {
         onClearAll={handleClearAllPicks}
         onGenerate={handleGenerateImage}
         onGlobalSearch={handleGlobalSearchClick}
+        nickname={nicknameDraft}
+        nicknameMaxLength={MAX_NICKNAME_LENGTH}
+        onNicknameChange={handleNicknameChange}
         generating={generating}
         hasPicks={Object.keys(picks).length > 0}
         totalSongs={SONGS_COUNT}
@@ -278,6 +292,7 @@ export default function Home() {
           picks={picks}
           showTitles={showTitles}
           transparentBg={transparentBg}
+          selectedBy={exportNickname}
         />
       </div>
     </div>
@@ -305,4 +320,8 @@ function parseStoredPicks(serialized: string): StoredPicks {
   }
 
   return nextPicks;
+}
+
+function normalizeNickname(nickname: string) {
+  return nickname.trim().replace(/\s+/g, " ").slice(0, MAX_NICKNAME_LENGTH);
 }
