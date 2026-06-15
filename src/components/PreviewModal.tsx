@@ -110,11 +110,7 @@ export default function PreviewModal({
           <button
             type="button"
             onClick={() => {
-              const shareText = `${APP_BRAND.shareText}\n${APP_BRAND.shareHashtags.join(" ")}`;
-              const xUrl = `https://x.com/intent/post?text=${encodeURIComponent(
-                shareText,
-              )}&url=${encodeURIComponent(SITE_URL)}`;
-              window.open(xUrl, "_blank", "noopener,noreferrer");
+              shareToX();
             }}
             className="official-button bg-black text-white hover:bg-[var(--equal-love-primary)]"
           >
@@ -127,6 +123,92 @@ export default function PreviewModal({
       </div>
     </div>
   );
+}
+
+function shareToX() {
+  const webIntentUrl = buildXWebIntentUrl();
+
+  if (isIOSDevice()) {
+    openIOSNativeXComposer(webIntentUrl);
+    return;
+  }
+
+  if (isAndroidDevice()) {
+    window.location.href = buildXAndroidIntentUrl(webIntentUrl);
+    return;
+  }
+
+  window.open(webIntentUrl, "_blank", "noopener,noreferrer");
+}
+
+function buildXWebIntentUrl() {
+  const shareText = buildXShareText();
+  return `https://x.com/intent/post?text=${encodeURIComponent(
+    shareText,
+  )}&url=${encodeURIComponent(SITE_URL)}`;
+}
+
+function buildXCustomSchemeComposerUrl() {
+  return `twitter://post?message=${encodeURIComponent(buildXShareMessage())}`;
+}
+
+function buildXAndroidIntentUrl(fallbackUrl: string) {
+  return `intent://post?message=${encodeURIComponent(
+    buildXShareMessage(),
+  )}#Intent;scheme=twitter;package=com.twitter.android;S.browser_fallback_url=${encodeURIComponent(
+    fallbackUrl,
+  )};end`;
+}
+
+function buildXShareText() {
+  return `${APP_BRAND.shareText}\n${APP_BRAND.shareHashtags.join(" ")}`;
+}
+
+function buildXShareMessage() {
+  return `${buildXShareText()}\n${SITE_URL}`;
+}
+
+function openIOSNativeXComposer(webIntentUrl: string) {
+  let appOpened = false;
+
+  const markAppOpened = () => {
+    appOpened = true;
+    cleanup();
+  };
+  const handleVisibilityChange = () => {
+    if (document.visibilityState === "hidden") {
+      markAppOpened();
+    }
+  };
+  const cleanup = () => {
+    window.removeEventListener("pagehide", markAppOpened);
+    document.removeEventListener("visibilitychange", handleVisibilityChange);
+  };
+
+  window.addEventListener("pagehide", markAppOpened, { once: true });
+  document.addEventListener("visibilitychange", handleVisibilityChange);
+
+  window.setTimeout(() => {
+    cleanup();
+    if (!appOpened && document.visibilityState !== "hidden") {
+      window.location.href = webIntentUrl;
+    }
+  }, 2_500);
+
+  window.location.href = buildXCustomSchemeComposerUrl();
+}
+
+function isIOSDevice() {
+  const userAgent = navigator.userAgent;
+  const platform = navigator.platform;
+  return (
+    /iP(hone|ad|od)/i.test(userAgent) ||
+    (platform === "MacIntel" && navigator.maxTouchPoints > 1)
+  );
+}
+
+function isAndroidDevice() {
+  return /Android/i.test(navigator.userAgent);
 }
 
 function ToggleOption({
