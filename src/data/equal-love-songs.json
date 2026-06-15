@@ -4190,5 +4190,266 @@
     },
     "officialUrl": "https://equal-love.jp/discography/detail/135/",
     "creditSourceUrl": "https://www.uta-net.com/song/390404/"
+  },
+  {
+    "id": "kimi-dake-no-hanamichi",
+    "title": {
+      "ja": "君だけの花道",
+      "romaji": "Kimi Dake No Hanamichi"
+    },
+    "artist": {
+      "ja": "齊藤なぎさ(=LOVE)",
+      "romaji": "Saito Nagisa (=LOVE)"
+    },
+    "releaseId": "2023-03-22-kimi-dake-no-hanamichi",
+    "releaseTitle": {
+      "ja": "君だけの花道",
+      "romaji": "Kimi Dake No Hanamichi"
+    },
+    "releaseType": "digital",
+    "releaseDate": "2023-03-22",
+    "trackNo": 1,
+    "trackType": "solo",
+    "coverUrl": "/covers/equal-love/kimi-dake-no-hanamichi.jpg",
+    "coverSourceUrl": "https://www.uta-net.com/libs/cacheimg.php?p=kashi&f=340000/334883.jpg",
+    "memberIds": ["saito-nagisa"],
+    "visibility": "special",
+    "sourceStatus": "digital",
+    "sourceNote": "齊藤なぎさ卒業ソング。Uta-Net and official =LOVE announcement confirm the digital release and credits.",
+    "tags": [
+      "2023",
+      "digital",
+      "graduated_member",
+      "graduation_solo",
+      "solo",
+      "special"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "Sashihara Rino"
+      },
+      "composer": {
+        "ja": "Yu-ki Kokubo・YUU for YOU",
+        "romaji": "Yu-ki Kokubo ・ YUU for YOU"
+      },
+      "arranger": {
+        "ja": "YUU for YOU",
+        "romaji": "YUU for YOU"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/news/detail/6519",
+    "creditSourceUrl": "https://www.uta-net.com/song/334883/"
+  },
+  {
+    "id": "okaeri-hanadayori",
+    "title": {
+      "ja": "おかえり、花便り",
+      "romaji": "Okaeri Hanadayori"
+    },
+    "artist": {
+      "ja": "山本杏奈(=LOVE)",
+      "romaji": "Yamamoto Anna (=LOVE)"
+    },
+    "releaseId": "2023-03-28-okaeri-hanadayori",
+    "releaseTitle": {
+      "ja": "おかえり、花便り",
+      "romaji": "Okaeri Hanadayori"
+    },
+    "releaseType": "digital",
+    "releaseDate": "2023-03-28",
+    "trackNo": 1,
+    "trackType": "solo",
+    "coverUrl": "/covers/equal-love/okaeri-hanadayori.jpg",
+    "coverSourceUrl": "https://www.uta-net.com/libs/cacheimg.php?p=kashi&f=340000/335416.jpg",
+    "memberIds": ["yamamoto-anna"],
+    "visibility": "special",
+    "sourceStatus": "digital",
+    "sourceNote": "山本杏奈 SHOWROOM まいにちアイドル2000日 and cumulative 300M point challenge commemorative solo song.",
+    "tags": [
+      "2023",
+      "active_member",
+      "digital",
+      "showroom_reward_solo",
+      "solo",
+      "special"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "Sashihara Rino"
+      },
+      "composer": {
+        "ja": "塚田耕平",
+        "romaji": "Tsukada Kohei"
+      },
+      "arranger": {
+        "ja": "塚田耕平",
+        "romaji": "Tsukada Kohei"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/news/detail/6520",
+    "creditSourceUrl": "https://www.youtube.com/watch?v=3qUaLsDj__M"
+  },
+  {
+    "id": "takaramono-wa-green",
+    "title": {
+      "ja": "宝物はグリーン",
+      "romaji": "Takaramono Wa Green"
+    },
+    "artist": {
+      "ja": "諸橋沙夏(=LOVE)",
+      "romaji": "Morohashi Sana (=LOVE)"
+    },
+    "releaseId": "2023-11-29-takaramono-wa-green",
+    "releaseTitle": {
+      "ja": "宝物はグリーン",
+      "romaji": "Takaramono Wa Green"
+    },
+    "releaseType": "digital",
+    "releaseDate": "2023-11-29",
+    "trackNo": 1,
+    "trackType": "solo",
+    "coverUrl": "/covers/equal-love/takaramono-wa-green.jpg",
+    "coverSourceUrl": "https://www.uta-net.com/libs/cacheimg.php?p=kashi&f=350000/346864.jpg",
+    "memberIds": ["morohashi-sana"],
+    "visibility": "special",
+    "sourceStatus": "digital",
+    "sourceNote": "諸橋沙夏 solo song first performed at her solo concert and released digitally.",
+    "tags": [
+      "2023",
+      "active_member",
+      "digital",
+      "digital_exclusive",
+      "solo",
+      "special"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "Sashihara Rino"
+      },
+      "composer": {
+        "ja": "廣中トキワ",
+        "romaji": "Hironaka Tokiwa"
+      },
+      "arranger": {
+        "ja": "若田部誠",
+        "romaji": "Wakatabe Makoto"
+      }
+    },
+    "officialUrl": "https://equal-love.jp/news/detail/7648",
+    "creditSourceUrl": "https://www.uta-net.com/song/346864/"
+  },
+  {
+    "id": "furajairu",
+    "title": {
+      "ja": "フラジャイル",
+      "romaji": "Furajairu"
+    },
+    "artist": {
+      "ja": "佐竹のん乃・野口衣織(=LOVE)",
+      "romaji": "Satake Nonno ・ Noguchi Iori (=LOVE)"
+    },
+    "releaseId": "2021-03-06-furajairu",
+    "releaseTitle": {
+      "ja": "=LOVE 佐竹のん乃卒業コンサート ～君のいる世界～",
+      "romaji": "=LOVE Satake Nonno Graduation Concert Kimi No Iru Sekai"
+    },
+    "releaseType": "other",
+    "releaseDate": "2021-03-06",
+    "trackNo": 1,
+    "trackType": "unit",
+    "coverUrl": "/covers/equal-love/furajairu.jpg",
+    "coverSourceUrl": "https://i.ytimg.com/vi/0FFpW-dzTdY/maxresdefault.jpg",
+    "memberIds": ["satake-nonno", "noguchi-iori"],
+    "visibility": "special",
+    "sourceStatus": "live_only",
+    "sourceNote": "佐竹のん乃卒業コンサートで披露された佐竹のん乃・野口衣織の未音源化ユニット曲。",
+    "tags": [
+      "2021",
+      "graduated_member",
+      "graduation_unit",
+      "live_exclusive",
+      "special",
+      "unit"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "Sashihara Rino"
+      },
+      "composer": {
+        "ja": "畑雄貴",
+        "romaji": "Hata Yuki"
+      },
+      "arranger": {
+        "ja": "YU-JIN",
+        "romaji": "YU-JIN"
+      }
+    },
+    "officialUrl": "https://www.youtube.com/watch?v=0FFpW-dzTdY",
+    "creditSourceUrl": "https://www.youtube.com/watch?v=0FFpW-dzTdY"
+  },
+  {
+    "id": "madamada-minor-mainacard",
+    "title": {
+      "ja": "まだまだマイナー？マイナカード",
+      "romaji": "Madamada Minor? Mainacard"
+    },
+    "artist": {
+      "ja": "＝LOVEとマイナちゃん",
+      "romaji": "=LOVE To Maina-chan"
+    },
+    "releaseId": "2026-03-02-madamada-minor-mainacard",
+    "releaseTitle": {
+      "ja": "まだまだマイナー？マイナカード",
+      "romaji": "Madamada Minor? Mainacard"
+    },
+    "releaseType": "other",
+    "releaseDate": "2026-03-02",
+    "trackNo": 1,
+    "trackType": "other",
+    "coverUrl": "/covers/equal-love/madamada-minor-mainacard.jpg",
+    "coverSourceUrl": "https://i.ytimg.com/vi/93iIH0_e1QM/maxresdefault.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "visibility": "special",
+    "sourceStatus": "cm_pv",
+    "sourceNote": "政府広報オンライン マイナカード利用促進キャンペーン PR song.",
+    "tags": [
+      "2026",
+      "all_members",
+      "commercial",
+      "other",
+      "pr_jingle",
+      "pr_song"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "服部隆幸",
+        "romaji": "Hattori Takayuki"
+      },
+      "composer": {
+        "ja": "菊池博人・小池竜暉",
+        "romaji": "Kikuchi Hirohito ・ Koike Ryuki"
+      },
+      "arranger": {
+        "ja": "菊池博人",
+        "romaji": "Kikuchi Hirohito"
+      }
+    },
+    "officialUrl": "https://www.gov-online.go.jp/tokusyu/mynumber/",
+    "creditSourceUrl": "https://www.gov-online.go.jp/tokusyu/mynumber/"
   }
 ]

@@ -8,8 +8,12 @@ export interface Member {
   id: string;
   name: LocalizedString;
   color?: string;
+  colorName?: string;
   profileUrl?: string;
   active: boolean;
+  graduated?: boolean;
+  status?: "active" | "graduated";
+  graduationDate?: string;
   sortOrder: number;
 }
 
@@ -41,6 +45,17 @@ export interface SongCredit {
   arranger?: LocalizedString;
 }
 
+export type SongVisibility = "default" | "special" | "archive";
+
+export type SongSourceStatus =
+  | "released"
+  | "digital"
+  | "limited_cd"
+  | "youtube_public"
+  | "cm_pv"
+  | "live_only"
+  | "unverified";
+
 export interface Song {
   id: string;
   title: LocalizedString;
@@ -52,8 +67,12 @@ export interface Song {
   trackNo?: number;
   trackType?: TrackType;
   coverUrl: string;
+  coverSourceUrl?: string;
   centerMemberIds?: string[];
   memberIds?: string[];
+  visibility?: SongVisibility;
+  sourceStatus?: SongSourceStatus;
+  sourceNote?: string;
   tags?: string[];
   credits?: SongCredit;
   officialUrl?: string;

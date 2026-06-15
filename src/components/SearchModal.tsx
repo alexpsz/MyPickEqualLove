@@ -38,6 +38,14 @@ const getMemberNames = (song: Song, membersById: Record<string, Member>) =>
       member.name.en ?? "",
     ]);
 
+const hasGraduatedParticipant = (
+  song: Song,
+  membersById: Record<string, Member>,
+) =>
+  [...(song.memberIds ?? []), ...(song.centerMemberIds ?? [])].some(
+    (memberId) => membersById[memberId]?.active === false,
+  );
+
 const formatTypeValue = (value: string | undefined) =>
   value?.replace(/_/g, " ").toUpperCase();
 
@@ -76,6 +84,7 @@ export default function SearchModal({
   const [yearFilter, setYearFilter] = useState("all");
   const [memberFilters, setMemberFilters] = useState<string[]>([]);
   const [isMoreFiltersOpen, setIsMoreFiltersOpen] = useState(false);
+  const [showGraduatedMembers, setShowGraduatedMembers] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -88,6 +97,21 @@ export default function SearchModal({
     () =>
       PRIMARY_TRACK_TYPES.filter((trackType) => trackTypes.includes(trackType)),
     [trackTypes],
+  );
+
+  const activeMembers = useMemo(
+    () => members.filter((member) => member.active),
+    [members],
+  );
+
+  const graduatedMembers = useMemo(
+    () => members.filter((member) => member.active === false),
+    [members],
+  );
+
+  const graduatedMemberIds = useMemo(
+    () => new Set(graduatedMembers.map((member) => member.id)),
+    [graduatedMembers],
   );
 
   useEffect(() => {
@@ -114,6 +138,14 @@ export default function SearchModal({
     const q = normalizeStr(searchQuery);
 
     return songs.filter((song) => {
+      if (
+        !q &&
+        !showGraduatedMembers &&
+        hasGraduatedParticipant(song, membersById)
+      ) {
+        return false;
+      }
+
       if (
         releaseTypeFilter !== "all" &&
         song.releaseType !== releaseTypeFilter
@@ -165,6 +197,7 @@ export default function SearchModal({
     membersById,
     releaseTypeFilter,
     searchQuery,
+    showGraduatedMembers,
     songs,
     trackTypeFilter,
     yearFilter,
@@ -175,6 +208,7 @@ export default function SearchModal({
     setTrackTypeFilter("all");
     setYearFilter("all");
     setMemberFilters([]);
+    setShowGraduatedMembers(false);
   };
 
   const selectQuickFilter = (filter: TrackFilter | "digital") => {
@@ -206,11 +240,26 @@ export default function SearchModal({
     );
   };
 
+  const toggleShowGraduatedMembers = () => {
+    if (showGraduatedMembers) {
+      setMemberFilters((currentMemberFilters) =>
+        currentMemberFilters.filter(
+          (memberId) => !graduatedMemberIds.has(memberId),
+        ),
+      );
+    }
+
+    setShowGraduatedMembers(
+      (currentShowGraduatedMembers) => !currentShowGraduatedMembers,
+    );
+  };
+
   const activeFilterCount = [
     releaseTypeFilter !== "all",
     trackTypeFilter !== "all",
     yearFilter !== "all",
     memberFilters.length > 0,
+    showGraduatedMembers,
   ].filter(Boolean).length;
 
   return (
@@ -346,7 +395,7 @@ export default function SearchModal({
             {isMoreFiltersOpen ? (
               <div
                 id="song-more-filters"
-                className="flex flex-col gap-3 border border-slate-200 bg-white p-3"
+                className="flex max-h-[52vh] touch-pan-y flex-col gap-3 overflow-y-auto overscroll-contain border border-slate-200 bg-white p-3 pr-2 [-webkit-overflow-scrolling:touch] md:max-h-none md:overflow-visible md:pr-3"
               >
                 <FilterRow label="Year">
                   {["all", ...years].map((year) => (
@@ -360,23 +409,15 @@ export default function SearchModal({
                   ))}
                 </FilterRow>
 
-                <FilterRow label="Member">
-                  <FilterChip
-                    active={memberFilters.length === 0}
-                    onClick={() => setMemberFilters([])}
-                  >
-                    All
-                  </FilterChip>
-                  {members.map((member) => (
-                    <FilterChip
-                      key={member.id}
-                      active={memberFilters.includes(member.id)}
-                      onClick={() => toggleMemberFilter(member.id)}
-                    >
-                      {member.name.ja.replace(/\s+/g, "")}
-                    </FilterChip>
-                  ))}
-                </FilterRow>
+                <MemberFilterRow
+                  activeMembers={activeMembers}
+                  graduatedMembers={graduatedMembers}
+                  memberFilters={memberFilters}
+                  showGraduatedMembers={showGraduatedMembers}
+                  onClearMembers={() => setMemberFilters([])}
+                  onToggleGraduated={toggleShowGraduatedMembers}
+                  onToggleMember={toggleMemberFilter}
+                />
 
                 <FilterRow label="Release Type">
                   {(["all", ...releaseTypes] as ReleaseFilter[]).map((type) => (
@@ -475,12 +516,74 @@ function FilterRow({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex gap-2">
+    <div className="flex flex-col gap-2 sm:flex-row">
       <div className="w-24 flex-shrink-0 pt-1.5 text-[10px] font-black uppercase tracking-wider text-black">
         {label}
       </div>
-      <div className="no-scrollbar flex flex-1 gap-2 overflow-x-auto pb-1">
-        {children}
+      <div className="flex min-w-0 flex-1 flex-wrap gap-2">{children}</div>
+    </div>
+  );
+}
+
+function MemberFilterRow({
+  activeMembers,
+  graduatedMembers,
+  memberFilters,
+  showGraduatedMembers,
+  onClearMembers,
+  onToggleGraduated,
+  onToggleMember,
+}: {
+  activeMembers: Member[];
+  graduatedMembers: Member[];
+  memberFilters: string[];
+  showGraduatedMembers: boolean;
+  onClearMembers: () => void;
+  onToggleGraduated: () => void;
+  onToggleMember: (memberId: string) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-2 sm:flex-row">
+      <div className="w-24 flex-shrink-0 pt-1.5 text-[10px] font-black uppercase tracking-wider text-black">
+        Member
+      </div>
+      <div className="grid min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)] gap-2">
+        <div className="flex flex-col gap-2">
+          <FilterChip
+            active={memberFilters.length === 0}
+            onClick={onClearMembers}
+          >
+            All
+          </FilterChip>
+          <FilterChip active={showGraduatedMembers} onClick={onToggleGraduated}>
+            GRADUATED
+          </FilterChip>
+        </div>
+        <div className="flex min-w-0 flex-wrap gap-2">
+          {activeMembers.map((member) => (
+            <FilterChip
+              key={member.id}
+              active={memberFilters.includes(member.id)}
+              onClick={() => onToggleMember(member.id)}
+            >
+              {member.name.ja.replace(/\s+/g, "")}
+            </FilterChip>
+          ))}
+        </div>
+        {showGraduatedMembers ? (
+          <div className="col-start-2 flex min-w-0 flex-wrap gap-2">
+            {graduatedMembers.map((member) => (
+              <FilterChip
+                key={member.id}
+                active={memberFilters.includes(member.id)}
+                onClick={() => onToggleMember(member.id)}
+                muted
+              >
+                {member.name.ja.replace(/\s+/g, "")}
+              </FilterChip>
+            ))}
+          </div>
+        ) : null}
       </div>
     </div>
   );
@@ -489,12 +592,18 @@ function FilterRow({
 function FilterChip({
   active,
   onClick,
+  muted = false,
   children,
 }: {
   active: boolean;
   onClick: () => void;
+  muted?: boolean;
   children: React.ReactNode;
 }) {
+  const inactiveClassName = muted
+    ? "border-slate-300 bg-slate-100 text-slate-500 opacity-80 hover:border-black hover:text-black"
+    : "border-slate-300 bg-white text-slate-500 hover:border-black hover:text-black";
+
   return (
     <button
       type="button"
@@ -503,7 +612,7 @@ function FilterChip({
       className={`shrink-0 whitespace-nowrap border px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-all ${
         active
           ? "border-[var(--equal-love-primary)] bg-[var(--equal-love-primary)] text-white"
-          : "border-slate-300 bg-white text-slate-500 hover:border-black hover:text-black"
+          : inactiveClassName
       }`}
     >
       {children}

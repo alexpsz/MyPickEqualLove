@@ -78,5 +78,29 @@
     "profileUrl": "https://sp.equal-love.jp/feature/profile_fs",
     "active": true,
     "sortOrder": 10
+  },
+  {
+    "id": "satake-nonno",
+    "name": { "ja": "佐竹 のん乃", "romaji": "Satake Nonno" },
+    "color": "#3b82f6",
+    "colorName": "Blue (青)",
+    "profileUrl": null,
+    "active": false,
+    "graduated": true,
+    "status": "graduated",
+    "graduationDate": "2021-03-06",
+    "sortOrder": 101
+  },
+  {
+    "id": "saito-nagisa",
+    "name": { "ja": "齊藤 なぎさ", "romaji": "Saito Nagisa" },
+    "color": "#ff69b4",
+    "colorName": "Pink (ピンク)",
+    "profileUrl": null,
+    "active": false,
+    "graduated": true,
+    "status": "graduated",
+    "graduationDate": "2023-01-13",
+    "sortOrder": 102
   }
 ]
