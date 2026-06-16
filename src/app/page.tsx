@@ -1,7 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { DEFAULT_PICK_SLOTS, EXPORT_CONFIG, STORAGE_KEYS } from "../config/equalLove";
+import {
+  DEFAULT_PICK_SLOTS,
+  EQUAL_LOVE_TEAM_COLOR,
+  EXPORT_CONFIG,
+  STORAGE_KEYS,
+} from "../config/equalLove";
 import {
   MEMBERS,
   RELEASE_TYPES,
@@ -219,9 +224,10 @@ export default function Home() {
 
   return (
     <div className="site-shell relative flex flex-1 flex-col">
-      <div className="relative z-10 h-2 w-full bg-black">
-        <div className="mx-auto h-full max-w-7xl bg-[var(--equal-love-primary)]" />
-      </div>
+      <div
+        className="relative z-10 h-2 w-full"
+        style={{ background: MEMBER_COLOR_BAR_BACKGROUND }}
+      />
 
       <GitHubLink />
       <Header />
@@ -301,6 +307,15 @@ export default function Home() {
 }
 
 const SONGS_COUNT = SONGS.length;
+const MEMBER_COLOR_BAR_COLORS = MEMBERS.filter((member) => member.active !== false)
+  .sort((a, b) => a.sortOrder - b.sortOrder)
+  .slice(0, DEFAULT_PICK_SLOTS.length)
+  .map((member) => member.color ?? EQUAL_LOVE_TEAM_COLOR);
+const MEMBER_COLOR_BAR_BACKGROUND = `linear-gradient(90deg, ${
+  MEMBER_COLOR_BAR_COLORS.length > 0
+    ? MEMBER_COLOR_BAR_COLORS.join(", ")
+    : EQUAL_LOVE_TEAM_COLOR
+})`;
 
 function findFirstEmptySlotId(storedPicks: StoredPicks): PickSlotId | null {
   const slot = DEFAULT_PICK_SLOTS.find((candidate) => !storedPicks[candidate.id]);
