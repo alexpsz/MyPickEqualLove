@@ -1,5 +1,63 @@
 [
   {
+    "id": "tsugini-ae-ta-toki-naniwo-hanaso-ukana",
+    "title": {
+      "ja": "次に会えた時 何を話そうかな",
+      "romaji": "tsugini ae ta toki naniwo hanaso ukana"
+    },
+    "artist": {
+      "ja": "=LOVE、≠ME",
+      "romaji": "=LOVE , ≠ ME"
+    },
+    "releaseId": "2020-04-15-tsugini-ae-ta-toki-naniwo-hanaso-ukana",
+    "releaseTitle": {
+      "ja": "次に会えた時 何を話そうかな",
+      "romaji": "tsugini ae ta toki naniwo hanaso ukana"
+    },
+    "releaseType": "digital",
+    "releaseDate": "2020-04-15",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/not-equal-me/tsugini-ae-ta-toki-naniwo-hanaso-ukana.jpg",
+    "coverSourceUrl": "https://i.ytimg.com/vi/aC4CdVDFzB4/maxresdefault.jpg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2020",
+      "digital",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "田辺望・長沢知亜紀",
+        "romaji": "tanabe bou ・ nagasawa chi aki"
+      },
+      "arranger": {
+        "ja": "湯浅篤",
+        "romaji": "yuasa atsushi"
+      }
+    },
+    "officialUrl": "https://www.youtube.com/watch?v=aC4CdVDFzB4",
+    "creditSourceUrl": "https://natalie.mu/music/news/375537",
+    "visibility": "special",
+    "sourceStatus": "digital"
+  },
+  {
     "id": "kun-no-oto-dattanda",
     "title": {
       "ja": "君の音だったんだ",
@@ -1220,6 +1278,64 @@
     },
     "officialUrl": "https://not-equal-me.jp/discography/detail/12/",
     "creditSourceUrl": "https://www.uta-net.com/song/314509/"
+  },
+  {
+    "id": "toripurudeeto",
+    "title": {
+      "ja": "トリプルデート",
+      "romaji": "toripurudeeto"
+    },
+    "artist": {
+      "ja": "イコノイジョイ",
+      "romaji": "ikonoijoi"
+    },
+    "releaseId": "2022-07-20-toripurudeeto",
+    "releaseTitle": {
+      "ja": "トリプルデート",
+      "romaji": "toripurudeeto"
+    },
+    "releaseType": "digital",
+    "releaseDate": "2022-07-20",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/not-equal-me/toripurudeeto.jpg",
+    "coverSourceUrl": "https://www.uta-net.com/libs/cacheimg.php?p=kashi&f=330000/321975.jpg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2022",
+      "digital",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "本多友紀",
+        "romaji": "honda yuki"
+      },
+      "arranger": {
+        "ja": "脇眞富",
+        "romaji": "waki makoto tomi"
+      }
+    },
+    "officialUrl": "https://www.youtube.com/watch?v=gkabNNfTjX4",
+    "creditSourceUrl": "https://www.uta-net.com/song/321975/",
+    "visibility": "special",
+    "sourceStatus": "digital"
   },
   {
     "id": "su-suki-janai",
@@ -3231,5 +3347,64 @@
     },
     "officialUrl": "https://www.uta-net.com/song/394389/",
     "creditSourceUrl": "https://www.uta-net.com/song/394389/"
+  },
+  {
+    "id": "kokode-faasutokissu",
+    "title": {
+      "ja": "ここでファーストキッス",
+      "romaji": "kokode faasutokissu"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2026-06-24-ai-kudasaimase-kokode-faasutokissu",
+    "releaseTitle": {
+      "ja": "愛くださいませ/ここでファーストキッス",
+      "romaji": "ai kudasaimase / kokode faasutokissu"
+    },
+    "releaseType": "single",
+    "releaseDate": "2026-06-24",
+    "trackNo": 2,
+    "trackType": "title",
+    "coverUrl": "/covers/not-equal-me/kokode-faasutokissu.jpg",
+    "coverSourceUrl": "https://m.media-amazon.com/images/I/51a5RuQvqXL._SL240_.jpg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2026",
+      "single",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "未確認",
+        "romaji": "mikakunin"
+      },
+      "composer": {
+        "ja": "未確認",
+        "romaji": "mikakunin"
+      },
+      "arranger": {
+        "ja": "未確認",
+        "romaji": "mikakunin"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/feature/specialsite_12thsingle",
+    "creditSourceUrl": "https://not-equal-me.jp/feature/specialsite_12thsingle",
+    "visibility": "default",
+    "sourceStatus": "unverified",
+    "sourceNote": "12th両A面シングル収録曲として公式サイトで確認。作曲/編曲 credits は未確認。"
   }
 ]

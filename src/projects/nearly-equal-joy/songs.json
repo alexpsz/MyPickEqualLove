@@ -1,5 +1,64 @@
 [
   {
+    "id": "toripurudeeto",
+    "title": {
+      "ja": "トリプルデート",
+      "romaji": "toripurudeeto"
+    },
+    "artist": {
+      "ja": "イコノイジョイ",
+      "romaji": "ikonoijoi"
+    },
+    "releaseId": "2022-07-20-toripurudeeto",
+    "releaseTitle": {
+      "ja": "トリプルデート",
+      "romaji": "toripurudeeto"
+    },
+    "releaseType": "digital",
+    "releaseDate": "2022-07-20",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/nearly-equal-joy/toripurudeeto.jpg",
+    "coverSourceUrl": "https://www.uta-net.com/libs/cacheimg.php?p=kashi&f=330000/321975.jpg",
+    "memberIds": [
+      "aida-jurii",
+      "amano-konoa",
+      "ichihara-ayumi",
+      "esumi-renon",
+      "oshida-mitsuki",
+      "onishi-aoi",
+      "ozawa-aimi",
+      "takahashi-mai",
+      "fujisawa-riko",
+      "murayama-yuuka",
+      "yamada-momoka",
+      "yamano-arisu"
+    ],
+    "tags": [
+      "2022",
+      "digital",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "本多友紀",
+        "romaji": "honda yuki"
+      },
+      "arranger": {
+        "ja": "脇眞富",
+        "romaji": "waki makoto tomi"
+      }
+    },
+    "officialUrl": "https://www.youtube.com/watch?v=gkabNNfTjX4",
+    "creditSourceUrl": "https://www.uta-net.com/song/321975/",
+    "visibility": "special",
+    "sourceStatus": "digital"
+  },
+  {
     "id": "mubou-nin",
     "title": {
       "ja": "無謀人",
@@ -1189,6 +1248,54 @@
     },
     "officialUrl": "https://www.uta-net.com/song/381919/",
     "creditSourceUrl": "https://www.uta-net.com/song/381919/"
+  },
+  {
+    "id": "the-rock-is-you",
+    "title": {
+      "ja": "The rock is you!",
+      "romaji": "The rock is you !"
+    },
+    "artist": {
+      "ja": "江角 怜音(≒JOY)",
+      "romaji": "ezumi renon ( ≒ JOY )"
+    },
+    "releaseId": "2026-02-12-the-rock-is-you",
+    "releaseTitle": {
+      "ja": "The rock is you!",
+      "romaji": "The rock is you !"
+    },
+    "releaseType": "digital",
+    "releaseDate": "2026-02-12",
+    "trackNo": 1,
+    "trackType": "solo",
+    "coverUrl": "/covers/nearly-equal-joy/the-rock-is-you.jpg",
+    "coverSourceUrl": "https://i.ytimg.com/vi/kDgadIAsQf4/maxresdefault.jpg",
+    "memberIds": [
+      "esumi-renon"
+    ],
+    "tags": [
+      "2026",
+      "digital",
+      "solo"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "浦島健太・ふるっぺ(ケラケラ)",
+        "romaji": "urashima kenta ・ furuppe ( kerakera )"
+      },
+      "arranger": {
+        "ja": "ふるっぺ(ケラケラ)",
+        "romaji": "furuppe ( kerakera )"
+      }
+    },
+    "officialUrl": "https://www.youtube.com/watch?v=kDgadIAsQf4",
+    "creditSourceUrl": "https://www.uta-net.com/song/388425/",
+    "visibility": "special",
+    "sourceStatus": "digital"
   },
   {
     "id": "denwabangou-oshie-te",
