@@ -46,11 +46,13 @@
 
 =LOVE 数据来自 `src/projects/equal-love/songs.json` 和 `src/projects/equal-love/members.json`，当前严格校验目标为 84 首歌曲、12 名成员。
 
-`nearly-equal-joy` 与 `not-equal-me` 已填充真实成员、歌曲、credits 和本地封面数据。`nearly-equal-joy` 当前为 26 首歌曲、13 名成员；`not-equal-me` 当前为 58 首歌曲、12 名成员。
+`nearly-equal-joy` 与 `not-equal-me` 已填充真实成员、歌曲、credits 和本地封面数据。`nearly-equal-joy` 当前为 28 首歌曲、13 名成员；`not-equal-me` 当前为 61 首歌曲、12 名成员。
 
 `nearly-equal-joy` 保留福山萌叶为毕业成员：`fukuyama-moeka`，毕业日 `2023-03-29`。她只关联实际参与的早期原创曲《≒JOY》《笑って フラジール》《超孤独ライオン》。目前没有可确认的福山萌叶专属毕业曲，因此不添加毕业曲。
 
-`not-equal-me` 标记菅波美玲为毕业成员：`suganami-mirei`，毕业日 `2026-06-12`。毕业曲《君はもう一度タネになる》作为 special/youtube_public 补充曲写入数据，避免常规官网 discography 或 Uta-Net 暂未收录时遗漏。
+`not-equal-me` 标记菅波美玲为毕业成员：`suganami-mirei`，毕业日 `2026-06-12`。毕业曲《君はもう一度タネになる》作为 special/youtube_public 补充曲写入数据，避免常规官网 discography 或 Uta-Net 暂未收录时遗漏。`not-equal-me` 也按目标团参与即收录的口径补充《次に会えた時 何を話そうかな》《トリプルデート》；《ここでファーストキッス》已作为 12th 両A面シングル收录曲加入，但作曲/编曲 credits 暂标 `未確認`，`sourceStatus` 为 `unverified`。
+
+`nearly-equal-joy` 按目标团参与和成员 solo 即收录的口径补充《The rock is you!》和イコノイジョイ合同曲《トリプルデート》。
 
 运行时集合和索引由 `src/data/songs.ts` 从当前项目数据派生，包括 `SONGS`、`SONGS_BY_ID`、`MEMBERS`、`MEMBERS_BY_ID`、`RELEASE_TYPES`、`TRACK_TYPES`、`RELEASE_YEARS`、`TAGS`。
 
@@ -79,6 +81,8 @@
 ## 7. 最近更新记录
 
 2026-06-17：补充开发者交接记录；`architecture.md` 增加文件职责索引，解释三姐妹项目重构后的关键源码、配置、脚本和资源目录作用。
+
+2026-06-17：按“目标团参与/成员 solo 均可收录”的 MyPick 目录口径补充新项目歌曲：≒JOY 增加《The rock is you!》《トリプルデート》后为 28 首；≠ME 增加《次に会えた時 何を話そうかな》《トリプルデート》《ここでファーストキッス》后为 61 首。《ここでファーストキッス》当前依据官方 12th single 页面确认收录，credits 待 Uta-Net 或官方完整资料公开后更新。
 
 2026-06-17：新增通用数据同步入口 `scripts/sync-project-discography.py --project <project-id>` 和 npm scripts：`sync:data:nearly-equal-joy`、`sync:data:not-equal-me`、`sync:data:all`。完成 ≒JOY 与 ≠ME 数据同步：≒JOY 26 首/13 名成员，保留福山萌叶毕业成员并仅关联早期三首；≠ME 58 首/12 名成员，补充菅波美玲毕业曲《君はもう一度タネになる》。`validate:data` 已覆盖新项目非空、封面、credits、成员引用和毕业边界。
 

@@ -86,9 +86,9 @@
 - `src/projects/equal-love/members.json`：=LOVE 成员数据源。
 - `src/projects/equal-love/songs.json`：=LOVE 歌曲数据源。
 - `src/projects/nearly-equal-joy/members.json`：≒JOY 成员数据，当前包含 12 名现役成员和毕业成员福山萌叶；现役成员使用 wiki/官方 X 公告的单色メンバーカラー `color`，不保存ペンライト双色 `colors`。
-- `src/projects/nearly-equal-joy/songs.json`：≒JOY 歌曲数据。福山萌叶只关联《≒JOY》《笑って フラジール》《超孤独ライオン》，目前不添加毕业曲。
+- `src/projects/nearly-equal-joy/songs.json`：≒JOY 歌曲数据。福山萌叶只关联《≒JOY》《笑って フラジール》《超孤独ライオン》，目前不添加毕业曲；按成员 solo 和目标团参与口径收录《The rock is you!》与イコノイジョイ合同曲《トリプルデート》。
 - `src/projects/not-equal-me/members.json`：≠ME 成员数据，当前包含 11 名现役成员和毕业成员菅波美玲；成员包含双色应援色 `colors`，导出图默认使用 11 名现役成员。
-- `src/projects/not-equal-me/songs.json`：≠ME 歌曲数据，包含菅波美玲毕业曲《君はもう一度タネになる》作为 special/youtube_public 曲。
+- `src/projects/not-equal-me/songs.json`：≠ME 歌曲数据，包含菅波美玲毕业曲《君はもう一度タネになる》作为 special/youtube_public 曲；按目标团参与口径收录《次に会えた時 何を話そうかな》《トリプルデート》。12th 両A面シングル曲《ここでファーストキッス》已加入，作曲/编曲 credits 暂为未确认状态。
 - `public/icon.svg`：旧通用 icon，保留用于兼容历史引用；新 metadata 使用项目化 icon。
 - `public/icons/equal-love.svg`：=LOVE 站点 favicon/OG icon。
 - `public/icons/nearly-equal-joy.svg`：≒JOY 站点 favicon/OG icon。
