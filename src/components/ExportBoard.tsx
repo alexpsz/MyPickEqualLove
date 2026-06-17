@@ -1,11 +1,13 @@
 import React from "react";
 import {
-  APP_BRAND,
-  EQUAL_LOVE_TEAM_COLOR,
+  EXPORT_CANVAS_ID,
   EXPORT_CONFIG,
-} from "../config/equalLove";
+  PROJECT_CONFIG,
+  PROJECT_THEME_COLOR,
+} from "../config/project";
 import { MEMBERS } from "../data/songs";
 import type { PickSlot, Picks } from "../schema/music";
+import { SITE_DOMAIN } from "../utils/constants";
 
 interface ExportBoardProps {
   slots: PickSlot[];
@@ -19,7 +21,7 @@ const EXPORT_FONT_FAMILY =
   '"Comfortaa", "Work Sans", "Noto Sans JP", sans-serif';
 const EXPORT_TITLE_FONT_FAMILY =
   '"Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif';
-const EXPORT_SITE_LABEL = "MYPICK.KOZUEGINKO.COM";
+const EXPORT_SITE_LABEL = SITE_DOMAIN.toUpperCase();
 
 const MEMBER_COLOR_STRIP = MEMBERS.slice()
   .sort((a, b) => a.sortOrder - b.sortOrder)
@@ -27,7 +29,7 @@ const MEMBER_COLOR_STRIP = MEMBERS.slice()
   .map((member) => ({
     id: member.id,
     label: member.name.ja,
-    color: member.color ?? EQUAL_LOVE_TEAM_COLOR,
+    color: member.color ?? PROJECT_THEME_COLOR,
   }));
 
 export default function ExportBoard({
@@ -42,7 +44,7 @@ export default function ExportBoard({
 
   return (
     <div
-      id="mypick-equal-love-export-canvas"
+      id={EXPORT_CANVAS_ID}
       className="relative overflow-hidden font-sans"
       style={{
         backgroundColor: transparentBg
@@ -90,7 +92,7 @@ export default function ExportBoard({
             textTransform: "uppercase",
           }}
         >
-          {APP_BRAND.displayName}
+          {PROJECT_CONFIG.displayName}
         </div>
         {selectedByLabel && (
           <div
@@ -119,7 +121,7 @@ export default function ExportBoard({
             textIndent: "0.2em",
           }}
         >
-          ＝LOVE お気に入り楽曲選
+          {PROJECT_CONFIG.exportSubtitle}
         </div>
         <div
           data-member-color-strip="true"
@@ -264,7 +266,7 @@ export default function ExportBoard({
           textTransform: "uppercase",
         }}
       >
-        <span>{APP_BRAND.appName}</span>
+        <span>{PROJECT_CONFIG.appName}</span>
         <span>{EXPORT_SITE_LABEL}</span>
       </footer>
     </div>
@@ -278,9 +280,9 @@ const exportTagStyle: React.CSSProperties = {
   minWidth: "44px",
   height: "24px",
   boxSizing: "border-box",
-  border: `1px solid ${EQUAL_LOVE_TEAM_COLOR}`,
+  border: `1px solid ${PROJECT_THEME_COLOR}`,
   background: "#fff",
-  color: EQUAL_LOVE_TEAM_COLOR,
+  color: PROJECT_THEME_COLOR,
   padding: "0 8px",
   fontSize: "10px",
   fontWeight: 900,

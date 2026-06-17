@@ -1,20 +1,12 @@
 import type { PickSlot } from "../schema/music";
+import { CURRENT_PROJECT, CURRENT_PROJECT_ID } from "../projects/registry";
 
-export const APP_BRAND = {
-  appName: "MyPickEqualLove",
-  displayName: "MY PICK =LOVE",
-  subtitle: "＝LOVEのお気に入り楽曲を選ぼう！",
-  tagline: "Produced by Fans, For Fans",
-  shareText:
-    "＝LOVEのお気に入り楽曲マイピックを作成しました！\n（※ダウンロードした画像を添付してください）",
-  shareHashtags: ["#MyPickイコラブ", "#イコラブ"],
-  imageFileName: "EqualLove_MyPicks.png",
-  repoUrl: "https://github.com/alexpsz/MyPickEqualLove",
-};
+export const PROJECT_CONFIG = CURRENT_PROJECT.config;
+export const PROJECT_ID = CURRENT_PROJECT_ID;
 
 export const STORAGE_KEYS = {
-  picks: "equal_love_mypicks_v1",
-  options: "equal_love_options_v1",
+  picks: `${PROJECT_CONFIG.storagePrefix}_mypicks_v1`,
+  options: `${PROJECT_CONFIG.storagePrefix}_options_v1`,
 };
 
 export const EXPORT_CONFIG = {
@@ -23,6 +15,8 @@ export const EXPORT_CONFIG = {
   background: "#ffffff",
   scale: 2,
 };
+
+export const EXPORT_CANVAS_ID = `mypick-${PROJECT_ID}-export-canvas`;
 
 export const DEFAULT_PICK_SLOTS: PickSlot[] = Array.from(
   { length: 10 },
@@ -33,11 +27,12 @@ export const DEFAULT_PICK_SLOTS: PickSlot[] = Array.from(
   }),
 );
 
-export const EQUAL_LOVE_TEAM_COLOR = "#ea6c81";
+export const PROJECT_THEME_COLOR = PROJECT_CONFIG.themeColor;
+export const PROJECT_ACCENT_COLOR = PROJECT_CONFIG.logoAccentColor;
 
 export const THEME_STRIP_COLORS = Array.from(
   { length: 10 },
-  () => EQUAL_LOVE_TEAM_COLOR,
+  () => PROJECT_THEME_COLOR,
 );
 
 export const RELEASE_TYPE_LABELS: Record<string, string> = {

@@ -37,8 +37,8 @@ except ImportError as exc:  # pragma: no cover - environment helper
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SONGS_PATH = ROOT / "src/data/equal-love-songs.json"
-MEMBERS_PATH = ROOT / "src/data/equal-love-members.json"
+SONGS_PATH = ROOT / "src/projects/equal-love/songs.json"
+MEMBERS_PATH = ROOT / "src/projects/equal-love/members.json"
 COVERS_DIR = ROOT / "public/covers/equal-love"
 
 OFFICIAL_BASE = "https://equal-love.jp"

@@ -1,6 +1,6 @@
 # Tech Stack
 
-## 1. 运行环境
+## 1. Runtime
 
 当前 Node.js 要求来自 `package.json`：
 
@@ -8,9 +8,7 @@
 
 包管理使用 npm，仓库包含 `package-lock.json`。
 
-## 2. 框架与语言
-
-当前核心框架与语言来自 `package.json`：
+## 2. Framework
 
 - `next`: `^16.2.7`
 - `react`: `^19.2.7`
@@ -19,30 +17,32 @@
 
 Next.js 使用 App Router，页面入口在 `src/app/`。
 
-TypeScript 配置来自 `tsconfig.json`，关键设置包括：
+TypeScript 关键设置包括 `strict: true`、`moduleResolution: "bundler"`、`jsx: "react-jsx"`、`resolveJsonModule: true` 和 `isolatedModules: true`。
 
-- `strict: true`
-- `moduleResolution: "bundler"`
-- `jsx: "react-jsx"`
-- `target: "ES2017"`
-- `module: "esnext"`
-- `resolveJsonModule: true`
-- `isolatedModules: true`
-- `paths: { "@/*": ["./src/*"] }`
+## 3. Styling
 
-## 3. 样式系统
-
-当前样式系统使用 Tailwind CSS：
+样式系统使用 Tailwind CSS 4：
 
 - `tailwindcss`: `^4.3.0`
 - `@tailwindcss/postcss`: `^4.3.0`
-- `@tailwindcss/oxide-darwin-arm64`: `^4.3.1`，当前为 optional dependency
 
-全局样式入口是 `src/app/globals.css`。
+全局样式入口是 `src/app/globals.css`。项目主题色由 `src/app/layout.tsx` 写入 `--project-primary`、`--project-accent` 和 `--project-primary-wash`。
 
 组件主要使用 Tailwind className 和少量内联样式。导出画布 `ExportBoard` 使用内联样式确保 `html2canvas` 捕获稳定。
 
-## 4. 图片导出
+## 4. Project Selection
+
+三姐妹站点使用同一套源码，构建时通过 `NEXT_PUBLIC_PROJECT_ID` 选择：
+
+- `equal-love`
+- `nearly-equal-joy`
+- `not-equal-me`
+
+项目注册表在 `src/projects/registry.ts`，当前项目入口在 `src/config/project.ts`。
+
+每个项目的数据文件位于 `src/projects/<project-id>/members.json` 和 `src/projects/<project-id>/songs.json`。
+
+## 5. Image Export
 
 图片导出依赖：
 
@@ -50,7 +50,7 @@ TypeScript 配置来自 `tsconfig.json`，关键设置包括：
 
 导出流程在 `src/app/page.tsx` 中动态 import `html2canvas`，并捕获隐藏离屏的 `ExportBoard` DOM。
 
-导出配置来自 `src/config/equalLove.ts` 的 `EXPORT_CONFIG`：
+导出配置来自 `src/config/project.ts` 的 `EXPORT_CONFIG`：
 
 - `width`: `1080`
 - `height`: `1350`
@@ -59,90 +59,47 @@ TypeScript 配置来自 `tsconfig.json`，关键设置包括：
 
 当前 `EXPORT_CONFIG.height` 是配置项，但 `ExportBoard` 当前主要显式使用宽度、背景和 scale，实际高度由导出 DOM 内容布局决定。
 
-## 5. 数据管理
+## 6. Build And Deployment
 
-当前无后端数据库。
-
-静态数据文件：
-
-- `src/data/equal-love-songs.json`
-- `src/data/equal-love-members.json`
-
-运行时派生模块：
-
-- `src/data/songs.ts`
-
-`src/data/songs.ts` 派生 `SONGS`、`SONGS_BY_ID`、`MEMBERS`、`MEMBERS_BY_ID`、`RELEASE_TYPES`、`TRACK_TYPES`、`RELEASE_YEARS`、`TAGS`。
-
-浏览器本地状态：
-
-- `STORAGE_KEYS.picks` 保存用户选择。
-- `STORAGE_KEYS.options` 保存导出选项。
-
-## 6. 构建与部署
-
-当前 Next.js 配置来自 `next.config.ts`：
+Next.js 配置来自 `next.config.ts`：
 
 - `output: "export"`
 - `images.unoptimized: true`
 - `allowedDevOrigins: ["127.0.0.1"]`
 
-当前 build 链路来自 `package.json`：
+基础 build 链路：
 
 `node scripts/clean-static-export.mjs && next build && node scripts/copy-public-assets.mjs`
 
-`scripts/clean-static-export.mjs` 清理 `out/`。
+Cloudflare Pages 使用三个独立 Pages 项目连接同一个 GitHub repo 和 `main` 分支：
 
-`next build` 生成静态导出产物。
+- `npm run build:equal-love` → `out/`
+- `npm run build:nearly-equal-joy` → `out/`
+- `npm run build:not-equal-me` → `out/`
 
-`scripts/copy-public-assets.mjs` 将 `.next/static` 和 `public/` 资源同步到 `out/`。
+现有 `mypick.kozueginko.com` 保留给 `equal-love`。
 
-部署必须保持静态站点兼容，不能引入依赖服务端运行时的核心功能，除非先更新架构文档并确认部署方式变化。
+## 7. Scripts
 
-## 7. 脚本命令
+- `npm run dev`: 默认 Next dev，未设置项目时回退 `equal-love`
+- `npm run dev:equal-love`
+- `npm run dev:nearly-equal-joy`
+- `npm run dev:not-equal-me`
+- `npm run build`
+- `npm run build:equal-love`
+- `npm run build:nearly-equal-joy`
+- `npm run build:not-equal-me`
+- `npm run lint`: lint `src`、`scripts` 和配置文件，不扫描 `public/` 静态资源
+- `npm run format`
+- `npm run format:check`
+- `npm run sync:data`: 同步 =LOVE 数据
+- `npm run sync:data:equal-love`: 同步 =LOVE 数据
+- `npm run validate:data`: 校验全部项目数据
+- `npm run validate:data:project -- equal-love`: 校验单个项目数据
 
-当前 npm scripts 来自 `package.json`：
+本地开发脚本使用 `next dev --webpack`。Next.js 16.2.x 的 Turbopack dev 在本项目中可能停在首页首次 `Compiling / ...`，而 webpack dev 已验证可正常返回页面；生产构建仍使用 `next build` 静态导出。
 
-- `npm run dev`: `next dev`
-- `npm run build`: `node scripts/clean-static-export.mjs && next build && node scripts/copy-public-assets.mjs`
-- `npm run start`: `next start`
-- `npm run lint`: `eslint`
-- `npm run format`: `prettier --write .`
-- `npm run format:check`: `prettier --check .`
-- `npm run sync:data`: `python3 scripts/sync-equal-love-discography.py`
-- `npm run validate:data`: `node scripts/validate-equal-love-data.mjs`
-
-## 8. 依赖清单
-
-生产依赖：
-
-- `html2canvas`: `^1.4.1`
-- `next`: `^16.2.7`
-- `react`: `^19.2.7`
-- `react-dom`: `^19.2.7`
-
-开发依赖：
-
-- `@tailwindcss/postcss`: `^4.3.0`
-- `@types/node`: `^25.9.1`
-- `@types/react`: `^19.2.16`
-- `@types/react-dom`: `^19.2.3`
-- `eslint`: `^9.39.4`
-- `eslint-config-next`: `^16.2.7`
-- `eslint-plugin-import`: `^2.32.0`
-- `eslint-plugin-jsx-a11y`: `^6.10.2`
-- `eslint-plugin-react-hooks`: `^7.1.1`
-- `globals`: `^17.6.0`
-- `prettier`: `^3.8.3`
-- `tailwindcss`: `^4.3.0`
-- `typescript`: `^6.0.3`
-- `typescript-eslint`: `^8.60.1`
-
-可选依赖：
-
-- `@tailwindcss/oxide-darwin-arm64`: `^4.3.1`
-
-## 9. 质量工具
+## 8. Quality Tools
 
 Lint 使用 ESLint：
 
@@ -156,14 +113,16 @@ Lint 使用 ESLint：
 
 数据校验使用：
 
-- `npm run validate:data`
-- 脚本：`scripts/validate-equal-love-data.mjs`
+- 命令：`npm run validate:data`
+- 脚本：`scripts/validate-project-data.mjs`
 
 构建验证使用：
 
-- `npm run build`
+- `npm run build:equal-love`
+- `npm run build:nearly-equal-joy`
+- `npm run build:not-equal-me`
 
-## 10. 技术约束
+## 9. Constraints
 
 必须保持 Node `>=20.9.0` 兼容。
 
@@ -177,17 +136,13 @@ Lint 使用 ESLint：
 
 不得在多个位置维护同一份事实数据。
 
-不得复制依赖库源码到项目内改造使用。
-
-## 11. 变更维护规则
+## 10. Maintenance Rules
 
 依赖升级后必须更新本文件的版本清单，并运行相关验证。
 
 修改 `package.json` scripts 后必须更新脚本命令和构建链路说明。
 
-修改 `next.config.ts` 后必须更新构建与部署约束，并运行 `npm run build`。
-
-修改 `tsconfig.json` 后必须更新 TypeScript 配置说明，并运行 `npm run lint` 和必要的构建验证。
+修改 `next.config.ts` 后必须更新构建与部署约束，并运行构建验证。
 
 修改数据同步或校验脚本后必须更新数据管理和质量工具说明，并运行 `npm run validate:data`。
 

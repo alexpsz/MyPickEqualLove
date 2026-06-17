@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { EQUAL_LOVE_TEAM_COLOR } from "../config/equalLove";
+import { PROJECT_THEME_COLOR } from "../config/project";
 import type { Song } from "../schema/music";
 
 interface PickSlotCardProps {
@@ -17,7 +17,7 @@ export default function PickSlotCard({
   onClick,
   onClear,
 }: PickSlotCardProps) {
-  const color = EQUAL_LOVE_TEAM_COLOR;
+  const color = PROJECT_THEME_COLOR;
 
   return (
     <div
@@ -30,7 +30,7 @@ export default function PickSlotCard({
           onClick();
         }
       }}
-      className="group relative grid min-h-[292px] min-w-0 cursor-pointer grid-rows-[auto_1fr] overflow-hidden border border-black bg-white transition-transform duration-300 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-[var(--equal-love-primary)]"
+      className="group relative grid min-h-[292px] min-w-0 cursor-pointer grid-rows-[auto_1fr] overflow-hidden border border-black bg-white transition-transform duration-300 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-[var(--project-primary)]"
       aria-label={song ? `Replace pick: ${song.title.ja}` : "Pick song"}
     >
       {song ? (

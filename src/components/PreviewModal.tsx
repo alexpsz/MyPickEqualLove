@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { APP_BRAND } from "../config/equalLove";
+import { PROJECT_CONFIG } from "../config/project";
 import { SITE_URL } from "../utils/constants";
 
 interface PreviewModalProps {
@@ -38,8 +38,8 @@ export default function PreviewModal({
             <h3 className="text-lg font-bold uppercase tracking-[0.22em] text-black">
               Image Preview
             </h3>
-            <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--equal-love-primary)]">
-              =LOVE Top Picks export
+            <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--project-primary)]">
+              {PROJECT_CONFIG.groupName} Top Picks export
             </p>
           </div>
 
@@ -72,7 +72,7 @@ export default function PreviewModal({
         <div className="no-scrollbar official-stripe relative flex max-h-[60vh] flex-1 justify-center overflow-y-auto p-6">
           <img
             src={previewUrl}
-            alt="=LOVE Picks Preview"
+            alt={`${PROJECT_CONFIG.groupName} Picks Preview`}
             className={`max-h-[52vh] max-w-full border border-black bg-white object-contain transition-opacity duration-200 ${
               generating ? "opacity-50 blur-[2px]" : "opacity-100"
             }`}
@@ -112,7 +112,7 @@ export default function PreviewModal({
             onClick={() => {
               shareToX();
             }}
-            className="official-button bg-black text-white hover:bg-[var(--equal-love-primary)]"
+            className="official-button bg-black text-white hover:bg-[var(--project-primary)]"
           >
             <svg className="h-3.5 w-3.5 fill-current" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
@@ -161,7 +161,7 @@ function buildXAndroidIntentUrl(fallbackUrl: string) {
 }
 
 function buildXShareText() {
-  return `${APP_BRAND.shareText}\n${APP_BRAND.shareHashtags.join(" ")}`;
+  return `${PROJECT_CONFIG.shareText}\n${PROJECT_CONFIG.shareHashtags.join(" ")}`;
 }
 
 function buildXShareMessage() {
@@ -238,7 +238,7 @@ function ToggleOption({
 
 async function downloadImage(previewUrl: string) {
   try {
-    const fileName = APP_BRAND.imageFileName;
+    const fileName = PROJECT_CONFIG.imageFileName;
     const browser = getBrowserProfile();
     const blobResult = toImageBlob(previewUrl);
     const blob = blobResult instanceof Blob ? blobResult : await blobResult;
@@ -313,7 +313,7 @@ function shareImage(
     });
     const shareData: ShareData = {
       files: [file],
-      title: APP_BRAND.displayName,
+      title: PROJECT_CONFIG.displayName,
     };
 
     if (

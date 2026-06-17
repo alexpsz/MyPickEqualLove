@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { RELEASE_TYPE_LABELS, TRACK_TYPE_LABELS } from "../config/equalLove";
+import { RELEASE_TYPE_LABELS, TRACK_TYPE_LABELS } from "../config/project";
 import type { Member, ReleaseType, Song, TrackType } from "../schema/music";
 
 type ReleaseFilter = "all" | ReleaseType;
@@ -281,7 +281,7 @@ export default function SearchModal({
             <h3 className="text-lg font-bold uppercase tracking-[0.22em] text-black">
               Select Song
             </h3>
-            <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--equal-love-primary)]">
+            <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--project-primary)]">
               Top Picks board · {filteredSongs.length} matching songs
             </p>
           </div>
@@ -316,7 +316,7 @@ export default function SearchModal({
                       onSelect(filteredSongs[0]);
                     }
                   }}
-                  className="w-full border border-black bg-white py-3 pl-11 pr-4 text-sm text-black transition-all duration-300 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[var(--equal-love-primary)]"
+                  className="w-full border border-black bg-white py-3 pl-11 pr-4 text-sm text-black transition-all duration-300 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[var(--project-primary)]"
                 />
                 <svg
                   className="absolute left-4 top-3.5 h-4 w-4 text-slate-400"
@@ -467,7 +467,7 @@ export default function SearchModal({
                     <h4 className="truncate text-sm font-bold text-slate-950">
                       {song.title.ja}
                     </h4>
-                    <span className="flex-shrink-0 border border-[var(--equal-love-primary)] bg-white px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-[var(--equal-love-primary)]">
+                    <span className="flex-shrink-0 border border-[var(--project-primary)] bg-white px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-[var(--project-primary)]">
                       {song.releaseDate?.slice(0, 4) ?? "TBD"}
                     </span>
                   </div>
@@ -611,7 +611,7 @@ function FilterChip({
       aria-pressed={active}
       className={`shrink-0 whitespace-nowrap border px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-all ${
         active
-          ? "border-[var(--equal-love-primary)] bg-[var(--equal-love-primary)] text-white"
+          ? "border-[var(--project-primary)] bg-[var(--project-primary)] text-white"
           : inactiveClassName
       }`}
     >

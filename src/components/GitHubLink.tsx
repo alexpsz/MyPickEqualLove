@@ -1,5 +1,5 @@
 import React from "react";
-import { APP_BRAND } from "../config/equalLove";
+import { PROJECT_CONFIG } from "../config/project";
 
 interface GitHubLinkProps {
   repoUrl?: string;
@@ -7,7 +7,7 @@ interface GitHubLinkProps {
 }
 
 export default function GitHubLink({
-  repoUrl = APP_BRAND.repoUrl,
+  repoUrl = PROJECT_CONFIG.repoUrl,
   className = "absolute right-4 top-4 sm:right-6 sm:top-6",
 }: GitHubLinkProps) {
   return (

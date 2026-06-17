@@ -2,199 +2,175 @@
 
 ## 1. 架构概览
 
-MyPickEqualLove 是纯前端静态 Web App。运行时由 Next.js App Router 页面加载 React 客户端组件，使用项目内静态 JSON 数据和浏览器 `localStorage` 完成歌曲选择、筛选、图片生成与分享流程。
+本仓库现在是三姐妹 MyPick 站点的单代码库：`equal-love`、`nearly-equal-joy`、`not-equal-me` 共用同一套 Next.js/React 前端、搜索、pick board、本地持久化、图片导出和分享流程。
 
-当前没有后端数据库、服务端 API、服务端 session、服务端图片生成或动态服务端渲染核心路径。
+项目差异由 `NEXT_PUBLIC_PROJECT_ID` 在构建时选择。默认项目是 `equal-love`，因此现有未设置环境变量的本地构建仍会生成 MyPickEqualLove。
 
-`src/app/page.tsx` 是当前客户端主编排层，负责 picks 状态、弹窗状态、替换流程、预览生成、本地持久化读取与写入。
+应用仍是纯前端静态 Web App。没有后端数据库、服务端 API、服务端 session、服务端图片生成或动态服务端渲染核心路径。
 
 ## 2. 目录结构
 
-当前主要目录职责：
-
-- `src/app/`：Next.js App Router 页面、布局和全局样式。
-- `src/components/`：首页 UI、pick board、搜索弹窗、替换弹窗、导出画布和预览弹窗。
-- `src/config/`：应用品牌、存储 key、导出配置、默认槽位、主题色、筛选标签。
-- `src/data/`：静态歌曲和成员 JSON，以及运行时派生集合。
+- `src/app/`：Next.js App Router 页面、metadata、robots/sitemap 和全局样式。
+- `src/components/`：共用 UI、pick board、搜索弹窗、替换弹窗、导出画布和预览弹窗。
+- `src/config/project.ts`：当前项目配置入口、storage key、导出配置、槽位配置、主题色和筛选标签。
+- `src/projects/`：项目注册表以及每个站点的 `members.json`、`songs.json` 和品牌配置。
+- `src/data/songs.ts`：从当前项目数据派生运行时集合和索引。
 - `src/schema/`：核心音乐数据类型契约。
-- `src/utils/`：站点常量、颜色转换等通用工具。
-- `scripts/`：数据同步、数据校验和静态导出辅助脚本。
-- `public/`：静态站点资源和本地歌曲封面。
-- `memory/`：项目记忆和 Agent 协作上下文。
+- `src/utils/`：站点 URL、颜色转换等通用工具。
+- `scripts/`：=LOVE 数据同步、通用数据校验和静态导出辅助脚本。
+- `public/`：静态站点资源、项目 icon 和本地歌曲封面。
 
-## 3. 核心模块职责
+## 3. 文件职责索引
 
-`src/app/layout.tsx` 定义站点 metadata、语言、图标、OG/Twitter 信息和根布局。
+### 3.1 根目录配置与文档
 
-`src/app/page.tsx` 是客户端主编排层：管理 `storedPicks`、`activeSlotId`、`showModal`、`pendingReplacementSong`、`previewUrl`、`generating`、`showTitles`、`transparentBg`、`nicknameDraft`、`hydrated`，并串联所有核心组件。
+- `README.md`：面向仓库使用者的项目介绍、三项目 dev/build 命令、Cloudflare Pages 部署方式和数据维护入口。
+- `agent.md`：给自动化开发代理的项目背景、约束和常用工作流提示。
+- `LICENSE`：仓库许可证。
+- `package.json`：npm scripts、Node 版本要求、运行依赖和开发依赖。`dev:*` 明确选择项目并使用 webpack dev；`build:*` 明确选择项目并静态导出到 `out/`。
+- `package-lock.json`：npm 依赖锁定文件，必须与 `package.json` 同步提交。
+- `next.config.ts`：Next.js 配置。当前保持 `output: "export"`、`images.unoptimized: true` 和本地 dev origin。
+- `tsconfig.json`：TypeScript 编译配置，启用严格类型、JSON import 和 `@/*` 路径别名。
+- `next-env.d.ts`：Next.js 自动维护的类型声明入口，不手动写业务逻辑。
+- `eslint.config.mjs`：ESLint flat config。当前 lint 范围由 package script 限定到源码、脚本和配置文件。
+- `postcss.config.mjs`：Tailwind CSS 4 的 PostCSS 插件入口。
 
-`src/config/equalLove.ts` 是品牌、存储 key、导出配置、槽位配置、主题色、release type label、track type label 的配置中心。
+### 3.2 memory 文档
 
-`src/schema/music.ts` 是核心类型契约，定义音乐、成员、发行、歌曲、槽位和 picks 的数据结构。
+- `memory/progress.md`：当前开发状态、已完成事项、已知风险和最近更新记录。后续交接先读这里。
+- `memory/architecture.md`：架构说明和文件职责索引。修改核心流程、配置层或部署链路后必须同步更新。
+- `memory/tech-stack.md`：运行环境、依赖、脚本、构建部署和质量工具说明。
+- `memory/app-design-document.md`：产品流程、UI/交互验收标准和导出体验要求。
 
-`src/data/songs.ts` 从 JSON 派生运行时集合和索引，包括 `SONGS`、`SONGS_BY_ID`、`MEMBERS`、`MEMBERS_BY_ID`、`RELEASE_TYPES`、`TRACK_TYPES`、`RELEASE_YEARS`、`TAGS`。
+### 3.3 scripts
 
-`src/components/Controls.tsx` 负责歌曲总数展示、导出昵称输入、全局搜索、清空全部、生成图片按钮和生成中状态。
+- `scripts/clean-static-export.mjs`：构建前删除旧 `out/`，避免不同项目的静态产物混在一起。
+- `scripts/copy-public-assets.mjs`：静态导出后同步 `.next/static` 与 `public/` 资源到 `out/`，让 Cloudflare Pages 可直接托管。
+- `scripts/sync-equal-love-discography.py`：同步 =LOVE 歌曲和成员数据的专用脚本，输出到 `src/projects/equal-love/`。
+- `scripts/validate-project-data.mjs`：校验全部或单个项目数据。检查 song id 唯一、成员引用存在、封面存在、类型合法；`equal-love` 额外检查 84 首歌曲、12 名成员和边界歌曲。
 
-`src/components/PickBoard.tsx` 负责展示 10 个槽位和已选择数量，并将每个槽位委托给 `PickSlotCard`。
+### 3.4 Next App Router
 
-`src/components/PickSlotCard.tsx` 负责单个槽位的封面、标题、年份、track type 展示，以及单槽位清空按钮。
+- `src/app/layout.tsx`：根 layout。读取 `PROJECT_CONFIG` 生成 metadata、favicon、OG/Twitter 信息，并把项目主题色写入 CSS variables。
+- `src/app/page.tsx`：客户端主页面和状态编排。负责 picks、搜索/替换弹窗、localStorage、导出图片、预览和分享入口。
+- `src/app/globals.css`：全局样式、Tailwind 入口、基础背景、面板、按钮和项目主题 CSS class。
+- `src/app/robots.ts`：按当前项目 `siteUrl` 生成静态 robots。不要恢复 `public/robots.txt`。
+- `src/app/sitemap.ts`：按当前项目 `siteUrl` 生成静态 sitemap。不要恢复 `public/sitemap.xml`。
 
-`src/components/SearchModal.tsx` 负责歌曲搜索、筛选、键盘关闭、移动端自动聚焦规避和歌曲选择。
+### 3.5 组件
 
-`src/components/ReplacementModal.tsx` 负责满槽后选择要替换的槽位。
+- `src/components/Header.tsx`：首页品牌标题和副标题，读取当前项目 `groupName`、`subtitle`。
+- `src/components/Footer.tsx`：页脚免责声明和灵感来源链接，文案随当前项目 group 切换。
+- `src/components/GitHubLink.tsx`：右上角 GitHub 链接，默认使用当前项目 `repoUrl`。
+- `src/components/Controls.tsx`：昵称输入、搜索、清空和生成图片按钮区。
+- `src/components/PickBoard.tsx`：pick 槽位网格容器，把槽位配置、已选歌曲和交互回调分发给卡片。
+- `src/components/PickSlotCard.tsx`：单个 pick 槽位卡片，展示封面、标题、成员色和清空按钮。
+- `src/components/SearchModal.tsx`：歌曲搜索弹窗，提供关键字、快捷筛选、年份、成员、release type 和毕业成员显示控制。
+- `src/components/ReplacementModal.tsx`：当 10 个槽位已满时选择替换目标的弹窗。
+- `src/components/ExportBoard.tsx`：隐藏离屏导出画布，id 来自 `EXPORT_CANVAS_ID`；供 `html2canvas` 捕获 PNG。
+- `src/components/PreviewModal.tsx`：导出预览弹窗，处理下载文件名、分享到 X 和 Web Share API。
 
-`src/components/ExportBoard.tsx` 负责隐藏离屏导出画布，按照 `EXPORT_CONFIG` 和当前 picks 渲染可被 `html2canvas` 捕获的 DOM。
+### 3.6 配置、数据、类型与工具
 
-`src/components/PreviewModal.tsx` 负责图片预览、显示标题开关、透明背景开关、下载图片和分享到 X。
+- `src/projects/registry.ts`：项目注册表。定义固定 `PROJECT_IDS`、默认项目、每个项目的品牌配置，并把对应 `members.json` 和 `songs.json` 注册进当前构建。
+- `src/config/project.ts`：当前项目配置入口。派生 `PROJECT_CONFIG`、`PROJECT_ID`、`STORAGE_KEYS`、`EXPORT_CONFIG`、`EXPORT_CANVAS_ID`、`DEFAULT_PICK_SLOTS`、主题色和筛选标签。
+- `src/data/songs.ts`：从当前项目 JSON 派生运行时集合与索引，包括 `SONGS`、`SONGS_BY_ID`、`MEMBERS`、`MEMBERS_BY_ID`、`RELEASE_TYPES`、`TRACK_TYPES`、`RELEASE_YEARS`、`TAGS`。
+- `src/schema/music.ts`：成员、歌曲、发行、曲目类型、pick slot、localStorage 数据结构的 TypeScript 契约。
+- `src/utils/colors.ts`：颜色工具。当前用于把现代 CSS 颜色函数转换为 `html2canvas` 更稳定支持的格式。
+- `src/utils/constants.ts`：从当前项目配置导出的站点常量，例如 `SITE_URL`。
 
-`src/components/Header.tsx` 负责首页品牌头部和简短说明。
+### 3.7 项目数据与静态资源
 
-`src/components/Footer.tsx` 负责非官方项目声明、素材权利声明和来源说明。
+- `src/projects/equal-love/members.json`：=LOVE 成员数据源。
+- `src/projects/equal-love/songs.json`：=LOVE 歌曲数据源。
+- `src/projects/nearly-equal-joy/members.json`：≒JOY 成员数据壳，后续填充真实成员。
+- `src/projects/nearly-equal-joy/songs.json`：≒JOY 歌曲数据壳，后续填充真实歌曲。
+- `src/projects/not-equal-me/members.json`：≠ME 成员数据壳，后续填充真实成员。
+- `src/projects/not-equal-me/songs.json`：≠ME 歌曲数据壳，后续填充真实歌曲。
+- `public/icon.svg`：旧通用 icon，保留用于兼容历史引用；新 metadata 使用项目化 icon。
+- `public/icons/equal-love.svg`：=LOVE 站点 favicon/OG icon。
+- `public/icons/nearly-equal-joy.svg`：≒JOY 站点 favicon/OG icon。
+- `public/icons/not-equal-me.svg`：≠ME 站点 favicon/OG icon。
+- `public/covers/equal-love/*`：=LOVE 本地封面图，路径被 `songs.json` 的 `coverUrl` 引用。
+- `public/covers/nearly-equal-joy/`：≒JOY 后续封面路径规范；当前无封面文件时目录可不存在，新增歌曲时使用 `/covers/nearly-equal-joy/...`。
+- `public/covers/not-equal-me/`：≠ME 后续封面路径规范；当前无封面文件时目录可不存在，新增歌曲时使用 `/covers/not-equal-me/...`。
+- `docs/equal-love-mypicks-preview.png`：README 预览图。
 
-`src/components/GitHubLink.tsx` 负责显示 GitHub 仓库入口。
+## 4. 核心模块职责
 
-## 4. 数据结构
+`src/projects/registry.ts` 定义固定项目 id、项目配置、成员 JSON 和歌曲 JSON 的注册表。
 
-`LocalizedString` 表示本地化文本，包含 `ja`、`romaji`，可选 `en`。
+`src/config/project.ts` 基于 `NEXT_PUBLIC_PROJECT_ID` 暴露当前项目的 `PROJECT_CONFIG`、`STORAGE_KEYS`、`EXPORT_CANVAS_ID`、`DEFAULT_PICK_SLOTS`、`PROJECT_THEME_COLOR`、`EXPORT_CONFIG` 和筛选标签。
 
-`Member` 表示 ＝LOVE 成员，包含成员 id、姓名、颜色、状态、毕业信息和排序。
+`src/app/layout.tsx` 从当前项目配置生成 title、description、keywords、favicon、OG/Twitter metadata，并把项目主题色写入 CSS variables。
 
-`Release` 表示发行信息，包含发行 id、标题、类型、日期、版本、封面和官方链接。
+`src/app/page.tsx` 是客户端主编排层：管理 picks 状态、弹窗状态、替换流程、预览生成、本地持久化读取与写入。
 
-`Song` 表示歌曲，包含 id、标题、artist、发行信息、曲目类型、封面、成员引用、可见性、来源状态、标签、credits 和官方链接。
+`src/data/songs.ts` 从当前项目 JSON 派生 `SONGS`、`SONGS_BY_ID`、`MEMBERS`、`MEMBERS_BY_ID`、`RELEASE_TYPES`、`TRACK_TYPES`、`RELEASE_YEARS`、`TAGS`。
 
-`PickSlot` 表示 pick 槽位，包含槽位 id、标签、可选副标题和排序。
+`src/components/ExportBoard.tsx` 使用项目化 `EXPORT_CANVAS_ID` 和当前项目品牌配置渲染隐藏离屏导出画布。
 
-`StoredPicks` 是 `Record<PickSlotId, string>`，只保存槽位到 `song.id` 的映射。
+## 5. 数据与配置流
 
-`Picks` 是 `Record<PickSlotId, Song>`，是页面运行时从 `StoredPicks` 和 `SONGS_BY_ID` 派生出的完整歌曲映射。
+当前项目选择链路为：
 
-## 5. 数据流
+`NEXT_PUBLIC_PROJECT_ID` → `src/projects/registry.ts` → `src/config/project.ts` 与 `src/data/songs.ts` → 页面和组件。
 
 静态数据链路为：
 
-`src/data/equal-love-songs.json` 与 `src/data/equal-love-members.json` → `src/data/songs.ts` 派生集合与索引 → `src/app/page.tsx` 状态 → UI 组件 → `ExportBoard` → `html2canvas` → `PreviewModal`。
+`src/projects/<project-id>/songs.json` 与 `members.json` → `src/data/songs.ts` 派生集合与索引 → `src/app/page.tsx` 状态 → UI 组件 → `ExportBoard` → `html2canvas` → `PreviewModal`。
 
-`SONGS` 负责搜索列表和导出可选歌曲集合。
+封面继续使用 public 静态路径，例如 `/covers/equal-love/...`。新增项目应使用对应目录，例如 `/covers/nearly-equal-joy/...` 和 `/covers/not-equal-me/...`。
 
-`SONGS_BY_ID` 负责将本地保存的 `song.id` 还原为完整 `Song`。
+## 6. 本地持久化
 
-`MEMBERS` 负责成员颜色、搜索筛选和已毕业成员逻辑。
+用户选择写入 `STORAGE_KEYS.picks`，导出选项写入 `STORAGE_KEYS.options`。
 
-`RELEASE_TYPES`、`TRACK_TYPES`、`RELEASE_YEARS` 负责筛选选项。
+`STORAGE_KEYS` 由当前项目的 `storagePrefix` 派生，例如 `equal_love_mypicks_v1`、`nearly_equal_joy_mypicks_v1`、`not_equal_me_mypicks_v1`，避免三个站点在浏览器里互相污染。
 
-## 6. 状态流
-
-`storedPicks` 保存当前槽位到 `song.id` 的映射，并写入 `localStorage`。
-
-`activeSlotId` 表示当前指定选择的槽位；为 `null` 时表示全局搜索流程。
-
-`showModal` 控制搜索弹窗显示。
-
-`pendingReplacementSong` 保存满槽时等待替换的新歌曲。
-
-`previewUrl` 保存 `html2canvas` 生成的 PNG data URL，并控制预览弹窗显示。
-
-`generating` 控制图片生成中的 UI 状态。
-
-`showTitles` 控制导出图是否显示歌曲标题。
-
-`transparentBg` 控制导出图背景是否透明。
-
-`nicknameDraft` 保存导出昵称输入草稿。
-
-`hydrated` 标记浏览器端读取 `localStorage` 的初始化过程是否完成。
-
-`generatingRef` 防止图片生成被并发重复触发。
-
-页面通过 `useMemo` 从 `storedPicks` 派生 `picks`，过滤掉无法在 `SONGS_BY_ID` 中找到的无效歌曲 id。
+用户选择只保存 `song.id`，运行时通过当前项目的 `SONGS_BY_ID` 还原完整 `Song`。
 
 ## 7. 图片生成流程
 
-用户点击 Generate Image 后，`handleGenerateImage` 先通过 `generatingRef` 防止重复执行，并将 `generating` 设为 true。
+用户点击 Generate Image 后，`handleGenerateImage` 通过 `generatingRef` 防止并发重复执行。
 
-生成前临时包装 `window.getComputedStyle`，通过 `convertColorString` 将部分现代颜色函数转换为 `rgba`，提升 `html2canvas` 兼容性。
+生成前临时包装 `window.getComputedStyle`，通过 `convertColorString` 提升 `html2canvas` 对现代颜色函数的兼容性。
 
-随后动态 import `html2canvas`，查找 id 为 `mypick-equal-love-export-canvas` 的离屏导出元素。
+随后动态 import `html2canvas`，查找当前项目的 `EXPORT_CANVAS_ID`，等待字体稳定后生成 PNG data URL，并写入 `PreviewModal`。
 
-生成前等待 `document.fonts.ready`，并额外等待 150ms，降低字体或布局尚未稳定导致的导出风险。
+当预览已存在时，`showTitles` 或 `transparentBg` 变化会延迟触发重新生成。
 
-`html2canvas` 使用 `useCORS: true`、`EXPORT_CONFIG.scale`、`EXPORT_CONFIG.background` 或透明背景配置生成 canvas。
+## 8. 构建与部署
 
-生成完成后调用 `canvas.toDataURL("image/png")` 写入 `previewUrl`，打开或刷新 `PreviewModal`。
+项目必须保持 Next.js `output: "export"` 兼容和 `images.unoptimized: true`。
 
-当预览已存在时，`showTitles` 或 `transparentBg` 变化会延迟 100ms 触发重新生成。
+`npm run build` 默认生成 `equal-love`。Cloudflare Pages 使用三个独立 Pages 项目连接同一 GitHub repo 和 `main` 分支：
 
-## 8. 搜索与筛选流程
+- `npm run build:equal-love` → `out/` → `mypick.kozueginko.com`
+- `npm run build:nearly-equal-joy` → `out/`
+- `npm run build:not-equal-me` → `out/`
 
-`SearchModal` 接收 `songs`、`members`、`releaseTypes`、`trackTypes`、`years`。
+`src/app/robots.ts` 与 `src/app/sitemap.ts` 根据当前项目 `siteUrl` 生成静态 robots 和 sitemap。
 
-搜索词会经过小写、去空白、保留日文/英文/数字和 ＝ 符号的规范化处理。
+本地开发使用 `next dev --webpack`。Next.js 16.2.9 的 Turbopack dev 已在本项目中复现首页首次编译卡住，表现为端口已连接但请求长时间无响应；生产 `next build` 未受影响。
 
-搜索字段包括歌曲标题、artist、作词者、作曲者、编曲者、成员和 center 成员的多语言名称。当前没有完整歌词正文搜索。
+## 9. 关键不变量
 
-筛选条件包括：
-
-- release type。
-- track type。
-- year。
-- member。
-- graduated members 显示开关。
-
-快捷筛选覆盖 All、主要 track type 和 Digital。
-
-默认无搜索词且未打开已毕业成员显示时，含已毕业成员参与的歌曲会被隐藏。
-
-## 9. 本地持久化
-
-用户选择写入 `localStorage` 的 `STORAGE_KEYS.picks`。
-
-导出选项 `showTitles` 与 `transparentBg` 写入 `localStorage` 的 `STORAGE_KEYS.options`。
-
-页面 hydration 后通过 `setTimeout(..., 0)` 读取 `localStorage`，并用 `parseStoredPicks` 校验槽位 id 和歌曲 id。
-
-`parseStoredPicks` 只接受 `DEFAULT_PICK_SLOTS` 中存在的槽位，且只保留 `SONGS_BY_ID` 中存在的歌曲 id。
-
-昵称当前保存在页面状态，不写入 `localStorage`。
-
-## 10. 静态导出架构约束
-
-项目必须保持 Next.js `output: "export"` 兼容。
-
-项目必须保持 `images.unoptimized: true`，不得依赖 Next.js 运行时图片优化。
-
-核心功能不能依赖服务端数据库、服务端 session、API Routes 核心路径、动态服务端渲染或服务端图片生成。
-
-站点资源和歌曲封面必须能在静态导出的 `out/` 目录中被访问。
-
-`npm run build` 当前链路会先清理 `out/`，再执行 `next build`，最后复制 `.next/static` 和 `public/` 资源到 `out/`。
-
-## 11. 关键不变量
+固定项目 id 只有 `equal-love`、`nearly-equal-joy`、`not-equal-me`。
 
 `DEFAULT_PICK_SLOTS` 当前是 10 个槽位。
-
-用户选择只保存 `song.id`，不在本地持久化完整 `Song` 对象。
 
 `localStorage` key 必须从 `STORAGE_KEYS` 获取。
 
 导出尺寸、背景和 scale 必须从 `EXPORT_CONFIG` 获取。
 
-`SONGS_BY_ID` 是通过 id 查找 `Song` 的唯一运行时索引。
-
-`SearchModal` 的搜索字段和筛选规则必须与真实 `Song`、`Member` 数据结构一致。
-
-数据变更必须通过 `npm run validate:data` 校验。
+数据变更必须运行 `npm run validate:data`。=LOVE 数据仍保留 84 首、12 名成员和边界歌曲的严格校验。
 
 静态导出能力不得被依赖服务端运行时的实现破坏。
 
-## 12. 架构变更维护规则
+## 10. 架构变更维护规则
 
-修改主流程、状态结构、数据派生、搜索筛选、导出流程或持久化规则后，必须更新本文件。
-
-新增组件或移动模块职责后，必须更新目录结构和核心模块职责。
-
-改变数据结构或 JSON 字段后，必须更新数据结构、数据流和校验说明。
+修改主流程、状态结构、项目配置层、数据派生、搜索筛选、导出流程或持久化规则后，必须更新本文件。
 
 改变部署模式、构建链路、Next.js 配置或图片策略后，必须同步更新 `memory/tech-stack.md`。
 
