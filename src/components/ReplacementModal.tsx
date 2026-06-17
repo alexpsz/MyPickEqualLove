@@ -41,7 +41,8 @@ export default function ReplacementModal({
             Choose Slot to Replace
           </h3>
           <p className="mt-1 text-xs text-slate-500">
-            Board is full. Place <span className="font-bold text-rose-600">{song.title.ja}</span>{" "}
+            Board is full. Place{" "}
+            <span className="font-bold text-rose-600">{song.title.ja}</span>{" "}
             into one of your picks.
           </p>
         </div>
@@ -73,11 +74,7 @@ export default function ReplacementModal({
         </div>
 
         <div className="flex justify-end border-t border-black bg-white p-4">
-          <button
-            type="button"
-            onClick={onClose}
-            className="official-button"
-          >
+          <button type="button" onClick={onClose} className="official-button">
             Cancel
           </button>
         </div>

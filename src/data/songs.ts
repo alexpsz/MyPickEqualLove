@@ -6,7 +6,9 @@ export const MEMBERS: Member[] = CURRENT_PROJECT.members;
 export const SONGS: Song[] = CURRENT_PROJECT.songs.slice().sort((a, b) => {
   const dateA = a.releaseDate ?? "";
   const dateB = b.releaseDate ?? "";
-  return dateB.localeCompare(dateA) || a.title.romaji.localeCompare(b.title.romaji);
+  return (
+    dateB.localeCompare(dateA) || a.title.romaji.localeCompare(b.title.romaji)
+  );
 });
 
 export const SONGS_BY_ID: Record<string, Song> = Object.fromEntries(
@@ -18,7 +20,9 @@ export const MEMBERS_BY_ID: Record<string, Member> = Object.fromEntries(
 );
 
 export const RELEASE_TYPES: ReleaseType[] = Array.from(
-  new Set(SONGS.map((song) => song.releaseType).filter(Boolean) as ReleaseType[]),
+  new Set(
+    SONGS.map((song) => song.releaseType).filter(Boolean) as ReleaseType[],
+  ),
 );
 
 export const TRACK_TYPES: TrackType[] = Array.from(
@@ -27,7 +31,9 @@ export const TRACK_TYPES: TrackType[] = Array.from(
 
 export const RELEASE_YEARS = Array.from(
   new Set(
-    SONGS.map((song) => song.releaseDate?.slice(0, 4)).filter(Boolean) as string[],
+    SONGS.map((song) => song.releaseDate?.slice(0, 4)).filter(
+      Boolean,
+    ) as string[],
   ),
 ).sort((a, b) => b.localeCompare(a));
 
