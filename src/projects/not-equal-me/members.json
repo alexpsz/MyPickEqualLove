@@ -9,10 +9,7 @@
     "active": true,
     "sortOrder": 1,
     "color": "#1976d2",
-    "colors": [
-      "#1976d2",
-      "#ffffff"
-    ],
+    "colors": ["#1976d2", "#ffffff"],
     "colorName": "Blue x White (青×白)"
   },
   {
@@ -25,10 +22,7 @@
     "active": true,
     "sortOrder": 2,
     "color": "#f6c443",
-    "colors": [
-      "#f6c443",
-      "#f6c443"
-    ],
+    "colors": ["#f6c443", "#f6c443"],
     "colorName": "Yellow x Yellow (黄×黄)"
   },
   {
@@ -41,10 +35,7 @@
     "active": true,
     "sortOrder": 3,
     "color": "#73c7e8",
-    "colors": [
-      "#73c7e8",
-      "#e53935"
-    ],
+    "colors": ["#73c7e8", "#e53935"],
     "colorName": "Light Blue x Red (水色×赤)"
   },
   {
@@ -57,10 +48,7 @@
     "active": true,
     "sortOrder": 4,
     "color": "#f57c00",
-    "colors": [
-      "#f57c00",
-      "#ffffff"
-    ],
+    "colors": ["#f57c00", "#ffffff"],
     "colorName": "Orange x White (オレンジ×白)"
   },
   {
@@ -73,10 +61,7 @@
     "active": true,
     "sortOrder": 5,
     "color": "#111827",
-    "colors": [
-      "#111827",
-      "#79d8b2"
-    ],
+    "colors": ["#111827", "#79d8b2"],
     "colorName": "Black x Mint Green (黒×ミントグリーン)"
   },
   {
@@ -89,10 +74,7 @@
     "active": true,
     "sortOrder": 6,
     "color": "#f06292",
-    "colors": [
-      "#f06292",
-      "#f8a7c5"
-    ],
+    "colors": ["#f06292", "#f8a7c5"],
     "colorName": "Pink x Light Pink (ピンク×薄ピンク)"
   },
   {
@@ -105,10 +87,7 @@
     "active": true,
     "sortOrder": 7,
     "color": "#f8a7c5",
-    "colors": [
-      "#f8a7c5",
-      "#f8a7c5"
-    ],
+    "colors": ["#f8a7c5", "#f8a7c5"],
     "colorName": "Light Pink x Light Pink (薄ピンク×薄ピンク)"
   },
   {
@@ -121,10 +100,7 @@
     "active": true,
     "sortOrder": 8,
     "color": "#f06292",
-    "colors": [
-      "#f06292",
-      "#ffffff"
-    ],
+    "colors": ["#f06292", "#ffffff"],
     "colorName": "Pink x White (ピンク×白)"
   },
   {
@@ -137,10 +113,7 @@
     "active": true,
     "sortOrder": 9,
     "color": "#f6c443",
-    "colors": [
-      "#f6c443",
-      "#43a047"
-    ],
+    "colors": ["#f6c443", "#43a047"],
     "colorName": "Yellow x Green (黄×緑)"
   },
   {
@@ -153,10 +126,7 @@
     "active": true,
     "sortOrder": 10,
     "color": "#1976d2",
-    "colors": [
-      "#1976d2",
-      "#1976d2"
-    ],
+    "colors": ["#1976d2", "#1976d2"],
     "colorName": "Blue x Blue (青×青)"
   },
   {
@@ -169,10 +139,7 @@
     "active": true,
     "sortOrder": 11,
     "color": "#b39ddb",
-    "colors": [
-      "#b39ddb",
-      "#73c7e8"
-    ],
+    "colors": ["#b39ddb", "#73c7e8"],
     "colorName": "Light Purple x Light Blue (薄紫×水色)"
   },
   {
@@ -185,10 +152,7 @@
     "active": false,
     "sortOrder": 101,
     "color": "#73c7e8",
-    "colors": [
-      "#73c7e8",
-      "#73c7e8"
-    ],
+    "colors": ["#73c7e8", "#73c7e8"],
     "colorName": "Light Blue x Light Blue (水色×水色)",
     "graduated": true,
     "status": "graduated",

@@ -62,7 +62,11 @@ export default function PreviewModal({
               className="flex h-9 w-9 items-center justify-center border border-black bg-white text-black transition-colors hover:bg-black hover:text-white"
               aria-label="Close image preview"
             >
-              <svg className="h-4 w-4 fill-current" viewBox="0 0 20 20" aria-hidden="true">
+              <svg
+                className="h-4 w-4 fill-current"
+                viewBox="0 0 20 20"
+                aria-hidden="true"
+              >
                 <path d="M10 8.586L2.929 1.515 1.515 2.929 8.586 10l-7.071 7.071 1.414 1.414L10 11.414l7.071 7.071 1.414-1.414L11.414 10l7.071-7.071-1.414-1.414L10 8.586z" />
               </svg>
             </button>
@@ -88,11 +92,7 @@ export default function PreviewModal({
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-3.5 border-t border-black bg-white p-5">
-          <button
-            type="button"
-            onClick={onClose}
-            className="official-button"
-          >
+          <button type="button" onClick={onClose} className="official-button">
             Close
           </button>
           <button
@@ -102,7 +102,11 @@ export default function PreviewModal({
             }}
             className="official-button official-button-primary"
           >
-            <svg className="h-3.5 w-3.5 fill-current" viewBox="0 0 20 20" aria-hidden="true">
+            <svg
+              className="h-3.5 w-3.5 fill-current"
+              viewBox="0 0 20 20"
+              aria-hidden="true"
+            >
               <path d="M13 8V2H7v6H2l8 8 8-8h-5zM2 18h16v2H2v-2z" />
             </svg>
             Download Image
@@ -114,7 +118,11 @@ export default function PreviewModal({
             }}
             className="official-button bg-black text-white hover:bg-[var(--project-primary)]"
           >
-            <svg className="h-3.5 w-3.5 fill-current" viewBox="0 0 24 24" aria-hidden="true">
+            <svg
+              className="h-3.5 w-3.5 fill-current"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
               <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
             </svg>
             Share to X
@@ -300,10 +308,7 @@ function shareImage(
   fileName: string,
   browser: BrowserProfile,
 ): boolean | Promise<boolean> {
-  if (
-    !browser.prefersShareFallback ||
-    typeof navigator.share !== "function"
-  ) {
+  if (!browser.prefersShareFallback || typeof navigator.share !== "function") {
     return false;
   }
 
@@ -393,8 +398,7 @@ function getBrowserProfile(): BrowserProfile {
     UNRELIABLE_ANDROID_DOWNLOAD_AGENTS.some((agent) =>
       lowerUserAgent.includes(agent),
     ) || /; wv\)/i.test(userAgent);
-  const prefersFallback =
-    isIOS || (isAndroid && hasUnreliableAndroidDownload);
+  const prefersFallback = isIOS || (isAndroid && hasUnreliableAndroidDownload);
 
   return {
     prefersOpenImageFallback: prefersFallback,
