@@ -1,1 +1,1478 @@
-[]
+[
+  {
+    "id": "mubou-nin",
+    "title": {
+      "ja": "無謀人",
+      "romaji": "mubou nin"
+    },
+    "artist": {
+      "ja": "≒JOY",
+      "romaji": "≒ JOY"
+    },
+    "releaseId": "2024-01-17-kitto-zettai-zettai-cd-only-type-c-debyuu-kinen-tokubetsu-puraisu-ban",
+    "releaseTitle": {
+      "ja": "きっと、絶対、絶対 [CD Only/Type C] (デビュー記念特別プライス盤)",
+      "romaji": "kitto , zettai , zettai [CD Only/Type C ] ( debyuu kinen tokubetsu puraisu ban )"
+    },
+    "releaseType": "album",
+    "releaseDate": "2024-01-17",
+    "trackNo": 2,
+    "trackType": "album",
+    "coverUrl": "/covers/nearly-equal-joy/mubou-nin.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/yoani3rd/contents/discography/41aaebeb68f798917c53531c099a12e2.jpeg",
+    "memberIds": [
+      "aida-jurii",
+      "amano-konoa",
+      "ichihara-ayumi",
+      "esumi-renon",
+      "oshida-mitsuki",
+      "onishi-aoi",
+      "ozawa-aimi",
+      "takahashi-mai",
+      "fujisawa-riko",
+      "murayama-yuuka",
+      "yamada-momoka",
+      "yamano-arisu"
+    ],
+    "tags": [
+      "2024",
+      "album"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "YU-JIN",
+        "romaji": "YU-JIN"
+      },
+      "arranger": {
+        "ja": "YU-JIN",
+        "romaji": "YU-JIN"
+      }
+    },
+    "officialUrl": "https://nearly-equal-joy.jp/discography/detail/15/",
+    "creditSourceUrl": "https://www.uta-net.com/song/347902/"
+  },
+  {
+    "id": "nearly-equal-joy",
+    "title": {
+      "ja": "≒JOY",
+      "romaji": "≒ JOY"
+    },
+    "artist": {
+      "ja": "≒JOY",
+      "romaji": "≒ JOY"
+    },
+    "releaseId": "2024-01-17-kitto-zettai-zettai-cd-only-type-c-debyuu-kinen-tokubetsu-puraisu-ban",
+    "releaseTitle": {
+      "ja": "きっと、絶対、絶対 [CD Only/Type C] (デビュー記念特別プライス盤)",
+      "romaji": "kitto , zettai , zettai [CD Only/Type C ] ( debyuu kinen tokubetsu puraisu ban )"
+    },
+    "releaseType": "album",
+    "releaseDate": "2024-01-17",
+    "trackNo": 3,
+    "trackType": "album",
+    "coverUrl": "/covers/nearly-equal-joy/nearly-equal-joy.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/yoani3rd/contents/discography/41aaebeb68f798917c53531c099a12e2.jpeg",
+    "memberIds": [
+      "aida-jurii",
+      "amano-konoa",
+      "ichihara-ayumi",
+      "esumi-renon",
+      "oshida-mitsuki",
+      "onishi-aoi",
+      "ozawa-aimi",
+      "takahashi-mai",
+      "fujisawa-riko",
+      "murayama-yuuka",
+      "yamada-momoka",
+      "yamano-arisu",
+      "fukuyama-moeka"
+    ],
+    "tags": [
+      "2024",
+      "album"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "鈴木裕明",
+        "romaji": "suzuki hiroaki"
+      },
+      "arranger": {
+        "ja": "古川貴浩",
+        "romaji": "furukawa takahiro"
+      }
+    },
+    "officialUrl": "https://nearly-equal-joy.jp/discography/detail/15/",
+    "creditSourceUrl": "https://www.uta-net.com/song/321374/"
+  },
+  {
+    "id": "waratsu-te-furajiiru",
+    "title": {
+      "ja": "笑って フラジール",
+      "romaji": "waratsu te furajiiru"
+    },
+    "artist": {
+      "ja": "≒JOY",
+      "romaji": "≒ JOY"
+    },
+    "releaseId": "2024-01-17-kitto-zettai-zettai-cd-only-type-c-debyuu-kinen-tokubetsu-puraisu-ban",
+    "releaseTitle": {
+      "ja": "きっと、絶対、絶対 [CD Only/Type C] (デビュー記念特別プライス盤)",
+      "romaji": "kitto , zettai , zettai [CD Only/Type C ] ( debyuu kinen tokubetsu puraisu ban )"
+    },
+    "releaseType": "album",
+    "releaseDate": "2024-01-17",
+    "trackNo": 4,
+    "trackType": "album",
+    "coverUrl": "/covers/nearly-equal-joy/waratsu-te-furajiiru.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/yoani3rd/contents/discography/41aaebeb68f798917c53531c099a12e2.jpeg",
+    "memberIds": [
+      "aida-jurii",
+      "amano-konoa",
+      "ichihara-ayumi",
+      "esumi-renon",
+      "oshida-mitsuki",
+      "onishi-aoi",
+      "ozawa-aimi",
+      "takahashi-mai",
+      "fujisawa-riko",
+      "murayama-yuuka",
+      "yamada-momoka",
+      "yamano-arisu",
+      "fukuyama-moeka"
+    ],
+    "tags": [
+      "2024",
+      "album"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "Haggy Rock",
+        "romaji": "Haggy Rock"
+      },
+      "arranger": {
+        "ja": "佐藤厚仁",
+        "romaji": "satou atsuhito"
+      }
+    },
+    "officialUrl": "https://nearly-equal-joy.jp/discography/detail/15/",
+    "creditSourceUrl": "https://www.uta-net.com/song/325455/"
+  },
+  {
+    "id": "chou-kodoku-raion",
+    "title": {
+      "ja": "超孤独ライオン",
+      "romaji": "chou kodoku raion"
+    },
+    "artist": {
+      "ja": "≒JOY",
+      "romaji": "≒ JOY"
+    },
+    "releaseId": "2024-01-17-kitto-zettai-zettai-cd-only-type-c-debyuu-kinen-tokubetsu-puraisu-ban",
+    "releaseTitle": {
+      "ja": "きっと、絶対、絶対 [CD Only/Type C] (デビュー記念特別プライス盤)",
+      "romaji": "kitto , zettai , zettai [CD Only/Type C ] ( debyuu kinen tokubetsu puraisu ban )"
+    },
+    "releaseType": "album",
+    "releaseDate": "2024-01-17",
+    "trackNo": 5,
+    "trackType": "album",
+    "coverUrl": "/covers/nearly-equal-joy/chou-kodoku-raion.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/yoani3rd/contents/discography/41aaebeb68f798917c53531c099a12e2.jpeg",
+    "memberIds": [
+      "aida-jurii",
+      "amano-konoa",
+      "ichihara-ayumi",
+      "esumi-renon",
+      "oshida-mitsuki",
+      "onishi-aoi",
+      "ozawa-aimi",
+      "takahashi-mai",
+      "fujisawa-riko",
+      "murayama-yuuka",
+      "yamada-momoka",
+      "yamano-arisu",
+      "fukuyama-moeka"
+    ],
+    "tags": [
+      "2024",
+      "album"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "鈴木裕明",
+        "romaji": "suzuki hiroaki"
+      },
+      "arranger": {
+        "ja": "鈴木裕明",
+        "romaji": "suzuki hiroaki"
+      }
+    },
+    "officialUrl": "https://nearly-equal-joy.jp/discography/detail/15/",
+    "creditSourceUrl": "https://www.uta-net.com/song/328435/"
+  },
+  {
+    "id": "suiitoshikkusuteiin",
+    "title": {
+      "ja": "スイートシックスティーン",
+      "romaji": "suiitoshikkusuteiin"
+    },
+    "artist": {
+      "ja": "≒JOY",
+      "romaji": "≒ JOY"
+    },
+    "releaseId": "2024-01-17-kitto-zettai-zettai-cd-only-type-c-debyuu-kinen-tokubetsu-puraisu-ban",
+    "releaseTitle": {
+      "ja": "きっと、絶対、絶対 [CD Only/Type C] (デビュー記念特別プライス盤)",
+      "romaji": "kitto , zettai , zettai [CD Only/Type C ] ( debyuu kinen tokubetsu puraisu ban )"
+    },
+    "releaseType": "album",
+    "releaseDate": "2024-01-17",
+    "trackNo": 6,
+    "trackType": "album",
+    "coverUrl": "/covers/nearly-equal-joy/suiitoshikkusuteiin.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/yoani3rd/contents/discography/41aaebeb68f798917c53531c099a12e2.jpeg",
+    "memberIds": [
+      "aida-jurii",
+      "amano-konoa",
+      "ichihara-ayumi",
+      "esumi-renon",
+      "oshida-mitsuki",
+      "onishi-aoi",
+      "ozawa-aimi",
+      "takahashi-mai",
+      "fujisawa-riko",
+      "murayama-yuuka",
+      "yamada-momoka",
+      "yamano-arisu"
+    ],
+    "tags": [
+      "2024",
+      "album"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "中村歩・菊池博人",
+        "romaji": "nakamura ho ・ kikuchi hirohito"
+      },
+      "arranger": {
+        "ja": "中村歩・菊池博人",
+        "romaji": "nakamura ho ・ kikuchi hirohito"
+      }
+    },
+    "officialUrl": "https://nearly-equal-joy.jp/discography/detail/15/",
+    "creditSourceUrl": "https://www.uta-net.com/song/333053/"
+  },
+  {
+    "id": "kyou-mo-kun-no-yume-wo-mita-nda",
+    "title": {
+      "ja": "今日も君の夢を見たんだ",
+      "romaji": "kyou mo kun no yume wo mita nda"
+    },
+    "artist": {
+      "ja": "≒JOY",
+      "romaji": "≒ JOY"
+    },
+    "releaseId": "2024-01-17-kitto-zettai-zettai-cd-only-type-c-debyuu-kinen-tokubetsu-puraisu-ban",
+    "releaseTitle": {
+      "ja": "きっと、絶対、絶対 [CD Only/Type C] (デビュー記念特別プライス盤)",
+      "romaji": "kitto , zettai , zettai [CD Only/Type C ] ( debyuu kinen tokubetsu puraisu ban )"
+    },
+    "releaseType": "album",
+    "releaseDate": "2024-01-17",
+    "trackNo": 7,
+    "trackType": "album",
+    "coverUrl": "/covers/nearly-equal-joy/kyou-mo-kun-no-yume-wo-mita-nda.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/yoani3rd/contents/discography/41aaebeb68f798917c53531c099a12e2.jpeg",
+    "memberIds": [
+      "aida-jurii",
+      "amano-konoa",
+      "ichihara-ayumi",
+      "esumi-renon",
+      "oshida-mitsuki",
+      "onishi-aoi",
+      "ozawa-aimi",
+      "takahashi-mai",
+      "fujisawa-riko",
+      "murayama-yuuka",
+      "yamada-momoka",
+      "yamano-arisu"
+    ],
+    "tags": [
+      "2024",
+      "album"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "本多友紀",
+        "romaji": "honda yuki"
+      },
+      "arranger": {
+        "ja": "脇眞富",
+        "romaji": "waki makoto tomi"
+      }
+    },
+    "officialUrl": "https://nearly-equal-joy.jp/discography/detail/15/",
+    "creditSourceUrl": "https://www.uta-net.com/song/335825/"
+  },
+  {
+    "id": "oozora-byun-to",
+    "title": {
+      "ja": "大空、ビュンと",
+      "romaji": "oozora , byun to"
+    },
+    "artist": {
+      "ja": "≒JOY",
+      "romaji": "≒ JOY"
+    },
+    "releaseId": "2024-01-17-kitto-zettai-zettai-cd-only-type-c-debyuu-kinen-tokubetsu-puraisu-ban",
+    "releaseTitle": {
+      "ja": "きっと、絶対、絶対 [CD Only/Type C] (デビュー記念特別プライス盤)",
+      "romaji": "kitto , zettai , zettai [CD Only/Type C ] ( debyuu kinen tokubetsu puraisu ban )"
+    },
+    "releaseType": "album",
+    "releaseDate": "2024-01-17",
+    "trackNo": 8,
+    "trackType": "album",
+    "coverUrl": "/covers/nearly-equal-joy/oozora-byun-to.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/yoani3rd/contents/discography/41aaebeb68f798917c53531c099a12e2.jpeg",
+    "memberIds": [
+      "aida-jurii",
+      "amano-konoa",
+      "ichihara-ayumi",
+      "esumi-renon",
+      "oshida-mitsuki",
+      "onishi-aoi",
+      "ozawa-aimi",
+      "takahashi-mai",
+      "fujisawa-riko",
+      "murayama-yuuka",
+      "yamada-momoka",
+      "yamano-arisu"
+    ],
+    "tags": [
+      "2024",
+      "album"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "yuma",
+        "romaji": "yuma"
+      },
+      "arranger": {
+        "ja": "めんま",
+        "romaji": "menma"
+      }
+    },
+    "officialUrl": "https://nearly-equal-joy.jp/discography/detail/15/",
+    "creditSourceUrl": "https://www.uta-net.com/song/340758/"
+  },
+  {
+    "id": "sono-saki-ha-iguzaruto",
+    "title": {
+      "ja": "その先はイグザルト",
+      "romaji": "sono saki ha iguzaruto"
+    },
+    "artist": {
+      "ja": "≒JOY",
+      "romaji": "≒ JOY"
+    },
+    "releaseId": "2024-01-17-kitto-zettai-zettai-cd-only-type-c-debyuu-kinen-tokubetsu-puraisu-ban",
+    "releaseTitle": {
+      "ja": "きっと、絶対、絶対 [CD Only/Type C] (デビュー記念特別プライス盤)",
+      "romaji": "kitto , zettai , zettai [CD Only/Type C ] ( debyuu kinen tokubetsu puraisu ban )"
+    },
+    "releaseType": "album",
+    "releaseDate": "2024-01-17",
+    "trackNo": 9,
+    "trackType": "album",
+    "coverUrl": "/covers/nearly-equal-joy/sono-saki-ha-iguzaruto.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/yoani3rd/contents/discography/41aaebeb68f798917c53531c099a12e2.jpeg",
+    "memberIds": [
+      "aida-jurii",
+      "amano-konoa",
+      "ichihara-ayumi",
+      "esumi-renon",
+      "oshida-mitsuki",
+      "onishi-aoi",
+      "ozawa-aimi",
+      "takahashi-mai",
+      "fujisawa-riko",
+      "murayama-yuuka",
+      "yamada-momoka",
+      "yamano-arisu"
+    ],
+    "tags": [
+      "2024",
+      "album"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "高木龍一",
+        "romaji": "takagi ryuuichi"
+      },
+      "arranger": {
+        "ja": "APAZZI",
+        "romaji": "APAZZI"
+      }
+    },
+    "officialUrl": "https://nearly-equal-joy.jp/discography/detail/15/",
+    "creditSourceUrl": "https://www.uta-net.com/song/343119/"
+  },
+  {
+    "id": "kitto-aoi",
+    "title": {
+      "ja": "きっと、青い",
+      "romaji": "kitto , aoi"
+    },
+    "artist": {
+      "ja": "≒JOY",
+      "romaji": "≒ JOY"
+    },
+    "releaseId": "2024-01-17-kitto-zettai-zettai-cd-only-type-c-debyuu-kinen-tokubetsu-puraisu-ban",
+    "releaseTitle": {
+      "ja": "きっと、絶対、絶対 [CD Only/Type C] (デビュー記念特別プライス盤)",
+      "romaji": "kitto , zettai , zettai [CD Only/Type C ] ( debyuu kinen tokubetsu puraisu ban )"
+    },
+    "releaseType": "album",
+    "releaseDate": "2024-01-17",
+    "trackNo": 10,
+    "trackType": "album",
+    "coverUrl": "/covers/nearly-equal-joy/kitto-aoi.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/yoani3rd/contents/discography/41aaebeb68f798917c53531c099a12e2.jpeg",
+    "memberIds": [
+      "aida-jurii",
+      "amano-konoa",
+      "ichihara-ayumi",
+      "esumi-renon",
+      "oshida-mitsuki",
+      "onishi-aoi",
+      "ozawa-aimi",
+      "takahashi-mai",
+      "fujisawa-riko",
+      "murayama-yuuka",
+      "yamada-momoka",
+      "yamano-arisu"
+    ],
+    "tags": [
+      "2024",
+      "album"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "ヤナガワタカオ",
+        "romaji": "yanagawatakao"
+      },
+      "arranger": {
+        "ja": "ヤナガワタカオ",
+        "romaji": "yanagawatakao"
+      }
+    },
+    "officialUrl": "https://nearly-equal-joy.jp/discography/detail/15/",
+    "creditSourceUrl": "https://www.uta-net.com/song/347572/"
+  },
+  {
+    "id": "nebagiba-iki-ro",
+    "title": {
+      "ja": "ネバギバ!生きろ",
+      "romaji": "nebagiba ! iki ro"
+    },
+    "artist": {
+      "ja": "≒JOY",
+      "romaji": "≒ JOY"
+    },
+    "releaseId": "2024-06-12-nebagiba-iki-ro",
+    "releaseTitle": {
+      "ja": "ネバギバ!生きろ",
+      "romaji": "nebagiba ! iki ro"
+    },
+    "releaseType": "digital",
+    "releaseDate": "2024-06-12",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/nearly-equal-joy/nebagiba-iki-ro.jpg",
+    "coverSourceUrl": "https://m.media-amazon.com/images/I/51tPnNBGuNL._SL240_.jpg",
+    "memberIds": [
+      "aida-jurii",
+      "amano-konoa",
+      "ichihara-ayumi",
+      "esumi-renon",
+      "oshida-mitsuki",
+      "onishi-aoi",
+      "ozawa-aimi",
+      "takahashi-mai",
+      "fujisawa-riko",
+      "murayama-yuuka",
+      "yamada-momoka",
+      "yamano-arisu"
+    ],
+    "tags": [
+      "2024",
+      "digital",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "金山秀士",
+        "romaji": "kanayama shuu samurai"
+      },
+      "arranger": {
+        "ja": "めんま",
+        "romaji": "menma"
+      }
+    },
+    "officialUrl": "https://www.uta-net.com/song/355823/",
+    "creditSourceUrl": "https://www.uta-net.com/song/355823/"
+  },
+  {
+    "id": "taiikukan-disuko",
+    "title": {
+      "ja": "体育館ディスコ",
+      "romaji": "taiikukan disuko"
+    },
+    "artist": {
+      "ja": "≒JOY",
+      "romaji": "≒ JOY"
+    },
+    "releaseId": "2024-06-12-taiikukan-disuko",
+    "releaseTitle": {
+      "ja": "体育館ディスコ",
+      "romaji": "taiikukan disuko"
+    },
+    "releaseType": "digital",
+    "releaseDate": "2024-06-12",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/nearly-equal-joy/taiikukan-disuko.jpg",
+    "coverSourceUrl": "https://m.media-amazon.com/images/I/51tPnNBGuNL._SL240_.jpg",
+    "memberIds": [
+      "aida-jurii",
+      "amano-konoa",
+      "ichihara-ayumi",
+      "esumi-renon",
+      "oshida-mitsuki",
+      "onishi-aoi",
+      "ozawa-aimi",
+      "takahashi-mai",
+      "fujisawa-riko",
+      "murayama-yuuka",
+      "yamada-momoka",
+      "yamano-arisu"
+    ],
+    "tags": [
+      "2024",
+      "digital",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "後藤康二(ck510)",
+        "romaji": "gotou yasuji (ck510 )"
+      },
+      "arranger": {
+        "ja": "後藤康二(ck510)",
+        "romaji": "gotou yasuji (ck510 )"
+      }
+    },
+    "officialUrl": "https://www.uta-net.com/song/354186/",
+    "creditSourceUrl": "https://www.uta-net.com/song/354186/"
+  },
+  {
+    "id": "yumemi-ru-aidoru",
+    "title": {
+      "ja": "夢見るアイドル",
+      "romaji": "yumemi ru aidoru"
+    },
+    "artist": {
+      "ja": "≒JOY",
+      "romaji": "≒ JOY"
+    },
+    "releaseId": "2024-06-12-yumemi-ru-aidoru",
+    "releaseTitle": {
+      "ja": "夢見るアイドル",
+      "romaji": "yumemi ru aidoru"
+    },
+    "releaseType": "digital",
+    "releaseDate": "2024-06-12",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/nearly-equal-joy/yumemi-ru-aidoru.jpg",
+    "coverSourceUrl": "https://m.media-amazon.com/images/I/51tPnNBGuNL._SL240_.jpg",
+    "memberIds": [
+      "aida-jurii",
+      "amano-konoa",
+      "ichihara-ayumi",
+      "esumi-renon",
+      "oshida-mitsuki",
+      "onishi-aoi",
+      "ozawa-aimi",
+      "takahashi-mai",
+      "fujisawa-riko",
+      "murayama-yuuka",
+      "yamada-momoka",
+      "yamano-arisu"
+    ],
+    "tags": [
+      "2024",
+      "digital",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "塚田耕平",
+        "romaji": "tsukada kouhei"
+      },
+      "arranger": {
+        "ja": "塚田耕平",
+        "romaji": "tsukada kouhei"
+      }
+    },
+    "officialUrl": "https://www.uta-net.com/song/355824/",
+    "creditSourceUrl": "https://www.uta-net.com/song/355824/"
+  },
+  {
+    "id": "dadada-datte",
+    "title": {
+      "ja": "だだだ、だって。",
+      "romaji": "dadada , datte ."
+    },
+    "artist": {
+      "ja": "≒JOY",
+      "romaji": "≒ JOY"
+    },
+    "releaseId": "2024-10-16-dadada-datte",
+    "releaseTitle": {
+      "ja": "だだだ、だって。",
+      "romaji": "dadada , datte ."
+    },
+    "releaseType": "digital",
+    "releaseDate": "2024-10-16",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/nearly-equal-joy/dadada-datte.jpg",
+    "coverSourceUrl": "https://m.media-amazon.com/images/I/41Ld+96F7lL._SL240_.jpg",
+    "memberIds": [
+      "aida-jurii",
+      "amano-konoa",
+      "ichihara-ayumi",
+      "esumi-renon",
+      "oshida-mitsuki",
+      "onishi-aoi",
+      "ozawa-aimi",
+      "takahashi-mai",
+      "fujisawa-riko",
+      "murayama-yuuka",
+      "yamada-momoka",
+      "yamano-arisu"
+    ],
+    "tags": [
+      "2024",
+      "digital",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "中村歩・齋藤奏太",
+        "romaji": "nakamura ho ・ saitou souta"
+      },
+      "arranger": {
+        "ja": "中村歩・齋藤奏太",
+        "romaji": "nakamura ho ・ saitou souta"
+      }
+    },
+    "officialUrl": "https://www.uta-net.com/song/362812/",
+    "creditSourceUrl": "https://www.uta-net.com/song/362812/"
+  },
+  {
+    "id": "piichiteii-to-piichipai",
+    "title": {
+      "ja": "ピーチティーとピーチパイ",
+      "romaji": "piichiteii to piichipai"
+    },
+    "artist": {
+      "ja": "≒JOY",
+      "romaji": "≒ JOY"
+    },
+    "releaseId": "2024-10-16-piichiteii-to-piichipai",
+    "releaseTitle": {
+      "ja": "ピーチティーとピーチパイ",
+      "romaji": "piichiteii to piichipai"
+    },
+    "releaseType": "digital",
+    "releaseDate": "2024-10-16",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/nearly-equal-joy/piichiteii-to-piichipai.jpg",
+    "coverSourceUrl": "https://m.media-amazon.com/images/I/41Ld+96F7lL._SL240_.jpg",
+    "memberIds": [
+      "aida-jurii",
+      "amano-konoa",
+      "ichihara-ayumi",
+      "esumi-renon",
+      "oshida-mitsuki",
+      "onishi-aoi",
+      "ozawa-aimi",
+      "takahashi-mai",
+      "fujisawa-riko",
+      "murayama-yuuka",
+      "yamada-momoka",
+      "yamano-arisu"
+    ],
+    "tags": [
+      "2024",
+      "digital",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "本田正樹",
+        "romaji": "honda masaki"
+      },
+      "arranger": {
+        "ja": "APAZZI",
+        "romaji": "APAZZI"
+      }
+    },
+    "officialUrl": "https://www.uta-net.com/song/362813/",
+    "creditSourceUrl": "https://www.uta-net.com/song/362813/"
+  },
+  {
+    "id": "hatsukoi-shinderera",
+    "title": {
+      "ja": "初恋シンデレラ",
+      "romaji": "hatsukoi shinderera"
+    },
+    "artist": {
+      "ja": "≒JOY",
+      "romaji": "≒ JOY"
+    },
+    "releaseId": "2024-10-16-hatsukoi-shinderera",
+    "releaseTitle": {
+      "ja": "初恋シンデレラ",
+      "romaji": "hatsukoi shinderera"
+    },
+    "releaseType": "digital",
+    "releaseDate": "2024-10-16",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/nearly-equal-joy/hatsukoi-shinderera.jpg",
+    "coverSourceUrl": "https://m.media-amazon.com/images/I/41Ld+96F7lL._SL240_.jpg",
+    "memberIds": [
+      "aida-jurii",
+      "amano-konoa",
+      "ichihara-ayumi",
+      "esumi-renon",
+      "oshida-mitsuki",
+      "onishi-aoi",
+      "ozawa-aimi",
+      "takahashi-mai",
+      "fujisawa-riko",
+      "murayama-yuuka",
+      "yamada-momoka",
+      "yamano-arisu"
+    ],
+    "tags": [
+      "2024",
+      "digital",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "齋藤奏太",
+        "romaji": "saitou souta"
+      },
+      "arranger": {
+        "ja": "齋藤奏太",
+        "romaji": "saitou souta"
+      }
+    },
+    "officialUrl": "https://www.uta-net.com/song/360341/",
+    "creditSourceUrl": "https://www.uta-net.com/song/360341/"
+  },
+  {
+    "id": "buruuhawairemon",
+    "title": {
+      "ja": "ブルーハワイレモン",
+      "romaji": "buruuhawairemon"
+    },
+    "artist": {
+      "ja": "≒JOY",
+      "romaji": "≒ JOY"
+    },
+    "releaseId": "2025-06-11-buruuhawairemon-cd-dvd-type-c",
+    "releaseTitle": {
+      "ja": "ブルーハワイレモン[CD+DVD/Type C]",
+      "romaji": "buruuhawairemon [CD+DVD/Type C ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2025-06-11",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/nearly-equal-joy/buruuhawairemon.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/yoani3rd/contents/discography/20bf407ece49deae99b98be33a66d791.jpeg",
+    "memberIds": [
+      "aida-jurii",
+      "amano-konoa",
+      "ichihara-ayumi",
+      "esumi-renon",
+      "oshida-mitsuki",
+      "onishi-aoi",
+      "ozawa-aimi",
+      "takahashi-mai",
+      "fujisawa-riko",
+      "murayama-yuuka",
+      "yamada-momoka",
+      "yamano-arisu"
+    ],
+    "tags": [
+      "2025",
+      "single",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "杉山勝彦・尾上榛",
+        "romaji": "sugiyama katsuhiko ・ onoe shin"
+      },
+      "arranger": {
+        "ja": "尾上榛・杉山勝彦",
+        "romaji": "onoe shin ・ sugiyama katsuhiko"
+      }
+    },
+    "officialUrl": "https://nearly-equal-joy.jp/discography/detail/36/",
+    "creditSourceUrl": "https://www.uta-net.com/song/372747/"
+  },
+  {
+    "id": "3-ke-gatsu",
+    "title": {
+      "ja": "♡3ヶ月♡",
+      "romaji": "♡ 3 ke gatsu ♡"
+    },
+    "artist": {
+      "ja": "≒JOY",
+      "romaji": "≒ JOY"
+    },
+    "releaseId": "2025-06-11-buruuhawairemon-cd-dvd-type-c",
+    "releaseTitle": {
+      "ja": "ブルーハワイレモン[CD+DVD/Type C]",
+      "romaji": "buruuhawairemon [CD+DVD/Type C ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2025-06-11",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/nearly-equal-joy/3-ke-gatsu.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/yoani3rd/contents/discography/20bf407ece49deae99b98be33a66d791.jpeg",
+    "memberIds": [
+      "aida-jurii",
+      "amano-konoa",
+      "ichihara-ayumi",
+      "esumi-renon",
+      "oshida-mitsuki",
+      "onishi-aoi",
+      "ozawa-aimi",
+      "takahashi-mai",
+      "fujisawa-riko",
+      "murayama-yuuka",
+      "yamada-momoka",
+      "yamano-arisu"
+    ],
+    "tags": [
+      "2025",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "Yu-ki Kokubo・YUU for YOU",
+        "romaji": "Yu-ki Kokubo ・ YUU for YOU"
+      },
+      "arranger": {
+        "ja": "YUU for YOU",
+        "romaji": "YUU for YOU"
+      }
+    },
+    "officialUrl": "https://nearly-equal-joy.jp/discography/detail/36/",
+    "creditSourceUrl": "https://www.uta-net.com/song/374071/"
+  },
+  {
+    "id": "0120-o-tasuke-ya-san",
+    "title": {
+      "ja": "0120お助け屋さん",
+      "romaji": "0120 o tasuke ya san"
+    },
+    "artist": {
+      "ja": "≒JOY",
+      "romaji": "≒ JOY"
+    },
+    "releaseId": "2025-06-11-buruuhawairemon-cd-dvd-type-c",
+    "releaseTitle": {
+      "ja": "ブルーハワイレモン[CD+DVD/Type C]",
+      "romaji": "buruuhawairemon [CD+DVD/Type C ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2025-06-11",
+    "trackNo": 3,
+    "trackType": "coupling",
+    "coverUrl": "/covers/nearly-equal-joy/0120-o-tasuke-ya-san.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/yoani3rd/contents/discography/20bf407ece49deae99b98be33a66d791.jpeg",
+    "memberIds": [
+      "aida-jurii",
+      "amano-konoa",
+      "ichihara-ayumi",
+      "esumi-renon",
+      "oshida-mitsuki",
+      "onishi-aoi",
+      "ozawa-aimi",
+      "takahashi-mai",
+      "fujisawa-riko",
+      "murayama-yuuka",
+      "yamada-momoka",
+      "yamano-arisu"
+    ],
+    "tags": [
+      "2025",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "めんま",
+        "romaji": "menma"
+      },
+      "arranger": {
+        "ja": "めんま",
+        "romaji": "menma"
+      }
+    },
+    "officialUrl": "https://nearly-equal-joy.jp/discography/detail/36/",
+    "creditSourceUrl": "https://www.uta-net.com/song/374314/"
+  },
+  {
+    "id": "ima-gatsu-ha-michi-ru",
+    "title": {
+      "ja": "いま、月は満ちる",
+      "romaji": "ima , gatsu ha michi ru"
+    },
+    "artist": {
+      "ja": "≒JOY",
+      "romaji": "≒ JOY"
+    },
+    "releaseId": "2025-08-17-ima-gatsu-ha-michi-ru",
+    "releaseTitle": {
+      "ja": "いま、月は満ちる",
+      "romaji": "ima , gatsu ha michi ru"
+    },
+    "releaseType": "digital",
+    "releaseDate": "2025-08-17",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/nearly-equal-joy/ima-gatsu-ha-michi-ru.jpg",
+    "coverSourceUrl": "https://www.uta-net.com/libs/cacheimg.php?p=kashi&f=380000/378810.jpg",
+    "memberIds": [
+      "aida-jurii",
+      "amano-konoa",
+      "ichihara-ayumi",
+      "esumi-renon",
+      "oshida-mitsuki",
+      "onishi-aoi",
+      "ozawa-aimi",
+      "takahashi-mai",
+      "fujisawa-riko",
+      "murayama-yuuka",
+      "yamada-momoka",
+      "yamano-arisu"
+    ],
+    "tags": [
+      "2025",
+      "digital",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "島軒瑠",
+        "romaji": "shima ken ru"
+      },
+      "arranger": {
+        "ja": "野中“まさ”雄一",
+        "romaji": "nonaka “ masa ” yuuichi"
+      }
+    },
+    "officialUrl": "https://www.uta-net.com/song/378810/",
+    "creditSourceUrl": "https://www.uta-net.com/song/378810/"
+  },
+  {
+    "id": "ima-koi-woshiteiru",
+    "title": {
+      "ja": "今、恋をしている",
+      "romaji": "ima , koi woshiteiru"
+    },
+    "artist": {
+      "ja": "≒JOY",
+      "romaji": "≒ JOY"
+    },
+    "releaseId": "2025-08-27-ima-koi-woshiteiru",
+    "releaseTitle": {
+      "ja": "今、恋をしている",
+      "romaji": "ima , koi woshiteiru"
+    },
+    "releaseType": "digital",
+    "releaseDate": "2025-08-27",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/nearly-equal-joy/ima-koi-woshiteiru.jpg",
+    "coverSourceUrl": "https://www.uta-net.com/libs/cacheimg.php?p=kashi&f=380000/378676.jpg",
+    "memberIds": [
+      "aida-jurii",
+      "amano-konoa",
+      "ichihara-ayumi",
+      "esumi-renon",
+      "oshida-mitsuki",
+      "onishi-aoi",
+      "ozawa-aimi",
+      "takahashi-mai",
+      "fujisawa-riko",
+      "murayama-yuuka",
+      "yamada-momoka",
+      "yamano-arisu"
+    ],
+    "tags": [
+      "2025",
+      "digital",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "森絵カエル",
+        "romaji": "morie kaeru"
+      },
+      "arranger": {
+        "ja": "横山広稀",
+        "romaji": "yokoyama kou mare"
+      }
+    },
+    "officialUrl": "https://www.uta-net.com/song/378676/",
+    "creditSourceUrl": "https://www.uta-net.com/song/378676/"
+  },
+  {
+    "id": "niajoi-ondo",
+    "title": {
+      "ja": "ニアジョイ音頭",
+      "romaji": "niajoi ondo"
+    },
+    "artist": {
+      "ja": "≒JOY",
+      "romaji": "≒ JOY"
+    },
+    "releaseId": "2025-10-15-niajoi-ondo",
+    "releaseTitle": {
+      "ja": "ニアジョイ音頭",
+      "romaji": "niajoi ondo"
+    },
+    "releaseType": "digital",
+    "releaseDate": "2025-10-15",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/nearly-equal-joy/niajoi-ondo.jpg",
+    "coverSourceUrl": "https://www.uta-net.com/libs/cacheimg.php?p=kashi&f=390000/381919.jpg",
+    "memberIds": [
+      "aida-jurii",
+      "amano-konoa",
+      "ichihara-ayumi",
+      "esumi-renon",
+      "oshida-mitsuki",
+      "onishi-aoi",
+      "ozawa-aimi",
+      "takahashi-mai",
+      "fujisawa-riko",
+      "murayama-yuuka",
+      "yamada-momoka",
+      "yamano-arisu"
+    ],
+    "tags": [
+      "2025",
+      "digital",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "Yu-ki Kokubo・YUU for YUU",
+        "romaji": "Yu-ki Kokubo ・ YUU for YUU"
+      },
+      "arranger": {
+        "ja": "YUU for YUU",
+        "romaji": "YUU for YUU"
+      }
+    },
+    "officialUrl": "https://www.uta-net.com/song/381919/",
+    "creditSourceUrl": "https://www.uta-net.com/song/381919/"
+  },
+  {
+    "id": "denwabangou-oshie-te",
+    "title": {
+      "ja": "電話番号教えて!",
+      "romaji": "denwabangou oshie te !"
+    },
+    "artist": {
+      "ja": "≒JOY",
+      "romaji": "≒ JOY"
+    },
+    "releaseId": "2026-02-18-denwabangou-oshie-te-cd-only-type-e",
+    "releaseTitle": {
+      "ja": "電話番号教えて! [CD Only/Type E]",
+      "romaji": "denwabangou oshie te ! [CD Only/Type E ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2026-02-18",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/nearly-equal-joy/denwabangou-oshie-te.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/yoani3rd/contents/discography/3508daab27d95376862b7370138abfeb.jpeg",
+    "memberIds": [
+      "aida-jurii",
+      "amano-konoa",
+      "ichihara-ayumi",
+      "esumi-renon",
+      "oshida-mitsuki",
+      "onishi-aoi",
+      "ozawa-aimi",
+      "takahashi-mai",
+      "fujisawa-riko",
+      "murayama-yuuka",
+      "yamada-momoka",
+      "yamano-arisu"
+    ],
+    "tags": [
+      "2026",
+      "single",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "中村歩・齋藤奏太",
+        "romaji": "nakamura ho ・ saitou souta"
+      },
+      "arranger": {
+        "ja": "中村歩・齋藤奏太",
+        "romaji": "nakamura ho ・ saitou souta"
+      }
+    },
+    "officialUrl": "https://nearly-equal-joy.jp/discography/detail/48/",
+    "creditSourceUrl": "https://www.uta-net.com/song/386769/"
+  },
+  {
+    "id": "amagamigaaru-feat-dj-alice",
+    "title": {
+      "ja": "アマガミガール feat. DJ ALICE",
+      "romaji": "amagamigaaru feat . DJ ALICE"
+    },
+    "artist": {
+      "ja": "≒JOY",
+      "romaji": "≒ JOY"
+    },
+    "releaseId": "2026-02-18-denwabangou-oshie-te-cd-only-type-e",
+    "releaseTitle": {
+      "ja": "電話番号教えて! [CD Only/Type E]",
+      "romaji": "denwabangou oshie te ! [CD Only/Type E ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2026-02-18",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/nearly-equal-joy/amagamigaaru-feat-dj-alice.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/yoani3rd/contents/discography/3508daab27d95376862b7370138abfeb.jpeg",
+    "memberIds": [
+      "aida-jurii",
+      "amano-konoa",
+      "ichihara-ayumi",
+      "esumi-renon",
+      "oshida-mitsuki",
+      "onishi-aoi",
+      "ozawa-aimi",
+      "takahashi-mai",
+      "fujisawa-riko",
+      "murayama-yuuka",
+      "yamada-momoka",
+      "yamano-arisu"
+    ],
+    "tags": [
+      "2026",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "古川貴浩",
+        "romaji": "furukawa takahiro"
+      },
+      "arranger": {
+        "ja": "古川貴浩",
+        "romaji": "furukawa takahiro"
+      }
+    },
+    "officialUrl": "https://nearly-equal-joy.jp/discography/detail/48/",
+    "creditSourceUrl": "https://www.uta-net.com/song/388490/"
+  },
+  {
+    "id": "ai-ga-itaka-tta",
+    "title": {
+      "ja": "愛が痛かった",
+      "romaji": "ai ga itaka tta"
+    },
+    "artist": {
+      "ja": "≒JOY",
+      "romaji": "≒ JOY"
+    },
+    "releaseId": "2026-02-18-denwabangou-oshie-te-cd-only-type-e",
+    "releaseTitle": {
+      "ja": "電話番号教えて! [CD Only/Type E]",
+      "romaji": "denwabangou oshie te ! [CD Only/Type E ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2026-02-18",
+    "trackNo": 3,
+    "trackType": "coupling",
+    "coverUrl": "/covers/nearly-equal-joy/ai-ga-itaka-tta.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/yoani3rd/contents/discography/3508daab27d95376862b7370138abfeb.jpeg",
+    "memberIds": [
+      "aida-jurii",
+      "amano-konoa",
+      "ichihara-ayumi",
+      "esumi-renon",
+      "oshida-mitsuki",
+      "onishi-aoi",
+      "ozawa-aimi",
+      "takahashi-mai",
+      "fujisawa-riko",
+      "murayama-yuuka",
+      "yamada-momoka",
+      "yamano-arisu"
+    ],
+    "tags": [
+      "2026",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "めんま",
+        "romaji": "menma"
+      },
+      "arranger": {
+        "ja": "めんま",
+        "romaji": "menma"
+      }
+    },
+    "officialUrl": "https://nearly-equal-joy.jp/discography/detail/48/",
+    "creditSourceUrl": "https://www.uta-net.com/song/388489/"
+  },
+  {
+    "id": "nonfikushon",
+    "title": {
+      "ja": "ノンフィクション",
+      "romaji": "nonfikushon"
+    },
+    "artist": {
+      "ja": "≒JOY",
+      "romaji": "≒ JOY"
+    },
+    "releaseId": "2026-04-03-nonfikushon",
+    "releaseTitle": {
+      "ja": "ノンフィクション",
+      "romaji": "nonfikushon"
+    },
+    "releaseType": "digital",
+    "releaseDate": "2026-04-03",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/nearly-equal-joy/nonfikushon.jpg",
+    "coverSourceUrl": "https://www.uta-net.com/libs/cacheimg.php?p=kashi&f=400000/390931.jpg",
+    "memberIds": [
+      "aida-jurii",
+      "amano-konoa",
+      "ichihara-ayumi",
+      "esumi-renon",
+      "oshida-mitsuki",
+      "onishi-aoi",
+      "ozawa-aimi",
+      "takahashi-mai",
+      "fujisawa-riko",
+      "murayama-yuuka",
+      "yamada-momoka",
+      "yamano-arisu"
+    ],
+    "tags": [
+      "2026",
+      "digital",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "YU-JIN・SHIN",
+        "romaji": "YU-JIN ・ SHIN"
+      },
+      "arranger": {
+        "ja": "SHIN・YU-JIN",
+        "romaji": "SHIN ・ YU-JIN"
+      }
+    },
+    "officialUrl": "https://www.uta-net.com/song/390931/",
+    "creditSourceUrl": "https://www.uta-net.com/song/390931/"
+  },
+  {
+    "id": "boku-tachino-uta",
+    "title": {
+      "ja": "僕たちの歌",
+      "romaji": "boku tachino uta"
+    },
+    "artist": {
+      "ja": "≒JOY",
+      "romaji": "≒ JOY"
+    },
+    "releaseId": "2026-04-03-boku-tachino-uta",
+    "releaseTitle": {
+      "ja": "僕たちの歌",
+      "romaji": "boku tachino uta"
+    },
+    "releaseType": "digital",
+    "releaseDate": "2026-04-03",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/nearly-equal-joy/boku-tachino-uta.jpg",
+    "coverSourceUrl": "https://www.uta-net.com/libs/cacheimg.php?p=kashi&f=400000/390932.jpg",
+    "memberIds": [
+      "aida-jurii",
+      "amano-konoa",
+      "ichihara-ayumi",
+      "esumi-renon",
+      "oshida-mitsuki",
+      "onishi-aoi",
+      "ozawa-aimi",
+      "takahashi-mai",
+      "fujisawa-riko",
+      "murayama-yuuka",
+      "yamada-momoka",
+      "yamano-arisu"
+    ],
+    "tags": [
+      "2026",
+      "digital",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "小池竜暉・菊池博人",
+        "romaji": "koike ryuu ki ・ kikuchi hirohito"
+      },
+      "arranger": {
+        "ja": "菊池博人",
+        "romaji": "kikuchi hirohito"
+      }
+    },
+    "officialUrl": "https://www.uta-net.com/song/390932/",
+    "creditSourceUrl": "https://www.uta-net.com/song/390932/"
+  }
+]

@@ -58,11 +58,11 @@ Each build writes a static export to `out/`.
 
 Use three Cloudflare Pages projects connected to the same GitHub repo and `main` branch.
 
-| Site | Build command | Output |
-| --- | --- | --- |
-| MyPickEqualLove | `npm run build:equal-love` | `out` |
-| MyPickNearlyEqualJoy | `npm run build:nearly-equal-joy` | `out` |
-| MyPickNotEqualMe | `npm run build:not-equal-me` | `out` |
+| Site                 | Build command                    | Output |
+| -------------------- | -------------------------------- | ------ |
+| MyPickEqualLove      | `npm run build:equal-love`       | `out`  |
+| MyPickNearlyEqualJoy | `npm run build:nearly-equal-joy` | `out`  |
+| MyPickNotEqualMe     | `npm run build:not-equal-me`     | `out`  |
 
 The build scripts set `NEXT_PUBLIC_PROJECT_ID` to select the correct project. Keep `mypick.kozueginko.com` assigned to `equal-love`; use new Pages projects or custom domains for the other two sites.
 
@@ -79,6 +79,15 @@ src/projects/not-equal-me/
 ```
 
 Each project has `members.json` and `songs.json`. Cover images should stay under matching public paths such as `/covers/equal-love/...`, `/covers/nearly-equal-joy/...`, and `/covers/not-equal-me/...`.
+
+Sync project data:
+
+```bash
+npm run sync:data:equal-love
+npm run sync:data:nearly-equal-joy
+npm run sync:data:not-equal-me
+npm run sync:data:all
+```
 
 Validate all project data:
 

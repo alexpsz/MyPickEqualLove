@@ -8,6 +8,7 @@ export interface Member {
   id: string;
   name: LocalizedString;
   color?: string;
+  colors?: string[];
   colorName?: string;
   profileUrl?: string;
   active: boolean;

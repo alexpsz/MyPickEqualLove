@@ -18,6 +18,7 @@ import {
 } from "../data/songs";
 import type { PickSlotId, Picks, Song, StoredPicks } from "../schema/music";
 import { convertColorString } from "../utils/colors";
+import { getMemberColorGradient } from "../utils/memberColors";
 import Controls from "../components/Controls";
 import ExportBoard from "../components/ExportBoard";
 import Footer from "../components/Footer";
@@ -306,18 +307,18 @@ export default function Home() {
 }
 
 const SONGS_COUNT = SONGS.length;
-const MEMBER_COLOR_BAR_COLORS = MEMBERS.filter((member) => member.active !== false)
-  .sort((a, b) => a.sortOrder - b.sortOrder)
-  .slice(0, DEFAULT_PICK_SLOTS.length)
-  .map((member) => member.color ?? PROJECT_THEME_COLOR);
-const MEMBER_COLOR_BAR_BACKGROUND = `linear-gradient(90deg, ${
-  MEMBER_COLOR_BAR_COLORS.length > 0
-    ? MEMBER_COLOR_BAR_COLORS.join(", ")
-    : PROJECT_THEME_COLOR
-})`;
+const ACTIVE_MEMBERS_BY_SORT_ORDER = MEMBERS.filter(
+  (member) => member.active !== false,
+).sort((a, b) => a.sortOrder - b.sortOrder);
+const MEMBER_COLOR_BAR_BACKGROUND = getMemberColorGradient(
+  ACTIVE_MEMBERS_BY_SORT_ORDER,
+  PROJECT_THEME_COLOR,
+);
 
 function findFirstEmptySlotId(storedPicks: StoredPicks): PickSlotId | null {
-  const slot = DEFAULT_PICK_SLOTS.find((candidate) => !storedPicks[candidate.id]);
+  const slot = DEFAULT_PICK_SLOTS.find(
+    (candidate) => !storedPicks[candidate.id],
+  );
   return slot?.id ?? null;
 }
 
@@ -329,7 +330,11 @@ function parseStoredPicks(serialized: string): StoredPicks {
 
   const nextPicks: StoredPicks = {};
   for (const [slotId, songId] of Object.entries(parsed)) {
-    if (SLOT_IDS.has(slotId) && typeof songId === "string" && SONGS_BY_ID[songId]) {
+    if (
+      SLOT_IDS.has(slotId) &&
+      typeof songId === "string" &&
+      SONGS_BY_ID[songId]
+    ) {
       nextPicks[slotId] = songId;
     }
   }

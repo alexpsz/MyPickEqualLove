@@ -1,1 +1,159 @@
-[]
+[
+  {
+    "id": "aida-jurii",
+    "name": {
+      "ja": "逢田 珠里依",
+      "romaji": "AIDA JURII"
+    },
+    "profileUrl": "https://nearly-equal-joy.jp/feature/profile_aida_jurii",
+    "active": true,
+    "sortOrder": 1,
+    "color": "#800020",
+    "colorName": "Bordeaux (ボルドー)"
+  },
+  {
+    "id": "amano-konoa",
+    "name": {
+      "ja": "天野 香乃愛",
+      "romaji": "AMANO KONOA"
+    },
+    "profileUrl": "https://nearly-equal-joy.jp/feature/profile_amano_konoa",
+    "active": true,
+    "sortOrder": 2,
+    "color": "#f8a7c5",
+    "colorName": "Light Pink (薄ピンク)"
+  },
+  {
+    "id": "ichihara-ayumi",
+    "name": {
+      "ja": "市原 愛弓",
+      "romaji": "ICHIHARA AYUMI"
+    },
+    "profileUrl": "https://nearly-equal-joy.jp/feature/profile_ichihara_ayumi",
+    "active": true,
+    "sortOrder": 3,
+    "color": "#8e44ad",
+    "colorName": "Purple (紫)"
+  },
+  {
+    "id": "esumi-renon",
+    "name": {
+      "ja": "江角 怜音",
+      "romaji": "ESUMI RENON"
+    },
+    "profileUrl": "https://nearly-equal-joy.jp/feature/profile_esumi_renon",
+    "active": true,
+    "sortOrder": 4,
+    "color": "#1976d2",
+    "colorName": "Blue (青)"
+  },
+  {
+    "id": "oshida-mitsuki",
+    "name": {
+      "ja": "大信田 美月",
+      "romaji": "OSHIDA MITSUKI"
+    },
+    "profileUrl": "https://nearly-equal-joy.jp/feature/profile_oshida_mitsuki",
+    "active": true,
+    "sortOrder": 5,
+    "color": "#73c7e8",
+    "colorName": "Light Blue (水色)"
+  },
+  {
+    "id": "onishi-aoi",
+    "name": {
+      "ja": "大西 葵",
+      "romaji": "ONISHI AOI"
+    },
+    "profileUrl": "https://nearly-equal-joy.jp/feature/profile_onishi_aoi",
+    "active": true,
+    "sortOrder": 6,
+    "color": "#ffffff",
+    "colorName": "White (白)"
+  },
+  {
+    "id": "ozawa-aimi",
+    "name": {
+      "ja": "小澤 愛実",
+      "romaji": "OZAWA AIMI"
+    },
+    "profileUrl": "https://nearly-equal-joy.jp/feature/profile_ozawa_aimi",
+    "active": true,
+    "sortOrder": 7,
+    "color": "#f6c443",
+    "colorName": "Yellow (黄色)"
+  },
+  {
+    "id": "takahashi-mai",
+    "name": {
+      "ja": "髙橋 舞",
+      "romaji": "TAKAHASHI MAI"
+    },
+    "profileUrl": "https://nearly-equal-joy.jp/feature/profile_takahashi_mai",
+    "active": true,
+    "sortOrder": 8,
+    "color": "#f57c00",
+    "colorName": "Orange (オレンジ)"
+  },
+  {
+    "id": "fujisawa-riko",
+    "name": {
+      "ja": "藤沢 莉子",
+      "romaji": "FUJISAWA RIKO"
+    },
+    "profileUrl": "https://nearly-equal-joy.jp/feature/profile_fujisawa_riko",
+    "active": true,
+    "sortOrder": 9,
+    "color": "#43a047",
+    "colorName": "Green (緑)"
+  },
+  {
+    "id": "murayama-yuuka",
+    "name": {
+      "ja": "村山 結香",
+      "romaji": "MURAYAMA YUUKA"
+    },
+    "profileUrl": "https://nearly-equal-joy.jp/feature/profile_murayama_yuuka",
+    "active": true,
+    "sortOrder": 10,
+    "color": "#e53935",
+    "colorName": "Red (赤)"
+  },
+  {
+    "id": "yamada-momoka",
+    "name": {
+      "ja": "山田 杏佳",
+      "romaji": "YAMADA MOMOKA"
+    },
+    "profileUrl": "https://nearly-equal-joy.jp/feature/profile_yamada_momoka",
+    "active": true,
+    "sortOrder": 11,
+    "color": "#f06292",
+    "colorName": "Pink (ピンク)"
+  },
+  {
+    "id": "yamano-arisu",
+    "name": {
+      "ja": "山野 愛月",
+      "romaji": "YAMANO ARISU"
+    },
+    "profileUrl": "https://nearly-equal-joy.jp/feature/profile_yamano_arisu",
+    "active": true,
+    "sortOrder": 12,
+    "color": "#9adfd9",
+    "colorName": "Ice Green (アイスグリーン)"
+  },
+  {
+    "id": "fukuyama-moeka",
+    "name": {
+      "ja": "福山 萌叶",
+      "romaji": "Fukuyama Moeka"
+    },
+    "active": false,
+    "graduated": true,
+    "status": "graduated",
+    "graduationDate": "2023-03-29",
+    "sortOrder": 101,
+    "profileUrl": null
+  }
+]

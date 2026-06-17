@@ -555,9 +555,14 @@ function MemberFilterRow({
           >
             All
           </FilterChip>
-          <FilterChip active={showGraduatedMembers} onClick={onToggleGraduated}>
-            GRADUATED
-          </FilterChip>
+          {graduatedMembers.length > 0 ? (
+            <FilterChip
+              active={showGraduatedMembers}
+              onClick={onToggleGraduated}
+            >
+              GRADUATED
+            </FilterChip>
+          ) : null}
         </div>
         <div className="flex min-w-0 flex-wrap gap-2">
           {activeMembers.map((member) => (

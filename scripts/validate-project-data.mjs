@@ -49,6 +49,16 @@ const expectedEqualLoveBoundarySongs = new Map([
   ],
 ]);
 
+const expectedNearlyEqualJoyBoundarySongs = new Map([
+  ["≒JOY", ["fukuyama-moeka"]],
+  ["笑って フラジール", ["fukuyama-moeka"]],
+  ["超孤独ライオン", ["fukuyama-moeka"]],
+]);
+
+const expectedNotEqualMeBoundarySongs = new Map([
+  ["君はもう一度タネになる", ["suganami-mirei"]],
+]);
+
 const targetProjectId = readProjectArg();
 const projectIds = targetProjectId ? [targetProjectId] : listProjectIds();
 const errors = [];
@@ -110,8 +120,27 @@ function validateProject(projectId) {
   validateMembers(projectPrefix, members, errors);
   validateSongs(projectPrefix, songs, memberIds, songIds, songTitles, errors);
 
+  if (songs.length === 0) {
+    errors.push(`${projectPrefix} songs.json must not be empty`);
+  }
+  if (members.length === 0) {
+    errors.push(`${projectPrefix} members.json must not be empty`);
+  }
+
   if (projectId === "equal-love") {
-    validateEqualLoveStrictChecks(projectPrefix, songs, members, songIds, errors);
+    validateEqualLoveStrictChecks(
+      projectPrefix,
+      songs,
+      members,
+      songIds,
+      errors,
+    );
+  }
+  if (projectId === "nearly-equal-joy") {
+    validateNearlyEqualJoyStrictChecks(projectPrefix, songs, members, errors);
+  }
+  if (projectId === "not-equal-me") {
+    validateNotEqualMeStrictChecks(projectPrefix, songs, members, errors);
   }
 
   return {
@@ -134,28 +163,50 @@ function validateMembers(projectPrefix, members, errors) {
     memberIds.add(member.id);
 
     if (!member.name?.ja || !member.name?.romaji) {
-      errors.push(`${projectPrefix} member ${member.id} needs ja and romaji names`);
+      errors.push(
+        `${projectPrefix} member ${member.id} needs ja and romaji names`,
+      );
     }
     if (typeof member.active !== "boolean") {
       errors.push(`${projectPrefix} member ${member.id} needs active boolean`);
     }
     if (typeof member.sortOrder !== "number") {
-      errors.push(`${projectPrefix} member ${member.id} needs numeric sortOrder`);
+      errors.push(
+        `${projectPrefix} member ${member.id} needs numeric sortOrder`,
+      );
+    }
+    if (
+      member.colors !== undefined &&
+      (!Array.isArray(member.colors) ||
+        member.colors.length === 0 ||
+        member.colors.some((color) => typeof color !== "string" || !color))
+    ) {
+      errors.push(
+        `${projectPrefix} member ${member.id}: colors must be a non-empty string array`,
+      );
     }
     if (member.graduated && member.active) {
-      errors.push(`${projectPrefix} graduated member ${member.id} cannot have active: true`);
+      errors.push(
+        `${projectPrefix} graduated member ${member.id} cannot have active: true`,
+      );
     }
     if (member.status === "graduated" && member.active) {
-      errors.push(`${projectPrefix} graduated status member ${member.id} cannot have active: true`);
+      errors.push(
+        `${projectPrefix} graduated status member ${member.id} cannot have active: true`,
+      );
     }
     if (member.active === false && !member.graduated) {
-      errors.push(`${projectPrefix} inactive member ${member.id} must be marked graduated`);
+      errors.push(
+        `${projectPrefix} inactive member ${member.id} must be marked graduated`,
+      );
     }
     if (
       member.graduationDate &&
       !/^\d{4}-\d{2}-\d{2}$/.test(member.graduationDate)
     ) {
-      errors.push(`${projectPrefix} member ${member.id}: graduationDate must be YYYY-MM-DD`);
+      errors.push(
+        `${projectPrefix} member ${member.id}: graduationDate must be YYYY-MM-DD`,
+      );
     }
   }
 }
@@ -174,11 +225,14 @@ function validateSongs(
       continue;
     }
 
-    if (songIds.has(song.id)) errors.push(`${projectPrefix} duplicate song id: ${song.id}`);
+    if (songIds.has(song.id))
+      errors.push(`${projectPrefix} duplicate song id: ${song.id}`);
     songIds.add(song.id);
 
     if (!song.title?.ja || !song.title?.romaji) {
-      errors.push(`${projectPrefix} ${song.id}: title.ja and title.romaji are required`);
+      errors.push(
+        `${projectPrefix} ${song.id}: title.ja and title.romaji are required`,
+      );
     } else if (songTitles.has(song.title.ja)) {
       errors.push(`${projectPrefix} duplicate song title.ja: ${song.title.ja}`);
     } else {
@@ -186,27 +240,39 @@ function validateSongs(
     }
 
     if (!song.artist?.ja || !song.artist?.romaji) {
-      errors.push(`${projectPrefix} ${song.id}: artist.ja and artist.romaji are required`);
+      errors.push(
+        `${projectPrefix} ${song.id}: artist.ja and artist.romaji are required`,
+      );
     }
 
     if (song.releaseDate && !/^\d{4}-\d{2}-\d{2}$/.test(song.releaseDate)) {
-      errors.push(`${projectPrefix} ${song.id}: releaseDate must be YYYY-MM-DD`);
+      errors.push(
+        `${projectPrefix} ${song.id}: releaseDate must be YYYY-MM-DD`,
+      );
     }
 
     if (song.releaseType && !releaseTypes.has(song.releaseType)) {
-      errors.push(`${projectPrefix} ${song.id}: invalid releaseType ${song.releaseType}`);
+      errors.push(
+        `${projectPrefix} ${song.id}: invalid releaseType ${song.releaseType}`,
+      );
     }
 
     if (song.trackType && !trackTypes.has(song.trackType)) {
-      errors.push(`${projectPrefix} ${song.id}: invalid trackType ${song.trackType}`);
+      errors.push(
+        `${projectPrefix} ${song.id}: invalid trackType ${song.trackType}`,
+      );
     }
 
     if (song.visibility && !visibilityTypes.has(song.visibility)) {
-      errors.push(`${projectPrefix} ${song.id}: invalid visibility ${song.visibility}`);
+      errors.push(
+        `${projectPrefix} ${song.id}: invalid visibility ${song.visibility}`,
+      );
     }
 
     if (song.sourceStatus && !sourceStatuses.has(song.sourceStatus)) {
-      errors.push(`${projectPrefix} ${song.id}: invalid sourceStatus ${song.sourceStatus}`);
+      errors.push(
+        `${projectPrefix} ${song.id}: invalid sourceStatus ${song.sourceStatus}`,
+      );
     }
 
     for (const memberId of [
@@ -214,7 +280,9 @@ function validateSongs(
       ...(song.centerMemberIds ?? []),
     ]) {
       if (!memberIds.has(memberId)) {
-        errors.push(`${projectPrefix} ${song.id}: unknown member id ${memberId}`);
+        errors.push(
+          `${projectPrefix} ${song.id}: unknown member id ${memberId}`,
+        );
       }
     }
 
@@ -229,7 +297,9 @@ function validateCover(projectPrefix, song, errors) {
     return;
   }
   if (song.coverUrl.includes("placeholder")) {
-    errors.push(`${projectPrefix} ${song.id}: coverUrl must point to a real local cover`);
+    errors.push(
+      `${projectPrefix} ${song.id}: coverUrl must point to a real local cover`,
+    );
     return;
   }
   if (!song.coverUrl.startsWith("/")) {
@@ -238,26 +308,164 @@ function validateCover(projectPrefix, song, errors) {
 
   const localCover = path.join(root, "public", song.coverUrl);
   if (!fs.existsSync(localCover)) {
-    errors.push(`${projectPrefix} ${song.id}: cover file missing at public${song.coverUrl}`);
+    errors.push(
+      `${projectPrefix} ${song.id}: cover file missing at public${song.coverUrl}`,
+    );
     return;
   }
   if (fs.statSync(localCover).size === 0) {
-    errors.push(`${projectPrefix} ${song.id}: cover file is empty at public${song.coverUrl}`);
+    errors.push(
+      `${projectPrefix} ${song.id}: cover file is empty at public${song.coverUrl}`,
+    );
   }
 }
 
 function validateCredits(projectPrefix, song, errors) {
   if (!song.credits?.lyricist?.ja || !song.credits.lyricist.romaji) {
-    errors.push(`${projectPrefix} ${song.id}: credits.lyricist ja and romaji are required`);
+    errors.push(
+      `${projectPrefix} ${song.id}: credits.lyricist ja and romaji are required`,
+    );
   }
 
   if (!song.credits?.composer?.ja || !song.credits.composer.romaji) {
-    errors.push(`${projectPrefix} ${song.id}: credits.composer ja and romaji are required`);
+    errors.push(
+      `${projectPrefix} ${song.id}: credits.composer ja and romaji are required`,
+    );
   }
 
   if (!song.credits?.arranger?.ja || !song.credits.arranger.romaji) {
-    errors.push(`${projectPrefix} ${song.id}: credits.arranger ja and romaji are required`);
+    errors.push(
+      `${projectPrefix} ${song.id}: credits.arranger ja and romaji are required`,
+    );
   }
+}
+
+function validateActiveMemberColors(
+  projectPrefix,
+  members,
+  expectedCount,
+  errors,
+  options = {},
+) {
+  const activeMembers = members.filter((member) => member.active !== false);
+  if (activeMembers.length !== expectedCount) {
+    errors.push(
+      `${projectPrefix} expected ${expectedCount} active members for color strip, found ${activeMembers.length}`,
+    );
+  }
+
+  for (const member of activeMembers) {
+    if (typeof member.color !== "string" || !member.color) {
+      errors.push(
+        `${projectPrefix} active member ${member.id} needs color for member color strip`,
+      );
+    }
+    if (
+      options.requireColors &&
+      (!Array.isArray(member.colors) || member.colors.length === 0)
+    ) {
+      errors.push(
+        `${projectPrefix} active member ${member.id} needs colors for member color strip`,
+      );
+    }
+    if (options.disallowColors && member.colors !== undefined) {
+      errors.push(
+        `${projectPrefix} active member ${member.id} must use single member color only`,
+      );
+    }
+  }
+}
+
+function validateNearlyEqualJoyStrictChecks(
+  projectPrefix,
+  songs,
+  members,
+  errors,
+) {
+  if (members.length !== 13) {
+    errors.push(
+      `${projectPrefix} expected exactly 13 members, found ${members.length}`,
+    );
+  }
+  validateActiveMemberColors(projectPrefix, members, 12, errors, {
+    disallowColors: true,
+  });
+
+  const fukuyama = members.find((member) => member.id === "fukuyama-moeka");
+  if (!fukuyama) {
+    errors.push(`${projectPrefix} missing graduated member: fukuyama-moeka`);
+  } else {
+    if (
+      fukuyama.active !== false ||
+      !fukuyama.graduated ||
+      fukuyama.status !== "graduated"
+    ) {
+      errors.push(
+        `${projectPrefix} fukuyama-moeka must be marked as graduated`,
+      );
+    }
+    if (fukuyama.graduationDate !== "2023-03-29") {
+      errors.push(
+        `${projectPrefix} fukuyama-moeka graduationDate must be 2023-03-29`,
+      );
+    }
+  }
+
+  validateBoundarySongsByTitle(
+    projectPrefix,
+    songs,
+    expectedNearlyEqualJoyBoundarySongs,
+    errors,
+  );
+
+  for (const song of songs) {
+    if (
+      !expectedNearlyEqualJoyBoundarySongs.has(song.title?.ja) &&
+      (song.memberIds ?? []).includes("fukuyama-moeka")
+    ) {
+      errors.push(
+        `${projectPrefix} ${song.id}: fukuyama-moeka is only expected on early boundary songs`,
+      );
+    }
+  }
+}
+
+function validateNotEqualMeStrictChecks(projectPrefix, songs, members, errors) {
+  if (members.length !== 12) {
+    errors.push(
+      `${projectPrefix} expected exactly 12 members, found ${members.length}`,
+    );
+  }
+  validateActiveMemberColors(projectPrefix, members, 11, errors, {
+    requireColors: true,
+  });
+
+  const suganami = members.find((member) => member.id === "suganami-mirei");
+  if (!suganami) {
+    errors.push(`${projectPrefix} missing graduated member: suganami-mirei`);
+  } else {
+    if (
+      suganami.active !== false ||
+      !suganami.graduated ||
+      suganami.status !== "graduated"
+    ) {
+      errors.push(
+        `${projectPrefix} suganami-mirei must be marked as graduated`,
+      );
+    }
+    if (suganami.graduationDate !== "2026-06-12") {
+      errors.push(
+        `${projectPrefix} suganami-mirei graduationDate must be 2026-06-12`,
+      );
+    }
+  }
+
+  validateBoundarySongsByTitle(
+    projectPrefix,
+    songs,
+    expectedNotEqualMeBoundarySongs,
+    errors,
+  );
 }
 
 function validateEqualLoveStrictChecks(
@@ -268,11 +476,15 @@ function validateEqualLoveStrictChecks(
   errors,
 ) {
   if (songs.length !== 84) {
-    errors.push(`${projectPrefix} expected exactly 84 songs, found ${songs.length}`);
+    errors.push(
+      `${projectPrefix} expected exactly 84 songs, found ${songs.length}`,
+    );
   }
 
   if (members.length !== 12) {
-    errors.push(`${projectPrefix} expected exactly 12 members, found ${members.length}`);
+    errors.push(
+      `${projectPrefix} expected exactly 12 members, found ${members.length}`,
+    );
   }
 
   for (const song of songs) {
@@ -280,13 +492,19 @@ function validateEqualLoveStrictChecks(
     if (!expectedMemberIds) continue;
 
     if (!song.coverSourceUrl?.startsWith("https://")) {
-      errors.push(`${projectPrefix} ${song.id}: boundary song needs https coverSourceUrl`);
+      errors.push(
+        `${projectPrefix} ${song.id}: boundary song needs https coverSourceUrl`,
+      );
     }
     if (!song.officialUrl?.startsWith("https://")) {
-      errors.push(`${projectPrefix} ${song.id}: boundary song needs https officialUrl`);
+      errors.push(
+        `${projectPrefix} ${song.id}: boundary song needs https officialUrl`,
+      );
     }
     if (!song.creditSourceUrl?.startsWith("https://")) {
-      errors.push(`${projectPrefix} ${song.id}: boundary song needs https creditSourceUrl`);
+      errors.push(
+        `${projectPrefix} ${song.id}: boundary song needs https creditSourceUrl`,
+      );
     }
     if (!sameMembers(song.memberIds ?? [], expectedMemberIds)) {
       errors.push(
@@ -298,6 +516,44 @@ function validateEqualLoveStrictChecks(
   for (const songId of expectedEqualLoveBoundarySongs.keys()) {
     if (!songIds.has(songId)) {
       errors.push(`${projectPrefix} missing boundary song: ${songId}`);
+    }
+  }
+}
+
+function validateBoundarySongsByTitle(
+  projectPrefix,
+  songs,
+  expectedSongs,
+  errors,
+) {
+  for (const [title, expectedMemberIds] of expectedSongs.entries()) {
+    const song = songs.find((candidate) => candidate.title?.ja === title);
+    if (!song) {
+      errors.push(`${projectPrefix} missing boundary song title: ${title}`);
+      continue;
+    }
+
+    if (!song.coverSourceUrl?.startsWith("https://")) {
+      errors.push(
+        `${projectPrefix} ${song.id}: boundary song needs https coverSourceUrl`,
+      );
+    }
+    if (!song.officialUrl?.startsWith("https://")) {
+      errors.push(
+        `${projectPrefix} ${song.id}: boundary song needs https officialUrl`,
+      );
+    }
+    if (!song.creditSourceUrl?.startsWith("https://")) {
+      errors.push(
+        `${projectPrefix} ${song.id}: boundary song needs https creditSourceUrl`,
+      );
+    }
+    for (const memberId of expectedMemberIds) {
+      if (!(song.memberIds ?? []).includes(memberId)) {
+        errors.push(
+          `${projectPrefix} ${song.id}: expected memberIds to include ${memberId}`,
+        );
+      }
     }
   }
 }
@@ -324,7 +580,9 @@ function readJson(filePath, errors, projectPrefix) {
   try {
     return JSON.parse(fs.readFileSync(filePath, "utf8"));
   } catch (error) {
-    errors.push(`${projectPrefix} failed to read ${path.relative(root, filePath)}: ${error.message}`);
+    errors.push(
+      `${projectPrefix} failed to read ${path.relative(root, filePath)}: ${error.message}`,
+    );
     return [];
   }
 }

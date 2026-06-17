@@ -18,8 +18,11 @@
     "lint": "eslint src scripts next.config.ts eslint.config.mjs postcss.config.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "sync:data": "python3 scripts/sync-equal-love-discography.py",
-    "sync:data:equal-love": "python3 scripts/sync-equal-love-discography.py",
+    "sync:data": "python3 scripts/sync-project-discography.py --project equal-love",
+    "sync:data:equal-love": "python3 scripts/sync-project-discography.py --project equal-love",
+    "sync:data:nearly-equal-joy": "python3 scripts/sync-project-discography.py --project nearly-equal-joy",
+    "sync:data:not-equal-me": "python3 scripts/sync-project-discography.py --project not-equal-me",
+    "sync:data:all": "npm run sync:data:equal-love && npm run sync:data:nearly-equal-joy && npm run sync:data:not-equal-me",
     "validate:data": "node scripts/validate-project-data.mjs",
     "validate:data:project": "node scripts/validate-project-data.mjs --project"
   },

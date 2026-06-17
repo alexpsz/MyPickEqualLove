@@ -8,6 +8,7 @@ import {
 import { MEMBERS } from "../data/songs";
 import type { PickSlot, Picks } from "../schema/music";
 import { SITE_DOMAIN } from "../utils/constants";
+import { getColorBackground, getMemberColors } from "../utils/memberColors";
 
 interface ExportBoardProps {
   slots: PickSlot[];
@@ -24,13 +25,15 @@ const EXPORT_TITLE_FONT_FAMILY =
 const EXPORT_SITE_LABEL = SITE_DOMAIN.toUpperCase();
 
 const MEMBER_COLOR_STRIP = MEMBERS.slice()
+  .filter((member) => member.active !== false)
   .sort((a, b) => a.sortOrder - b.sortOrder)
-  .slice(0, 10)
   .map((member) => ({
     id: member.id,
     label: member.name.ja,
-    color: member.color ?? PROJECT_THEME_COLOR,
+    colors: getMemberColors(member, PROJECT_THEME_COLOR),
   }));
+const MEMBER_COLOR_STRIP_GAP = MEMBER_COLOR_STRIP.length > 10 ? 6 : 8;
+const MEMBER_COLOR_STRIP_WIDTH = MEMBER_COLOR_STRIP.length > 10 ? 18 : 22;
 
 export default function ExportBoard({
   slots,
@@ -129,19 +132,24 @@ export default function ExportBoard({
             marginTop: "14px",
             display: "flex",
             justifyContent: "center",
-            gap: "8px",
+            gap: `${MEMBER_COLOR_STRIP_GAP}px`,
           }}
         >
           {MEMBER_COLOR_STRIP.map((member) => (
             <span
               key={member.id}
               title={member.label}
-              data-member-color={member.color}
+              data-member-color={member.colors.join(" / ")}
               style={{
-                width: "22px",
+                width: `${MEMBER_COLOR_STRIP_WIDTH}px`,
                 height: "8px",
                 borderRadius: "999px",
-                backgroundColor: member.color,
+                border: "1px solid #d4d4d4",
+                boxSizing: "border-box",
+                background: getColorBackground(
+                  member.colors,
+                  PROJECT_THEME_COLOR,
+                ),
               }}
             />
           ))}
