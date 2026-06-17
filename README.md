@@ -1,116 +1,59 @@
 # MyPick Sister Projects
 
-[MyPickEqualLove](https://mypick.kozueginko.com)
+Fan-made static web apps for creating shareable Top 10 song boards for =LOVE, ≒JOY, and ≠ME.
 
-Single-codebase fan tools for building shareable top-pick song boards.
-
-This repository currently supports three sister sites from the same `main` branch:
-
-- `equal-love`: MyPickEqualLove
-- `nearly-equal-joy`: MyPickNearlyEqualJoy
-- `not-equal-me`: MyPickNotEqualMe
-
-The React UI, search, local storage, image export, and share flows are shared. Project-specific brand text, colors, site URLs, members, songs, and icons live under `src/projects/`.
+[MyPickEqualLove](https://mypick.kozueginko.com) · [MyPickNearlyEqualJoy](https://mypick-nearly-equal-joy.kozueginko.com) · [MyPickNotEqualMe](https://mypick-not-equal-me.kozueginko.com)
 
 ![EqualLove_MyPicks](docs/equal-love-mypicks-preview.png)
 
----
+## Features
 
-## Getting Started
+- Pick up to 10 favorite songs from the current group's catalog.
+- Search and filter by song, release, year, member, and credits.
+- Save picks and export options locally in the browser.
+- Generate a PNG board for download or sharing to X.
+- Build three sister sites from one shared codebase.
 
-### Prerequisites
+## Projects
 
-Use Node.js 20.9 or newer.
+| Project ID         | Site                 | Build command                    |
+| ------------------ | -------------------- | -------------------------------- |
+| `equal-love`       | MyPickEqualLove      | `npm run build:equal-love`       |
+| `nearly-equal-joy` | MyPickNearlyEqualJoy | `npm run build:nearly-equal-joy` |
+| `not-equal-me`     | MyPickNotEqualMe     | `npm run build:not-equal-me`     |
 
-### Installation
+Each build writes a static export to `out/`.
+
+## Local Development
+
+Requires Node.js 20.9 or newer.
 
 ```bash
-git clone https://github.com/alexpsz/MyPickEqualLove.git
-cd MyPickEqualLove
 npm install
+npm run dev:equal-love
 ```
 
-### Development
+Other local targets:
 
 ```bash
-npm run dev:equal-love
 npm run dev:nearly-equal-joy
 npm run dev:not-equal-me
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
 
-Development scripts run Next dev with webpack because Turbopack dev can hang on the first homepage compile in this project on Next.js 16.2.x. Production builds still use the normal static export path.
-
-### Build
-
-```bash
-npm run build:equal-love
-npm run build:nearly-equal-joy
-npm run build:not-equal-me
-```
-
-Each build writes a static export to `out/`.
-
----
-
-## Cloudflare Pages
-
-Use three Cloudflare Pages projects connected to the same GitHub repo and `main` branch.
-
-| Site                 | Build command                    | Output |
-| -------------------- | -------------------------------- | ------ |
-| MyPickEqualLove      | `npm run build:equal-love`       | `out`  |
-| MyPickNearlyEqualJoy | `npm run build:nearly-equal-joy` | `out`  |
-| MyPickNotEqualMe     | `npm run build:not-equal-me`     | `out`  |
-
-The build scripts set `NEXT_PUBLIC_PROJECT_ID` to select the correct project. Keep `mypick.kozueginko.com` assigned to `equal-love`; use new Pages projects or custom domains for the other two sites.
-
----
-
 ## Data
 
-Project data lives in:
-
-```text
-src/projects/equal-love/
-src/projects/nearly-equal-joy/
-src/projects/not-equal-me/
-```
-
-Each project has `members.json` and `songs.json`. Cover images should stay under matching public paths such as `/covers/equal-love/...`, `/covers/nearly-equal-joy/...`, and `/covers/not-equal-me/...`.
-
-Sync project data:
+Project data lives in `src/projects/<project-id>/`. Each project has `members.json` and `songs.json`; cover images live in `public/covers/<project-id>/`.
 
 ```bash
-npm run sync:data:equal-love
-npm run sync:data:nearly-equal-joy
-npm run sync:data:not-equal-me
 npm run sync:data:all
-```
-
-Validate all project data:
-
-```bash
 npm run validate:data
 ```
 
-Validate one project:
+## Stack
 
-```bash
-npm run validate:data:project -- equal-love
-```
-
----
-
-## Tech Stack
-
-- **Framework**: [Next.js](https://nextjs.org/) App Router with static export
-- **Language**: [TypeScript](https://www.typescriptlang.org/)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
-- **Canvas Export**: [html2canvas](https://html2canvas.hertzen.com/)
-
----
+Next.js App Router, React, TypeScript, Tailwind CSS, and `html2canvas`.
 
 ## License
 

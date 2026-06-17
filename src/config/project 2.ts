@@ -1,10 +1,5 @@
 import type { PickSlot } from "../schema/music";
-import {
-  CURRENT_PROJECT,
-  CURRENT_PROJECT_ID,
-  PROJECTS,
-} from "../projects/registry";
-import type { ProjectId } from "../projects/registry";
+import { CURRENT_PROJECT, CURRENT_PROJECT_ID } from "../projects/registry";
 
 export const PROJECT_CONFIG = CURRENT_PROJECT.config;
 export const PROJECT_ID = CURRENT_PROJECT_ID;
@@ -22,32 +17,6 @@ export const EXPORT_CONFIG = {
 };
 
 export const EXPORT_CANVAS_ID = `mypick-${PROJECT_ID}-export-canvas`;
-
-export interface SisterProjectLink {
-  id: ProjectId;
-  displayName: string;
-  groupName: string;
-  siteUrl: string;
-  themeColor: string;
-}
-
-const SISTER_PROJECT_ORDER: Record<ProjectId, ProjectId[]> = {
-  "equal-love": ["not-equal-me", "nearly-equal-joy"],
-  "nearly-equal-joy": ["equal-love", "not-equal-me"],
-  "not-equal-me": ["equal-love", "nearly-equal-joy"],
-};
-
-export const SISTER_PROJECT_LINKS: SisterProjectLink[] =
-  SISTER_PROJECT_ORDER[PROJECT_ID].map((projectId) => {
-    const { config } = PROJECTS[projectId];
-    return {
-      id: config.id,
-      displayName: config.displayName,
-      groupName: config.groupName,
-      siteUrl: config.siteUrl,
-      themeColor: config.themeColor,
-    };
-  });
 
 export const DEFAULT_PICK_SLOTS: PickSlot[] = Array.from(
   { length: 10 },

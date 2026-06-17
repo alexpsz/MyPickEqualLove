@@ -10,7 +10,7 @@
 
 ## 项目定位
 
-MyPickEqualLove 是面向 ＝LOVE 粉丝的静态 Web App。用户从 ＝LOVE 歌曲目录中选择 Top 10 喜爱歌曲，搜索和筛选歌曲目录，并生成适合社交平台分享的图片。
+MyPickEqualLove 是面向 ＝LOVE、≒JOY、≠ME 三姐妹项目粉丝的静态 Web App。用户从当前站点对应的歌曲目录中选择 Top 10 喜爱歌曲，搜索和筛选歌曲目录，并生成适合社交平台分享的图片。
 
 项目采用 Next.js App Router、React、TypeScript、Tailwind CSS 与 `html2canvas`。当前部署模式是 Next.js 静态导出，必须保持 `output: "export"` 兼容性。
 
@@ -70,15 +70,18 @@ App Router 页面与布局放入 `src/app/`。
 
 歌曲与成员基础数据来自：
 
-- `src/data/equal-love-songs.json`
-- `src/data/equal-love-members.json`
-- `src/data/songs.ts`
+- `src/projects/equal-love/members.json`
+- `src/projects/equal-love/songs.json`
+- `src/projects/nearly-equal-joy/members.json`
+- `src/projects/nearly-equal-joy/songs.json`
+- `src/projects/not-equal-me/members.json`
+- `src/projects/not-equal-me/songs.json`
 
 `src/data/songs.ts` 派生 `SONGS`、`SONGS_BY_ID`、`MEMBERS`、`MEMBERS_BY_ID`、`RELEASE_TYPES`、`TRACK_TYPES`、`RELEASE_YEARS`、`TAGS`。
 
 用户选择保存在 `localStorage` 的 `STORAGE_KEYS.picks`。导出选项保存在 `localStorage` 的 `STORAGE_KEYS.options`。
 
-不得硬编码重复的 `localStorage` key、导出尺寸、品牌文案或路径常量，应从 `src/config/equalLove.ts` 等配置来源读取。
+不得硬编码重复的 `localStorage` key、导出尺寸、品牌文案或路径常量，应从 `src/config/project.ts` 和 `src/projects/registry.ts` 等配置来源读取。
 
 数据变更后必须运行 `npm run validate:data`。
 
@@ -121,6 +124,18 @@ App Router 页面与布局放入 `src/app/`。
 技术栈、脚本、依赖、运行环境或部署方式变化时，必须更新 `memory/tech-stack.md`。
 
 文档必须以当前仓库源码为准，不得编造不存在的后端、数据库、API 或服务端功能。
+
+## README 写作标准
+
+`README.md` 面向公开仓库访问者和部署使用者，必须保持发布版语气，优先说明产品、站点、核心功能、最小运行方式、构建方式、数据入口、技术栈、许可和免责声明。
+
+README 只保留稳定且对外有用的核心信息。不得写入临时排障记录、详细交接日志、内部进度、未确认计划、源码逐文件说明、冗长实现细节或与当前发布无关的历史背景。
+
+README 中的命令、站点 URL、项目 id、Node 版本、构建输出目录和数据路径必须来自当前仓库真实配置；修改相关事实源后必须同步复核 README。
+
+复杂架构说明、实现细节、风险、未完成事项和最近更新记录应放在 `memory/architecture.md`、`memory/tech-stack.md`、`memory/app-design-document.md` 或 `memory/progress.md`，不得为了记录方便塞回 README。
+
+README 结构应简洁稳定。新增章节前必须确认它是否属于公开发布页的核心信息；能用一句话或一个表格表达时，不展开成长段说明。
 
 ## 完成定义
 

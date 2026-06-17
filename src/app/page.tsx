@@ -28,6 +28,7 @@ import PickBoard from "../components/PickBoard";
 import PreviewModal from "../components/PreviewModal";
 import ReplacementModal from "../components/ReplacementModal";
 import SearchModal from "../components/SearchModal";
+import SisterProjectsMenu from "../components/SisterProjectsMenu";
 
 const SLOT_IDS = new Set(DEFAULT_PICK_SLOTS.map((slot) => slot.id));
 const MAX_NICKNAME_LENGTH = 32;
@@ -229,6 +230,7 @@ export default function Home() {
         style={{ background: MEMBER_COLOR_BAR_BACKGROUND }}
       />
 
+      <SisterProjectsMenu />
       <GitHubLink />
       <Header />
 

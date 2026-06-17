@@ -70,11 +70,12 @@
 - `src/components/ReplacementModal.tsx`：当 10 个槽位已满时选择替换目标的弹窗。
 - `src/components/ExportBoard.tsx`：隐藏离屏导出画布，id 来自 `EXPORT_CANVAS_ID`；供 `html2canvas` 捕获 PNG。
 - `src/components/PreviewModal.tsx`：导出预览弹窗，处理下载文件名、分享到 X 和 Web Share API。
+- `src/components/SisterProjectsMenu.tsx`：左上角姐妹项目入口与抽屉菜单，从当前项目配置派生另外两个 MyPick 站点链接。
 
 ### 3.6 配置、数据、类型与工具
 
 - `src/projects/registry.ts`：项目注册表。定义固定 `PROJECT_IDS`、默认项目、每个项目的品牌配置，并把对应 `members.json` 和 `songs.json` 注册进当前构建。
-- `src/config/project.ts`：当前项目配置入口。派生 `PROJECT_CONFIG`、`PROJECT_ID`、`STORAGE_KEYS`、`EXPORT_CONFIG`、`EXPORT_CANVAS_ID`、`DEFAULT_PICK_SLOTS`、主题色和筛选标签。
+- `src/config/project.ts`：当前项目配置入口。派生 `PROJECT_CONFIG`、`PROJECT_ID`、`STORAGE_KEYS`、`EXPORT_CONFIG`、`EXPORT_CANVAS_ID`、`DEFAULT_PICK_SLOTS`、`SISTER_PROJECT_LINKS`、主题色和筛选标签。
 - `src/data/songs.ts`：从当前项目 JSON 派生运行时集合与索引，包括 `SONGS`、`SONGS_BY_ID`、`MEMBERS`、`MEMBERS_BY_ID`、`RELEASE_TYPES`、`TRACK_TYPES`、`RELEASE_YEARS`、`TAGS`。
 - `src/schema/music.ts`：成员、歌曲、发行、曲目类型、pick slot、localStorage 数据结构的 TypeScript 契约。
 - `src/utils/colors.ts`：颜色工具。当前用于把现代 CSS 颜色函数转换为 `html2canvas` 更稳定支持的格式。
@@ -102,7 +103,7 @@
 
 `src/projects/registry.ts` 定义固定项目 id、项目配置、成员 JSON 和歌曲 JSON 的注册表。
 
-`src/config/project.ts` 基于 `NEXT_PUBLIC_PROJECT_ID` 暴露当前项目的 `PROJECT_CONFIG`、`STORAGE_KEYS`、`EXPORT_CANVAS_ID`、`DEFAULT_PICK_SLOTS`、`PROJECT_THEME_COLOR`、`EXPORT_CONFIG` 和筛选标签。
+`src/config/project.ts` 基于 `NEXT_PUBLIC_PROJECT_ID` 暴露当前项目的 `PROJECT_CONFIG`、`STORAGE_KEYS`、`EXPORT_CANVAS_ID`、`DEFAULT_PICK_SLOTS`、`SISTER_PROJECT_LINKS`、`PROJECT_THEME_COLOR`、`EXPORT_CONFIG` 和筛选标签。
 
 `src/app/layout.tsx` 从当前项目配置生成 title、description、keywords、favicon、OG/Twitter metadata，并把项目主题色写入 CSS variables。
 

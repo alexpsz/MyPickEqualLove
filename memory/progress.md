@@ -26,6 +26,8 @@
 
 当前已实现基于 `NEXT_PUBLIC_PROJECT_ID` 的项目配置、metadata、主题色、favicon、robots 和 sitemap 切换。
 
+当前已实现左上角姐妹项目抽屉入口；每个站点从配置中展示另外两个 MyPick 站点链接。
+
 当前已实现三项目开发和构建脚本：`dev:*` 使用 webpack dev，`build:*` 使用静态导出。
 
 ## 3. 当前技术状态
@@ -79,6 +81,8 @@
 `public/robots.txt` 与 `public/sitemap.xml` 已被删除，后续不要恢复静态文件；robots 和 sitemap 现在由 `src/app/robots.ts` 与 `src/app/sitemap.ts` 按项目配置生成。
 
 ## 7. 最近更新记录
+
+2026-06-18：新增左上角 `Other Picks` 姐妹项目抽屉入口。互链由 `SISTER_PROJECT_LINKS` 从项目注册表和当前项目 id 派生，当前站点只显示另外两个姐妹站点，并沿用现有黑白面板设计和项目主题色点缀。
 
 2026-06-17：补充开发者交接记录；`architecture.md` 增加文件职责索引，解释三姐妹项目重构后的关键源码、配置、脚本和资源目录作用。
 
