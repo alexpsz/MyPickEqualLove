@@ -28,7 +28,7 @@ export default function Controls({
   return (
     <div className="relative z-10 mx-auto mb-8 grid w-full max-w-7xl gap-4 px-5 md:mb-12 md:grid-cols-[1fr_auto] md:px-8">
       <div className="official-panel-soft official-stripe grid gap-3 px-4 py-3">
-        <Metric label="Songs" value={totalSongs} color="var(--equal-love-primary)" />
+        <Metric label="Songs" value={totalSongs} color="var(--project-primary)" />
 
         <div className="grid gap-2">
           <label
@@ -37,7 +37,7 @@ export default function Controls({
           >
             Your name
           </label>
-          <div className="flex min-h-11 items-center border border-black bg-white transition-colors focus-within:border-[var(--equal-love-primary)]">
+          <div className="flex min-h-11 items-center border border-black bg-white transition-colors focus-within:border-[var(--project-primary)]">
             <input
               id="export-nickname"
               type="text"

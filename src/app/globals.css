@@ -5,16 +5,9 @@
   color-scheme: light !important;
   --background: #ffffff;
   --foreground: #000000;
-  --equal-love-primary: #ea6c81;
-  --equal-love-hot-pink: #f9769f;
-  --equal-love-soft-pink: #f19bc2;
-  --equal-love-mint: #6ce0b6;
-  --equal-love-purple: #986ad6;
-  --equal-love-blue: #0089ff;
-  --equal-love-sky: #66c0e2;
-  --equal-love-yellow: #fdbf0f;
-  --equal-love-red: #ff7c7c;
-  --equal-love-logo-blue: #00d9f3;
+  --project-primary: #ea6c81;
+  --project-accent: #00d9f3;
+  --project-primary-wash: rgba(234, 108, 129, 0.08);
   --line: #000000;
   --line-soft: #dddddd;
   --paper: #ffffff;
@@ -45,7 +38,7 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   background-image:
-    linear-gradient(90deg, rgba(234, 108, 129, 0.08), transparent 26%),
+    linear-gradient(90deg, var(--project-primary-wash), transparent 26%),
     linear-gradient(180deg, #ffffff 0%, #ffffff 62%, #f8f8f8 100%);
   background-attachment: fixed;
   font-family: var(--font-sans);
@@ -77,7 +70,7 @@ input {
   top: 0;
   bottom: 0;
   width: 10px;
-  background: var(--equal-love-primary);
+  background: var(--project-primary);
   pointer-events: none;
   z-index: 0;
 }
@@ -164,8 +157,8 @@ input {
 }
 
 .official-button-primary {
-  background: var(--equal-love-primary);
-  border-color: var(--equal-love-primary);
+  background: var(--project-primary);
+  border-color: var(--project-primary);
   color: #fff;
 }
 

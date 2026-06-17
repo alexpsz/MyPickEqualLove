@@ -3,10 +3,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   DEFAULT_PICK_SLOTS,
-  EQUAL_LOVE_TEAM_COLOR,
+  EXPORT_CANVAS_ID,
   EXPORT_CONFIG,
+  PROJECT_THEME_COLOR,
   STORAGE_KEYS,
-} from "../config/equalLove";
+} from "../config/project";
 import {
   MEMBERS,
   RELEASE_TYPES,
@@ -189,9 +190,7 @@ export default function Home() {
       }) as typeof window.getComputedStyle;
 
       const html2canvas = (await import("html2canvas")).default;
-      const exportElement = document.getElementById(
-        "mypick-equal-love-export-canvas",
-      );
+      const exportElement = document.getElementById(EXPORT_CANVAS_ID);
 
       if (exportElement) {
         await document.fonts.ready;
@@ -310,11 +309,11 @@ const SONGS_COUNT = SONGS.length;
 const MEMBER_COLOR_BAR_COLORS = MEMBERS.filter((member) => member.active !== false)
   .sort((a, b) => a.sortOrder - b.sortOrder)
   .slice(0, DEFAULT_PICK_SLOTS.length)
-  .map((member) => member.color ?? EQUAL_LOVE_TEAM_COLOR);
+  .map((member) => member.color ?? PROJECT_THEME_COLOR);
 const MEMBER_COLOR_BAR_BACKGROUND = `linear-gradient(90deg, ${
   MEMBER_COLOR_BAR_COLORS.length > 0
     ? MEMBER_COLOR_BAR_COLORS.join(", ")
-    : EQUAL_LOVE_TEAM_COLOR
+    : PROJECT_THEME_COLOR
 })`;
 
 function findFirstEmptySlotId(storedPicks: StoredPicks): PickSlotId | null {

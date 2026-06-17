@@ -1,10 +1,9 @@
 import type { Member, ReleaseType, Song, TrackType } from "../schema/music";
-import membersJson from "./equal-love-members.json";
-import songsJson from "./equal-love-songs.json";
+import { CURRENT_PROJECT } from "../projects/registry";
 
-export const MEMBERS: Member[] = membersJson as Member[];
+export const MEMBERS: Member[] = CURRENT_PROJECT.members;
 
-export const SONGS: Song[] = (songsJson as Song[]).sort((a, b) => {
+export const SONGS: Song[] = CURRENT_PROJECT.songs.slice().sort((a, b) => {
   const dateA = a.releaseDate ?? "";
   const dateB = b.releaseDate ?? "";
   return dateB.localeCompare(dateA) || a.title.romaji.localeCompare(b.title.romaji);

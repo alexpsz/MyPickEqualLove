@@ -1,5 +1,5 @@
 import React from "react";
-import { APP_BRAND } from "../config/equalLove";
+import { PROJECT_CONFIG } from "../config/project";
 
 export default function Header() {
   return (
@@ -8,15 +8,15 @@ export default function Header() {
         <div>
           <h1 className="max-w-4xl text-5xl font-light leading-none tracking-[-0.01em] text-black sm:text-7xl md:text-8xl">
             MY PICK
-            <span className="mt-2 block font-bold text-[var(--equal-love-logo-blue)]">
-              =LOVE
+            <span className="mt-2 block font-bold text-[var(--project-accent)]">
+              {PROJECT_CONFIG.groupName}
             </span>
           </h1>
         </div>
 
         <div className="official-panel max-w-sm p-5 md:mb-2">
           <p className="text-sm font-bold leading-relaxed text-black">
-            {APP_BRAND.subtitle}
+            {PROJECT_CONFIG.subtitle}
           </p>
           <p className="mt-3 border-t border-black pt-3 text-[11px] leading-relaxed text-slate-600">
             Select your favorite tracks and export a clean board for sharing.
