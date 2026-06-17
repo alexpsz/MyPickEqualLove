@@ -85,7 +85,7 @@ export const PROJECTS: Record<ProjectId, ProjectDefinition> = {
       subtitle: "≒JOYのお気に入り楽曲を選ぼう！",
       description:
         "≒JOYのお気に入り楽曲を選び、オリジナルのピック画像を作成して共有できるファンツールです。",
-      siteUrl: "https://mypick-nearly-equal-joy.pages.dev",
+      siteUrl: "https://mypick-nearly-equal-joy.kozueginko.com",
       repoUrl: "https://github.com/alexpsz/MyPickEqualLove",
       themeColor: "#f2c94c",
       logoAccentColor: "#00a7c8",
@@ -118,7 +118,7 @@ export const PROJECTS: Record<ProjectId, ProjectDefinition> = {
       subtitle: "≠MEのお気に入り楽曲を選ぼう！",
       description:
         "≠MEのお気に入り楽曲を選び、オリジナルのピック画像を作成して共有できるファンツールです。",
-      siteUrl: "https://mypick-not-equal-me.pages.dev",
+      siteUrl: "https://mypick-not-equal-me.kozueginko.com",
       repoUrl: "https://github.com/alexpsz/MyPickEqualLove",
       themeColor: "#3bb8e8",
       logoAccentColor: "#ea6c81",
