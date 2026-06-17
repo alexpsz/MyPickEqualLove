@@ -1,1 +1,3235 @@
-[]
+[
+  {
+    "id": "kun-no-oto-dattanda",
+    "title": {
+      "ja": "君の音だったんだ",
+      "romaji": "kun no oto dattanda"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2021-04-07-choutokkyuu-not-equal-me-iki-cd-only-noimii-ban",
+    "releaseTitle": {
+      "ja": "「超特急 ≠ME行き」 <CD Only/ノイミー盤>",
+      "romaji": "( choutokkyuu ≠ ME iki ) <CD Only/ noimii ban >"
+    },
+    "releaseType": "album",
+    "releaseDate": "2021-04-07",
+    "trackNo": 2,
+    "trackType": "album",
+    "coverUrl": "/covers/not-equal-me/kun-no-oto-dattanda.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/cac76b5016ea3daf47762837cd3ff970.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2021",
+      "album"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "バグベア",
+        "romaji": "bagubea"
+      },
+      "arranger": {
+        "ja": "バグベア",
+        "romaji": "bagubea"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/4/",
+    "creditSourceUrl": "https://www.uta-net.com/song/276602/"
+  },
+  {
+    "id": "kun-to-boku-no-uta",
+    "title": {
+      "ja": "君と僕の歌",
+      "romaji": "kun to boku no uta"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2021-04-07-choutokkyuu-not-equal-me-iki-cd-only-noimii-ban",
+    "releaseTitle": {
+      "ja": "「超特急 ≠ME行き」 <CD Only/ノイミー盤>",
+      "romaji": "( choutokkyuu ≠ ME iki ) <CD Only/ noimii ban >"
+    },
+    "releaseType": "album",
+    "releaseDate": "2021-04-07",
+    "trackNo": 3,
+    "trackType": "album",
+    "coverUrl": "/covers/not-equal-me/kun-to-boku-no-uta.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/cac76b5016ea3daf47762837cd3ff970.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2021",
+      "album"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "バグベア",
+        "romaji": "bagubea"
+      },
+      "arranger": {
+        "ja": "バグベア",
+        "romaji": "bagubea"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/4/",
+    "creditSourceUrl": "https://www.uta-net.com/song/287666/"
+  },
+  {
+    "id": "kurukuru-kaki-koori",
+    "title": {
+      "ja": "クルクルかき氷",
+      "romaji": "kurukuru kaki koori"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2021-04-07-choutokkyuu-not-equal-me-iki-cd-only-noimii-ban",
+    "releaseTitle": {
+      "ja": "「超特急 ≠ME行き」 <CD Only/ノイミー盤>",
+      "romaji": "( choutokkyuu ≠ ME iki ) <CD Only/ noimii ban >"
+    },
+    "releaseType": "album",
+    "releaseDate": "2021-04-07",
+    "trackNo": 4,
+    "trackType": "album",
+    "coverUrl": "/covers/not-equal-me/kurukuru-kaki-koori.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/cac76b5016ea3daf47762837cd3ff970.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2021",
+      "album"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "HaggyRock",
+        "romaji": "HaggyRock"
+      },
+      "arranger": {
+        "ja": "HaggyRock",
+        "romaji": "HaggyRock"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/4/",
+    "creditSourceUrl": "https://www.uta-net.com/song/300576/"
+  },
+  {
+    "id": "kuuhaku-no-hana",
+    "title": {
+      "ja": "空白の花",
+      "romaji": "kuuhaku no hana"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2021-04-07-choutokkyuu-not-equal-me-iki-cd-only-noimii-ban",
+    "releaseTitle": {
+      "ja": "「超特急 ≠ME行き」 <CD Only/ノイミー盤>",
+      "romaji": "( choutokkyuu ≠ ME iki ) <CD Only/ noimii ban >"
+    },
+    "releaseType": "album",
+    "releaseDate": "2021-04-07",
+    "trackNo": 5,
+    "trackType": "album",
+    "coverUrl": "/covers/not-equal-me/kuuhaku-no-hana.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/cac76b5016ea3daf47762837cd3ff970.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2021",
+      "album"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "長浜駿平",
+        "romaji": "nagahama shunpei"
+      },
+      "arranger": {
+        "ja": "若田部誠",
+        "romaji": "wakatabe makoto"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/4/",
+    "creditSourceUrl": "https://www.uta-net.com/song/300575/"
+  },
+  {
+    "id": "p-i-c",
+    "title": {
+      "ja": "P.I.C.",
+      "romaji": "P . I . C ."
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2021-04-07-choutokkyuu-not-equal-me-iki-cd-only-noimii-ban",
+    "releaseTitle": {
+      "ja": "「超特急 ≠ME行き」 <CD Only/ノイミー盤>",
+      "romaji": "( choutokkyuu ≠ ME iki ) <CD Only/ noimii ban >"
+    },
+    "releaseType": "album",
+    "releaseDate": "2021-04-07",
+    "trackNo": 6,
+    "trackType": "album",
+    "coverUrl": "/covers/not-equal-me/p-i-c.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/cac76b5016ea3daf47762837cd3ff970.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2021",
+      "album"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "NA.ZU.NA・Yu-ki Kokubo・YHANAEL",
+        "romaji": "NA . ZU . NA ・ Yu-ki Kokubo ・ YHANAEL"
+      },
+      "arranger": {
+        "ja": "Yu-ki Kokubo・NA.ZU.NA・YHANAEL",
+        "romaji": "Yu-ki Kokubo ・ NA . ZU . NA ・ YHANAEL"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/4/",
+    "creditSourceUrl": "https://www.uta-net.com/song/294205/"
+  },
+  {
+    "id": "teyuuka-mirutentte-nani",
+    "title": {
+      "ja": "てゆーか、みるてんって何?",
+      "romaji": "teyuuka , mirutentte nani ?"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2021-04-07-choutokkyuu-not-equal-me-iki-cd-only-noimii-ban",
+    "releaseTitle": {
+      "ja": "「超特急 ≠ME行き」 <CD Only/ノイミー盤>",
+      "romaji": "( choutokkyuu ≠ ME iki ) <CD Only/ noimii ban >"
+    },
+    "releaseType": "album",
+    "releaseDate": "2021-04-07",
+    "trackNo": 7,
+    "trackType": "album",
+    "coverUrl": "/covers/not-equal-me/teyuuka-mirutentte-nani.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/cac76b5016ea3daf47762837cd3ff970.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2021",
+      "album"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "yuma",
+        "romaji": "yuma"
+      },
+      "arranger": {
+        "ja": "yuma",
+        "romaji": "yuma"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/4/",
+    "creditSourceUrl": "https://www.uta-net.com/song/300570/"
+  },
+  {
+    "id": "poniiteeru-kyurun",
+    "title": {
+      "ja": "ポニーテール キュルン",
+      "romaji": "poniiteeru kyurun"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2021-04-07-choutokkyuu-not-equal-me-iki-cd-only-tsuujouban",
+    "releaseTitle": {
+      "ja": "「超特急 ≠ME行き」 <CD Only/通常盤>",
+      "romaji": "( choutokkyuu ≠ ME iki ) <CD Only/ tsuujouban >"
+    },
+    "releaseType": "album",
+    "releaseDate": "2021-04-07",
+    "trackNo": 7,
+    "trackType": "album",
+    "coverUrl": "/covers/not-equal-me/poniiteeru-kyurun.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/3adeee180dcf6d9c7914e9572a2c9d4c.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2021",
+      "album"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "野井洋児",
+        "romaji": "noi youji"
+      },
+      "arranger": {
+        "ja": "家原正樹",
+        "romaji": "ebara masaki"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/3/",
+    "creditSourceUrl": "https://www.uta-net.com/song/300574/"
+  },
+  {
+    "id": "jibun-sanka",
+    "title": {
+      "ja": "自分賛歌",
+      "romaji": "jibun sanka"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2021-04-07-choutokkyuu-not-equal-me-iki-cd-dvd-shokai-genteiban",
+    "releaseTitle": {
+      "ja": "「超特急 ≠ME行き」 <CD+DVD/初回限定盤>",
+      "romaji": "( choutokkyuu ≠ ME iki ) <CD+DVD/ shokai genteiban >"
+    },
+    "releaseType": "album",
+    "releaseDate": "2021-04-07",
+    "trackNo": 7,
+    "trackType": "album",
+    "coverUrl": "/covers/not-equal-me/jibun-sanka.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/61642772580a66a1a6fab4391617bd7f.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2021",
+      "album"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "長沢知亜紀・永野小織",
+        "romaji": "nagasawa chi aki ・ nagano saori"
+      },
+      "arranger": {
+        "ja": "めんま",
+        "romaji": "menma"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/2/",
+    "creditSourceUrl": "https://www.uta-net.com/song/300571/"
+  },
+  {
+    "id": "himitsu-inshidento",
+    "title": {
+      "ja": "秘密インシデント",
+      "romaji": "himitsu inshidento"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2021-04-07-choutokkyuu-not-equal-me-iki-cd-only-noimii-ban",
+    "releaseTitle": {
+      "ja": "「超特急 ≠ME行き」 <CD Only/ノイミー盤>",
+      "romaji": "( choutokkyuu ≠ ME iki ) <CD Only/ noimii ban >"
+    },
+    "releaseType": "album",
+    "releaseDate": "2021-04-07",
+    "trackNo": 8,
+    "trackType": "album",
+    "coverUrl": "/covers/not-equal-me/himitsu-inshidento.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/cac76b5016ea3daf47762837cd3ff970.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2021",
+      "album"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "宮川麿・M!SATO",
+        "romaji": "miyagawa maro ・ M ! SATO"
+      },
+      "arranger": {
+        "ja": "宮川麿",
+        "romaji": "miyagawa maro"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/4/",
+    "creditSourceUrl": "https://www.uta-net.com/song/300573/"
+  },
+  {
+    "id": "not-equal-me",
+    "title": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2021-04-07-choutokkyuu-not-equal-me-iki-cd-only-noimii-ban",
+    "releaseTitle": {
+      "ja": "「超特急 ≠ME行き」 <CD Only/ノイミー盤>",
+      "romaji": "( choutokkyuu ≠ ME iki ) <CD Only/ noimii ban >"
+    },
+    "releaseType": "album",
+    "releaseDate": "2021-04-07",
+    "trackNo": 9,
+    "trackType": "album",
+    "coverUrl": "/covers/not-equal-me/not-equal-me.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/cac76b5016ea3daf47762837cd3ff970.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2021",
+      "album"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "バグベア",
+        "romaji": "bagubea"
+      },
+      "arranger": {
+        "ja": "バグベア",
+        "romaji": "bagubea"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/4/",
+    "creditSourceUrl": "https://www.uta-net.com/song/300572/"
+  },
+  {
+    "id": "kun-hakono-natsu-koi-wosuru",
+    "title": {
+      "ja": "君はこの夏、恋をする",
+      "romaji": "kun hakono natsu , koi wosuru"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2021-07-14-kun-hakono-natsu-koi-wosuru",
+    "releaseTitle": {
+      "ja": "「君はこの夏、恋をする」",
+      "romaji": "( kun hakono natsu , koi wosuru )"
+    },
+    "releaseType": "single",
+    "releaseDate": "2021-07-14",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/not-equal-me/kun-hakono-natsu-koi-wosuru.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/150065efcb1b78cdc237b3e856cf2c7e.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2021",
+      "single",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "バグベア",
+        "romaji": "bagubea"
+      },
+      "arranger": {
+        "ja": "バグベア",
+        "romaji": "bagubea"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/7/",
+    "creditSourceUrl": "https://www.uta-net.com/song/304744/"
+  },
+  {
+    "id": "mirakuru",
+    "title": {
+      "ja": "ミラクル!",
+      "romaji": "mirakuru !"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2021-07-14-kun-hakono-natsu-koi-wosuru",
+    "releaseTitle": {
+      "ja": "「君はこの夏、恋をする」",
+      "romaji": "( kun hakono natsu , koi wosuru )"
+    },
+    "releaseType": "single",
+    "releaseDate": "2021-07-14",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/not-equal-me/mirakuru.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/439ba76aff6e340f8de706976778f43e.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2021",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "YUU for YOU・Yu-ki Kokubo",
+        "romaji": "YUU for YOU ・ Yu-ki Kokubo"
+      },
+      "arranger": {
+        "ja": "YUU for YOU",
+        "romaji": "YUU for YOU"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/5/",
+    "creditSourceUrl": "https://www.uta-net.com/song/304742/"
+  },
+  {
+    "id": "hakumei-kousen",
+    "title": {
+      "ja": "薄明光線",
+      "romaji": "hakumei kousen"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2021-07-14-kun-hakono-natsu-koi-wosuru",
+    "releaseTitle": {
+      "ja": "「君はこの夏、恋をする」",
+      "romaji": "( kun hakono natsu , koi wosuru )"
+    },
+    "releaseType": "single",
+    "releaseDate": "2021-07-14",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/not-equal-me/hakumei-kousen.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/c29219273006b294dfab7eec186c07ca.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2021",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "成本智美",
+        "romaji": "narimoto tomomi"
+      },
+      "arranger": {
+        "ja": "賀佐泰洋",
+        "romaji": "ga sa yasuhiro"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/6/",
+    "creditSourceUrl": "https://www.uta-net.com/song/304741/"
+  },
+  {
+    "id": "chouzetsu-hiroin",
+    "title": {
+      "ja": "超絶ヒロイン",
+      "romaji": "chouzetsu hiroin"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2021-07-14-kun-hakono-natsu-koi-wosuru",
+    "releaseTitle": {
+      "ja": "「君はこの夏、恋をする」",
+      "romaji": "( kun hakono natsu , koi wosuru )"
+    },
+    "releaseType": "single",
+    "releaseDate": "2021-07-14",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/not-equal-me/chouzetsu-hiroin.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/150065efcb1b78cdc237b3e856cf2c7e.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2021",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "塚田耕平",
+        "romaji": "tsukada kouhei"
+      },
+      "arranger": {
+        "ja": "めんま",
+        "romaji": "menma"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/7/",
+    "creditSourceUrl": "https://www.uta-net.com/song/304743/"
+  },
+  {
+    "id": "mahoroba-asutarisuku",
+    "title": {
+      "ja": "まほろばアスタリスク",
+      "romaji": "mahoroba asutarisuku"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2021-11-10-mahoroba-asutarisuku",
+    "releaseTitle": {
+      "ja": "「まほろばアスタリスク」",
+      "romaji": "( mahoroba asutarisuku )"
+    },
+    "releaseType": "single",
+    "releaseDate": "2021-11-10",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/not-equal-me/mahoroba-asutarisuku.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/26277238db701f8f8d75b79764ea223c.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2021",
+      "single",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "本多友紀",
+        "romaji": "honda yuki"
+      },
+      "arranger": {
+        "ja": "脇眞富",
+        "romaji": "waki makoto tomi"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/10/",
+    "creditSourceUrl": "https://www.uta-net.com/song/310304/"
+  },
+  {
+    "id": "watashiakusento",
+    "title": {
+      "ja": "ワタシアクセント",
+      "romaji": "watashiakusento"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2021-11-10-mahoroba-asutarisuku",
+    "releaseTitle": {
+      "ja": "「まほろばアスタリスク」",
+      "romaji": "( mahoroba asutarisuku )"
+    },
+    "releaseType": "single",
+    "releaseDate": "2021-11-10",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/not-equal-me/watashiakusento.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/7f0c980b7cf5a0bed5a2256fc9443895.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2021",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "YUXSE(Dream Monster)",
+        "romaji": "YUXSE(Dream Monster )"
+      },
+      "arranger": {
+        "ja": "高木龍一",
+        "romaji": "takagi ryuuichi"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/9/",
+    "creditSourceUrl": "https://www.uta-net.com/song/310302/"
+  },
+  {
+    "id": "suki-da",
+    "title": {
+      "ja": "好きだ!!!",
+      "romaji": "suki da ! ! !"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2021-11-10-mahoroba-asutarisuku",
+    "releaseTitle": {
+      "ja": "「まほろばアスタリスク」",
+      "romaji": "( mahoroba asutarisuku )"
+    },
+    "releaseType": "single",
+    "releaseDate": "2021-11-10",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/not-equal-me/suki-da.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/6b8e361ddf8678d881ada4b14032b769.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2021",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "Keisuke Koyama",
+        "romaji": "Keisuke Koyama"
+      },
+      "arranger": {
+        "ja": "家原正樹",
+        "romaji": "ebara masaki"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/8/",
+    "creditSourceUrl": "https://www.uta-net.com/song/310301/"
+  },
+  {
+    "id": "daremo-inai-mori-no-oku-de-ippon-no-ki-ga-taore-tara-oto-hasuruka",
+    "title": {
+      "ja": "誰もいない森の奥で一本の木が倒れたら音はするか?",
+      "romaji": "daremo inai mori no oku de ippon no ki ga taore tara oto hasuruka ?"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2021-11-10-mahoroba-asutarisuku",
+    "releaseTitle": {
+      "ja": "「まほろばアスタリスク」",
+      "romaji": "( mahoroba asutarisuku )"
+    },
+    "releaseType": "single",
+    "releaseDate": "2021-11-10",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/not-equal-me/daremo-inai-mori-no-oku-de-ippon-no-ki-ga-taore-tara-oto-hasuruka.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/26277238db701f8f8d75b79764ea223c.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2021",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "千葉“naotyu-”直樹",
+        "romaji": "chiba “ naotyu- ” naoki"
+      },
+      "arranger": {
+        "ja": "千葉“naotyu-”直樹",
+        "romaji": "chiba “ naotyu- ” naoki"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/10/",
+    "creditSourceUrl": "https://www.uta-net.com/song/310303/"
+  },
+  {
+    "id": "chokoreetomerankorii",
+    "title": {
+      "ja": "チョコレートメランコリー",
+      "romaji": "chokoreetomerankorii"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2022-02-16-chokoreetomerankorii",
+    "releaseTitle": {
+      "ja": "「チョコレートメランコリー」",
+      "romaji": "( chokoreetomerankorii )"
+    },
+    "releaseType": "single",
+    "releaseDate": "2022-02-16",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/not-equal-me/chokoreetomerankorii.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/1bdac3548094c6c40adbc4ecfb7dc7a9.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2022",
+      "single",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "桑原佑介",
+        "romaji": "kuwahara yuusuke"
+      },
+      "arranger": {
+        "ja": "APAZZI",
+        "romaji": "APAZZI"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/13/",
+    "creditSourceUrl": "https://www.uta-net.com/song/314511/"
+  },
+  {
+    "id": "ofushorunitto",
+    "title": {
+      "ja": "#おふしょるにっと",
+      "romaji": "# ofushorunitto"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2022-02-16-chokoreetomerankorii",
+    "releaseTitle": {
+      "ja": "「チョコレートメランコリー」",
+      "romaji": "( chokoreetomerankorii )"
+    },
+    "releaseType": "single",
+    "releaseDate": "2022-02-16",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/not-equal-me/ofushorunitto.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/1bdac3548094c6c40adbc4ecfb7dc7a9.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2022",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "yuma",
+        "romaji": "yuma"
+      },
+      "arranger": {
+        "ja": "yuma",
+        "romaji": "yuma"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/13/",
+    "creditSourceUrl": "https://www.uta-net.com/song/314508/"
+  },
+  {
+    "id": "kun-ha-supaakuru",
+    "title": {
+      "ja": "君はスパークル",
+      "romaji": "kun ha supaakuru"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2022-02-16-chokoreetomerankorii",
+    "releaseTitle": {
+      "ja": "「チョコレートメランコリー」",
+      "romaji": "( chokoreetomerankorii )"
+    },
+    "releaseType": "single",
+    "releaseDate": "2022-02-16",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/not-equal-me/kun-ha-supaakuru.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/387d628a356576cef6f7da6b96fe18d2.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2022",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "HaTo",
+        "romaji": "HaTo"
+      },
+      "arranger": {
+        "ja": "めんま",
+        "romaji": "menma"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/11/",
+    "creditSourceUrl": "https://www.uta-net.com/song/314510/"
+  },
+  {
+    "id": "niji-ga-kaka-ru-shunkan",
+    "title": {
+      "ja": "虹が架かる瞬間",
+      "romaji": "niji ga kaka ru shunkan"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2022-02-16-chokoreetomerankorii",
+    "releaseTitle": {
+      "ja": "「チョコレートメランコリー」",
+      "romaji": "( chokoreetomerankorii )"
+    },
+    "releaseType": "single",
+    "releaseDate": "2022-02-16",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/not-equal-me/niji-ga-kaka-ru-shunkan.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/348f476dcf7bee1b93b448c883d2a666.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2022",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "ヤナガワタカオ",
+        "romaji": "yanagawatakao"
+      },
+      "arranger": {
+        "ja": "ヤナガワタカオ",
+        "romaji": "yanagawatakao"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/12/",
+    "creditSourceUrl": "https://www.uta-net.com/song/314509/"
+  },
+  {
+    "id": "su-suki-janai",
+    "title": {
+      "ja": "す、好きじゃない!",
+      "romaji": "su , suki janai !"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2022-08-03-su-suki-janai",
+    "releaseTitle": {
+      "ja": "「す、好きじゃない!」",
+      "romaji": "( su , suki janai ! )"
+    },
+    "releaseType": "single",
+    "releaseDate": "2022-08-03",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/not-equal-me/su-suki-janai.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/2dca8efd289d6436634bc872c2ccd2a8.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2022",
+      "single",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "水野谷怜",
+        "romaji": "mizunoya rei"
+      },
+      "arranger": {
+        "ja": "如月結愛",
+        "romaji": "kisaragi yua"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/17/",
+    "creditSourceUrl": "https://www.uta-net.com/song/322628/"
+  },
+  {
+    "id": "kochira-happii-tankentai",
+    "title": {
+      "ja": "こちらハッピー探検隊",
+      "romaji": "kochira happii tankentai"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2022-08-03-su-suki-janai",
+    "releaseTitle": {
+      "ja": "「す、好きじゃない!」",
+      "romaji": "( su , suki janai ! )"
+    },
+    "releaseType": "single",
+    "releaseDate": "2022-08-03",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/not-equal-me/kochira-happii-tankentai.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/2dca8efd289d6436634bc872c2ccd2a8.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2022",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "小野寺祐輔",
+        "romaji": "onodera yuusuke"
+      },
+      "arranger": {
+        "ja": "脇眞富",
+        "romaji": "waki makoto tomi"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/17/",
+    "creditSourceUrl": "https://www.uta-net.com/song/322625/"
+  },
+  {
+    "id": "samaachokoreeto",
+    "title": {
+      "ja": "サマーチョコレート",
+      "romaji": "samaachokoreeto"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2022-08-03-su-suki-janai",
+    "releaseTitle": {
+      "ja": "「す、好きじゃない!」",
+      "romaji": "( su , suki janai ! )"
+    },
+    "releaseType": "single",
+    "releaseDate": "2022-08-03",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/not-equal-me/samaachokoreeto.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/0dc5510dba9b6eb8cd5f59c9f971f01d.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2022",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "加藤弘也",
+        "romaji": "katou hiroya"
+      },
+      "arranger": {
+        "ja": "杉原亮・早川博隆",
+        "romaji": "sugihara akira ・ hayakawa hirotaka"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/15/",
+    "creditSourceUrl": "https://www.uta-net.com/song/322626/"
+  },
+  {
+    "id": "boku-tachino-imaaju",
+    "title": {
+      "ja": "僕たちのイマージュ",
+      "romaji": "boku tachino imaaju"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2022-08-03-su-suki-janai",
+    "releaseTitle": {
+      "ja": "「す、好きじゃない!」",
+      "romaji": "( su , suki janai ! )"
+    },
+    "releaseType": "single",
+    "releaseDate": "2022-08-03",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/not-equal-me/boku-tachino-imaaju.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/563e177564d7ef876aa6e419a1742b6c.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2022",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "塚田耕平",
+        "romaji": "tsukada kouhei"
+      },
+      "arranger": {
+        "ja": "めんま",
+        "romaji": "menma"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/14/",
+    "creditSourceUrl": "https://www.uta-net.com/song/322627/"
+  },
+  {
+    "id": "hanikami-shooto",
+    "title": {
+      "ja": "はにかみショート",
+      "romaji": "hanikami shooto"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2022-11-23-hanikami-shooto",
+    "releaseTitle": {
+      "ja": "「はにかみショート」",
+      "romaji": "( hanikami shooto )"
+    },
+    "releaseType": "single",
+    "releaseDate": "2022-11-23",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/not-equal-me/hanikami-shooto.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/668b8557ffc53b7ea478fe4e5b8388f8.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2022",
+      "single",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "中村歩・野口大志",
+        "romaji": "nakamura ho ・ noguchi taishi"
+      },
+      "arranger": {
+        "ja": "APAZZI",
+        "romaji": "APAZZI"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/21/",
+    "creditSourceUrl": "https://www.uta-net.com/song/328438/"
+  },
+  {
+    "id": "urutorareakissu",
+    "title": {
+      "ja": "ウルトラレアキッス",
+      "romaji": "urutorareakissu"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2022-11-23-urutorareakissu",
+    "releaseTitle": {
+      "ja": "ウルトラレアキッス",
+      "romaji": "urutorareakissu"
+    },
+    "releaseType": "digital",
+    "releaseDate": "2022-11-23",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/not-equal-me/urutorareakissu.jpg",
+    "coverSourceUrl": "https://www.uta-net.com/libs/cacheimg.php?p=kashi&f=330000/328434.jpg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2022",
+      "digital",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "Yuta Sakai",
+        "romaji": "Yuta Sakai"
+      },
+      "arranger": {
+        "ja": "Yuta Sakai",
+        "romaji": "Yuta Sakai"
+      }
+    },
+    "officialUrl": "https://www.uta-net.com/song/328434/",
+    "creditSourceUrl": "https://www.uta-net.com/song/328434/"
+  },
+  {
+    "id": "pioniizu",
+    "title": {
+      "ja": "ピオニーズ",
+      "romaji": "pioniizu"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2022-11-23-hanikami-shooto",
+    "releaseTitle": {
+      "ja": "「はにかみショート」",
+      "romaji": "( hanikami shooto )"
+    },
+    "releaseType": "single",
+    "releaseDate": "2022-11-23",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/not-equal-me/pioniizu.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/5eeedfcb39b494b549ea41ea0b35db08.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2022",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "Yuta Sakai",
+        "romaji": "Yuta Sakai"
+      },
+      "arranger": {
+        "ja": "倉内達矢",
+        "romaji": "kurauchi tatsuya"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/20/",
+    "creditSourceUrl": "https://www.uta-net.com/song/328436/"
+  },
+  {
+    "id": "momoiro-deibureiku",
+    "title": {
+      "ja": "桃色デイブレイク",
+      "romaji": "momoiro deibureiku"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2022-11-23-hanikami-shooto",
+    "releaseTitle": {
+      "ja": "「はにかみショート」",
+      "romaji": "( hanikami shooto )"
+    },
+    "releaseType": "single",
+    "releaseDate": "2022-11-23",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/not-equal-me/momoiro-deibureiku.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/a8331265420647b48814f4d48f57c0a6.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2022",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "磯崎健史",
+        "romaji": "isozaki takeshi"
+      },
+      "arranger": {
+        "ja": "磯崎健史",
+        "romaji": "isozaki takeshi"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/19/",
+    "creditSourceUrl": "https://www.uta-net.com/song/328437/"
+  },
+  {
+    "id": "2-jihan-rokenroo",
+    "title": {
+      "ja": "2時半ろけんろー",
+      "romaji": "2 jihan rokenroo"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2023-04-12-2-jihan-rokenroo",
+    "releaseTitle": {
+      "ja": "2時半ろけんろー",
+      "romaji": "2 jihan rokenroo"
+    },
+    "releaseType": "digital",
+    "releaseDate": "2023-04-12",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/not-equal-me/2-jihan-rokenroo.jpg",
+    "coverSourceUrl": "https://m.media-amazon.com/images/I/512zPyIN06L._SL240_.jpg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2023",
+      "digital",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "invisible manners",
+        "romaji": "invisible manners"
+      },
+      "arranger": {
+        "ja": "invisible manners",
+        "romaji": "invisible manners"
+      }
+    },
+    "officialUrl": "https://www.uta-net.com/song/335824/",
+    "creditSourceUrl": "https://www.uta-net.com/song/335824/"
+  },
+  {
+    "id": "tenshi-ha-doko-he",
+    "title": {
+      "ja": "天使は何処へ",
+      "romaji": "tenshi ha doko he"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2023-04-12-tenshi-ha-doko-he",
+    "releaseTitle": {
+      "ja": "「天使は何処へ」",
+      "romaji": "( tenshi ha doko he )"
+    },
+    "releaseType": "single",
+    "releaseDate": "2023-04-12",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/not-equal-me/tenshi-ha-doko-he.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/033c7c5776c6b010a46bf65b2332cdc6.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2023",
+      "single",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "Kijibato(Dream Monster)",
+        "romaji": "Kijibato(Dream Monster )"
+      },
+      "arranger": {
+        "ja": "Kijibato(Dream Monster)",
+        "romaji": "Kijibato(Dream Monster )"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/25/",
+    "creditSourceUrl": "https://www.uta-net.com/song/335828/"
+  },
+  {
+    "id": "konomamade-moomentari",
+    "title": {
+      "ja": "このままでモーメンタリ",
+      "romaji": "konomamade moomentari"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2023-04-12-tenshi-ha-doko-he",
+    "releaseTitle": {
+      "ja": "「天使は何処へ」",
+      "romaji": "( tenshi ha doko he )"
+    },
+    "releaseType": "single",
+    "releaseDate": "2023-04-12",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/not-equal-me/konomamade-moomentari.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/06abd35539430525ece6ba436c798139.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2023",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "ヤナガワタカオ",
+        "romaji": "yanagawatakao"
+      },
+      "arranger": {
+        "ja": "ヤナガワタカオ",
+        "romaji": "yanagawatakao"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/23/",
+    "creditSourceUrl": "https://www.uta-net.com/song/335827/"
+  },
+  {
+    "id": "mashumarofurooto",
+    "title": {
+      "ja": "マシュマロフロート",
+      "romaji": "mashumarofurooto"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2023-04-12-tenshi-ha-doko-he",
+    "releaseTitle": {
+      "ja": "「天使は何処へ」",
+      "romaji": "( tenshi ha doko he )"
+    },
+    "releaseType": "single",
+    "releaseDate": "2023-04-12",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/not-equal-me/mashumarofurooto.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/2da3d10895b580be3a0c570c6da366e7.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2023",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "BE YOU・田辺望・永野小織",
+        "romaji": "BE YOU ・ tanabe bou ・ nagano saori"
+      },
+      "arranger": {
+        "ja": "石黒剛",
+        "romaji": "ishiguro tsuyoshi"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/24/",
+    "creditSourceUrl": "https://www.uta-net.com/song/335826/"
+  },
+  {
+    "id": "deeto-no-nochi-22-toki",
+    "title": {
+      "ja": "デートの後、22時",
+      "romaji": "deeto no nochi , 22 toki"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2023-09-06-deeto-no-nochi-22-toki",
+    "releaseTitle": {
+      "ja": "デートの後、22時",
+      "romaji": "deeto no nochi , 22 toki"
+    },
+    "releaseType": "digital",
+    "releaseDate": "2023-09-06",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/not-equal-me/deeto-no-nochi-22-toki.jpg",
+    "coverSourceUrl": "https://www.uta-net.com/libs/cacheimg.php?p=kashi&f=350000/343118.jpg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2023",
+      "digital",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "塚田耕平",
+        "romaji": "tsukada kouhei"
+      },
+      "arranger": {
+        "ja": "めんま",
+        "romaji": "menma"
+      }
+    },
+    "officialUrl": "https://www.uta-net.com/song/343118/",
+    "creditSourceUrl": "https://www.uta-net.com/song/343118/"
+  },
+  {
+    "id": "sou-waseburikko",
+    "title": {
+      "ja": "想わせぶりっこ",
+      "romaji": "sou waseburikko"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2023-09-06-sou-waseburikko",
+    "releaseTitle": {
+      "ja": "「想わせぶりっこ」",
+      "romaji": "( sou waseburikko )"
+    },
+    "releaseType": "single",
+    "releaseDate": "2023-09-06",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/not-equal-me/sou-waseburikko.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/5c7ec3ec7f800daff41141f952c93aed.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2023",
+      "single",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "ヤナガワタカオ",
+        "romaji": "yanagawatakao"
+      },
+      "arranger": {
+        "ja": "ヤナガワタカオ",
+        "romaji": "yanagawatakao"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/39/",
+    "creditSourceUrl": "https://www.uta-net.com/song/341503/"
+  },
+  {
+    "id": "furoakiraa",
+    "title": {
+      "ja": "フロアキラー",
+      "romaji": "furoakiraa"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2023-09-06-sou-waseburikko",
+    "releaseTitle": {
+      "ja": "「想わせぶりっこ」",
+      "romaji": "( sou waseburikko )"
+    },
+    "releaseType": "single",
+    "releaseDate": "2023-09-06",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/not-equal-me/furoakiraa.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/4175f0d44f9e8a615fb912a7e4732d23.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2023",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "近藤圭一",
+        "romaji": "kondou keiichi"
+      },
+      "arranger": {
+        "ja": "近藤圭一・Uio",
+        "romaji": "kondou keiichi ・ Uio"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/37/",
+    "creditSourceUrl": "https://www.uta-net.com/song/343121/"
+  },
+  {
+    "id": "gekka-bijin",
+    "title": {
+      "ja": "月下美人",
+      "romaji": "gekka bijin"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2023-09-06-sou-waseburikko",
+    "releaseTitle": {
+      "ja": "「想わせぶりっこ」",
+      "romaji": "( sou waseburikko )"
+    },
+    "releaseType": "single",
+    "releaseDate": "2023-09-06",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/not-equal-me/gekka-bijin.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/b3ceb5f90c1b7f45b77fd25e1c33102b.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2023",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "伊原真一・N-Gram",
+        "romaji": "ihara Shin'ichi ・ N-Gram"
+      },
+      "arranger": {
+        "ja": "伊原真一・N-Gram",
+        "romaji": "ihara Shin'ichi ・ N-Gram"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/38/",
+    "creditSourceUrl": "https://www.uta-net.com/song/343120/"
+  },
+  {
+    "id": "anchikonfichuuru",
+    "title": {
+      "ja": "アンチコンフィチュール",
+      "romaji": "anchikonfichuuru"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2023-12-20-anchikonfichuuru",
+    "releaseTitle": {
+      "ja": "「アンチコンフィチュール」",
+      "romaji": "( anchikonfichuuru )"
+    },
+    "releaseType": "single",
+    "releaseDate": "2023-12-20",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/not-equal-me/anchikonfichuuru.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/df9c59996b9c7192ead487881e803d62.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2023",
+      "single",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "長沢知亜紀・Shun Sakaguchi・no_my",
+        "romaji": "nagasawa chi aki ・ Shun Sakaguchi ・ No_my"
+      },
+      "arranger": {
+        "ja": "APAZZI",
+        "romaji": "APAZZI"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/45/",
+    "creditSourceUrl": "https://www.uta-net.com/song/347019/"
+  },
+  {
+    "id": "hatsukoi-kamubakku",
+    "title": {
+      "ja": "初恋カムバック",
+      "romaji": "hatsukoi kamubakku"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2023-12-20-anchikonfichuuru",
+    "releaseTitle": {
+      "ja": "「アンチコンフィチュール」",
+      "romaji": "( anchikonfichuuru )"
+    },
+    "releaseType": "single",
+    "releaseDate": "2023-12-20",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/not-equal-me/hatsukoi-kamubakku.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/df9c59996b9c7192ead487881e803d62.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2023",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "HaTo",
+        "romaji": "HaTo"
+      },
+      "arranger": {
+        "ja": "めんま",
+        "romaji": "menma"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/45/",
+    "creditSourceUrl": "https://www.uta-net.com/song/347869/"
+  },
+  {
+    "id": "hiroin-to-ookami",
+    "title": {
+      "ja": "ヒロインとオオカミ",
+      "romaji": "hiroin to ookami"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2023-12-20-anchikonfichuuru",
+    "releaseTitle": {
+      "ja": "「アンチコンフィチュール」",
+      "romaji": "( anchikonfichuuru )"
+    },
+    "releaseType": "single",
+    "releaseDate": "2023-12-20",
+    "trackNo": 3,
+    "trackType": "coupling",
+    "coverUrl": "/covers/not-equal-me/hiroin-to-ookami.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/df9c59996b9c7192ead487881e803d62.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2023",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "Yuta Sakai",
+        "romaji": "Yuta Sakai"
+      },
+      "arranger": {
+        "ja": "Yuta Sakai",
+        "romaji": "Yuta Sakai"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/45/",
+    "creditSourceUrl": "https://www.uta-net.com/song/347868/"
+  },
+  {
+    "id": "marcato",
+    "title": {
+      "ja": "Marcato",
+      "romaji": "Marcato"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2024-03-20-marcato",
+    "releaseTitle": {
+      "ja": "Marcato",
+      "romaji": "Marcato"
+    },
+    "releaseType": "digital",
+    "releaseDate": "2024-03-20",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/not-equal-me/marcato.jpg",
+    "coverSourceUrl": "https://m.media-amazon.com/images/I/51qi+xXYdhL._SL240_.jpg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2024",
+      "digital",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "Uio",
+        "romaji": "Uio"
+      },
+      "arranger": {
+        "ja": "Uio",
+        "romaji": "Uio"
+      }
+    },
+    "officialUrl": "https://www.uta-net.com/song/352011/",
+    "creditSourceUrl": "https://www.uta-net.com/song/352011/"
+  },
+  {
+    "id": "deeto-zenya-rekuiemu",
+    "title": {
+      "ja": "デート前夜レクイエム",
+      "romaji": "deeto zenya rekuiemu"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2024-03-20-deeto-zenya-rekuiemu",
+    "releaseTitle": {
+      "ja": "デート前夜レクイエム",
+      "romaji": "deeto zenya rekuiemu"
+    },
+    "releaseType": "digital",
+    "releaseDate": "2024-03-20",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/not-equal-me/deeto-zenya-rekuiemu.jpg",
+    "coverSourceUrl": "https://m.media-amazon.com/images/I/51qi+xXYdhL._SL240_.jpg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2024",
+      "digital",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "白戸佑輔",
+        "romaji": "shirato yuusuke"
+      },
+      "arranger": {
+        "ja": "白戸佑輔",
+        "romaji": "shirato yuusuke"
+      }
+    },
+    "officialUrl": "https://www.uta-net.com/song/352010/",
+    "creditSourceUrl": "https://www.uta-net.com/song/352010/"
+  },
+  {
+    "id": "rasutochansu-rasutodansu",
+    "title": {
+      "ja": "ラストチャンス、ラストダンス",
+      "romaji": "rasutochansu , rasutodansu"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2024-03-20-rasutochansu-rasutodansu",
+    "releaseTitle": {
+      "ja": "ラストチャンス、ラストダンス",
+      "romaji": "rasutochansu , rasutodansu"
+    },
+    "releaseType": "digital",
+    "releaseDate": "2024-03-20",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/not-equal-me/rasutochansu-rasutodansu.jpg",
+    "coverSourceUrl": "https://m.media-amazon.com/images/I/51qi+xXYdhL._SL240_.jpg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2024",
+      "digital",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "古川貴浩",
+        "romaji": "furukawa takahiro"
+      },
+      "arranger": {
+        "ja": "古川貴浩",
+        "romaji": "furukawa takahiro"
+      }
+    },
+    "officialUrl": "https://www.uta-net.com/song/351059/",
+    "creditSourceUrl": "https://www.uta-net.com/song/351059/"
+  },
+  {
+    "id": "guuzen-shinfonii",
+    "title": {
+      "ja": "偶然シンフォニー",
+      "romaji": "guuzen shinfonii"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2024-03-20-guuzen-shinfonii",
+    "releaseTitle": {
+      "ja": "偶然シンフォニー",
+      "romaji": "guuzen shinfonii"
+    },
+    "releaseType": "digital",
+    "releaseDate": "2024-03-20",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/not-equal-me/guuzen-shinfonii.jpg",
+    "coverSourceUrl": "https://m.media-amazon.com/images/I/51qi+xXYdhL._SL240_.jpg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2024",
+      "digital",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "斎藤竜介・菊池諒",
+        "romaji": "saitou ryuusuke ・ kikuchi ryou"
+      },
+      "arranger": {
+        "ja": "斎藤竜介",
+        "romaji": "saitou ryuusuke"
+      }
+    },
+    "officialUrl": "https://www.uta-net.com/song/352012/",
+    "creditSourceUrl": "https://www.uta-net.com/song/352012/"
+  },
+  {
+    "id": "haru-no-koibito",
+    "title": {
+      "ja": "春の恋人",
+      "romaji": "haru no koibito"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2024-03-20-haru-no-koibito",
+    "releaseTitle": {
+      "ja": "春の恋人",
+      "romaji": "haru no koibito"
+    },
+    "releaseType": "digital",
+    "releaseDate": "2024-03-20",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/not-equal-me/haru-no-koibito.jpg",
+    "coverSourceUrl": "https://m.media-amazon.com/images/I/51qi+xXYdhL._SL240_.jpg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2024",
+      "digital",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "WA-ON",
+        "romaji": "WA-ON"
+      },
+      "arranger": {
+        "ja": "APAZZI",
+        "romaji": "APAZZI"
+      }
+    },
+    "officialUrl": "https://www.uta-net.com/song/352009/",
+    "creditSourceUrl": "https://www.uta-net.com/song/352009/"
+  },
+  {
+    "id": "natsu-ga-kita-kara",
+    "title": {
+      "ja": "夏が来たから",
+      "romaji": "natsu ga kita kara"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2024-08-28-natsu-ga-kita-kara",
+    "releaseTitle": {
+      "ja": "「夏が来たから」",
+      "romaji": "( natsu ga kita kara )"
+    },
+    "releaseType": "single",
+    "releaseDate": "2024-08-28",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/not-equal-me/natsu-ga-kita-kara.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/45135f614c98fcf1a62b30b0bc27f076.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2024",
+      "single",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "バグベア",
+        "romaji": "bagubea"
+      },
+      "arranger": {
+        "ja": "yamazo",
+        "romaji": "yamazo"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/53/",
+    "creditSourceUrl": "https://www.uta-net.com/song/357331/"
+  },
+  {
+    "id": "gomen-maji-de",
+    "title": {
+      "ja": "ごめん、マジで",
+      "romaji": "gomen , maji de"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2024-08-28-natsu-ga-kita-kara",
+    "releaseTitle": {
+      "ja": "「夏が来たから」",
+      "romaji": "( natsu ga kita kara )"
+    },
+    "releaseType": "single",
+    "releaseDate": "2024-08-28",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/not-equal-me/gomen-maji-de.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/45135f614c98fcf1a62b30b0bc27f076.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2024",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "塚田耕平",
+        "romaji": "tsukada kouhei"
+      },
+      "arranger": {
+        "ja": "脇眞富",
+        "romaji": "waki makoto tomi"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/53/",
+    "creditSourceUrl": "https://www.uta-net.com/song/359532/"
+  },
+  {
+    "id": "saikyou-no-rabusongu",
+    "title": {
+      "ja": "最強のラブソング",
+      "romaji": "saikyou no rabusongu"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2024-08-28-natsu-ga-kita-kara",
+    "releaseTitle": {
+      "ja": "「夏が来たから」",
+      "romaji": "( natsu ga kita kara )"
+    },
+    "releaseType": "single",
+    "releaseDate": "2024-08-28",
+    "trackNo": 3,
+    "trackType": "coupling",
+    "coverUrl": "/covers/not-equal-me/saikyou-no-rabusongu.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/45135f614c98fcf1a62b30b0bc27f076.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2024",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "中村歩・菊池博人",
+        "romaji": "nakamura ho ・ kikuchi hirohito"
+      },
+      "arranger": {
+        "ja": "菊池博人・中村歩",
+        "romaji": "kikuchi hirohito ・ nakamura ho"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/53/",
+    "creditSourceUrl": "https://www.uta-net.com/song/359531/"
+  },
+  {
+    "id": "mobunoderera",
+    "title": {
+      "ja": "モブノデレラ",
+      "romaji": "mobunoderera"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2025-04-30-mobunoderera-kamisama-no-iu-toori",
+    "releaseTitle": {
+      "ja": "「モブノデレラ/神様の言うとーり!」",
+      "romaji": "( mobunoderera / kamisama no iu toori ! )"
+    },
+    "releaseType": "single",
+    "releaseDate": "2025-04-30",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/not-equal-me/mobunoderera.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/cc8cae1654b0c5208461315e17729817.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2025",
+      "single",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "関口颯太・杉山勝彦",
+        "romaji": "sekiguchi fuuta ・ sugiyama katsuhiko"
+      },
+      "arranger": {
+        "ja": "杉山勝彦",
+        "romaji": "sugiyama katsuhiko"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/64/",
+    "creditSourceUrl": "https://www.uta-net.com/song/372691/"
+  },
+  {
+    "id": "kamisama-no-iu-toori",
+    "title": {
+      "ja": "神様の言うとーり!",
+      "romaji": "kamisama no iu toori !"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2025-04-30-mobunoderera-kamisama-no-iu-toori",
+    "releaseTitle": {
+      "ja": "「モブノデレラ/神様の言うとーり!」",
+      "romaji": "( mobunoderera / kamisama no iu toori ! )"
+    },
+    "releaseType": "single",
+    "releaseDate": "2025-04-30",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/not-equal-me/kamisama-no-iu-toori.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/cc8cae1654b0c5208461315e17729817.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2025",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "齋藤奏太",
+        "romaji": "saitou souta"
+      },
+      "arranger": {
+        "ja": "齋藤奏太",
+        "romaji": "saitou souta"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/64/",
+    "creditSourceUrl": "https://www.uta-net.com/song/372690/"
+  },
+  {
+    "id": "kafe-rakuen",
+    "title": {
+      "ja": "カフェ樂園",
+      "romaji": "kafe rakuen"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2025-04-30-mobunoderera-kamisama-no-iu-toori",
+    "releaseTitle": {
+      "ja": "「モブノデレラ/神様の言うとーり!」",
+      "romaji": "( mobunoderera / kamisama no iu toori ! )"
+    },
+    "releaseType": "single",
+    "releaseDate": "2025-04-30",
+    "trackNo": 3,
+    "trackType": "coupling",
+    "coverUrl": "/covers/not-equal-me/kafe-rakuen.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/cc8cae1654b0c5208461315e17729817.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2025",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "古川貴浩",
+        "romaji": "furukawa takahiro"
+      },
+      "arranger": {
+        "ja": "古川貴浩",
+        "romaji": "furukawa takahiro"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/64/",
+    "creditSourceUrl": "https://www.uta-net.com/song/372689/"
+  },
+  {
+    "id": "kun-wo-mikake-ta",
+    "title": {
+      "ja": "君を見かけた",
+      "romaji": "kun wo mikake ta"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2025-08-27-kun-wo-mikake-ta",
+    "releaseTitle": {
+      "ja": "君を見かけた",
+      "romaji": "kun wo mikake ta"
+    },
+    "releaseType": "digital",
+    "releaseDate": "2025-08-27",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/not-equal-me/kun-wo-mikake-ta.jpg",
+    "coverSourceUrl": "https://www.uta-net.com/libs/cacheimg.php?p=kashi&f=380000/378888.jpg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2025",
+      "digital",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "塚田耕平",
+        "romaji": "tsukada kouhei"
+      },
+      "arranger": {
+        "ja": "塚田耕平",
+        "romaji": "tsukada kouhei"
+      }
+    },
+    "officialUrl": "https://www.uta-net.com/song/378888/",
+    "creditSourceUrl": "https://www.uta-net.com/song/378888/"
+  },
+  {
+    "id": "haitateki-faitaa",
+    "title": {
+      "ja": "排他的ファイター",
+      "romaji": "haitateki faitaa"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2025-12-10-haitateki-faitaa",
+    "releaseTitle": {
+      "ja": "「排他的ファイター」",
+      "romaji": "( haitateki faitaa )"
+    },
+    "releaseType": "single",
+    "releaseDate": "2025-12-10",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/not-equal-me/haitateki-faitaa.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/b8b97a3d89ceeadd93aa042709009bfd.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2025",
+      "single",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "宮崎諒-amazuti-",
+        "romaji": "miyazaki ryou -amazuti-"
+      },
+      "arranger": {
+        "ja": "宮崎諒-amazuti-",
+        "romaji": "miyazaki ryou -amazuti-"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/71/",
+    "creditSourceUrl": "https://www.uta-net.com/song/383843/"
+  },
+  {
+    "id": "kyunkawa-jinsei",
+    "title": {
+      "ja": "きゅんかわ人生",
+      "romaji": "kyunkawa jinsei"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2025-12-10-haitateki-faitaa",
+    "releaseTitle": {
+      "ja": "「排他的ファイター」",
+      "romaji": "( haitateki faitaa )"
+    },
+    "releaseType": "single",
+    "releaseDate": "2025-12-10",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/not-equal-me/kyunkawa-jinsei.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/b8b97a3d89ceeadd93aa042709009bfd.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2025",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "Ryo Shiraki・新Q",
+        "romaji": "Ryo Shiraki ・ shin Q"
+      },
+      "arranger": {
+        "ja": "新Q",
+        "romaji": "shin Q"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/71/",
+    "creditSourceUrl": "https://www.uta-net.com/song/385094/"
+  },
+  {
+    "id": "hanbunko-kurisumasu",
+    "title": {
+      "ja": "はんぶんこクリスマス",
+      "romaji": "hanbunko kurisumasu"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2025-12-10-haitateki-faitaa",
+    "releaseTitle": {
+      "ja": "「排他的ファイター」",
+      "romaji": "( haitateki faitaa )"
+    },
+    "releaseType": "single",
+    "releaseDate": "2025-12-10",
+    "trackNo": 3,
+    "trackType": "coupling",
+    "coverUrl": "/covers/not-equal-me/hanbunko-kurisumasu.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/b8b97a3d89ceeadd93aa042709009bfd.jpeg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2025",
+      "coupling",
+      "single"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "塚田耕平",
+        "romaji": "tsukada kouhei"
+      },
+      "arranger": {
+        "ja": "湯浅篤",
+        "romaji": "yuasa atsushi"
+      }
+    },
+    "officialUrl": "https://not-equal-me.jp/discography/detail/71/",
+    "creditSourceUrl": "https://www.uta-net.com/song/385093/"
+  },
+  {
+    "id": "kun-hamou-ichido-tane-ninaru",
+    "title": {
+      "ja": "君はもう一度タネになる",
+      "romaji": "kun hamou ichido tane ninaru"
+    },
+    "artist": {
+      "ja": "菅波 美玲(≠ME)",
+      "romaji": "suganami mirei ( ≠ ME )"
+    },
+    "releaseId": "2026-06-12-kun-hamou-ichido-tane-ninaru",
+    "releaseTitle": {
+      "ja": "君はもう一度タネになる",
+      "romaji": "kun hamou ichido tane ninaru"
+    },
+    "releaseType": "digital",
+    "releaseDate": "2026-06-12",
+    "trackNo": 1,
+    "trackType": "solo",
+    "coverUrl": "/covers/not-equal-me/kun-hamou-ichido-tane-ninaru.jpg",
+    "coverSourceUrl": "https://i.ytimg.com/vi/XtKPbP7bqp0/maxresdefault.jpg",
+    "memberIds": [
+      "suganami-mirei"
+    ],
+    "tags": [
+      "2026",
+      "digital",
+      "graduated_member",
+      "graduation_solo",
+      "solo"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "Yu-ki Kokubo・YUU for YOU",
+        "romaji": "Yu-ki Kokubo ・ YUU for YOU"
+      },
+      "arranger": {
+        "ja": "YUU for YOU",
+        "romaji": "YUU for YOU"
+      }
+    },
+    "officialUrl": "https://www.youtube.com/watch?v=XtKPbP7bqp0",
+    "creditSourceUrl": "https://www.youtube.com/watch?v=XtKPbP7bqp0",
+    "visibility": "special",
+    "sourceStatus": "youtube_public",
+    "sourceNote": "菅波美玲卒業コンサート公開楽曲。通常の公式ディスコグラフィー/Uta-Net一覧に無い場合の補完。"
+  },
+  {
+    "id": "ai-kudasaimase",
+    "title": {
+      "ja": "愛くださいませ",
+      "romaji": "ai kudasaimase"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2026-06-24-ai-kudasaimase",
+    "releaseTitle": {
+      "ja": "愛くださいませ",
+      "romaji": "ai kudasaimase"
+    },
+    "releaseType": "digital",
+    "releaseDate": "2026-06-24",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/not-equal-me/ai-kudasaimase.jpg",
+    "coverSourceUrl": "https://m.media-amazon.com/images/I/51a5RuQvqXL._SL240_.jpg",
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "tags": [
+      "2026",
+      "digital",
+      "title"
+    ],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "sasuhara rino"
+      },
+      "composer": {
+        "ja": "齋藤奏太",
+        "romaji": "saitou souta"
+      },
+      "arranger": {
+        "ja": "APAZZI",
+        "romaji": "APAZZI"
+      }
+    },
+    "officialUrl": "https://www.uta-net.com/song/394389/",
+    "creditSourceUrl": "https://www.uta-net.com/song/394389/"
+  }
+]

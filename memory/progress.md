@@ -46,11 +46,15 @@
 
 =LOVE 数据来自 `src/projects/equal-love/songs.json` 和 `src/projects/equal-love/members.json`，当前严格校验目标为 84 首歌曲、12 名成员。
 
-`nearly-equal-joy` 与 `not-equal-me` 已建立项目配置与空数据壳，后续填充 `members.json`、`songs.json` 和对应 `public/covers/<project-id>/` 封面即可上线内容。
+`nearly-equal-joy` 与 `not-equal-me` 已填充真实成员、歌曲、credits 和本地封面数据。`nearly-equal-joy` 当前为 26 首歌曲、13 名成员；`not-equal-me` 当前为 58 首歌曲、12 名成员。
+
+`nearly-equal-joy` 保留福山萌叶为毕业成员：`fukuyama-moeka`，毕业日 `2023-03-29`。她只关联实际参与的早期原创曲《≒JOY》《笑って フラジール》《超孤独ライオン》。目前没有可确认的福山萌叶专属毕业曲，因此不添加毕业曲。
+
+`not-equal-me` 标记菅波美玲为毕业成员：`suganami-mirei`，毕业日 `2026-06-12`。毕业曲《君はもう一度タネになる》作为 special/youtube_public 补充曲写入数据，避免常规官网 discography 或 Uta-Net 暂未收录时遗漏。
 
 运行时集合和索引由 `src/data/songs.ts` 从当前项目数据派生，包括 `SONGS`、`SONGS_BY_ID`、`MEMBERS`、`MEMBERS_BY_ID`、`RELEASE_TYPES`、`TRACK_TYPES`、`RELEASE_YEARS`、`TAGS`。
 
-`scripts/validate-project-data.mjs` 会校验全部项目数据；其中 `equal-love` 仍执行歌曲数量、成员数量和边界歌曲严格检查。
+`scripts/validate-project-data.mjs` 会校验全部项目数据；其中 `equal-love` 仍执行歌曲数量、成员数量和边界歌曲严格检查。`nearly-equal-joy` 额外检查福山萌叶成员状态、早期三首参与边界、12 名现役成员单色 `color` 且禁止 `colors`；`not-equal-me` 额外检查菅波美玲成员状态、毕业曲边界、11 名现役成员色。
 
 ## 5. 部署状态
 
@@ -62,11 +66,11 @@
 
 ## 6. 已知风险与待确认事项
 
-`nearly-equal-joy` 与 `not-equal-me` 当前只有配置和空数据壳，页面可以构建但没有可选歌曲。
-
 两个新项目的最终自定义域名尚未写入配置；当前使用 Cloudflare Pages 默认域名占位。
 
 两个新项目的品牌主题色为初始可配置值，后续可按实际设计调整。
+
+`nearly-equal-joy` 的成员色以 wiki 和官方 X 公告中 2026-03-05 决定的单色メンバーカラー为准；不保存ペンライト双色。`not-equal-me` 的成员色仍沿用此前公开应援色资料，后续如官方颜色规则变化，需要同步更新十六进制映射。
 
 文档内容需要随源码演进维护；重大功能、架构、数据结构、依赖、部署流程变化后必须同步更新 `memory/`。
 
@@ -75,6 +79,12 @@
 ## 7. 最近更新记录
 
 2026-06-17：补充开发者交接记录；`architecture.md` 增加文件职责索引，解释三姐妹项目重构后的关键源码、配置、脚本和资源目录作用。
+
+2026-06-17：新增通用数据同步入口 `scripts/sync-project-discography.py --project <project-id>` 和 npm scripts：`sync:data:nearly-equal-joy`、`sync:data:not-equal-me`、`sync:data:all`。完成 ≒JOY 与 ≠ME 数据同步：≒JOY 26 首/13 名成员，保留福山萌叶毕业成员并仅关联早期三首；≠ME 58 首/12 名成员，补充菅波美玲毕业曲《君はもう一度タネになる》。`validate:data` 已覆盖新项目非空、封面、credits、成员引用和毕业边界。
+
+2026-06-17：修复 ≒JOY / ≠ME 成员色 UI。新增 `Member.colors` 与 `src/utils/memberColors.ts`，页面顶部改为现役成员色展开渐变，导出图成员色条按实际现役成员数量显示：≒JOY 12 人、≠ME 11 人；双色胶囊使用平滑渐变。同步脚本和 validator 已覆盖 joy/me 成员色。
+
+2026-06-17：按 ≒JOY wiki 与官方 X 公告改正 ≒JOY 颜色数据：删除 ≒JOY 现役成员 `colors` 双色/ペンライト设定，改用单色メンバーカラー：ボルドー、薄ピンク、紫、青、水色、白、黄色、オレンジ、緑、赤、ピンク、アイスグリーン。同步脚本和 validator 已禁止 ≒JOY 重新写入 `colors`。
 
 2026-06-17：排查 `npm run dev` 卡在 `○ Compiling / ...` 的问题。确认端口已连接但首页 15 秒无响应；webpack dev 对照正常返回，因此将 `dev`、`dev:equal-love`、`dev:nearly-equal-joy`、`dev:not-equal-me` 改为 `next dev --webpack`。生产 `build:*` 继续走 `next build` 静态导出。
 

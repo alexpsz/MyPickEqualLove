@@ -28,7 +28,7 @@ TypeScript 关键设置包括 `strict: true`、`moduleResolution: "bundler"`、`
 
 全局样式入口是 `src/app/globals.css`。项目主题色由 `src/app/layout.tsx` 写入 `--project-primary`、`--project-accent` 和 `--project-primary-wash`。
 
-组件主要使用 Tailwind className 和少量内联样式。导出画布 `ExportBoard` 使用内联样式确保 `html2canvas` 捕获稳定。
+组件主要使用 Tailwind className 和少量内联样式。导出画布 `ExportBoard` 使用内联样式确保 `html2canvas` 捕获稳定；成员色胶囊优先使用单色 `color`，存在 `colors` 时可使用 CSS 渐变渲染。
 
 ## 4. Project Selection
 
@@ -94,6 +94,9 @@ Cloudflare Pages 使用三个独立 Pages 项目连接同一个 GitHub repo 和 
 - `npm run format:check`
 - `npm run sync:data`: 同步 =LOVE 数据
 - `npm run sync:data:equal-love`: 同步 =LOVE 数据
+- `npm run sync:data:nearly-equal-joy`: 同步 ≒JOY 数据
+- `npm run sync:data:not-equal-me`: 同步 ≠ME 数据
+- `npm run sync:data:all`: 依次同步三个项目数据
 - `npm run validate:data`: 校验全部项目数据
 - `npm run validate:data:project -- equal-love`: 校验单个项目数据
 
@@ -110,6 +113,12 @@ Lint 使用 ESLint：
 
 - 检查命令：`npm run format:check`
 - 写入命令：`npm run format`
+
+数据同步使用：
+
+- 命令：`npm run sync:data:<project-id>` 或 `npm run sync:data:all`
+- 脚本：`scripts/sync-project-discography.py`
+- 来源：各项目官网 discography/profile、Uta-Net artist pages，以及项目级 special tracks/overrides
 
 数据校验使用：
 

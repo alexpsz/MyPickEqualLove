@@ -46,8 +46,9 @@
 
 - `scripts/clean-static-export.mjs`：构建前删除旧 `out/`，避免不同项目的静态产物混在一起。
 - `scripts/copy-public-assets.mjs`：静态导出后同步 `.next/static` 与 `public/` 资源到 `out/`，让 Cloudflare Pages 可直接托管。
-- `scripts/sync-equal-love-discography.py`：同步 =LOVE 歌曲和成员数据的专用脚本，输出到 `src/projects/equal-love/`。
-- `scripts/validate-project-data.mjs`：校验全部或单个项目数据。检查 song id 唯一、成员引用存在、封面存在、类型合法；`equal-love` 额外检查 84 首歌曲、12 名成员和边界歌曲。
+- `scripts/sync-project-discography.py`：通用数据同步脚本，通过 `--project equal-love|nearly-equal-joy|not-equal-me` 选择项目。负责抓取官网 discography/profile、Uta-Net credits、本地封面下载、毕业成员/特殊曲和成员参与 override。
+- `scripts/sync-equal-love-discography.py`：兼容旧命令的薄 wrapper，内部调用通用同步脚本同步 `equal-love`。
+- `scripts/validate-project-data.mjs`：校验全部或单个项目数据。检查 song id 唯一、成员引用存在、封面存在、类型合法、credits 完整和项目非空；`equal-love` 额外检查 84 首歌曲、12 名成员和边界歌曲，`nearly-equal-joy` 检查福山萌叶毕业成员与早期三首参与边界，`not-equal-me` 检查菅波美玲毕业成员与毕业曲边界。
 
 ### 3.4 Next App Router
 
@@ -77,23 +78,24 @@
 - `src/data/songs.ts`：从当前项目 JSON 派生运行时集合与索引，包括 `SONGS`、`SONGS_BY_ID`、`MEMBERS`、`MEMBERS_BY_ID`、`RELEASE_TYPES`、`TRACK_TYPES`、`RELEASE_YEARS`、`TAGS`。
 - `src/schema/music.ts`：成员、歌曲、发行、曲目类型、pick slot、localStorage 数据结构的 TypeScript 契约。
 - `src/utils/colors.ts`：颜色工具。当前用于把现代 CSS 颜色函数转换为 `html2canvas` 更稳定支持的格式。
+- `src/utils/memberColors.ts`：成员应援色工具。读取 `color`/`colors` 并为页面顶部渐变与导出图色条提供统一颜色序列。
 - `src/utils/constants.ts`：从当前项目配置导出的站点常量，例如 `SITE_URL`。
 
 ### 3.7 项目数据与静态资源
 
 - `src/projects/equal-love/members.json`：=LOVE 成员数据源。
 - `src/projects/equal-love/songs.json`：=LOVE 歌曲数据源。
-- `src/projects/nearly-equal-joy/members.json`：≒JOY 成员数据壳，后续填充真实成员。
-- `src/projects/nearly-equal-joy/songs.json`：≒JOY 歌曲数据壳，后续填充真实歌曲。
-- `src/projects/not-equal-me/members.json`：≠ME 成员数据壳，后续填充真实成员。
-- `src/projects/not-equal-me/songs.json`：≠ME 歌曲数据壳，后续填充真实歌曲。
+- `src/projects/nearly-equal-joy/members.json`：≒JOY 成员数据，当前包含 12 名现役成员和毕业成员福山萌叶；现役成员使用 wiki/官方 X 公告的单色メンバーカラー `color`，不保存ペンライト双色 `colors`。
+- `src/projects/nearly-equal-joy/songs.json`：≒JOY 歌曲数据。福山萌叶只关联《≒JOY》《笑って フラジール》《超孤独ライオン》，目前不添加毕业曲。
+- `src/projects/not-equal-me/members.json`：≠ME 成员数据，当前包含 11 名现役成员和毕业成员菅波美玲；成员包含双色应援色 `colors`，导出图默认使用 11 名现役成员。
+- `src/projects/not-equal-me/songs.json`：≠ME 歌曲数据，包含菅波美玲毕业曲《君はもう一度タネになる》作为 special/youtube_public 曲。
 - `public/icon.svg`：旧通用 icon，保留用于兼容历史引用；新 metadata 使用项目化 icon。
 - `public/icons/equal-love.svg`：=LOVE 站点 favicon/OG icon。
 - `public/icons/nearly-equal-joy.svg`：≒JOY 站点 favicon/OG icon。
 - `public/icons/not-equal-me.svg`：≠ME 站点 favicon/OG icon。
 - `public/covers/equal-love/*`：=LOVE 本地封面图，路径被 `songs.json` 的 `coverUrl` 引用。
-- `public/covers/nearly-equal-joy/`：≒JOY 后续封面路径规范；当前无封面文件时目录可不存在，新增歌曲时使用 `/covers/nearly-equal-joy/...`。
-- `public/covers/not-equal-me/`：≠ME 后续封面路径规范；当前无封面文件时目录可不存在，新增歌曲时使用 `/covers/not-equal-me/...`。
+- `public/covers/nearly-equal-joy/`：≒JOY 本地封面图，路径被 `songs.json` 的 `coverUrl` 引用。
+- `public/covers/not-equal-me/`：≠ME 本地封面图，路径被 `songs.json` 的 `coverUrl` 引用。
 - `docs/equal-love-mypicks-preview.png`：README 预览图。
 
 ## 4. 核心模块职责
@@ -138,6 +140,8 @@
 
 随后动态 import `html2canvas`，查找当前项目的 `EXPORT_CANVAS_ID`，等待字体稳定后生成 PNG data URL，并写入 `PreviewModal`。
 
+`ExportBoard` 的成员色条使用现役成员实际数量，不再固定截取前 10 名。存在 `colors` 的项目可渲染渐变胶囊；≒JOY 当前只使用单色胶囊。
+
 当预览已存在时，`showTitles` 或 `transparentBg` 变化会延迟触发重新生成。
 
 ## 8. 构建与部署
@@ -164,7 +168,7 @@
 
 导出尺寸、背景和 scale 必须从 `EXPORT_CONFIG` 获取。
 
-数据变更必须运行 `npm run validate:data`。=LOVE 数据仍保留 84 首、12 名成员和边界歌曲的严格校验。
+数据变更必须运行 `npm run validate:data`。=LOVE 数据仍保留 84 首、12 名成员和边界歌曲的严格校验；≒JOY 和 ≠ME 不允许回到空数据壳，并保留各自毕业成员边界校验。
 
 静态导出能力不得被依赖服务端运行时的实现破坏。
 
