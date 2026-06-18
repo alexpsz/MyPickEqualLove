@@ -28,7 +28,7 @@ export default function SisterProjectsMenu() {
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="fixed left-4 top-4 z-20 flex h-11 w-11 items-center justify-center border border-black bg-white text-black transition-colors hover:bg-black hover:text-white sm:left-6 sm:top-6"
+        className="absolute left-4 top-4 z-20 flex h-11 w-11 items-center justify-center border border-black bg-white text-black transition-colors hover:bg-black hover:text-white sm:left-6 sm:top-6"
         title="Open sister MyPick sites"
         aria-label="Open sister MyPick sites"
         aria-controls="sister-projects-drawer"
