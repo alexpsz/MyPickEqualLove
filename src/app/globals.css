@@ -182,7 +182,7 @@ input {
 }
 
 .official-stripe {
-  background: var(--stripe);
+  background: var(--stripe), #fff;
 }
 
 .no-scrollbar::-webkit-scrollbar {

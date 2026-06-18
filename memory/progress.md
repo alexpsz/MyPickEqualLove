@@ -26,7 +26,7 @@
 
 当前已实现基于 `NEXT_PUBLIC_PROJECT_ID` 的项目配置、metadata、主题色、favicon、robots 和 sitemap 切换。
 
-当前已实现左上角姐妹项目抽屉入口；每个站点从配置中展示另外两个 MyPick 站点链接。
+当前已实现左上角 `Other Picks` 抽屉入口；每个站点从配置中展示另外两个姐妹 MyPick 站点链接，并在低调分割线下展示其他作者维护的外部 MyPick 站点列表。
 
 当前已实现三项目开发和构建脚本：`dev:*` 使用 webpack dev，`build:*` 使用静态导出。
 
@@ -82,7 +82,9 @@
 
 ## 7. 最近更新记录
 
-2026-06-19：修复歌曲选择弹窗在展开 Filters 后遮挡歌曲列表的问题。`SearchModal` 现在保留标题栏和底部计数栏，标题栏下方的筛选区与歌曲列表共用同一个纵向滚动容器；展开的高级筛选面板不再拥有独立 `max-height`/`overflow-y-auto` 滚动层。后续维护搜索弹窗时不要把 Filters 和结果列表拆回两个独立纵向滚动区域，否则移动端选择筛选后会只滚动歌单、筛选区持续占据大部分视口。已用 `npm run lint`、`npm run build` 和临时 Playwright/Chrome 在 390x740 与 900x740 视口验证。
+2026-06-19：扩展左上角 `Other Picks` 抽屉。上方继续由 `SISTER_PROJECT_LINKS` 展示当前项目以外的两个姐妹站点；下方新增低调分割线和 `EXTERNAL_MY_PICK_LINKS` 外部 MyPick 列表，包含 LLerNote、Aqours、Nijigasaki、Liella!、Hasunosora 与 IKIZULIVE，并在底部加入其他作者 fan-made 项目免责声明。
+
+2026-06-19：修复歌曲选择弹窗在展开 Filters 后遮挡歌曲列表的问题，并按交互反馈细化滚动层级。`SearchModal` 现在让搜索控制条、高级 Filters 面板和歌曲列表共用同一个纵向滚动容器；移动端控制条保持普通流布局，会随歌单一起向上滑出视口，`sm` 及以上视口控制条使用 sticky 留在滚动容器顶部，仅高级 Filters 面板和歌曲列表滚动隐藏。高级筛选面板不再拥有独立 `max-height`/`overflow-y-auto` 滚动层。后续维护搜索弹窗时不要把高级 Filters 面板和结果列表拆回两个独立纵向滚动区域。已用 `npm run lint`、`npm run build`、in-app Browser 在 390x740 和 900x740 视口验证。
 
 2026-06-18：新增左上角 `Other Picks` 姐妹项目抽屉入口。互链由 `SISTER_PROJECT_LINKS` 从项目注册表和当前项目 id 派生，当前站点只显示另外两个姐妹站点，并沿用现有黑白面板设计和项目主题色点缀。
 

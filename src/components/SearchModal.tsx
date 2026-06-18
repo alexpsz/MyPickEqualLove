@@ -299,7 +299,7 @@ export default function SearchModal({
         </div>
 
         <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto bg-white overscroll-contain [-webkit-overflow-scrolling:touch]">
-          <div className="official-stripe border-b border-black p-4">
+          <div className="official-stripe border-b border-black p-4 sm:sticky sm:top-0 sm:z-20">
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-2 sm:flex-row">
                 <div className="relative min-w-0 flex-1">
@@ -389,61 +389,61 @@ export default function SearchModal({
                   Digital
                 </FilterChip>
               </div>
-
-              {isMoreFiltersOpen ? (
-                <div
-                  id="song-more-filters"
-                  className="flex flex-col gap-3 border border-slate-200 bg-white p-3"
-                >
-                  <FilterRow label="Year">
-                    {["all", ...years].map((year) => (
-                      <FilterChip
-                        key={year}
-                        active={yearFilter === year}
-                        onClick={() => setYearFilter(year)}
-                      >
-                        {year === "all" ? "All" : year}
-                      </FilterChip>
-                    ))}
-                  </FilterRow>
-
-                  <MemberFilterRow
-                    activeMembers={activeMembers}
-                    graduatedMembers={graduatedMembers}
-                    memberFilters={memberFilters}
-                    showGraduatedMembers={showGraduatedMembers}
-                    onClearMembers={() => setMemberFilters([])}
-                    onToggleGraduated={toggleShowGraduatedMembers}
-                    onToggleMember={toggleMemberFilter}
-                  />
-
-                  <FilterRow label="Release Type">
-                    {(["all", ...releaseTypes] as ReleaseFilter[]).map(
-                      (type) => (
-                        <FilterChip
-                          key={type}
-                          active={releaseTypeFilter === type}
-                          onClick={() => setReleaseTypeFilter(type)}
-                        >
-                          {RELEASE_TYPE_LABELS[type] ?? type}
-                        </FilterChip>
-                      ),
-                    )}
-                  </FilterRow>
-
-                  <div className="flex justify-end">
-                    <button
-                      type="button"
-                      onClick={resetFilters}
-                      className="border border-black bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-black transition-colors hover:bg-black hover:text-white"
-                    >
-                      Reset
-                    </button>
-                  </div>
-                </div>
-              ) : null}
             </div>
           </div>
+
+          {isMoreFiltersOpen ? (
+            <div className="official-stripe border-b border-black p-4">
+              <div
+                id="song-more-filters"
+                className="flex flex-col gap-3 border border-slate-200 bg-white p-3"
+              >
+                <FilterRow label="Year">
+                  {["all", ...years].map((year) => (
+                    <FilterChip
+                      key={year}
+                      active={yearFilter === year}
+                      onClick={() => setYearFilter(year)}
+                    >
+                      {year === "all" ? "All" : year}
+                    </FilterChip>
+                  ))}
+                </FilterRow>
+
+                <MemberFilterRow
+                  activeMembers={activeMembers}
+                  graduatedMembers={graduatedMembers}
+                  memberFilters={memberFilters}
+                  showGraduatedMembers={showGraduatedMembers}
+                  onClearMembers={() => setMemberFilters([])}
+                  onToggleGraduated={toggleShowGraduatedMembers}
+                  onToggleMember={toggleMemberFilter}
+                />
+
+                <FilterRow label="Release Type">
+                  {(["all", ...releaseTypes] as ReleaseFilter[]).map((type) => (
+                    <FilterChip
+                      key={type}
+                      active={releaseTypeFilter === type}
+                      onClick={() => setReleaseTypeFilter(type)}
+                    >
+                      {RELEASE_TYPE_LABELS[type] ?? type}
+                    </FilterChip>
+                  ))}
+                </FilterRow>
+
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={resetFilters}
+                    className="border border-black bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-black transition-colors hover:bg-black hover:text-white"
+                  >
+                    Reset
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : null}
 
           <div className="space-y-3 p-4">
             {filteredSongs.length > 0 ? (

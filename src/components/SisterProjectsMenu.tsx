@@ -1,7 +1,10 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { SISTER_PROJECT_LINKS } from "../config/project";
+import {
+  EXTERNAL_MY_PICK_LINKS,
+  SISTER_PROJECT_LINKS,
+} from "../config/project";
 
 export default function SisterProjectsMenu() {
   const [isOpen, setIsOpen] = useState(false);
@@ -86,51 +89,107 @@ export default function SisterProjectsMenu() {
             </div>
 
             <nav className="official-stripe flex-1 overflow-y-auto p-5">
-              <div className="grid gap-4">
-                {SISTER_PROJECT_LINKS.map((link) => (
-                  <a
-                    key={link.id}
-                    href={link.siteUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group grid min-h-28 grid-cols-[1fr_auto] items-center gap-4 border border-black bg-white p-4 text-left shadow-[8px_8px_0_rgba(0,0,0,0.08)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[10px_10px_0_rgba(0,0,0,0.12)] focus:outline-none focus:ring-2 focus:ring-[var(--project-primary)]"
-                  >
-                    <span className="min-w-0">
-                      <span className="mb-3 flex items-center gap-2">
-                        <span
-                          className="h-3 w-3 border border-black"
-                          style={{ backgroundColor: link.themeColor }}
-                          aria-hidden="true"
-                        />
-                        <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
-                          Sister Site
+              <div className="flex flex-col gap-4">
+                <div className="grid gap-4">
+                  {SISTER_PROJECT_LINKS.map((link) => (
+                    <a
+                      key={link.id}
+                      href={link.siteUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group grid min-h-28 grid-cols-[1fr_auto] items-center gap-4 border border-black bg-white p-4 text-left shadow-[8px_8px_0_rgba(0,0,0,0.08)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[10px_10px_0_rgba(0,0,0,0.12)] focus:outline-none focus:ring-2 focus:ring-[var(--project-primary)]"
+                    >
+                      <span className="min-w-0">
+                        <span className="mb-3 flex items-center gap-2">
+                          <span
+                            className="h-3 w-3 border border-black"
+                            style={{ backgroundColor: link.themeColor }}
+                            aria-hidden="true"
+                          />
+                          <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
+                            Sister Site
+                          </span>
+                        </span>
+                        <span className="block break-words text-lg font-bold leading-tight text-black">
+                          {link.displayName}
+                        </span>
+                        <span className="mt-2 block text-sm font-bold text-slate-500">
+                          {link.groupName}
                         </span>
                       </span>
-                      <span className="block break-words text-lg font-bold leading-tight text-black">
-                        {link.displayName}
-                      </span>
-                      <span className="mt-2 block text-sm font-bold text-slate-500">
-                        {link.groupName}
-                      </span>
-                    </span>
 
-                    <span className="flex h-9 w-9 items-center justify-center border border-black text-black transition-colors group-hover:bg-black group-hover:text-white">
-                      <svg
-                        className="h-4 w-4 stroke-current"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        strokeWidth="2"
-                        aria-hidden="true"
-                      >
-                        <path
-                          strokeLinecap="square"
-                          strokeLinejoin="miter"
-                          d="M7 17 17 7M9 7h8v8"
-                        />
-                      </svg>
-                    </span>
-                  </a>
-                ))}
+                      <span className="flex h-9 w-9 items-center justify-center border border-black text-black transition-colors group-hover:bg-black group-hover:text-white">
+                        <svg
+                          className="h-4 w-4 stroke-current"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth="2"
+                          aria-hidden="true"
+                        >
+                          <path
+                            strokeLinecap="square"
+                            strokeLinejoin="miter"
+                            d="M7 17 17 7M9 7h8v8"
+                          />
+                        </svg>
+                      </span>
+                    </a>
+                  ))}
+                </div>
+
+                <div
+                  className="flex items-center gap-3 py-2"
+                  aria-hidden="true"
+                >
+                  <span className="h-px flex-1 bg-black/10" />
+                  <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-slate-400">
+                    Other MyPicks
+                  </span>
+                  <span className="h-px flex-1 bg-black/10" />
+                </div>
+
+                <div className="grid gap-3">
+                  {EXTERNAL_MY_PICK_LINKS.map((link) => (
+                    <a
+                      key={link.id}
+                      href={link.siteUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group grid min-h-20 grid-cols-[1fr_auto] items-center gap-4 border border-black/15 bg-white/95 p-4 text-left shadow-[5px_5px_0_rgba(0,0,0,0.045)] transition duration-200 hover:-translate-y-0.5 hover:border-black/35 hover:shadow-[7px_7px_0_rgba(0,0,0,0.07)] focus:outline-none focus:ring-2 focus:ring-[var(--project-primary)]"
+                    >
+                      <span className="min-w-0">
+                        <span className="block break-words text-base font-bold leading-tight text-slate-900">
+                          {link.displayName}
+                        </span>
+                        <span className="mt-2 block break-words text-sm font-bold leading-snug text-slate-500">
+                          {link.groupName}
+                        </span>
+                      </span>
+
+                      <span className="flex h-8 w-8 items-center justify-center border border-black/25 text-slate-500 transition-colors group-hover:border-black group-hover:bg-black group-hover:text-white">
+                        <svg
+                          className="h-4 w-4 stroke-current"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth="2"
+                          aria-hidden="true"
+                        >
+                          <path
+                            strokeLinecap="square"
+                            strokeLinejoin="miter"
+                            d="M7 17 17 7M9 7h8v8"
+                          />
+                        </svg>
+                      </span>
+                    </a>
+                  ))}
+                </div>
+
+                <p className="pt-2 text-[10px] font-medium leading-relaxed text-slate-400">
+                  These sites are fan-made projects developed by other authors
+                  and are not affiliated with or maintained by the author of
+                  this site.
+                </p>
               </div>
             </nav>
           </aside>
