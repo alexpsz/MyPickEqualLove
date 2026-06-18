@@ -38,13 +38,14 @@ const getMemberNames = (song: Song, membersById: Record<string, Member>) =>
       member.name.en ?? "",
     ]);
 
-const hasGraduatedParticipant = (
-  song: Song,
-  membersById: Record<string, Member>,
-) =>
-  [...(song.memberIds ?? []), ...(song.centerMemberIds ?? [])].some(
-    (memberId) => membersById[memberId]?.active === false,
-  );
+const GRADUATED_MEMBER_FEATURE_TAGS = new Set([
+  "graduated_member",
+  "graduation_solo",
+  "graduation_unit",
+]);
+
+const isGraduatedMemberFeature = (song: Song) =>
+  (song.tags ?? []).some((tag) => GRADUATED_MEMBER_FEATURE_TAGS.has(tag));
 
 const formatTypeValue = (value: string | undefined) =>
   value?.replace(/_/g, " ").toUpperCase();
@@ -141,7 +142,7 @@ export default function SearchModal({
       if (
         !q &&
         !showGraduatedMembers &&
-        hasGraduatedParticipant(song, membersById)
+        isGraduatedMemberFeature(song)
       ) {
         return false;
       }
