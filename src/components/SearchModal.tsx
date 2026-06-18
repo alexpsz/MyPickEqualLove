@@ -139,11 +139,7 @@ export default function SearchModal({
     const q = normalizeStr(searchQuery);
 
     return songs.filter((song) => {
-      if (
-        !q &&
-        !showGraduatedMembers &&
-        isGraduatedMemberFeature(song)
-      ) {
+      if (!q && !showGraduatedMembers && isGraduatedMemberFeature(song)) {
         return false;
       }
 
@@ -302,195 +298,199 @@ export default function SearchModal({
           </button>
         </div>
 
-        <div className="official-stripe border-b border-black p-4">
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <div className="relative min-w-0 flex-1">
-                <input
-                  type="text"
-                  placeholder="Search by title, romaji, member, credits..."
-                  ref={searchInputRef}
-                  value={searchQuery}
-                  onChange={(event) => setSearchQuery(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" && filteredSongs[0]) {
-                      onSelect(filteredSongs[0]);
-                    }
-                  }}
-                  className="w-full border border-black bg-white py-3 pl-11 pr-4 text-sm text-black transition-all duration-300 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[var(--project-primary)]"
-                />
-                <svg
-                  className="absolute left-4 top-3.5 h-4 w-4 text-slate-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+        <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto bg-white overscroll-contain [-webkit-overflow-scrolling:touch]">
+          <div className="official-stripe border-b border-black p-4">
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <div className="relative min-w-0 flex-1">
+                  <input
+                    type="text"
+                    placeholder="Search by title, romaji, member, credits..."
+                    ref={searchInputRef}
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" && filteredSongs[0]) {
+                        onSelect(filteredSongs[0]);
+                      }
+                    }}
+                    className="w-full border border-black bg-white py-3 pl-11 pr-4 text-sm text-black transition-all duration-300 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[var(--project-primary)]"
                   />
-                </svg>
-              </div>
-              <button
-                type="button"
-                onClick={() =>
-                  setIsMoreFiltersOpen(
-                    (currentIsMoreFiltersOpen) => !currentIsMoreFiltersOpen,
-                  )
-                }
-                className="flex shrink-0 items-center justify-center gap-2 border border-slate-300 bg-white px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-600 transition-colors hover:border-black hover:text-black"
-                aria-controls="song-more-filters"
-                aria-expanded={isMoreFiltersOpen}
-              >
-                Filters
-                {activeFilterCount > 0 ? ` · ${activeFilterCount}` : ""}
-                <svg
-                  className={`h-3.5 w-3.5 fill-none stroke-current transition-transform ${
-                    isMoreFiltersOpen ? "rotate-180" : ""
-                  }`}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth="2"
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </button>
-            </div>
-
-            <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
-              <FilterChip
-                active={
-                  releaseTypeFilter === "all" && trackTypeFilter === "all"
-                }
-                onClick={() => selectQuickFilter("all")}
-              >
-                All
-              </FilterChip>
-              {quickTrackTypes.map((trackType) => (
-                <FilterChip
-                  key={trackType}
-                  active={trackTypeFilter === trackType}
-                  onClick={() => selectQuickFilter(trackType)}
-                >
-                  {TRACK_TYPE_LABELS[trackType] ?? trackType}
-                </FilterChip>
-              ))}
-              <FilterChip
-                active={
-                  releaseTypeFilter === "digital" && trackTypeFilter === "all"
-                }
-                onClick={() => selectQuickFilter("digital")}
-              >
-                Digital
-              </FilterChip>
-            </div>
-
-            {isMoreFiltersOpen ? (
-              <div
-                id="song-more-filters"
-                className="flex max-h-[52vh] touch-pan-y flex-col gap-3 overflow-y-auto overscroll-contain border border-slate-200 bg-white p-3 pr-2 [-webkit-overflow-scrolling:touch] md:max-h-none md:overflow-visible md:pr-3"
-              >
-                <FilterRow label="Year">
-                  {["all", ...years].map((year) => (
-                    <FilterChip
-                      key={year}
-                      active={yearFilter === year}
-                      onClick={() => setYearFilter(year)}
-                    >
-                      {year === "all" ? "All" : year}
-                    </FilterChip>
-                  ))}
-                </FilterRow>
-
-                <MemberFilterRow
-                  activeMembers={activeMembers}
-                  graduatedMembers={graduatedMembers}
-                  memberFilters={memberFilters}
-                  showGraduatedMembers={showGraduatedMembers}
-                  onClearMembers={() => setMemberFilters([])}
-                  onToggleGraduated={toggleShowGraduatedMembers}
-                  onToggleMember={toggleMemberFilter}
-                />
-
-                <FilterRow label="Release Type">
-                  {(["all", ...releaseTypes] as ReleaseFilter[]).map((type) => (
-                    <FilterChip
-                      key={type}
-                      active={releaseTypeFilter === type}
-                      onClick={() => setReleaseTypeFilter(type)}
-                    >
-                      {RELEASE_TYPE_LABELS[type] ?? type}
-                    </FilterChip>
-                  ))}
-                </FilterRow>
-
-                <div className="flex justify-end">
-                  <button
-                    type="button"
-                    onClick={resetFilters}
-                    className="border border-black bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-black transition-colors hover:bg-black hover:text-white"
+                  <svg
+                    className="absolute left-4 top-3.5 h-4 w-4 text-slate-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    aria-hidden="true"
                   >
-                    Reset
-                  </button>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
                 </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setIsMoreFiltersOpen(
+                      (currentIsMoreFiltersOpen) => !currentIsMoreFiltersOpen,
+                    )
+                  }
+                  className="flex shrink-0 items-center justify-center gap-2 border border-slate-300 bg-white px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-600 transition-colors hover:border-black hover:text-black"
+                  aria-controls="song-more-filters"
+                  aria-expanded={isMoreFiltersOpen}
+                >
+                  Filters
+                  {activeFilterCount > 0 ? ` · ${activeFilterCount}` : ""}
+                  <svg
+                    className={`h-3.5 w-3.5 fill-none stroke-current transition-transform ${
+                      isMoreFiltersOpen ? "rotate-180" : ""
+                    }`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth="2"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </button>
               </div>
-            ) : null}
-          </div>
-        </div>
 
-        <div className="no-scrollbar flex-1 space-y-3 overflow-y-auto bg-white p-4">
-          {filteredSongs.length > 0 ? (
-            filteredSongs.map((song) => (
-              <button
-                key={song.id}
-                type="button"
-                onClick={() => onSelect(song)}
-                className="flex w-full cursor-pointer items-center gap-4 border border-slate-200 bg-white p-3.5 text-left transition-all duration-300 hover:border-black hover:bg-[var(--paper-soft)]"
-              >
-                <div className="h-14 w-14 flex-shrink-0 overflow-hidden border border-black bg-slate-100">
-                  <img
-                    src={song.coverUrl}
-                    alt={`${song.title.ja} cover`}
-                    className="h-full w-full object-cover"
-                    loading="lazy"
+              <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
+                <FilterChip
+                  active={
+                    releaseTypeFilter === "all" && trackTypeFilter === "all"
+                  }
+                  onClick={() => selectQuickFilter("all")}
+                >
+                  All
+                </FilterChip>
+                {quickTrackTypes.map((trackType) => (
+                  <FilterChip
+                    key={trackType}
+                    active={trackTypeFilter === trackType}
+                    onClick={() => selectQuickFilter(trackType)}
+                  >
+                    {TRACK_TYPE_LABELS[trackType] ?? trackType}
+                  </FilterChip>
+                ))}
+                <FilterChip
+                  active={
+                    releaseTypeFilter === "digital" && trackTypeFilter === "all"
+                  }
+                  onClick={() => selectQuickFilter("digital")}
+                >
+                  Digital
+                </FilterChip>
+              </div>
+
+              {isMoreFiltersOpen ? (
+                <div
+                  id="song-more-filters"
+                  className="flex flex-col gap-3 border border-slate-200 bg-white p-3"
+                >
+                  <FilterRow label="Year">
+                    {["all", ...years].map((year) => (
+                      <FilterChip
+                        key={year}
+                        active={yearFilter === year}
+                        onClick={() => setYearFilter(year)}
+                      >
+                        {year === "all" ? "All" : year}
+                      </FilterChip>
+                    ))}
+                  </FilterRow>
+
+                  <MemberFilterRow
+                    activeMembers={activeMembers}
+                    graduatedMembers={graduatedMembers}
+                    memberFilters={memberFilters}
+                    showGraduatedMembers={showGraduatedMembers}
+                    onClearMembers={() => setMemberFilters([])}
+                    onToggleGraduated={toggleShowGraduatedMembers}
+                    onToggleMember={toggleMemberFilter}
                   />
+
+                  <FilterRow label="Release Type">
+                    {(["all", ...releaseTypes] as ReleaseFilter[]).map(
+                      (type) => (
+                        <FilterChip
+                          key={type}
+                          active={releaseTypeFilter === type}
+                          onClick={() => setReleaseTypeFilter(type)}
+                        >
+                          {RELEASE_TYPE_LABELS[type] ?? type}
+                        </FilterChip>
+                      ),
+                    )}
+                  </FilterRow>
+
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={resetFilters}
+                      className="border border-black bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-black transition-colors hover:bg-black hover:text-white"
+                    >
+                      Reset
+                    </button>
+                  </div>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-start justify-between gap-2">
-                    <h4 className="truncate text-sm font-bold text-slate-950">
-                      {song.title.ja}
-                    </h4>
-                    <span className="flex-shrink-0 border border-[var(--project-primary)] bg-white px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-[var(--project-primary)]">
-                      {song.releaseDate?.slice(0, 4) ?? "TBD"}
-                    </span>
-                  </div>
-                  <div className="mt-0.5 truncate text-[10px] font-medium text-slate-500">
-                    {song.title.romaji}
-                  </div>
-                  <div className="mt-1 text-[10px] font-bold uppercase tracking-wider text-slate-700">
-                    {formatSongMeta(song)}
-                  </div>
-                  {formatSongCredits(song) ? (
-                    <div className="mt-2 line-clamp-2 text-[10px] font-medium leading-5 text-slate-500">
-                      {formatSongCredits(song)}
-                    </div>
-                  ) : null}
-                </div>
-              </button>
-            ))
-          ) : (
-            <div className="py-12 text-center text-xs font-light text-slate-400">
-              No songs found matching your search terms.
+              ) : null}
             </div>
-          )}
+          </div>
+
+          <div className="space-y-3 p-4">
+            {filteredSongs.length > 0 ? (
+              filteredSongs.map((song) => (
+                <button
+                  key={song.id}
+                  type="button"
+                  onClick={() => onSelect(song)}
+                  className="flex w-full cursor-pointer items-center gap-4 border border-slate-200 bg-white p-3.5 text-left transition-all duration-300 hover:border-black hover:bg-[var(--paper-soft)]"
+                >
+                  <div className="h-14 w-14 flex-shrink-0 overflow-hidden border border-black bg-slate-100">
+                    <img
+                      src={song.coverUrl}
+                      alt={`${song.title.ja} cover`}
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <h4 className="truncate text-sm font-bold text-slate-950">
+                        {song.title.ja}
+                      </h4>
+                      <span className="flex-shrink-0 border border-[var(--project-primary)] bg-white px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-[var(--project-primary)]">
+                        {song.releaseDate?.slice(0, 4) ?? "TBD"}
+                      </span>
+                    </div>
+                    <div className="mt-0.5 truncate text-[10px] font-medium text-slate-500">
+                      {song.title.romaji}
+                    </div>
+                    <div className="mt-1 text-[10px] font-bold uppercase tracking-wider text-slate-700">
+                      {formatSongMeta(song)}
+                    </div>
+                    {formatSongCredits(song) ? (
+                      <div className="mt-2 line-clamp-2 text-[10px] font-medium leading-5 text-slate-500">
+                        {formatSongCredits(song)}
+                      </div>
+                    ) : null}
+                  </div>
+                </button>
+              ))
+            ) : (
+              <div className="py-12 text-center text-xs font-light text-slate-400">
+                No songs found matching your search terms.
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="border-t border-black bg-white p-4 text-center text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
