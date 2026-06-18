@@ -50,7 +50,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja" className="h-full antialiased">
-      <body className="flex min-h-full flex-col" style={projectThemeStyle}>
+      <body
+        className="flex min-h-full flex-col"
+        style={projectThemeStyle}
+        suppressHydrationWarning
+      >
         {children}
       </body>
     </html>
