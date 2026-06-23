@@ -1,12 +1,15 @@
 "use client";
 
 import React, { useEffect } from "react";
+import type { ReplacementSlotState } from "../data/pickExperiences";
 import type { PickSlot, PickSlotId, Picks, Song } from "../schema/music";
 
 interface ReplacementModalProps {
   song: Song;
   slots: PickSlot[];
   picks: Picks;
+  slotStates?: ReplacementSlotState[];
+  showSlotLabels?: boolean;
   onReplace: (slotId: PickSlotId) => void;
   onClose: () => void;
 }
@@ -15,9 +18,15 @@ export default function ReplacementModal({
   song,
   slots,
   picks,
+  slotStates = [],
+  showSlotLabels = false,
   onReplace,
   onClose,
 }: ReplacementModalProps) {
+  const slotStatesById = Object.fromEntries(
+    slotStates.map((state) => [state.slotId, state]),
+  );
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
@@ -53,19 +62,35 @@ export default function ReplacementModal({
             .sort((a, b) => a.sortOrder - b.sortOrder)
             .map((slot) => {
               const currentSong = picks[slot.id];
+              const slotState = slotStatesById[slot.id];
+              const disabled = Boolean(slotState?.disabledReason);
               return (
                 <button
                   key={slot.id}
                   type="button"
-                  onClick={() => onReplace(slot.id)}
-                  className="border border-slate-300 bg-white p-3 text-left transition-all hover:border-black"
+                  disabled={disabled}
+                  onClick={() => {
+                    if (!disabled) onReplace(slot.id);
+                  }}
+                  className={`border bg-white p-3 text-left transition-all ${
+                    disabled
+                      ? "cursor-not-allowed border-slate-200 opacity-45"
+                      : "border-slate-300 hover:border-black"
+                  }`}
                 >
                   <div className="min-w-0">
+                    {showSlotLabels ? (
+                      <div className="mb-1 truncate text-[10px] font-black uppercase tracking-[0.1em] text-[var(--project-primary)]">
+                        {slot.label}
+                      </div>
+                    ) : null}
                     <div className="truncate text-sm font-bold text-slate-900">
                       {currentSong?.title.ja ?? "Empty Slot"}
                     </div>
                     <div className="truncate text-[10px] font-medium text-slate-500">
-                      {currentSong?.title.romaji ?? "No current pick"}
+                      {slotState?.disabledReason ??
+                        currentSong?.title.romaji ??
+                        "No current pick"}
                     </div>
                   </div>
                 </button>

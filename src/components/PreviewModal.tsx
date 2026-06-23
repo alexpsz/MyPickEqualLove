@@ -1,8 +1,6 @@
 "use client";
 
 import React from "react";
-import { PROJECT_CONFIG } from "../config/project";
-import { SITE_URL } from "../utils/constants";
 
 interface PreviewModalProps {
   previewUrl: string;
@@ -12,6 +10,12 @@ interface PreviewModalProps {
   transparentBg: boolean;
   onToggleTransparentBg: (transparent: boolean) => void;
   generating: boolean;
+  pageUrl: string;
+  previewLabel: string;
+  imageFileName: string;
+  shareText: string;
+  shareHashtags: string[];
+  shareTitle: string;
 }
 
 export default function PreviewModal({
@@ -22,7 +26,19 @@ export default function PreviewModal({
   transparentBg,
   onToggleTransparentBg,
   generating,
+  pageUrl,
+  previewLabel,
+  imageFileName,
+  shareText,
+  shareHashtags,
+  shareTitle,
 }: PreviewModalProps) {
+  const shareConfig = {
+    pageUrl,
+    shareText,
+    shareHashtags,
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       <button
@@ -39,7 +55,7 @@ export default function PreviewModal({
               Image Preview
             </h3>
             <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--project-primary)]">
-              {PROJECT_CONFIG.groupName} Top Picks export
+              {previewLabel}
             </p>
           </div>
 
@@ -76,7 +92,7 @@ export default function PreviewModal({
         <div className="no-scrollbar official-stripe relative flex max-h-[60vh] flex-1 justify-center overflow-y-auto p-6">
           <img
             src={previewUrl}
-            alt={`${PROJECT_CONFIG.groupName} Picks Preview`}
+            alt={`${shareTitle} Preview`}
             className={`max-h-[52vh] max-w-full border border-black bg-white object-contain transition-opacity duration-200 ${
               generating ? "opacity-50 blur-[2px]" : "opacity-100"
             }`}
@@ -98,7 +114,7 @@ export default function PreviewModal({
           <button
             type="button"
             onClick={() => {
-              void downloadImage(previewUrl);
+              void downloadImage(previewUrl, imageFileName, shareTitle);
             }}
             className="official-button official-button-primary"
           >
@@ -114,7 +130,7 @@ export default function PreviewModal({
           <button
             type="button"
             onClick={() => {
-              shareToX();
+              shareToX(shareConfig);
             }}
             className="official-button bg-black text-white hover:bg-[var(--project-primary)]"
           >
@@ -133,50 +149,56 @@ export default function PreviewModal({
   );
 }
 
-function shareToX() {
-  const webIntentUrl = buildXWebIntentUrl();
+interface XShareConfig {
+  pageUrl: string;
+  shareText: string;
+  shareHashtags: string[];
+}
+
+function shareToX(config: XShareConfig) {
+  const webIntentUrl = buildXWebIntentUrl(config);
 
   if (isIOSDevice()) {
-    openIOSNativeXComposer(webIntentUrl);
+    openIOSNativeXComposer(webIntentUrl, config);
     return;
   }
 
   if (isAndroidDevice()) {
-    window.location.href = buildXAndroidIntentUrl(webIntentUrl);
+    window.location.href = buildXAndroidIntentUrl(webIntentUrl, config);
     return;
   }
 
   window.open(webIntentUrl, "_blank", "noopener,noreferrer");
 }
 
-function buildXWebIntentUrl() {
-  const shareText = buildXShareText();
+function buildXWebIntentUrl(config: XShareConfig) {
+  const shareText = buildXShareText(config);
   return `https://x.com/intent/post?text=${encodeURIComponent(
     shareText,
-  )}&url=${encodeURIComponent(SITE_URL)}`;
+  )}&url=${encodeURIComponent(config.pageUrl)}`;
 }
 
-function buildXCustomSchemeComposerUrl() {
-  return `twitter://post?message=${encodeURIComponent(buildXShareMessage())}`;
+function buildXCustomSchemeComposerUrl(config: XShareConfig) {
+  return `twitter://post?message=${encodeURIComponent(buildXShareMessage(config))}`;
 }
 
-function buildXAndroidIntentUrl(fallbackUrl: string) {
+function buildXAndroidIntentUrl(fallbackUrl: string, config: XShareConfig) {
   return `intent://post?message=${encodeURIComponent(
-    buildXShareMessage(),
+    buildXShareMessage(config),
   )}#Intent;scheme=twitter;package=com.twitter.android;S.browser_fallback_url=${encodeURIComponent(
     fallbackUrl,
   )};end`;
 }
 
-function buildXShareText() {
-  return `${PROJECT_CONFIG.shareText}\n${PROJECT_CONFIG.shareHashtags.join(" ")}`;
+function buildXShareText(config: XShareConfig) {
+  return `${config.shareText}\n${config.shareHashtags.join(" ")}`;
 }
 
-function buildXShareMessage() {
-  return `${buildXShareText()}\n${SITE_URL}`;
+function buildXShareMessage(config: XShareConfig) {
+  return `${buildXShareText(config)}\n${config.pageUrl}`;
 }
 
-function openIOSNativeXComposer(webIntentUrl: string) {
+function openIOSNativeXComposer(webIntentUrl: string, config: XShareConfig) {
   let appOpened = false;
 
   const markAppOpened = () => {
@@ -203,7 +225,7 @@ function openIOSNativeXComposer(webIntentUrl: string) {
     }
   }, 2_500);
 
-  window.location.href = buildXCustomSchemeComposerUrl();
+  window.location.href = buildXCustomSchemeComposerUrl(config);
 }
 
 function isIOSDevice() {
@@ -244,13 +266,16 @@ function ToggleOption({
   );
 }
 
-async function downloadImage(previewUrl: string) {
+async function downloadImage(
+  previewUrl: string,
+  fileName: string,
+  shareTitle: string,
+) {
   try {
-    const fileName = PROJECT_CONFIG.imageFileName;
     const browser = getBrowserProfile();
     const blobResult = toImageBlob(previewUrl);
     const blob = blobResult instanceof Blob ? blobResult : await blobResult;
-    const shareResult = shareImage(blob, fileName, browser);
+    const shareResult = shareImage(blob, fileName, browser, shareTitle);
 
     if (shareResult instanceof Promise ? await shareResult : shareResult) {
       return;
@@ -307,6 +332,7 @@ function shareImage(
   blob: Blob,
   fileName: string,
   browser: BrowserProfile,
+  shareTitle: string,
 ): boolean | Promise<boolean> {
   if (!browser.prefersShareFallback || typeof navigator.share !== "function") {
     return false;
@@ -318,7 +344,7 @@ function shareImage(
     });
     const shareData: ShareData = {
       files: [file],
-      title: PROJECT_CONFIG.displayName,
+      title: shareTitle,
     };
 
     if (

@@ -14,6 +14,36 @@ export const STORAGE_KEYS = {
   options: `${PROJECT_CONFIG.storagePrefix}_options_v1`,
 };
 
+export interface ExperienceStorageKeys {
+  picks: string;
+  options: string;
+  context?: string;
+}
+
+const STANDARD_EXPERIENCE_ID = "standard";
+
+function toStorageSegment(value: string) {
+  return value.replace(/-/g, "_");
+}
+
+export function getExperienceStorageKeys(
+  experienceId: string,
+  contextId?: string,
+): ExperienceStorageKeys {
+  if (experienceId === STANDARD_EXPERIENCE_ID) {
+    return STORAGE_KEYS;
+  }
+
+  const experienceSegment = toStorageSegment(experienceId);
+  const contextSegment = contextId ? `_${toStorageSegment(contextId)}` : "";
+
+  return {
+    picks: `${PROJECT_CONFIG.storagePrefix}_live_${experienceSegment}${contextSegment}_picks_v1`,
+    options: `${PROJECT_CONFIG.storagePrefix}_live_${experienceSegment}_options_v1`,
+    context: `${PROJECT_CONFIG.storagePrefix}_live_${experienceSegment}_context_v1`,
+  };
+}
+
 export const EXPORT_CONFIG = {
   width: 1080,
   height: 1350,
@@ -22,6 +52,14 @@ export const EXPORT_CONFIG = {
 };
 
 export const EXPORT_CANVAS_ID = `mypick-${PROJECT_ID}-export-canvas`;
+
+export function getExperienceExportCanvasId(experienceId: string) {
+  if (experienceId === STANDARD_EXPERIENCE_ID) {
+    return EXPORT_CANVAS_ID;
+  }
+
+  return `mypick-${PROJECT_ID}-${experienceId.replace(/_/g, "-")}-export-canvas`;
+}
 
 export interface SisterProjectLink {
   id: ProjectId;

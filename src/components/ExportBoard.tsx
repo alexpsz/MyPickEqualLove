@@ -1,28 +1,31 @@
 import React from "react";
 import {
-  EXPORT_CANVAS_ID,
   EXPORT_CONFIG,
   PROJECT_CONFIG,
   PROJECT_THEME_COLOR,
 } from "../config/project";
 import { MEMBERS } from "../data/songs";
+import type { ExperienceContext } from "../data/pickExperiences";
+import type { PickExperience } from "../schema/pick-experience";
 import type { PickSlot, Picks } from "../schema/music";
-import { SITE_DOMAIN } from "../utils/constants";
 import { getColorBackground, getMemberColors } from "../utils/memberColors";
 
 interface ExportBoardProps {
+  experience: PickExperience;
+  context?: ExperienceContext;
+  exportCanvasId: string;
   slots: PickSlot[];
   picks: Picks;
   showTitles?: boolean;
   transparentBg?: boolean;
   selectedBy?: string;
+  pageUrl: string;
 }
 
 const EXPORT_FONT_FAMILY =
   '"Comfortaa", "Work Sans", "Noto Sans JP", sans-serif';
 const EXPORT_TITLE_FONT_FAMILY =
   '"Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif';
-const EXPORT_SITE_LABEL = SITE_DOMAIN.toUpperCase();
 
 const MEMBER_COLOR_STRIP = MEMBERS.slice()
   .filter((member) => member.active !== false)
@@ -36,18 +39,26 @@ const MEMBER_COLOR_STRIP_GAP = MEMBER_COLOR_STRIP.length > 10 ? 6 : 8;
 const MEMBER_COLOR_STRIP_WIDTH = MEMBER_COLOR_STRIP.length > 10 ? 18 : 22;
 
 export default function ExportBoard({
+  experience,
+  context,
+  exportCanvasId,
   slots,
   picks,
   showTitles = true,
   transparentBg = false,
   selectedBy = "",
+  pageUrl,
 }: ExportBoardProps) {
   const sortedSlots = slots.slice().sort((a, b) => a.sortOrder - b.sortOrder);
   const selectedByLabel = selectedBy.trim();
+  const pageLabel = formatPageLabel(pageUrl);
+  const subtitle = [experience.export.subtitle, context?.exportLabel]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <div
-      id={EXPORT_CANVAS_ID}
+      id={exportCanvasId}
       className="relative overflow-hidden font-sans"
       style={{
         backgroundColor: transparentBg
@@ -95,7 +106,7 @@ export default function ExportBoard({
             textTransform: "uppercase",
           }}
         >
-          {PROJECT_CONFIG.displayName}
+          {experience.export.title}
         </div>
         {selectedByLabel && (
           <div
@@ -124,7 +135,7 @@ export default function ExportBoard({
             textIndent: "0.2em",
           }}
         >
-          {PROJECT_CONFIG.exportSubtitle}
+          {subtitle}
         </div>
         <div
           data-member-color-strip="true"
@@ -156,107 +167,15 @@ export default function ExportBoard({
         </div>
       </header>
 
-      <main
-        style={{
-          position: "relative",
-          zIndex: 1,
-          display: "grid",
-          gridTemplateColumns: "repeat(2, 1fr)",
-          gridTemplateRows: "repeat(5, 154px)",
-          gap: "14px",
-          flex: "0 0 auto",
-        }}
-      >
-        {sortedSlots.map((slot) => {
-          const song = picks[slot.id];
-          return (
-            <div
-              key={slot.id}
-              style={{
-                height: "154px",
-                overflow: "hidden",
-                border: "2px solid #000",
-                background: song ? "#ffffff" : "#f8f8f8",
-                display: "flex",
-                position: "relative",
-              }}
-            >
-              {song ? (
-                <>
-                  <img
-                    src={song.coverUrl}
-                    alt={`${song.title.ja} cover`}
-                    style={{
-                      width: "154px",
-                      height: "154px",
-                      objectFit: "cover",
-                      flexShrink: 0,
-                      display: "block",
-                    }}
-                  />
-                  <div
-                    style={{
-                      flex: 1,
-                      minWidth: 0,
-                      padding: "18px 18px 14px",
-                      display: "flex",
-                      flexDirection: "column",
-                      justifyContent: "flex-end",
-                      background: "#fff",
-                      borderLeft: "2px solid #000",
-                    }}
-                  >
-                    {showTitles && (
-                      <div
-                        style={{
-                          fontSize: "24px",
-                          lineHeight: 1.18,
-                          fontWeight: 900,
-                          fontFamily: EXPORT_TITLE_FONT_FAMILY,
-                          color: "#000",
-                          wordBreak: "break-word",
-                        }}
-                      >
-                        {song.title.ja}
-                      </div>
-                    )}
-                    <div
-                      style={{
-                        marginTop: showTitles ? "14px" : 0,
-                        display: "flex",
-                        flexWrap: "wrap",
-                        gap: "8px",
-                      }}
-                    >
-                      <span style={exportTagStyle}>
-                        <span style={exportTagTextStyle}>
-                          {song.releaseDate?.slice(0, 4) ?? "TBD"}
-                        </span>
-                      </span>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div
-                  style={{
-                    width: "100%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "#999",
-                    fontSize: "16px",
-                    fontWeight: 800,
-                    letterSpacing: "0.12em",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  No Pick
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </main>
+      {experience.export.layout === "five-memory-list" ? (
+        <FiveMemoryList
+          slots={sortedSlots}
+          picks={picks}
+          showTitles={showTitles}
+        />
+      ) : (
+        <TopTenGrid slots={sortedSlots} picks={picks} showTitles={showTitles} />
+      )}
 
       <footer
         style={{
@@ -275,8 +194,196 @@ export default function ExportBoard({
         }}
       >
         <span>{PROJECT_CONFIG.appName}</span>
-        <span>{EXPORT_SITE_LABEL}</span>
+        <span>{pageLabel}</span>
       </footer>
+    </div>
+  );
+}
+
+function TopTenGrid({
+  slots,
+  picks,
+  showTitles,
+}: {
+  slots: PickSlot[];
+  picks: Picks;
+  showTitles: boolean;
+}) {
+  return (
+    <main
+      style={{
+        position: "relative",
+        zIndex: 1,
+        display: "grid",
+        gridTemplateColumns: "repeat(2, 1fr)",
+        gridTemplateRows: "repeat(5, 154px)",
+        gap: "14px",
+        flex: "0 0 auto",
+      }}
+    >
+      {slots.map((slot) => (
+        <ExportPickCard
+          key={slot.id}
+          slot={slot}
+          song={picks[slot.id]}
+          showTitles={showTitles}
+          showSlotTitle={false}
+          compact
+        />
+      ))}
+    </main>
+  );
+}
+
+function FiveMemoryList({
+  slots,
+  picks,
+  showTitles,
+}: {
+  slots: PickSlot[];
+  picks: Picks;
+  showTitles: boolean;
+}) {
+  return (
+    <main
+      style={{
+        position: "relative",
+        zIndex: 1,
+        display: "flex",
+        flexDirection: "column",
+        gap: "13px",
+        flex: "0 0 auto",
+      }}
+    >
+      {slots.map((slot) => (
+        <ExportPickCard
+          key={slot.id}
+          slot={slot}
+          song={picks[slot.id]}
+          showTitles={showTitles}
+          showSlotTitle
+        />
+      ))}
+    </main>
+  );
+}
+
+function ExportPickCard({
+  slot,
+  song,
+  showTitles,
+  showSlotTitle,
+  compact = false,
+}: {
+  slot: PickSlot;
+  song: Picks[string] | undefined;
+  showTitles: boolean;
+  showSlotTitle: boolean;
+  compact?: boolean;
+}) {
+  const size = compact ? 154 : 166;
+
+  return (
+    <div
+      style={{
+        height: `${size}px`,
+        overflow: "hidden",
+        border: "2px solid #000",
+        background: song ? "#ffffff" : "#f8f8f8",
+        display: "flex",
+        position: "relative",
+      }}
+    >
+      {song ? (
+        <>
+          <img
+            src={song.coverUrl}
+            alt={`${song.title.ja} cover`}
+            style={{
+              width: `${size}px`,
+              height: `${size}px`,
+              objectFit: "cover",
+              flexShrink: 0,
+              display: "block",
+            }}
+          />
+          <div
+            style={{
+              flex: 1,
+              minWidth: 0,
+              padding: compact ? "18px 18px 14px" : "18px 22px 16px",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: showSlotTitle ? "space-between" : "flex-end",
+              background: "#fff",
+              borderLeft: "2px solid #000",
+            }}
+          >
+            {showSlotTitle ? (
+              <div>
+                <div style={exportSlotLabelStyle}>{slot.label}</div>
+                {slot.subtitle ? (
+                  <div style={exportSlotSubtitleStyle}>{slot.subtitle}</div>
+                ) : null}
+              </div>
+            ) : null}
+            <div>
+              {showTitles && (
+                <div
+                  style={{
+                    fontSize: compact ? "24px" : "28px",
+                    lineHeight: 1.16,
+                    fontWeight: 900,
+                    fontFamily: EXPORT_TITLE_FONT_FAMILY,
+                    color: "#000",
+                    wordBreak: "break-word",
+                  }}
+                >
+                  {song.title.ja}
+                </div>
+              )}
+              <div
+                style={{
+                  marginTop: showTitles ? "12px" : 0,
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: "8px",
+                }}
+              >
+                <span style={exportTagStyle}>
+                  <span style={exportTagTextStyle}>
+                    {song.releaseDate?.slice(0, 4) ?? "TBD"}
+                  </span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </>
+      ) : (
+        <div
+          style={{
+            width: "100%",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "10px",
+            color: "#777",
+            fontSize: "16px",
+            fontWeight: 800,
+            letterSpacing: "0.12em",
+            textAlign: "center",
+            textTransform: "uppercase",
+          }}
+        >
+          {showSlotTitle ? (
+            <span style={{ color: "#000", fontSize: "22px", letterSpacing: 0 }}>
+              {slot.label}
+            </span>
+          ) : null}
+          <span>No Pick</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -304,3 +411,27 @@ const exportTagTextStyle: React.CSSProperties = {
   lineHeight: 1,
   transform: "translateY(-6px)",
 };
+
+const exportSlotLabelStyle: React.CSSProperties = {
+  color: PROJECT_THEME_COLOR,
+  fontSize: "19px",
+  fontWeight: 900,
+  letterSpacing: 0,
+  lineHeight: 1.2,
+  fontFamily: EXPORT_TITLE_FONT_FAMILY,
+};
+
+const exportSlotSubtitleStyle: React.CSSProperties = {
+  marginTop: "5px",
+  color: "#6f8199",
+  fontSize: "11px",
+  fontWeight: 900,
+  letterSpacing: "0.04em",
+  lineHeight: 1.35,
+};
+
+function formatPageLabel(pageUrl: string) {
+  const url = new URL(pageUrl);
+  const path = url.pathname === "/" ? "" : url.pathname;
+  return `${url.hostname}${path}`.toUpperCase();
+}

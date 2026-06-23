@@ -12,6 +12,8 @@ interface ControlsProps {
   generating: boolean;
   hasPicks: boolean;
   totalSongs: number;
+  metricLabel?: string;
+  children?: React.ReactNode;
 }
 
 export default function Controls({
@@ -24,15 +26,19 @@ export default function Controls({
   generating,
   hasPicks,
   totalSongs,
+  metricLabel = "Songs",
+  children,
 }: ControlsProps) {
   return (
     <div className="relative z-10 mx-auto mb-8 grid w-full max-w-7xl gap-4 px-5 md:mb-12 md:grid-cols-[1fr_auto] md:px-8">
       <div className="official-panel-soft official-stripe grid gap-3 px-4 py-3">
         <Metric
-          label="Songs"
+          label={metricLabel}
           value={totalSongs}
           color="var(--project-primary)"
         />
+
+        {children}
 
         <div className="grid gap-2">
           <label

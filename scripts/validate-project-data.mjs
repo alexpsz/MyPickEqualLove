@@ -26,6 +26,20 @@ const sourceStatuses = new Set([
   "live_only",
   "unverified",
 ]);
+const experienceKinds = new Set([
+  "standard",
+  "live-afterglow",
+  "live-wishlist",
+]);
+const experienceStatuses = new Set(["draft", "published", "archived"]);
+const eligibilityScopes = new Set([
+  "catalog",
+  "selected-performance",
+  "event-union",
+]);
+const experienceLayouts = new Set(["top10-grid", "five-memory-list"]);
+const verificationStatuses = new Set(["unverified", "partial", "verified"]);
+const setlistSections = new Set(["main", "encore", "double-encore"]);
 
 const expectedEqualLoveBoundarySongs = new Map([
   ["kimi-dake-no-hanamichi", ["saito-nagisa"]],
@@ -83,6 +97,7 @@ function validateProject(projectId) {
   const projectDir = path.join(projectsDir, projectId);
   const songsPath = path.join(projectDir, "songs.json");
   const membersPath = path.join(projectDir, "members.json");
+  const liveExperiencesPath = path.join(projectDir, "live-experiences.json");
 
   if (!fs.existsSync(projectDir)) {
     return {
@@ -97,19 +112,31 @@ function validateProject(projectId) {
   if (!fs.existsSync(membersPath)) {
     errors.push(`${projectPrefix} members.json is missing`);
   }
+  if (!fs.existsSync(liveExperiencesPath)) {
+    errors.push(`${projectPrefix} live-experiences.json is missing`);
+  }
   if (errors.length > 0) {
     return { errors, summary: `${projectPrefix} incomplete` };
   }
 
   const songs = readJson(songsPath, errors, projectPrefix);
   const members = readJson(membersPath, errors, projectPrefix);
+  const liveExperiences = readJson(liveExperiencesPath, errors, projectPrefix);
   if (!Array.isArray(songs)) {
     errors.push(`${projectPrefix} songs.json must be an array`);
   }
   if (!Array.isArray(members)) {
     errors.push(`${projectPrefix} members.json must be an array`);
   }
-  if (errors.length > 0 || !Array.isArray(songs) || !Array.isArray(members)) {
+  if (!Array.isArray(liveExperiences)) {
+    errors.push(`${projectPrefix} live-experiences.json must be an array`);
+  }
+  if (
+    errors.length > 0 ||
+    !Array.isArray(songs) ||
+    !Array.isArray(members) ||
+    !Array.isArray(liveExperiences)
+  ) {
     return { errors, summary: `${projectPrefix} invalid JSON shape` };
   }
 
@@ -119,6 +146,13 @@ function validateProject(projectId) {
 
   validateMembers(projectPrefix, members, errors);
   validateSongs(projectPrefix, songs, memberIds, songIds, songTitles, errors);
+  validateLiveExperiences(
+    projectPrefix,
+    projectId,
+    liveExperiences,
+    songIds,
+    errors,
+  );
 
   if (songs.length === 0) {
     errors.push(`${projectPrefix} songs.json must not be empty`);
@@ -145,7 +179,7 @@ function validateProject(projectId) {
 
   return {
     errors,
-    summary: `${projectPrefix} ${songs.length} songs, ${members.length} members`,
+    summary: `${projectPrefix} ${songs.length} songs, ${members.length} members, ${liveExperiences.length} live experiences`,
   };
 }
 
@@ -288,6 +322,275 @@ function validateSongs(
 
     validateCover(projectPrefix, song, errors);
     validateCredits(projectPrefix, song, errors);
+  }
+}
+
+function validateLiveExperiences(
+  projectPrefix,
+  projectId,
+  liveExperiences,
+  songIds,
+  errors,
+) {
+  const ids = new Set();
+  const slugs = new Set();
+
+  for (const experience of liveExperiences) {
+    if (!experience.id) {
+      errors.push(`${projectPrefix} live experience is missing id`);
+      continue;
+    }
+    const prefix = `${projectPrefix} live experience ${experience.id}`;
+
+    if (!isStorageSafeSegment(experience.id)) {
+      errors.push(`${prefix}: id must use lowercase letters, numbers, _ or -`);
+    }
+    if (ids.has(experience.id)) {
+      errors.push(
+        `${projectPrefix} duplicate live experience id: ${experience.id}`,
+      );
+    }
+    ids.add(experience.id);
+
+    if (experience.projectId !== projectId) {
+      errors.push(`${prefix}: projectId must be ${projectId}`);
+    }
+
+    if (!experience.slug || !/^[a-z0-9][a-z0-9-]*$/.test(experience.slug)) {
+      errors.push(`${prefix}: slug must use lowercase letters, numbers or -`);
+    } else if (slugs.has(experience.slug)) {
+      errors.push(
+        `${projectPrefix} duplicate live experience slug: ${experience.slug}`,
+      );
+    }
+    slugs.add(experience.slug);
+
+    if (experience.canonicalPath !== `/live/${experience.slug}/`) {
+      errors.push(`${prefix}: canonicalPath must be /live/${experience.slug}/`);
+    }
+
+    if (!experienceKinds.has(experience.kind)) {
+      errors.push(`${prefix}: invalid kind ${experience.kind}`);
+    }
+    if (!experienceStatuses.has(experience.status)) {
+      errors.push(`${prefix}: invalid status ${experience.status}`);
+    }
+
+    validatePublishedExperienceFields(prefix, experience, errors);
+    validateExperienceSlots(prefix, experience, errors);
+    validateExperiencePerformances(prefix, experience, songIds, errors);
+  }
+}
+
+function validatePublishedExperienceFields(prefix, experience, errors) {
+  if (experience.status !== "published") {
+    return;
+  }
+
+  if (!experience.title || !experience.description) {
+    errors.push(`${prefix}: published experience needs title and description`);
+  }
+  if (!experience.export?.title || !experience.export?.subtitle) {
+    errors.push(`${prefix}: published experience needs export title/subtitle`);
+  }
+  if (
+    !experience.export?.imageFileName ||
+    !experience.export.imageFileName.endsWith(".png")
+  ) {
+    errors.push(`${prefix}: export.imageFileName must end with .png`);
+  }
+  if (!experienceLayouts.has(experience.export?.layout)) {
+    errors.push(
+      `${prefix}: invalid export layout ${experience.export?.layout}`,
+    );
+  }
+  if (!experience.share?.text) {
+    errors.push(`${prefix}: published experience needs share.text`);
+  }
+  if (
+    !Array.isArray(experience.share?.hashtags) ||
+    experience.share.hashtags.length === 0 ||
+    experience.share.hashtags.some(
+      (hashtag) => typeof hashtag !== "string" || !hashtag.startsWith("#"),
+    )
+  ) {
+    errors.push(`${prefix}: share.hashtags must be non-empty # strings`);
+  }
+}
+
+function validateExperienceSlots(prefix, experience, errors) {
+  if (!Array.isArray(experience.slots) || experience.slots.length === 0) {
+    errors.push(`${prefix}: slots must be a non-empty array`);
+    return;
+  }
+
+  if (
+    (experience.kind === "live-afterglow" ||
+      experience.kind === "live-wishlist") &&
+    experience.slots.length !== 5
+  ) {
+    errors.push(`${prefix}: live experiences must have exactly 5 slots`);
+  }
+
+  const slotIds = new Set();
+  const sortOrders = [];
+  const hasPerformances = Array.isArray(experience.performances)
+    ? experience.performances.length > 0
+    : false;
+
+  for (const slot of experience.slots) {
+    if (!slot.id) {
+      errors.push(`${prefix}: slot is missing id`);
+      continue;
+    }
+    if (slotIds.has(slot.id)) {
+      errors.push(`${prefix}: duplicate slot id ${slot.id}`);
+    }
+    slotIds.add(slot.id);
+
+    if (!slot.label) {
+      errors.push(`${prefix}: slot ${slot.id} needs label`);
+    }
+    if (typeof slot.sortOrder !== "number") {
+      errors.push(`${prefix}: slot ${slot.id} needs numeric sortOrder`);
+    } else {
+      sortOrders.push(slot.sortOrder);
+    }
+    if (!eligibilityScopes.has(slot.eligibility)) {
+      errors.push(
+        `${prefix}: slot ${slot.id} has invalid eligibility ${slot.eligibility}`,
+      );
+    }
+    if (slot.eligibility === "selected-performance" && !hasPerformances) {
+      errors.push(
+        `${prefix}: slot ${slot.id} cannot use selected-performance without performances`,
+      );
+    }
+  }
+
+  const sortedOrders = sortOrders.slice().sort((a, b) => a - b);
+  sortedOrders.forEach((sortOrder, index) => {
+    if (sortOrder !== index + 1) {
+      errors.push(`${prefix}: slot sortOrder must be continuous from 1`);
+    }
+  });
+}
+
+function validateExperiencePerformances(prefix, experience, songIds, errors) {
+  if (experience.performances === undefined) {
+    return;
+  }
+  if (!Array.isArray(experience.performances)) {
+    errors.push(`${prefix}: performances must be an array`);
+    return;
+  }
+
+  const performanceIds = new Set();
+  const usesStrictSetlist = experience.slots.some(
+    (slot) =>
+      slot.eligibility === "selected-performance" ||
+      slot.eligibility === "event-union",
+  );
+
+  for (const performance of experience.performances) {
+    if (!performance.id) {
+      errors.push(`${prefix}: performance is missing id`);
+      continue;
+    }
+    const performancePrefix = `${prefix} performance ${performance.id}`;
+
+    if (!isStorageSafeSegment(performance.id)) {
+      errors.push(
+        `${performancePrefix}: id must use lowercase letters, numbers, _ or -`,
+      );
+    }
+    if (performanceIds.has(performance.id)) {
+      errors.push(`${prefix}: duplicate performance id ${performance.id}`);
+    }
+    performanceIds.add(performance.id);
+
+    if (!performance.label) {
+      errors.push(`${performancePrefix}: label is required`);
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(performance.date ?? "")) {
+      errors.push(`${performancePrefix}: date must be YYYY-MM-DD`);
+    }
+    if (!verificationStatuses.has(performance.verificationStatus)) {
+      errors.push(
+        `${performancePrefix}: invalid verificationStatus ${performance.verificationStatus}`,
+      );
+    }
+    if (
+      experience.status === "published" &&
+      usesStrictSetlist &&
+      performance.verificationStatus !== "verified"
+    ) {
+      errors.push(
+        `${performancePrefix}: published strict setlist experiences require verified performances`,
+      );
+    }
+    if (
+      !Array.isArray(performance.sourceUrls) ||
+      performance.sourceUrls.length === 0 ||
+      performance.sourceUrls.some(
+        (sourceUrl) =>
+          typeof sourceUrl !== "string" || !sourceUrl.startsWith("https://"),
+      )
+    ) {
+      errors.push(
+        `${performancePrefix}: sourceUrls must include https sources`,
+      );
+    }
+    if (!performance.sourceNote) {
+      errors.push(`${performancePrefix}: sourceNote is required`);
+    }
+    if (
+      !Array.isArray(performance.setlist) ||
+      performance.setlist.length === 0
+    ) {
+      errors.push(`${performancePrefix}: setlist must be a non-empty array`);
+      continue;
+    }
+
+    validateSetlistEntries(
+      performancePrefix,
+      performance.setlist,
+      songIds,
+      errors,
+    );
+  }
+
+  if (
+    experience.defaultContextId &&
+    experience.defaultContextId !== "both" &&
+    !performanceIds.has(experience.defaultContextId)
+  ) {
+    errors.push(
+      `${prefix}: defaultContextId must match a performance id or both`,
+    );
+  }
+}
+
+function validateSetlistEntries(prefix, setlist, songIds, errors) {
+  const orders = new Set();
+
+  for (const entry of setlist) {
+    if (!Number.isInteger(entry.order) || entry.order <= 0) {
+      errors.push(`${prefix}: setlist entry order must be a positive integer`);
+    } else if (orders.has(entry.order)) {
+      errors.push(`${prefix}: duplicate setlist order ${entry.order}`);
+    }
+    orders.add(entry.order);
+
+    if (!entry.songId || !songIds.has(entry.songId)) {
+      errors.push(`${prefix}: unknown setlist songId ${entry.songId}`);
+    }
+    if (entry.songId?.toLowerCase().includes("overture")) {
+      errors.push(`${prefix}: Overture must not be a selectable songId`);
+    }
+    if (entry.section && !setlistSections.has(entry.section)) {
+      errors.push(`${prefix}: invalid setlist section ${entry.section}`);
+    }
   }
 }
 
@@ -591,4 +894,8 @@ function sameMembers(actual, expected) {
   if (actual.length !== expected.length) return false;
   const actualSet = new Set(actual);
   return expected.every((memberId) => actualSet.has(memberId));
+}
+
+function isStorageSafeSegment(value) {
+  return /^[a-z0-9][a-z0-9_-]*$/.test(value);
 }
