@@ -2,10 +2,14 @@
 
 import React from "react";
 import { PROJECT_THEME_COLOR } from "../config/project";
-import type { Song } from "../schema/music";
+import type { PickExperienceLayout } from "../schema/pick-experience";
+import type { PickSlot, Song } from "../schema/music";
 
 interface PickSlotCardProps {
+  slot: PickSlot;
   song?: Song;
+  layout?: PickExperienceLayout;
+  showSlotMetadata?: boolean;
   onClick: () => void;
   onClear: (event: React.MouseEvent) => void;
 }
@@ -13,11 +17,15 @@ interface PickSlotCardProps {
 const getYear = (song: Song) => song.releaseDate?.slice(0, 4) ?? "TBD";
 
 export default function PickSlotCard({
+  slot,
   song,
+  layout = "top10-grid",
+  showSlotMetadata = false,
   onClick,
   onClear,
 }: PickSlotCardProps) {
   const color = PROJECT_THEME_COLOR;
+  const compact = layout === "five-memory-list";
 
   return (
     <div
@@ -30,8 +38,12 @@ export default function PickSlotCard({
           onClick();
         }
       }}
-      className="group relative grid min-h-[292px] min-w-0 cursor-pointer grid-rows-[auto_1fr] overflow-hidden border border-black bg-white transition-transform duration-300 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-[var(--project-primary)]"
-      aria-label={song ? `Replace pick: ${song.title.ja}` : "Pick song"}
+      className={`group relative grid min-w-0 cursor-pointer grid-rows-[auto_1fr] overflow-hidden border border-black bg-white transition-transform duration-300 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-[var(--project-primary)] ${
+        compact ? "min-h-[260px]" : "min-h-[292px]"
+      }`}
+      aria-label={
+        song ? `Replace ${slot.label}: ${song.title.ja}` : `Pick ${slot.label}`
+      }
     >
       {song ? (
         <div className="row-span-2 grid min-w-0 max-w-full grid-rows-[auto_auto] overflow-hidden">
@@ -43,6 +55,11 @@ export default function PickSlotCard({
               loading="lazy"
             />
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/85 via-black/45 to-transparent" />
+            {showSlotMetadata ? (
+              <div className="absolute left-2 top-2 max-w-[calc(100%-3.5rem)] border border-black bg-white/95 px-2 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-black">
+                <span className="line-clamp-1">{slot.label}</span>
+              </div>
+            ) : null}
             <div className="absolute inset-x-0 bottom-0 p-3 text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.8)]">
               <div className="line-clamp-2 text-base font-bold leading-tight">
                 {song.title.ja}
@@ -54,6 +71,11 @@ export default function PickSlotCard({
           </div>
 
           <div className="min-w-0 space-y-3 overflow-hidden p-3">
+            {showSlotMetadata && slot.subtitle ? (
+              <p className="line-clamp-2 text-[10px] font-bold leading-relaxed text-slate-500">
+                {slot.subtitle}
+              </p>
+            ) : null}
             <div className="flex flex-wrap gap-1.5">
               <span className="official-chip" style={{ color }}>
                 {getYear(song)}
@@ -85,7 +107,7 @@ export default function PickSlotCard({
         <>
           <div className="flex items-center justify-end border-b border-black">
             <div className="px-3 py-2 text-[9px] font-bold uppercase tracking-[0.18em] text-black">
-              My Pick
+              {showSlotMetadata ? slot.label : "My Pick"}
             </div>
           </div>
           <div className="official-stripe flex min-h-[240px] flex-col items-center justify-center gap-4 p-5 text-center">
@@ -96,7 +118,7 @@ export default function PickSlotCard({
               +
             </div>
             <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-black">
-              Pick Song
+              {showSlotMetadata ? (slot.subtitle ?? "Pick Song") : "Pick Song"}
             </div>
           </div>
         </>

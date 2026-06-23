@@ -1,8 +1,12 @@
 import type { Member, Song } from "../schema/music";
+import type { PickExperience } from "../schema/pick-experience";
+import equalLoveLiveExperiences from "./equal-love/live-experiences.json";
 import equalLoveMembers from "./equal-love/members.json";
 import equalLoveSongs from "./equal-love/songs.json";
+import nearlyEqualJoyLiveExperiences from "./nearly-equal-joy/live-experiences.json";
 import nearlyEqualJoyMembers from "./nearly-equal-joy/members.json";
 import nearlyEqualJoySongs from "./nearly-equal-joy/songs.json";
+import notEqualMeLiveExperiences from "./not-equal-me/live-experiences.json";
 import notEqualMeMembers from "./not-equal-me/members.json";
 import notEqualMeSongs from "./not-equal-me/songs.json";
 
@@ -38,6 +42,7 @@ interface ProjectDefinition {
   config: ProjectConfig;
   members: Member[];
   songs: Song[];
+  liveExperiences: PickExperience[];
 }
 
 export const DEFAULT_PROJECT_ID: ProjectId = "equal-love";
@@ -75,6 +80,7 @@ export const PROJECTS: Record<ProjectId, ProjectDefinition> = {
     },
     members: equalLoveMembers as Member[],
     songs: equalLoveSongs as Song[],
+    liveExperiences: equalLoveLiveExperiences as PickExperience[],
   },
   "nearly-equal-joy": {
     config: {
@@ -108,6 +114,7 @@ export const PROJECTS: Record<ProjectId, ProjectDefinition> = {
     },
     members: nearlyEqualJoyMembers as Member[],
     songs: nearlyEqualJoySongs as Song[],
+    liveExperiences: nearlyEqualJoyLiveExperiences as PickExperience[],
   },
   "not-equal-me": {
     config: {
@@ -141,6 +148,7 @@ export const PROJECTS: Record<ProjectId, ProjectDefinition> = {
     },
     members: notEqualMeMembers as Member[],
     songs: notEqualMeSongs as Song[],
+    liveExperiences: notEqualMeLiveExperiences as PickExperience[],
   },
 };
 

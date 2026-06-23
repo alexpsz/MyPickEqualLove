@@ -14,6 +14,9 @@ interface SearchModalProps {
   trackTypes: TrackType[];
   years: string[];
   autoFocusSearch?: boolean;
+  contextLabel?: string;
+  resultBadgesBySongId?: Record<string, string[]>;
+  emptyMessage?: string;
   onClose: () => void;
   onSelect: (song: Song) => void;
 }
@@ -23,9 +26,50 @@ const PRIMARY_TRACK_TYPES = ["title", "coupling", "album"] as const;
 const normalizeStr = (value: string | undefined): string => {
   if (!value) return "";
   return value
+    .normalize("NFKC")
     .toLowerCase()
     .replace(/\s+/g, "")
-    .replace(/[^a-z0-9\u3040-\u309f\u30a0-\u30ff\u4e00-\u9faf＝=]/g, "");
+    .replace(/[^a-z0-9\u3040-\u309f\u30a0-\u30ff\u4e00-\u9faf=]/g, "");
+};
+
+const getSearchableParts = (
+  song: Song,
+  membersById: Record<string, Member>,
+) => ({
+  titles: [song.title.ja, song.title.romaji, song.title.en],
+  secondary: [
+    song.artist.ja,
+    song.artist.romaji,
+    song.artist.en,
+    song.credits?.lyricist?.ja,
+    song.credits?.lyricist?.romaji,
+    song.credits?.composer?.ja,
+    song.credits?.composer?.romaji,
+    song.credits?.arranger?.ja,
+    song.credits?.arranger?.romaji,
+    ...getMemberNames(song, membersById),
+  ],
+});
+
+const getMatchRank = (
+  song: Song,
+  q: string,
+  membersById: Record<string, Member>,
+) => {
+  if (!q) return 0;
+
+  const searchableParts = getSearchableParts(song, membersById);
+  const normalizedTitles = searchableParts.titles.map(normalizeStr);
+  const normalizedSecondary = searchableParts.secondary.map(normalizeStr);
+
+  if (normalizedTitles.some((part) => part === q)) return 0;
+  if (normalizedTitles.some((part) => part.startsWith(q))) return 1;
+  if (normalizedTitles.some((part) => part.includes(q))) return 2;
+  if (normalizedSecondary.some((part) => part === q)) return 3;
+  if (normalizedSecondary.some((part) => part.startsWith(q))) return 4;
+  if (normalizedSecondary.some((part) => part.includes(q))) return 5;
+
+  return Number.POSITIVE_INFINITY;
 };
 
 const getMemberNames = (song: Song, membersById: Record<string, Member>) =>
@@ -75,6 +119,9 @@ export default function SearchModal({
   trackTypes,
   years,
   autoFocusSearch = true,
+  contextLabel,
+  resultBadgesBySongId = {},
+  emptyMessage = "No songs found matching your search terms.",
   onClose,
   onSelect,
 }: SearchModalProps) {
@@ -138,57 +185,47 @@ export default function SearchModal({
   const filteredSongs = useMemo(() => {
     const q = normalizeStr(searchQuery);
 
-    return songs.filter((song) => {
-      if (!q && !showGraduatedMembers && isGraduatedMemberFeature(song)) {
-        return false;
-      }
+    return songs
+      .map((song, index) => ({ song, index }))
+      .filter(({ song }) => {
+        if (!q && !showGraduatedMembers && isGraduatedMemberFeature(song)) {
+          return false;
+        }
 
-      if (
-        releaseTypeFilter !== "all" &&
-        song.releaseType !== releaseTypeFilter
-      ) {
-        return false;
-      }
+        if (
+          releaseTypeFilter !== "all" &&
+          song.releaseType !== releaseTypeFilter
+        ) {
+          return false;
+        }
 
-      if (trackTypeFilter !== "all" && song.trackType !== trackTypeFilter) {
-        return false;
-      }
+        if (trackTypeFilter !== "all" && song.trackType !== trackTypeFilter) {
+          return false;
+        }
 
-      if (yearFilter !== "all" && !song.releaseDate?.startsWith(yearFilter)) {
-        return false;
-      }
+        if (yearFilter !== "all" && !song.releaseDate?.startsWith(yearFilter)) {
+          return false;
+        }
 
-      if (
-        memberFilters.length > 0 &&
-        !memberFilters.some(
-          (memberId) =>
-            song.memberIds?.includes(memberId) ||
-            song.centerMemberIds?.includes(memberId),
-        )
-      ) {
-        return false;
-      }
+        if (
+          memberFilters.length > 0 &&
+          !memberFilters.some(
+            (memberId) =>
+              song.memberIds?.includes(memberId) ||
+              song.centerMemberIds?.includes(memberId),
+          )
+        ) {
+          return false;
+        }
 
-      if (!q) return true;
-
-      const searchableParts = [
-        song.title.ja,
-        song.title.romaji,
-        song.title.en,
-        song.artist.ja,
-        song.artist.romaji,
-        song.artist.en,
-        song.credits?.lyricist?.ja,
-        song.credits?.lyricist?.romaji,
-        song.credits?.composer?.ja,
-        song.credits?.composer?.romaji,
-        song.credits?.arranger?.ja,
-        song.credits?.arranger?.romaji,
-        ...getMemberNames(song, membersById),
-      ];
-
-      return searchableParts.some((part) => normalizeStr(part).includes(q));
-    });
+        return getMatchRank(song, q, membersById) < Number.POSITIVE_INFINITY;
+      })
+      .sort((left, right) => {
+        const leftRank = getMatchRank(left.song, q, membersById);
+        const rightRank = getMatchRank(right.song, q, membersById);
+        return leftRank - rightRank || left.index - right.index;
+      })
+      .map(({ song }) => song);
   }, [
     memberFilters,
     membersById,
@@ -279,7 +316,8 @@ export default function SearchModal({
               Select Song
             </h3>
             <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--project-primary)]">
-              Top Picks board · {filteredSongs.length} matching songs
+              {contextLabel ? `${contextLabel} · ` : ""}
+              {filteredSongs.length} matching songs
             </p>
           </div>
           <button
@@ -477,6 +515,18 @@ export default function SearchModal({
                     <div className="mt-1 text-[10px] font-bold uppercase tracking-wider text-slate-700">
                       {formatSongMeta(song)}
                     </div>
+                    {resultBadgesBySongId[song.id]?.length ? (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {resultBadgesBySongId[song.id].map((badge) => (
+                          <span
+                            key={badge}
+                            className="border border-[var(--project-primary)] bg-white px-1.5 py-0.5 text-[8px] font-black uppercase tracking-[0.08em] text-[var(--project-primary)]"
+                          >
+                            {badge}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
                     {formatSongCredits(song) ? (
                       <div className="mt-2 line-clamp-2 text-[10px] font-medium leading-5 text-slate-500">
                         {formatSongCredits(song)}
@@ -487,7 +537,7 @@ export default function SearchModal({
               ))
             ) : (
               <div className="py-12 text-center text-xs font-light text-slate-400">
-                No songs found matching your search terms.
+                {emptyMessage}
               </div>
             )}
           </div>

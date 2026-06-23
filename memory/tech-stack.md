@@ -64,6 +64,7 @@ TypeScript 关键设置包括 `strict: true`、`moduleResolution: "bundler"`、`
 Next.js 配置来自 `next.config.ts`：
 
 - `output: "export"`
+- `trailingSlash: true`
 - `images.unoptimized: true`
 - `allowedDevOrigins: ["127.0.0.1"]`
 
@@ -102,6 +103,8 @@ Cloudflare Pages 使用三个独立 Pages 项目连接同一个 GitHub repo 和 
 
 本地开发脚本使用 `next dev --webpack`。Next.js 16.2.x 的 Turbopack dev 在本项目中可能停在首页首次 `Compiling / ...`，而 webpack dev 已验证可正常返回页面；生产构建仍使用 `next build` 静态导出。
 
+项目化 `dev:*` 与 `build:*` 脚本通过 `scripts/run-project-command.mjs` 注入 `NEXT_PUBLIC_PROJECT_ID`，避免 POSIX 风格环境变量写法在 Windows PowerShell/cmd 下失效。
+
 ## 8. Quality Tools
 
 Lint 使用 ESLint：
@@ -124,6 +127,7 @@ Lint 使用 ESLint：
 
 - 命令：`npm run validate:data`
 - 脚本：`scripts/validate-project-data.mjs`
+- 覆盖范围：成员、歌曲、封面、credits、项目严格边界，以及项目级 `live-experiences.json` 的 route、slot、setlist、source、verification status 和 published 门槛。
 
 构建验证使用：
 
@@ -131,11 +135,17 @@ Lint 使用 ESLint：
 - `npm run build:nearly-equal-joy`
 - `npm run build:not-equal-me`
 
+跨平台项目命令 helper：
+
+- `scripts/run-project-command.mjs`：校验 project id 与目标 script，并用子进程运行 `npm run dev` 或 `npm run build`，同时设置 `NEXT_PUBLIC_PROJECT_ID`。
+
 ## 9. Constraints
 
 必须保持 Node `>=20.9.0` 兼容。
 
 必须保持 Next.js 静态导出兼容：`output: "export"`。
+
+必须保持 canonical 尾斜杠路径兼容：`trailingSlash: true`，否则 `/live/<slug>/` 会导出为 `out/live/<slug>.html` 而不是目录式 `index.html`。
 
 必须保持图片静态导出兼容：`images.unoptimized: true`。
 
@@ -154,5 +164,7 @@ Lint 使用 ESLint：
 修改 `next.config.ts` 后必须更新构建与部署约束，并运行构建验证。
 
 修改数据同步或校验脚本后必须更新数据管理和质量工具说明，并运行 `npm run validate:data`。
+
+修改 `src/projects/<project-id>/live-experiences.json`、`src/schema/pick-experience.ts` 或 `src/data/pickExperiences.ts` 后必须运行 `npm run validate:data`，并根据是否影响 UI 运行 lint/type/build 或浏览器回归。
 
 如确需引入服务端运行时能力，必须先更新 `memory/architecture.md` 与本文件，并明确静态导出迁移方案。

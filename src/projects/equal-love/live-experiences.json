@@ -1,0 +1,213 @@
+[
+  {
+    "id": "kokuritsu_2026",
+    "projectId": "equal-love",
+    "slug": "kokuritsu-2026",
+    "kind": "live-afterglow",
+    "status": "published",
+    "title": "国立の余韻 My Pick",
+    "subtitle": "＝LOVE STADIUM LIVEの余韻を、5つの記憶で残そう。",
+    "description": "国立競技場での＝LOVE STADIUM LIVEを、忘れられない曲・高まった曲・涙が出た曲・推しが輝いていた曲・帰り道に聴いた曲の5つで振り返るMy Pickです。",
+    "canonicalPath": "/live/kokuritsu-2026/",
+    "eventName": "＝LOVE STADIUM LIVE「Beyond \"KYUN\"♡」",
+    "venue": "国立競技場",
+    "officialUrl": "https://x.com/equal_love_12/status/2068677833850057105?s=46",
+    "includeCombinedPerformance": true,
+    "defaultContextId": "both",
+    "slots": [
+      {
+        "id": "unforgettable",
+        "label": "忘れられない曲",
+        "subtitle": "国立でいちばん心に残った一曲",
+        "sortOrder": 1,
+        "eligibility": "selected-performance"
+      },
+      {
+        "id": "heated-up",
+        "label": "会場で高まった曲",
+        "subtitle": "コール・演出・空気ごと熱くなった一曲",
+        "sortOrder": 2,
+        "eligibility": "selected-performance"
+      },
+      {
+        "id": "tears",
+        "label": "涙が出た曲",
+        "subtitle": "思わず涙がこぼれた一曲",
+        "sortOrder": 3,
+        "eligibility": "selected-performance"
+      },
+      {
+        "id": "oshi-shined",
+        "label": "推しが輝いていた曲",
+        "subtitle": "この瞬間の推しを忘れたくない一曲",
+        "sortOrder": 4,
+        "eligibility": "selected-performance"
+      },
+      {
+        "id": "way-home",
+        "label": "帰り道に聴いた曲",
+        "subtitle": "終演後にもう一度聴き返した一曲",
+        "sortOrder": 5,
+        "eligibility": "catalog"
+      }
+    ],
+    "export": {
+      "title": "国立の余韻 My Pick",
+      "subtitle": "＝LOVE STADIUM LIVE「Beyond \"KYUN\"♡」",
+      "imageFileName": "EqualLove_Kokuritsu2026_Afterglow.png",
+      "layout": "five-memory-list"
+    },
+    "share": {
+      "text": "＝LOVE STADIUM LIVE 国立の余韻 My Pickを作成しました！\n（※ダウンロードした画像を添付してください）",
+      "hashtags": ["#MyPickイコラブ", "#イコラブ", "#イコラブ国立"]
+    },
+    "performances": [
+      {
+        "id": "day1",
+        "label": "DAY 1",
+        "date": "2026-06-20",
+        "verificationStatus": "verified",
+        "sourceUrls": [
+          "https://x.com/equal_love_12/status/2068677833850057105?s=46",
+          "https://music.apple.com/cn/playlist/love-stadium-live-beyond-kyun-day1/pl.u-b3b8Mv7iKorrg0W"
+        ],
+        "sourceNote": "DAY 1 source order follows the official X setlist post and Apple Music playlist. Local screenshots d1-1.png and d1-2.png were used for manual review only. Source track 1 Overture is excluded from selectable songs.",
+        "setlist": [
+          { "order": 2, "songId": "tokubechu-shite" },
+          { "order": 3, "songId": "oh-darling" },
+          { "order": 4, "songId": "natsumatope" },
+          { "order": 5, "songId": "hiroinzu" },
+          { "order": 6, "songId": "o-himesama-nishiteyo" },
+          { "order": 7, "songId": "be-selfish" },
+          { "order": 8, "songId": "bokura-no-seifuku-christmas" },
+          { "order": 9, "songId": "love-song-ni-osowareru" },
+          { "order": 10, "songId": "want-you-want-you" },
+          { "order": 11, "songId": "queens" },
+          { "order": 12, "songId": "mayonaka-maameido" },
+          { "order": 13, "songId": "gekiyaku-chuudoku" },
+          { "order": 14, "songId": "doraibu-deeto-tonai" },
+          { "order": 15, "songId": "shukipi" },
+          { "order": 16, "songId": "ki-more-nichi-mezoforute" },
+          { "order": 17, "songId": "nakanaori-shuukuriimu" },
+          { "order": 18, "songId": "o-himesama-no-tsukurikata" },
+          { "order": 19, "songId": "choutokkyuu-tousou-naka" },
+          { "order": 20, "songId": "naisho-banashi" },
+          { "order": 21, "songId": "junkies" },
+          { "order": 22, "songId": "moratoriamu" },
+          { "order": 23, "songId": "seishun-subliminal" },
+          { "order": 24, "songId": "natsumatsuri-renbo-u" },
+          { "order": 25, "songId": "zettai-idol-yamenaide" },
+          { "order": 26, "songId": "love-song-ni-osowareru" },
+          { "order": 27, "songId": "umi-to-remonteii" },
+          { "order": 28, "songId": "dakaratote" },
+          { "order": 29, "songId": "kono-sora-ga-trigger" },
+          { "order": 30, "songId": "sagase-diamond-lily" },
+          { "order": 31, "songId": "equal-love" }
+        ]
+      },
+      {
+        "id": "day2",
+        "label": "DAY 2",
+        "date": "2026-06-21",
+        "verificationStatus": "verified",
+        "sourceUrls": [
+          "https://x.com/equal_love_12/status/2068677833850057105?s=46",
+          "https://music.apple.com/cn/playlist/love-stadium-live-beyond-kyun-day2/pl.u-RRbVY3VCmE99WZA"
+        ],
+        "sourceNote": "DAY 2 source order follows the official X setlist post and Apple Music playlist. Local screenshots d2-1.png and d2-2.png were used for manual review only. Source track 1 Overture is excluded from selectable songs.",
+        "setlist": [
+          { "order": 2, "songId": "tokubechu-shite" },
+          { "order": 3, "songId": "oh-darling" },
+          { "order": 4, "songId": "natsumatope" },
+          { "order": 5, "songId": "hiroinzu" },
+          { "order": 6, "songId": "o-himesama-nishiteyo" },
+          { "order": 7, "songId": "be-selfish" },
+          { "order": 8, "songId": "bokura-no-seifuku-christmas" },
+          { "order": 9, "songId": "love-song-ni-osowareru" },
+          { "order": 10, "songId": "want-you-want-you" },
+          { "order": 11, "songId": "queens" },
+          { "order": 12, "songId": "mayonaka-maameido" },
+          { "order": 13, "songId": "gekiyaku-chuudoku" },
+          { "order": 14, "songId": "doraibu-deeto-tonai" },
+          { "order": 15, "songId": "shukipi" },
+          { "order": 16, "songId": "ki-more-nichi-mezoforute" },
+          { "order": 17, "songId": "nakanaori-shuukuriimu" },
+          { "order": 18, "songId": "o-himesama-no-tsukurikata" },
+          { "order": 19, "songId": "choutokkyuu-tousou-naka" },
+          { "order": 20, "songId": "naisho-banashi" },
+          { "order": 21, "songId": "junkies" },
+          { "order": 22, "songId": "moratoriamu" },
+          { "order": 23, "songId": "seishun-subliminal" },
+          { "order": 24, "songId": "natsumatsuri-renbo-u" },
+          { "order": 25, "songId": "zettai-idol-yamenaide" },
+          { "order": 26, "songId": "dakaratote" },
+          { "order": 27, "songId": "kono-sora-ga-trigger" },
+          { "order": 28, "songId": "sagase-diamond-lily" },
+          { "order": 29, "songId": "egao-no-reshipi" },
+          { "order": 30, "songId": "equal-love" },
+          { "order": 31, "songId": "sutaato" }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "tokyo_dome_2027",
+    "projectId": "equal-love",
+    "slug": "tokyo-dome-2027",
+    "kind": "live-wishlist",
+    "status": "published",
+    "title": "東京ドームで聴きたい My Pick",
+    "subtitle": "＝LOVE in TOKYO DOMEで叶ってほしい5つの瞬間を選ぼう。",
+    "description": "東京ドームで聴きたい＝LOVEの楽曲を、開幕・高まり・涙・推し・ラストの5つの願いで選ぶMy Pickです。",
+    "canonicalPath": "/live/tokyo-dome-2027/",
+    "eventName": "＝LOVE in TOKYO DOME",
+    "venue": "東京ドーム",
+    "slots": [
+      {
+        "id": "opening",
+        "label": "開幕で聴きたい曲",
+        "subtitle": "東京ドームの最初の一音に選びたい曲",
+        "sortOrder": 1,
+        "eligibility": "catalog"
+      },
+      {
+        "id": "hype",
+        "label": "会場で高まりたい曲",
+        "subtitle": "ドーム全体で熱くなりたい曲",
+        "sortOrder": 2,
+        "eligibility": "catalog"
+      },
+      {
+        "id": "cry",
+        "label": "東京ドームで泣きたい曲",
+        "subtitle": "この場所で聴けたら涙が出そうな曲",
+        "sortOrder": 3,
+        "eligibility": "catalog"
+      },
+      {
+        "id": "oshi",
+        "label": "推しが輝く姿を見たい曲",
+        "subtitle": "東京ドームで推しに届けてほしい曲",
+        "sortOrder": 4,
+        "eligibility": "catalog"
+      },
+      {
+        "id": "finale",
+        "label": "最後に聴きたい曲",
+        "subtitle": "この公演の余韻を託したい曲",
+        "sortOrder": 5,
+        "eligibility": "catalog"
+      }
+    ],
+    "export": {
+      "title": "東京ドームで聴きたい My Pick",
+      "subtitle": "＝LOVE in TOKYO DOME",
+      "imageFileName": "EqualLove_TokyoDome2027_Wishlist.png",
+      "layout": "five-memory-list"
+    },
+    "share": {
+      "text": "＝LOVE in TOKYO DOMEで聴きたい My Pickを作成しました！\n（※ダウンロードした画像を添付してください）",
+      "hashtags": ["#MyPickイコラブ", "#イコラブ", "#イコラブ東京ドーム"]
+    }
+  }
+]
