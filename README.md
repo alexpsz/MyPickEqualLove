@@ -14,6 +14,15 @@ Fan-made static web apps for creating shareable Top 10 song boards for =LOVE, â‰
 - Generate a PNG board for download or sharing to X.
 - Build three sister sites from one shared codebase.
 
+## Live Specials
+
+- =LOVE now has event-specific five-song pick pages alongside the standard Top 10 picker.
+- `/live/kokuritsu-2026/` creates a Kokuritsu 2026 afterglow board with `DAY 1`, `DAY 2`, and `2 DAYS` contexts.
+- `/live/tokyo-dome-2027/` creates a Tokyo Dome 2027 wishlist board.
+- Live specials use their own saved picks, PNG export layout, filenames, and share text.
+
+![EqualLove_Kokuritsu2026_Afterglow_DAY1](docs/equal-love-kokuritsu-2026-afterglow-day1.png)
+
 ## Projects
 
 | Project ID         | Site                 | Build command                    |
