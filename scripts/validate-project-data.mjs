@@ -424,14 +424,6 @@ function validateExperienceSlots(prefix, experience, errors) {
     return;
   }
 
-  if (
-    (experience.kind === "live-afterglow" ||
-      experience.kind === "live-wishlist") &&
-    experience.slots.length !== 5
-  ) {
-    errors.push(`${prefix}: live experiences must have exactly 5 slots`);
-  }
-
   const slotIds = new Set();
   const sortOrders = [];
   const hasPerformances = Array.isArray(experience.performances)

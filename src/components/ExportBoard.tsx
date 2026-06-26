@@ -65,6 +65,7 @@ export default function ExportBoard({
           ? "transparent"
           : EXPORT_CONFIG.background,
         width: `${EXPORT_CONFIG.width}px`,
+        height: `${EXPORT_CONFIG.height}px`,
         boxSizing: "border-box",
         padding: "44px 54px 34px",
         display: "flex",
@@ -244,6 +245,10 @@ function FiveMemoryList({
   picks: Picks;
   showTitles: boolean;
 }) {
+  const dense = slots.length > 5;
+  const cardSize = dense ? 154 : 166;
+  const gap = dense ? 10 : 13;
+
   return (
     <main
       style={{
@@ -251,7 +256,7 @@ function FiveMemoryList({
         zIndex: 1,
         display: "flex",
         flexDirection: "column",
-        gap: "13px",
+        gap: `${gap}px`,
         flex: "0 0 auto",
       }}
     >
@@ -262,6 +267,8 @@ function FiveMemoryList({
           song={picks[slot.id]}
           showTitles={showTitles}
           showSlotTitle
+          size={cardSize}
+          dense={dense}
         />
       ))}
     </main>
@@ -274,19 +281,23 @@ function ExportPickCard({
   showTitles,
   showSlotTitle,
   compact = false,
+  size,
+  dense = false,
 }: {
   slot: PickSlot;
   song: Picks[string] | undefined;
   showTitles: boolean;
   showSlotTitle: boolean;
   compact?: boolean;
+  size?: number;
+  dense?: boolean;
 }) {
-  const size = compact ? 154 : 166;
+  const cardSize = size ?? (compact ? 154 : 166);
 
   return (
     <div
       style={{
-        height: `${size}px`,
+        height: `${cardSize}px`,
         overflow: "hidden",
         border: "2px solid #000",
         background: song ? "#ffffff" : "#f8f8f8",
@@ -300,8 +311,8 @@ function ExportPickCard({
             src={song.coverUrl}
             alt={`${song.title.ja} cover`}
             style={{
-              width: `${size}px`,
-              height: `${size}px`,
+              width: `${cardSize}px`,
+              height: `${cardSize}px`,
               objectFit: "cover",
               flexShrink: 0,
               display: "block",
@@ -311,7 +322,11 @@ function ExportPickCard({
             style={{
               flex: 1,
               minWidth: 0,
-              padding: compact ? "18px 18px 14px" : "18px 22px 16px",
+              padding: compact
+                ? "18px 18px 14px"
+                : dense
+                  ? "14px 20px 12px"
+                  : "18px 22px 16px",
               display: "flex",
               flexDirection: "column",
               justifyContent: showSlotTitle ? "space-between" : "flex-end",
@@ -331,7 +346,7 @@ function ExportPickCard({
               {showTitles && (
                 <div
                   style={{
-                    fontSize: compact ? "24px" : "28px",
+                    fontSize: compact ? "24px" : dense ? "25px" : "28px",
                     lineHeight: 1.16,
                     fontWeight: 900,
                     fontFamily: EXPORT_TITLE_FONT_FAMILY,

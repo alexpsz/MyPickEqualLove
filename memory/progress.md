@@ -6,7 +6,7 @@
 
 主功能仍然存在：歌曲选择、搜索筛选、本地持久化、导出图片、预览、下载、分享到 X。
 
-当前新增 Live Pick 静态子路由架构。普通版根路径 `/` 保持原 Top 10 行为和旧 `localStorage` key；`equal-love` 站点额外发布 `/live/kokuritsu-2026/` 与 `/live/tokyo-dome-2027/` 两个五格特别页。
+当前新增 Live Pick 静态子路由架构。普通版根路径 `/` 保持原 Top 10 行为和旧 `localStorage` key；`equal-love` 站点额外发布 `/live/kokuritsu-2026/` 与 `/live/tokyo-dome-2027/` 两个六格特别页。
 
 ## 2. 已完成功能
 
@@ -34,9 +34,9 @@
 
 当前已实现配置驱动 PickExperience 编排层。普通版、Live Afterglow 与 Live Wishlist 共用 `PickExperienceClient`、搜索、替换、导出和预览流程。
 
-当前已实现 ＝LOVE 国立余韵特别页：`/live/kokuritsu-2026/`，五个记忆槽位，`DAY 1 / DAY 2 / 2 DAYS` context 切换，前三种 context 分别保存 picks。前四格限制为当前 context setlist 候选，第五格「帰り道に聴いた曲」允许全曲库。
+当前已实现 ＝LOVE 国立余韵特别页：`/live/kokuritsu-2026/`，六个记忆槽位，`DAY 1 / DAY 2 / 2 DAYS` context 切换，前三种 context 分别保存 picks。前四格和第六格 `FREE PICK` 限制为当前 context setlist 候选，第五格「帰り道に聴いた曲」允许全曲库。
 
-当前已实现 ＝LOVE 东京巨蛋愿望特别页：`/live/tokyo-dome-2027/`，五个愿望槽位，全部允许从全曲库选择，不提供 Day selector。
+当前已实现 ＝LOVE 东京巨蛋愿望特别页：`/live/tokyo-dome-2027/`，六个愿望槽位，全部允许从全曲库选择，不提供 Day selector。
 
 当前已实现三项目开发和构建脚本：`dev:*` 使用 webpack dev，`build:*` 使用静态导出。
 
@@ -76,7 +76,7 @@ Live Pick 数据来自项目级 `src/projects/<project-id>/live-experiences.json
 
 `scripts/validate-project-data.mjs` 会校验全部项目数据；其中 `equal-love` 仍执行歌曲数量、成员数量和边界歌曲严格检查。`nearly-equal-joy` 额外检查福山萌叶成员状态、早期三首参与边界、12 名现役成员单色 `color` 且禁止 `colors`；`not-equal-me` 额外检查菅波美玲成员状态、毕业曲边界、11 名现役成员色。
 
-`scripts/validate-project-data.mjs` 现在也校验 live experiences：experience id/slug/canonical 唯一性、项目归属、五格 slot、eligibility scope、published 字段、setlist `songId`、sourceUrls、verificationStatus，以及 published 严格 setlist 页面必须使用 verified performance。
+`scripts/validate-project-data.mjs` 现在也校验 live experiences：experience id/slug/canonical 唯一性、项目归属、slot 非空且排序连续、eligibility scope、published 字段、setlist `songId`、sourceUrls、verificationStatus，以及 published 严格 setlist 页面必须使用 verified performance。
 
 ## 5. 部署状态
 
@@ -101,6 +101,8 @@ Live Pick 数据来自项目级 `src/projects/<project-id>/live-experiences.json
 Live Pick 已通过 `npx tsc --noEmit --incremental false`、`npm run validate:data`、`npm run lint`（0 error，保留 4 个既有 `<img>` warning）以及本轮触碰文件的定向 Prettier check。全仓 `npm run format:check` 仍失败，失败范围包含多份本轮未触碰的既有文件和未跟踪的 `docs/live-implementation-plan.md`；未由本轮执行三站 `build:*` 或浏览器端导出回归，用户已说明会负责跑测试。
 
 ## 7. 最近更新记录
+
+2026-06-26：为 ＝LOVE 两个 Live Pick 特别页增加第六个 `FREE PICK` 槽位。国立页第六格只允许当前 `DAY 1` / `DAY 2` / `2 DAYS` 真实演出 setlist 内歌曲，第五格「帰り道に聴いた曲」继续允许全曲库；东京巨蛋页第六格允许全曲库。validator 不再硬编码 live experience 必须 5 slots，导出图在 live slot 超过 5 个时使用更紧凑的 memory list 卡片，保持 1080×1350 PNG 内完整显示。
 
 2026-06-23：修复 ≒JOY / ≠ME 访问或构建 live 动态路由时报错 `Page "/live/[eventSlug]" is missing "generateStaticParams()"`。Next 静态导出要求动态路由访问参数必须在 `generateStaticParams()` 中，因此 `pickExperiences.ts` 现在返回全局 live slug 白名单，让空项目 dev 访问 =LOVE live 旧 URL 时也能进入正常 404 流程，而不是缺参异常。`copy-public-assets.mjs` 会在导出后删除不属于当前项目的 live slug 文件/目录，并在 live 目录为空时移除父目录。同步新增 `scripts/run-project-command.mjs`，让 `npm run dev:*` 与 `npm run build:*` 在 Windows 下也能正确注入 `NEXT_PUBLIC_PROJECT_ID`。已验证 `npm run build:equal-love` 保留两个真实 live 页面，`npm run build:nearly-equal-joy` 与 `npm run build:not-equal-me` 均通过且导出后不保留 `out/live`。
 

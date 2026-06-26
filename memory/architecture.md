@@ -52,7 +52,7 @@ Pick 体验现在由 `PickExperience` 配置驱动。根路径 `/` 是普通 Top
 - `scripts/sync-project-discography.py`：通用数据同步脚本，通过 `--project equal-love|nearly-equal-joy|not-equal-me` 选择项目。负责抓取官网 discography/profile、Uta-Net credits、本地封面下载、毕业成员/特殊曲和成员参与 override。
 - `scripts/sync-equal-love-discography.py`：兼容旧命令的薄 wrapper，内部调用通用同步脚本同步 `equal-love`。
 - `scripts/validate-project-data.mjs`：校验全部或单个项目数据。检查 song id 唯一、成员引用存在、封面存在、类型合法、credits 完整和项目非空；`equal-love` 额外检查 84 首歌曲、12 名成员和边界歌曲，`nearly-equal-joy` 检查福山萌叶毕业成员与早期三首参与边界，`not-equal-me` 检查菅波美玲毕业成员与毕业曲边界。
-- 该 validator 也校验 `live-experiences.json`：experience id/slug/canonical、项目归属、status/kind/layout/scope、五格 slot、setlist songId、sourceUrls、verificationStatus，以及 published 严格 setlist 页必须使用 verified performances。
+- 该 validator 也校验 `live-experiences.json`：experience id/slug/canonical、项目归属、status/kind/layout/scope、slot 非空且排序连续、setlist songId、sourceUrls、verificationStatus，以及 published 严格 setlist 页必须使用 verified performances。
 
 ### 3.4 Next App Router
 
@@ -75,7 +75,7 @@ Pick 体验现在由 `PickExperience` 配置驱动。根路径 `/` 是普通 Top
 - `src/components/PickSlotCard.tsx`：单个 pick 槽位卡片，展示封面、标题、成员色和清空按钮；live 布局会显示槽位 label/subtitle。
 - `src/components/SearchModal.tsx`：歌曲搜索弹窗，提供关键字、快捷筛选、年份、成员、release type 和毕业成员显示控制；调用方传入已经按当前槽位 eligibility 缩小过的歌曲列表，可显示 live setlist badge。
 - `src/components/ReplacementModal.tsx`：满槽替换弹窗。普通版所有槽位可替换；live 页可按 slot eligibility 禁用不合法替换目标。
-- `src/components/ExportBoard.tsx`：隐藏离屏导出画布，id 由 experience 派生；供 `html2canvas` 捕获 PNG。普通版保留 2×5 导出布局，live 五格页使用 `five-memory-list` 导出布局并显示槽位语义。
+- `src/components/ExportBoard.tsx`：隐藏离屏导出画布，id 由 experience 派生；供 `html2canvas` 捕获 PNG。普通版保留 2×5 导出布局，live 页面使用 `five-memory-list` 导出布局并显示槽位语义；当 live slot 超过 5 个时自动使用更紧凑的卡片高度和间距。
 - `src/components/PreviewModal.tsx`：导出预览弹窗，处理下载、分享到 X 和 Web Share API；文件名、分享文案、分享 URL 与标题由当前 experience 传入。
 - `src/components/SisterProjectsMenu.tsx`：左上角 `Other Picks` 入口与抽屉菜单，从当前项目配置派生另外两个姐妹 MyPick 站点链接，并渲染外部 MyPick 站点列表。
 
@@ -169,7 +169,7 @@ Live 页使用 `getExperienceStorageKeys()` 派生隔离 key：`<projectPrefix>_
 
 `ExportBoard` 的成员色条使用现役成员实际数量，不再固定截取前 10 名。存在 `colors` 的项目可渲染渐变胶囊；≒JOY 当前只使用单色胶囊。
 
-普通版导出继续使用 `top10-grid` 2×5 布局。Live 五格页使用 `five-memory-list` 布局，在导出图中显示 event title、context、slot label/subtitle、歌曲封面、歌名、昵称和当前页面 URL。
+普通版导出继续使用 `top10-grid` 2×5 布局。Live 页面使用 `five-memory-list` 布局，在导出图中显示 event title、context、slot label/subtitle、歌曲封面、歌名、昵称和当前页面 URL。
 
 当预览已存在时，`showTitles` 或 `transparentBg` 变化会延迟触发重新生成。
 

@@ -463,7 +463,8 @@ export default function PickExperienceClient({
         ) : null}
         {experience.id === "kokuritsu_2026" ? (
           <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-slate-500">
-            「帰り道に聴いた曲」は国立で披露されていない楽曲も選べます。
+            「帰り道に聴いた曲」は全楽曲から選べます。FREE
+            PICKは国立で披露された楽曲から選べます。
           </p>
         ) : null}
       </Controls>
