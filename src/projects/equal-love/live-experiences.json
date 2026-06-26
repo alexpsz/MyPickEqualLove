@@ -6,8 +6,8 @@
     "kind": "live-afterglow",
     "status": "published",
     "title": "国立の余韻 My Pick",
-    "subtitle": "＝LOVE STADIUM LIVEの余韻を、5つの記憶で残そう。",
-    "description": "国立競技場での＝LOVE STADIUM LIVEを、忘れられない曲・高まった曲・涙が出た曲・推しが輝いていた曲・帰り道に聴いた曲の5つで振り返るMy Pickです。",
+    "subtitle": "＝LOVE STADIUM LIVEの余韻を、6つの記憶で残そう。",
+    "description": "国立競技場での＝LOVE STADIUM LIVEを、忘れられない曲・高まった曲・涙が出た曲・推しが輝いていた曲・帰り道に聴いた曲・FREE PICKの6つで振り返るMy Pickです。",
     "canonicalPath": "/live/kokuritsu-2026/",
     "eventName": "＝LOVE STADIUM LIVE「Beyond \"KYUN\"♡」",
     "venue": "国立競技場",
@@ -49,6 +49,13 @@
         "subtitle": "終演後にもう一度聴き返した一曲",
         "sortOrder": 5,
         "eligibility": "catalog"
+      },
+      {
+        "id": "free-pick",
+        "label": "FREE PICK",
+        "subtitle": "国立で披露された曲から、もう一曲自由に選ぶなら",
+        "sortOrder": 6,
+        "eligibility": "selected-performance"
       }
     ],
     "export": {
@@ -157,8 +164,8 @@
     "kind": "live-wishlist",
     "status": "published",
     "title": "東京ドームで聴きたい My Pick",
-    "subtitle": "＝LOVE in TOKYO DOMEで叶ってほしい5つの瞬間を選ぼう。",
-    "description": "東京ドームで聴きたい＝LOVEの楽曲を、開幕・高まり・涙・推し・ラストの5つの願いで選ぶMy Pickです。",
+    "subtitle": "＝LOVE in TOKYO DOMEで叶ってほしい6つの瞬間を選ぼう。",
+    "description": "東京ドームで聴きたい＝LOVEの楽曲を、開幕・高まり・涙・推し・ラスト・FREE PICKの6つの願いで選ぶMy Pickです。",
     "canonicalPath": "/live/tokyo-dome-2027/",
     "eventName": "＝LOVE in TOKYO DOME",
     "venue": "東京ドーム",
@@ -196,6 +203,13 @@
         "label": "最後に聴きたい曲",
         "subtitle": "この公演の余韻を託したい曲",
         "sortOrder": 5,
+        "eligibility": "catalog"
+      },
+      {
+        "id": "free-pick",
+        "label": "FREE PICK",
+        "subtitle": "東京ドームで聴きたい曲を自由に選ぶなら",
+        "sortOrder": 6,
         "eligibility": "catalog"
       }
     ],
