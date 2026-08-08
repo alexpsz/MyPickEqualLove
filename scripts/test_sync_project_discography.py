@@ -678,6 +678,35 @@ class DiscographyMergeTests(unittest.TestCase):
             self.config,
             discovered,
             committed,
+            current_release_urls={song["officialUrl"] for song in committed[:12]},
+        )
+
+    def test_catalog_coverage_ignores_releases_outside_the_rolling_index(self) -> None:
+        currently_listed = [
+            {
+                "title": {"ja": f"既存曲{index}"},
+                "officialUrl": f"https://equal-love.jp/discography/detail/{index}/",
+            }
+            for index in range(15)
+        ]
+        retired_release = [
+            {
+                "title": {"ja": f"旧盤曲{index}"},
+                "officialUrl": "https://equal-love.jp/discography/detail/999/",
+            }
+            for index in range(3)
+        ]
+        committed = [*currently_listed, *retired_release]
+        discovered = {
+            SYNC.title_key(song["title"]["ja"], self.config): song
+            for song in currently_listed
+        }
+
+        SYNC.validate_official_catalog_coverage(
+            self.config,
+            discovered,
+            committed,
+            current_release_urls={song["officialUrl"] for song in currently_listed},
         )
 
     def test_catalog_coverage_rejects_a_partial_parse(self) -> None:
@@ -698,6 +727,7 @@ class DiscographyMergeTests(unittest.TestCase):
                 self.config,
                 discovered,
                 committed,
+                current_release_urls={song["officialUrl"] for song in committed},
             )
 
     def test_cover_download_allowlist_rejects_arbitrary_hosts(self) -> None:

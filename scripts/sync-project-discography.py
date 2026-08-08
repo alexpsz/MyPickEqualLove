@@ -915,14 +915,17 @@ def validate_official_catalog_coverage(
     official_songs: dict[str, dict],
     committed_songs: list[dict],
     *,
+    current_release_urls: set[str],
     minimum_count_ratio: float = 0.9,
     minimum_overlap_ratio: float = 0.75,
 ) -> None:
+    """Compare only releases still exposed by the site's rolling index."""
     committed_official_keys = {
         title_key(song.get("title", {}).get("ja", ""), config)
         for song in committed_songs
         if is_same_https_host(song.get("officialUrl", ""), config.official_base)
         and "/discography/detail/" in song.get("officialUrl", "")
+        and song.get("officialUrl", "") in current_release_urls
     }
     committed_official_keys.discard("")
     if not committed_official_keys:
@@ -936,7 +939,8 @@ def validate_official_catalog_coverage(
         raise RuntimeError(
             f"Official discography coverage for {config.project_id} fell to "
             f"{len(official_songs)} discovered and {len(rediscovered)}/"
-            f"{len(committed_official_keys)} rediscovered; "
+            f"{len(committed_official_keys)} currently listed committed songs "
+            "rediscovered; "
             f"missing title keys include {missing_titles}",
         )
 
@@ -1521,7 +1525,12 @@ def build_song_data(
             f"{len(official_songs)} songs; expected at least "
             f"{config.minimum_official_songs}",
         )
-    validate_official_catalog_coverage(config, official_songs, committed_songs)
+    validate_official_catalog_coverage(
+        config,
+        official_songs,
+        committed_songs,
+        current_release_urls={release.url for release in releases if release.tracks},
+    )
 
     credit_rows: dict[str, dict[str, str]] = {}
     credit_source_available = True
