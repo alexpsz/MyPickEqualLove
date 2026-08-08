@@ -49,6 +49,8 @@ export interface SongCredit {
 export type SongVisibility = "default" | "special" | "archive";
 
 export type SongSourceStatus =
+  | "announced"
+  | "credits_pending"
   | "released"
   | "digital"
   | "limited_cd"
@@ -56,6 +58,13 @@ export type SongSourceStatus =
   | "cm_pv"
   | "live_only"
   | "unverified";
+
+export type SongOwnershipEvidence =
+  | "verified-credits"
+  | "verified-artist"
+  | "explicit-current-group"
+  | "official-title-track"
+  | "official-multi-edition";
 
 export interface Song {
   id: string;
@@ -74,6 +83,7 @@ export interface Song {
   visibility?: SongVisibility;
   sourceStatus?: SongSourceStatus;
   sourceNote?: string;
+  ownershipEvidence?: SongOwnershipEvidence;
   tags?: string[];
   credits?: SongCredit;
   officialUrl?: string;

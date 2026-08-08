@@ -3168,5 +3168,32 @@
     "visibility": "default",
     "sourceStatus": "unverified",
     "sourceNote": "12th両A面シングル収録曲として公式サイトで確認。作曲/編曲 credits は未確認。"
+  },
+  {
+    "id": "summer-haze",
+    "title": {
+      "ja": "Summer haze",
+      "romaji": "Summer haze"
+    },
+    "artist": {
+      "ja": "≠ME",
+      "romaji": "≠ ME"
+    },
+    "releaseId": "2026-06-24-ai-kudasaimase-kokode-faasutokissu-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "「愛くださいませ/ここでファーストキッス」<CD+DVD/Type A>",
+      "romaji": "( ai kudasaimase / kokode faasutokissu ) <CD+DVD/Type A>"
+    },
+    "releaseType": "single",
+    "releaseDate": "2026-06-24",
+    "trackNo": 3,
+    "trackType": "coupling",
+    "coverUrl": "/covers/not-equal-me/summer-haze.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/0433a469c7b595dd3d28cccdec8c73ab.jpeg",
+    "tags": ["2026", "coupling", "credits_pending", "single"],
+    "officialUrl": "https://not-equal-me.jp/discography/detail/75/",
+    "sourceStatus": "credits_pending",
+    "sourceNote": "公式ディスコグラフィーで曲名・収録作品・ジャケットを確認済み。作詞・作曲・編曲クレジットは公開元の復旧または公開待ち。",
+    "ownershipEvidence": "official-multi-edition"
   }
 ]

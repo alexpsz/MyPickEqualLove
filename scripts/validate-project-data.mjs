@@ -18,6 +18,8 @@ const trackTypes = new Set([
 ]);
 const visibilityTypes = new Set(["default", "special", "archive"]);
 const sourceStatuses = new Set([
+  "announced",
+  "credits_pending",
   "released",
   "digital",
   "limited_cd",
@@ -25,6 +27,13 @@ const sourceStatuses = new Set([
   "cm_pv",
   "live_only",
   "unverified",
+]);
+const pendingOwnershipEvidence = new Set([
+  "verified-credits",
+  "verified-artist",
+  "explicit-current-group",
+  "official-title-track",
+  "official-multi-edition",
 ]);
 const experienceKinds = new Set([
   "standard",
@@ -40,6 +49,8 @@ const eligibilityScopes = new Set([
 const experienceLayouts = new Set(["top10-grid", "five-memory-list"]);
 const verificationStatuses = new Set(["unverified", "partial", "verified"]);
 const setlistSections = new Set(["main", "encore", "double-encore"]);
+const unknownAnnouncementMarkers = ["タイトル未定", "後日発表", "TBD"];
+const catalogDate = currentJapanDate();
 
 const expectedEqualLoveBoundarySongs = new Map([
   ["kimi-dake-no-hanamichi", ["saito-nagisa"]],
@@ -284,6 +295,15 @@ function validateSongs(
         `${projectPrefix} ${song.id}: releaseDate must be YYYY-MM-DD`,
       );
     }
+    if (
+      /^\d{4}-\d{2}-\d{2}$/.test(song.releaseDate ?? "") &&
+      song.releaseDate > catalogDate &&
+      song.sourceStatus !== "announced"
+    ) {
+      errors.push(
+        `${projectPrefix} ${song.id}: future releaseDate ${song.releaseDate} requires sourceStatus announced`,
+      );
+    }
 
     if (song.releaseType && !releaseTypes.has(song.releaseType)) {
       errors.push(
@@ -321,7 +341,11 @@ function validateSongs(
     }
 
     validateCover(projectPrefix, song, errors);
-    validateCredits(projectPrefix, song, errors);
+    if (["announced", "credits_pending"].includes(song.sourceStatus)) {
+      validatePendingCreditsSong(projectPrefix, song, errors);
+    } else {
+      validateCredits(projectPrefix, song, errors);
+    }
   }
 }
 
@@ -635,6 +659,112 @@ function validateCredits(projectPrefix, song, errors) {
   }
 }
 
+function validatePendingCreditsSong(projectPrefix, song, errors) {
+  if (!song.releaseTitle?.ja || !song.releaseTitle?.romaji) {
+    errors.push(
+      `${projectPrefix} ${song.id}: pending-credits song needs releaseTitle ja and romaji`,
+    );
+  }
+
+  for (const value of [song.title?.ja, song.releaseTitle?.ja]) {
+    if (
+      value &&
+      unknownAnnouncementMarkers.some((marker) =>
+        value.toUpperCase().includes(marker.toUpperCase()),
+      )
+    ) {
+      errors.push(
+        `${projectPrefix} ${song.id}: pending-credits song cannot use placeholder metadata`,
+      );
+    }
+  }
+
+  if (!song.coverSourceUrl?.startsWith("https://")) {
+    errors.push(
+      `${projectPrefix} ${song.id}: pending-credits song needs https coverSourceUrl`,
+    );
+  }
+  if (!song.officialUrl?.startsWith("https://")) {
+    errors.push(
+      `${projectPrefix} ${song.id}: pending-credits song needs https officialUrl`,
+    );
+  }
+  if (!song.sourceNote) {
+    errors.push(
+      `${projectPrefix} ${song.id}: pending-credits song needs sourceNote`,
+    );
+  }
+
+  if (!pendingOwnershipEvidence.has(song.ownershipEvidence)) {
+    errors.push(
+      `${projectPrefix} ${song.id}: pending-credits song needs trusted ownershipEvidence`,
+    );
+  }
+
+  if (song.ownershipEvidence === "verified-credits" && !song.credits) {
+    errors.push(
+      `${projectPrefix} ${song.id}: verified-credits evidence needs complete credits`,
+    );
+  } else if (song.ownershipEvidence === "verified-artist") {
+    if (
+      song.credits ||
+      !song.creditSourceUrl?.startsWith("https://www.uta-net.com/")
+    ) {
+      errors.push(
+        `${projectPrefix} ${song.id}: verified-artist evidence needs an Uta-Net source and no partial credits payload`,
+      );
+    }
+  } else if (
+    song.ownershipEvidence !== "verified-credits" &&
+    (song.memberIds ?? []).length > 0
+  ) {
+    errors.push(
+      `${projectPrefix} ${song.id}: heuristic ownership must not guess participating members`,
+    );
+  }
+
+  const tags = song.tags ?? [];
+  if (
+    !tags.includes(song.sourceStatus) ||
+    tags.some(
+      (tag) =>
+        ["announced", "credits_pending"].includes(tag) &&
+        tag !== song.sourceStatus,
+    )
+  ) {
+    errors.push(
+      `${projectPrefix} ${song.id}: tags must match sourceStatus ${song.sourceStatus}`,
+    );
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(song.releaseDate ?? "")) {
+    const expectedStatus =
+      song.releaseDate > catalogDate ? "announced" : "credits_pending";
+    if (song.sourceStatus !== expectedStatus) {
+      errors.push(
+        `${projectPrefix} ${song.id}: releaseDate ${song.releaseDate} requires sourceStatus ${expectedStatus}`,
+      );
+    }
+  }
+
+  if (song.credits) {
+    validateCredits(projectPrefix, song, errors);
+  }
+}
+
+function currentJapanDate() {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const values = Object.fromEntries(
+    parts.map((part) => [part.type, part.value]),
+  );
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
 function validateActiveMemberColors(
   projectPrefix,
   members,
@@ -770,9 +900,9 @@ function validateEqualLoveStrictChecks(
   songIds,
   errors,
 ) {
-  if (songs.length !== 84) {
+  if (songs.length < 84) {
     errors.push(
-      `${projectPrefix} expected exactly 84 songs, found ${songs.length}`,
+      `${projectPrefix} expected at least 84 songs, found ${songs.length}`,
     );
   }
 

@@ -35,7 +35,7 @@ Each build writes a static export to `out/`.
 
 ## Local Development
 
-Requires Node.js 20.9 or newer.
+Requires Node.js 20.9 or newer; `.node-version` selects Node.js 22 for local and Cloudflare builds that support it.
 
 ```bash
 npm install
@@ -53,12 +53,17 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Data
 
-Project data lives in `src/projects/<project-id>/`. Each project has `members.json` and `songs.json`; cover images live in `public/covers/<project-id>/`.
+There is no runtime database. Project data is versioned in `src/projects/<project-id>/`: each project has `members.json` and `songs.json`, while cover images live in `public/covers/<project-id>/`.
 
 ```bash
+python -m pip install -r requirements-discography.txt
 npm run sync:data:all
 npm run validate:data
 ```
+
+`npm run sync:songs:all` is the non-destructive catalog-only variant used by automation. It discovers releases from the three official discography sites; Uta-Net only enriches official candidates with credits and does not block official announcements. A song may enter as `announced` or `credits_pending` once its official title, release, cover, detail URL, and conservative group-ownership evidence are known.
+
+`.github/workflows/daily-discography-sync.yml` runs this catalog sync every day at 05:17 JST. It accepts only trusted additions or narrowly scoped credits completion, validates and builds all three sites, restores Next.js's generated `next-env.d.ts`, then commits generated data to `main`; the connected Cloudflare Pages projects deploy that commit. Ambiguous ownership or a newly malformed official detail page stops for review. Heuristic catalog ownership never guesses participating `memberIds`; exact group/solo/unit participation is filled only from trusted artist or credit evidence.
 
 ## Stack
 

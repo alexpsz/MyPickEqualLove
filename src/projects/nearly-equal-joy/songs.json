@@ -1476,5 +1476,86 @@
     },
     "officialUrl": "https://www.uta-net.com/song/390932/",
     "creditSourceUrl": "https://www.uta-net.com/song/390932/"
+  },
+  {
+    "id": "samaatsuinteeru",
+    "title": {
+      "ja": "サマーツインテール",
+      "romaji": "samaatsuinteeru"
+    },
+    "artist": {
+      "ja": "≒JOY",
+      "romaji": "≒ JOY"
+    },
+    "releaseId": "2026-08-05-samaatsuinteeru-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "サマーツインテール[CD+DVD/Type A]",
+      "romaji": "samaatsuinteeru [CD+DVD/Type A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2026-08-05",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/nearly-equal-joy/samaatsuinteeru.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/yoani3rd/contents/discography/42ead484466f0b0f3c50b82fc564b345.jpeg",
+    "tags": ["2026", "credits_pending", "single", "title"],
+    "officialUrl": "https://nearly-equal-joy.jp/discography/detail/52/",
+    "sourceStatus": "credits_pending",
+    "sourceNote": "公式ディスコグラフィーで曲名・収録作品・ジャケットを確認済み。作詞・作曲・編曲クレジットは公開元の復旧または公開待ち。",
+    "ownershipEvidence": "official-title-track"
+  },
+  {
+    "id": "watashi-chuuihou",
+    "title": {
+      "ja": "わたし注意報",
+      "romaji": "watashi chuuihou"
+    },
+    "artist": {
+      "ja": "≒JOY",
+      "romaji": "≒ JOY"
+    },
+    "releaseId": "2026-08-05-samaatsuinteeru-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "サマーツインテール[CD+DVD/Type A]",
+      "romaji": "samaatsuinteeru [CD+DVD/Type A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2026-08-05",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/nearly-equal-joy/samaatsuinteeru.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/yoani3rd/contents/discography/42ead484466f0b0f3c50b82fc564b345.jpeg",
+    "tags": ["2026", "coupling", "credits_pending", "single"],
+    "officialUrl": "https://nearly-equal-joy.jp/discography/detail/52/",
+    "sourceStatus": "credits_pending",
+    "sourceNote": "公式ディスコグラフィーで曲名・収録作品・ジャケットを確認済み。作詞・作曲・編曲クレジットは公開元の復旧または公開待ち。",
+    "ownershipEvidence": "official-multi-edition"
+  },
+  {
+    "id": "natsu-ha-juerii",
+    "title": {
+      "ja": "夏はジュエリー",
+      "romaji": "natsu ha juerii"
+    },
+    "artist": {
+      "ja": "≒JOY",
+      "romaji": "≒ JOY"
+    },
+    "releaseId": "2026-08-05-samaatsuinteeru-cd-dvd-type-a",
+    "releaseTitle": {
+      "ja": "サマーツインテール[CD+DVD/Type A]",
+      "romaji": "samaatsuinteeru [CD+DVD/Type A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2026-08-05",
+    "trackNo": 3,
+    "trackType": "coupling",
+    "coverUrl": "/covers/nearly-equal-joy/samaatsuinteeru.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/yoani3rd/contents/discography/42ead484466f0b0f3c50b82fc564b345.jpeg",
+    "tags": ["2026", "coupling", "credits_pending", "single"],
+    "officialUrl": "https://nearly-equal-joy.jp/discography/detail/52/",
+    "sourceStatus": "credits_pending",
+    "sourceNote": "公式ディスコグラフィーで曲名・収録作品・ジャケットを確認済み。作詞・作曲・編曲クレジットは公開元の復旧または公開待ち。",
+    "ownershipEvidence": "official-multi-edition"
   }
 ]

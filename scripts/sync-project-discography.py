@@ -4,18 +4,26 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import io
 import json
+import math
 import re
+import subprocess
+import sys
 import time
 import unicodedata
+from copy import deepcopy
 from dataclasses import dataclass, field
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 import requests
 from bs4 import BeautifulSoup
 from PIL import Image
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 try:
     import pykakasi
@@ -28,6 +36,8 @@ except ImportError as exc:  # pragma: no cover - environment helper
 
 ROOT = Path(__file__).resolve().parents[1]
 UTANET_BASE = "https://www.uta-net.com"
+PROJECT_IDS = ("equal-love", "nearly-equal-joy", "not-equal-me")
+JAPAN_TIMEZONE = timezone(timedelta(hours=9), name="JST")
 UA = {
     "User-Agent": (
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
@@ -35,12 +45,29 @@ UA = {
     ),
 }
 
+SESSION = requests.Session()
+SESSION.headers.update(UA)
+SESSION.mount(
+    "https://",
+    HTTPAdapter(
+        max_retries=Retry(
+            total=3,
+            connect=3,
+            read=3,
+            status=3,
+            backoff_factor=0.8,
+            status_forcelist=(429, 500, 502, 503, 504),
+            allowed_methods=frozenset({"GET"}),
+        ),
+    ),
+)
+
 COMMON_TITLE_ALIASES = {
     "Want  you!Want  you!": "Want you!Want you!",
     "Want  you! Want  you!": "Want you!Want you!",
     "届いてLOVE YOU♡": "届いてLOVE YOU",
     "現役アイドルちゅ~": "現役アイドルちゅ～",
-    "ナツマトペ": "ナツマトぺ",
+    "ナツマトぺ": "ナツマトペ",
     "/7": "24/7",
     "アマガミガール feat.DJ ALICE": "アマガミガール feat. DJ ALICE",
 }
@@ -51,7 +78,6 @@ COMMON_RELEASE_TITLE_ALIASES = {
 
 DEFAULT_EXCLUDED_TITLE_FRAGMENTS = (
     "Music Video",
-    "MV",
     "Making",
     "メイキング",
     "off vocal",
@@ -59,9 +85,49 @@ DEFAULT_EXCLUDED_TITLE_FRAGMENTS = (
     "イコノイジョイ",
     "社員旅行",
     "TV ver",
+    "タイトル未定",
+    "後日発表",
 )
 
+PROJECT_GROUP_ALIASES = {
+    "equal-love": ("=LOVE", "＝LOVE", "イコラブ"),
+    "nearly-equal-joy": ("≒JOY", "ニアジョイ"),
+    "not-equal-me": ("≠ME", "ノイミー"),
+}
+SHARED_GROUP_ALIASES = ("イコノイジョイ",)
+PENDING_OWNERSHIP_EVIDENCE = {
+    "verified-credits",
+    "verified-artist",
+    "explicit-current-group",
+    "official-title-track",
+    "official-multi-edition",
+}
+TRUSTED_COVER_HOSTS = {
+    "s3-aop.plusmember.jp",
+    "i.ytimg.com",
+    "img.youtube.com",
+    "m.media-amazon.com",
+}
+
+ANNOUNCED_SOURCE_NOTE = (
+    "公式ディスコグラフィーで曲名・収録作品・ジャケットが公開済み。"
+    "作詞・作曲・編曲クレジットは公開待ち。"
+)
+ANNOUNCED_CREDITS_VERIFIED_SOURCE_NOTE = (
+    "公式ディスコグラフィーで曲名・収録作品・ジャケットが公開済み。"
+    "作詞・作曲・編曲クレジットも確認済み。"
+)
+CREDITS_PENDING_SOURCE_NOTE = (
+    "公式ディスコグラフィーで曲名・収録作品・ジャケットを確認済み。"
+    "作詞・作曲・編曲クレジットは公開元の復旧または公開待ち。"
+)
+UNKNOWN_METADATA_MARKERS = ("タイトル未定", "後日発表", "TBD")
+
 kakasi = pykakasi.kakasi()
+
+
+def current_catalog_date() -> date:
+    return datetime.now(JAPAN_TIMEZONE).date()
 
 
 @dataclass
@@ -83,6 +149,7 @@ class ProjectConfig:
     utanet_artist_id: str
     utanet_artist_path: str
     sister_group_markers: tuple[str, ...]
+    minimum_official_songs: int = 1
     profile_path: str = "/feature/profile"
     title_aliases: dict[str, str] = field(default_factory=dict)
     release_title_aliases: dict[str, str] = field(default_factory=dict)
@@ -92,6 +159,7 @@ class ProjectConfig:
     group_member_overrides: dict[str, list[str]] = field(default_factory=dict)
     member_color_overrides: dict[str, dict[str, object]] = field(default_factory=dict)
     clear_member_color_arrays: bool = False
+    legacy_incomplete_release_paths: tuple[str, ...] = ()
 
     @property
     def songs_path(self) -> Path:
@@ -107,7 +175,7 @@ class ProjectConfig:
 
     @property
     def excluded_title_pattern(self) -> re.Pattern[str]:
-        fragments = [*DEFAULT_EXCLUDED_TITLE_FRAGMENTS, *self.sister_group_markers]
+        fragments = [*DEFAULT_EXCLUDED_TITLE_FRAGMENTS]
         return re.compile("|".join(re.escape(fragment) for fragment in fragments), re.IGNORECASE)
 
 
@@ -150,7 +218,48 @@ def clean_release_title(value: str, config: ProjectConfig) -> str:
 
 def title_key(value: str, config: ProjectConfig) -> str:
     text = clean_title(value, config).replace("”", '"').replace("“", '"')
-    return re.sub(r'[\s・!！?？「」『」"“”.,，、。:：\-ー〜~♡]+', "", text).lower()
+    return re.sub(r'[\s・!！?？「」『』"“”.,，、。:：〜~♡]+', "", text).lower()
+
+
+def project_owners_from_artist(value: str) -> set[str]:
+    """Return strict group owners found in an artist/credit field."""
+    text = normalize(value)
+    if any(alias in text for alias in SHARED_GROUP_ALIASES):
+        return {"shared"}
+
+    owners: set[str] = set()
+    for project_id, aliases in PROJECT_GROUP_ALIASES.items():
+        if any(normalize(alias) in text for alias in aliases):
+            owners.add(project_id)
+    return owners
+
+
+def is_trusted_utanet_credit_url(value: str) -> bool:
+    parsed = urlparse(normalize(value))
+    return (
+        parsed.scheme == "https"
+        and not parsed.username
+        and not parsed.password
+        and parsed.port is None
+        and parsed.hostname == "www.uta-net.com"
+        and parsed.path.startswith("/song/")
+    )
+
+
+def split_explicit_track_owner(raw_title: str) -> tuple[str | None, str]:
+    """Extract a trailing parenthetical group marker without guessing substrings."""
+    text = normalize(raw_title)
+    match = re.search(r"\(\s*([^()]+?)\s*\)\s*$", text)
+    if not match:
+        return None, text
+
+    marker = normalize(match.group(1))
+    if marker in {normalize(alias) for alias in SHARED_GROUP_ALIASES}:
+        return "shared", text[: match.start()].strip()
+    for project_id, aliases in PROJECT_GROUP_ALIASES.items():
+        if marker in {normalize(alias) for alias in aliases}:
+            return project_id, text[: match.start()].strip()
+    return None, text
 
 
 def romanize(value: str) -> str:
@@ -197,7 +306,7 @@ def localized(value: str) -> dict[str, str]:
 
 
 def get_soup(url: str, *, params: dict[str, str | int] | None = None) -> BeautifulSoup:
-    response = requests.get(url, params=params, headers=UA, timeout=30)
+    response = SESSION.get(url, params=params, timeout=30)
     response.raise_for_status()
     return BeautifulSoup(response.text, "html.parser")
 
@@ -207,6 +316,7 @@ class ReleaseTrack:
     track_no: int
     title: str
     raw_title: str
+    explicit_owner: str | None = None
 
 
 @dataclass
@@ -221,7 +331,7 @@ class Release:
 
 def list_official_detail_paths(config: ProjectConfig, kind: int) -> list[str]:
     list_url = f"{config.official_base}/discography/kind/{kind}/"
-    first = requests.get(list_url, params={"list": "1"}, headers=UA, timeout=30)
+    first = SESSION.get(list_url, params={"list": "1"}, timeout=30)
     first.raise_for_status()
     match = re.search(r"var maxpage = (\d+)", first.text)
     max_page = int(match.group(1)) if match else 1
@@ -231,7 +341,12 @@ def list_official_detail_paths(config: ProjectConfig, kind: int) -> list[str]:
         soup = get_soup(list_url, params={"list": "1", "page": page})
         for anchor in soup.select('a[href*="/discography/detail/"]'):
             href = anchor.get("href")
-            if href and href not in paths:
+            resolved = urljoin(config.official_base, href or "")
+            if (
+                href
+                and is_same_https_host(resolved, config.official_base)
+                and href not in paths
+            ):
                 paths.append(href)
     return paths
 
@@ -289,7 +404,7 @@ def parse_release(config: ProjectConfig, path: str) -> Release:
     if not tracks:
         tracks.extend(parse_nested_track_lists(config, soup))
 
-    return Release(
+    release = Release(
         url=url,
         title=release_title,
         release_date=release_date,
@@ -297,12 +412,56 @@ def parse_release(config: ProjectConfig, path: str) -> Release:
         cover_source_url=cover_source_url,
         tracks=tracks,
     )
+    return release
+
+
+def is_explicit_placeholder_release(release: Release) -> bool:
+    title = normalize(release.title).lower()
+    return bool(title) and any(
+        marker.lower() in title for marker in UNKNOWN_METADATA_MARKERS
+    )
+
+
+def validate_release_contract(
+    release: Release,
+    *,
+    allow_empty_tracks: bool = False,
+) -> None:
+    """Fail closed when a real official detail page no longer parses fully."""
+    if is_explicit_placeholder_release(release):
+        print(
+            f"Warning: official placeholder release is not ready: {release.url}",
+            file=sys.stderr,
+        )
+        return
+
+    missing: list[str] = []
+    if not release.title:
+        missing.append("release title")
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", release.release_date):
+        missing.append("release date")
+    if not release.cover_source_url:
+        missing.append("cover")
+    if not release.tracks and not allow_empty_tracks:
+        missing.append("CD tracks")
+    if missing:
+        raise RuntimeError(
+            f"Incomplete official release detail {release.url}: "
+            f"missing {', '.join(missing)}",
+        )
+    if not release.tracks:
+        print(
+            f"Warning: allowlisted legacy release has no CD tracks: {release.url}",
+            file=sys.stderr,
+        )
 
 
 def should_keep_raw_track(config: ProjectConfig, raw_title: str) -> bool:
     if not raw_title:
         return False
     if config.excluded_title_pattern.search(raw_title):
+        return False
+    if re.search(r"(?<![A-Za-z0-9])MV(?![A-Za-z0-9])", raw_title, re.IGNORECASE):
         return False
     return True
 
@@ -328,12 +487,14 @@ def parse_track_lists(config: ProjectConfig, soup: BeautifulSoup) -> list[Releas
             raw_title = normalize(title_el.get_text(" ", strip=True))
             if not track_no.isdigit() or not should_keep_raw_track(config, raw_title):
                 continue
+            explicit_owner, ownerless_title = split_explicit_track_owner(raw_title)
 
             tracks.append(
                 ReleaseTrack(
                     track_no=int(track_no),
-                    title=clean_title(raw_title, config),
+                    title=clean_title(ownerless_title, config),
                     raw_title=raw_title,
+                    explicit_owner=explicit_owner,
                 ),
             )
     return tracks
@@ -363,12 +524,14 @@ def parse_nested_track_lists(config: ProjectConfig, soup: BeautifulSoup) -> list
             raw_title = normalize(title_el.get_text(" ", strip=True))
             if not track_no.isdigit() or not should_keep_raw_track(config, raw_title):
                 continue
+            explicit_owner, ownerless_title = split_explicit_track_owner(raw_title)
 
             tracks.append(
                 ReleaseTrack(
                     track_no=int(track_no),
-                    title=clean_title(raw_title, config),
+                    title=clean_title(ownerless_title, config),
                     raw_title=raw_title,
+                    explicit_owner=explicit_owner,
                 ),
             )
     return tracks
@@ -443,60 +606,103 @@ def search_utanet_credit(config: ProjectConfig, title: str) -> dict[str, str] | 
     return None
 
 
-def parse_utanet_song_detail(url: str) -> tuple[str, str | None]:
-    if not url:
-        return "", None
-    soup = get_soup(url)
-    release_date = ""
-    text = soup.get_text("\n", strip=True)
-    match = re.search(r"発売日[:：]\s*(\d{4}/\d{2}/\d{2})", text)
-    if match:
-        release_date = match.group(1).replace("/", "-")
+def release_edition_letter(release_title: str) -> str | None:
+    normalized_title = normalize(release_title).upper()
+    match = re.search(r"TYPE[\s\-‐‑–—]*([A-F])", normalized_title)
+    return match.group(1) if match else None
 
-    cover_source_url = None
-    for image in soup.find_all("img"):
-        src = image.get("src") or ""
-        alt = normalize(image.get("alt"))
-        if (
-            src
-            and alt
-            and not any(
-                marker in src
-                for marker in (
-                    "logo",
-                    "header_icon",
-                    "menu_icon",
-                    "icon_",
-                    "ranking",
-                    "form_title",
-                )
-            )
-        ):
-            cover_source_url = urljoin(UTANET_BASE, src)
-            break
-    return release_date, cover_source_url
+
+def release_preference_key(candidate: dict) -> tuple[str, int, str, str]:
+    edition_letter = release_edition_letter(candidate["releaseTitle"]["ja"])
+    edition_rank = ord(edition_letter) - ord("A") if edition_letter else 99
+    return (
+        candidate.get("releaseDate") or "9999-99-99",
+        edition_rank,
+        normalize(candidate["releaseTitle"]["ja"]),
+        normalize(candidate.get("officialUrl")),
+    )
 
 
 def should_prefer_release(candidate: dict, current: dict | None) -> bool:
-    if current is None:
-        return True
-    if candidate["releaseDate"] < current["releaseDate"]:
-        return True
-    if candidate["releaseDate"] == current["releaseDate"]:
-        candidate_title = candidate["releaseTitle"]["ja"]
-        current_title = current["releaseTitle"]["ja"]
-        return "Type-A" in candidate_title and "Type-A" not in current_title
-    return False
+    return current is None or release_preference_key(candidate) < release_preference_key(
+        current,
+    )
 
 
-def download_cover(config: ProjectConfig, source_url: str, song_id: str) -> str:
+def is_same_https_host(candidate_url: str, base_url: str) -> bool:
+    candidate = urlparse(candidate_url)
+    base = urlparse(base_url)
+    return (
+        candidate.scheme == "https"
+        and not candidate.username
+        and not candidate.password
+        and candidate.port is None
+        and candidate.hostname == base.hostname
+    )
+
+
+def is_trusted_cover_url(config: ProjectConfig, source_url: str) -> bool:
+    parsed = urlparse(source_url)
+    official_host = urlparse(config.official_base).hostname
+    allowed_hosts = {*TRUSTED_COVER_HOSTS, official_host}
+    return (
+        parsed.scheme == "https"
+        and not parsed.username
+        and not parsed.password
+        and parsed.port is None
+        and parsed.hostname in allowed_hosts
+    )
+
+
+def get_trusted_cover_response(
+    config: ProjectConfig,
+    source_url: str,
+    *,
+    max_redirects: int = 5,
+) -> requests.Response:
+    """Fetch a cover while validating every redirect target before requesting it."""
+    current_url = source_url
+    for redirect_count in range(max_redirects + 1):
+        if not is_trusted_cover_url(config, current_url):
+            raise RuntimeError(f"Refusing untrusted cover URL: {current_url}")
+
+        response = SESSION.get(current_url, timeout=30, allow_redirects=False)
+        if 300 <= response.status_code < 400:
+            location = response.headers.get("Location")
+            response.close()
+            if not location:
+                raise RuntimeError(
+                    f"Cover redirect from {current_url} did not include Location",
+                )
+            if redirect_count >= max_redirects:
+                raise RuntimeError(f"Too many cover redirects from {source_url}")
+            current_url = urljoin(current_url, location)
+            continue
+
+        response.raise_for_status()
+        return response
+
+    raise RuntimeError(f"Too many cover redirects from {source_url}")
+
+
+def download_cover(
+    config: ProjectConfig,
+    source_url: str,
+    song_id: str,
+    *,
+    refresh: bool = False,
+) -> str:
     config.covers_dir.mkdir(parents=True, exist_ok=True)
     destination = config.covers_dir / f"{song_id}.jpg"
-    if destination.exists() and destination.stat().st_size > 0:
+    refresh_existing_destination = refresh and destination.exists()
+    if (
+        not refresh_existing_destination
+        and destination.exists()
+        and destination.stat().st_size > 0
+    ):
         return f"/covers/{config.project_id}/{destination.name}"
 
-    response = requests.get(source_url, headers=UA, timeout=30)
-    response.raise_for_status()
+    response = get_trusted_cover_response(config, source_url)
 
     try:
         image = Image.open(io.BytesIO(response.content)).convert("RGB")
@@ -506,17 +712,331 @@ def download_cover(config: ProjectConfig, source_url: str, song_id: str) -> str:
         top = (height - side) // 2
         image = image.crop((left, top, left + side, top + side))
         image.thumbnail((900, 900), Image.Resampling.LANCZOS)
-        image.save(destination, "JPEG", quality=88, optimize=True)
-    except Exception:
-        destination.write_bytes(response.content)
+        encoded = io.BytesIO()
+        image.save(encoded, "JPEG", quality=88, optimize=True)
+        cover_bytes = encoded.getvalue()
+    except Exception as exc:
+        raise RuntimeError(f"Invalid cover image from {source_url}") from exc
+
+    if refresh_existing_destination:
+        destination.write_bytes(cover_bytes)
+        return f"/covers/{config.project_id}/{destination.name}"
+
+    cover_hash = hashlib.sha256(cover_bytes).digest()
+    for existing_cover in config.covers_dir.glob("*.jpg"):
+        if existing_cover == destination or existing_cover.stat().st_size != len(cover_bytes):
+            continue
+        existing_bytes = existing_cover.read_bytes()
+        if hashlib.sha256(existing_bytes).digest() == cover_hash:
+            return f"/covers/{config.project_id}/{existing_cover.name}"
+
+    destination.write_bytes(cover_bytes)
 
     return f"/covers/{config.project_id}/{destination.name}"
 
 
-def load_existing_romaji(config: ProjectConfig) -> dict[str, str]:
+def load_existing_songs(config: ProjectConfig) -> list[dict]:
     if not config.songs_path.exists():
-        return {}
-    songs = json.loads(config.songs_path.read_text(encoding="utf-8"))
+        return []
+    try:
+        songs = json.loads(config.songs_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return []
+    return songs if isinstance(songs, list) else []
+
+
+def load_head_json(relative_path: str) -> object:
+    try:
+        raw = subprocess.check_output(
+            ["git", "show", f"HEAD:{relative_path}"],
+            cwd=ROOT,
+            encoding="utf-8",
+            stderr=subprocess.PIPE,
+        )
+    except (FileNotFoundError, subprocess.CalledProcessError) as exc:
+        raise RuntimeError(
+            f"Cannot read the committed catalog baseline HEAD:{relative_path}",
+        ) from exc
+
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"Committed catalog baseline is invalid JSON: HEAD:{relative_path}",
+        ) from exc
+
+
+def load_known_other_project_title_keys(config: ProjectConfig) -> set[str]:
+    """Read sister-project titles from HEAD so results never depend on sync order."""
+    keys: set[str] = set()
+    for project_id in PROJECT_IDS:
+        if project_id == config.project_id:
+            continue
+        relative_path = f"src/projects/{project_id}/songs.json"
+        songs = load_head_json(relative_path)
+        for song in songs if isinstance(songs, list) else []:
+            title = song.get("title", {}).get("ja")
+            if title:
+                keys.add(title_key(title, config))
+    return keys
+
+
+def release_base_title(value: str) -> str:
+    text = normalize(value)
+    previous = None
+    while text != previous:
+        previous = text
+        text = re.sub(r"\s*(?:\[[^\]]+\]|<[^>]+>)\s*$", "", text).strip()
+    return unwrap_quotes(text)
+
+
+def release_title_keys(config: ProjectConfig, value: str) -> set[str]:
+    base_title = release_base_title(value)
+    keys = {
+        key
+        for part in re.split(r"[/／]", base_title)
+        for key in [title_key(unwrap_quotes(part), config)]
+        if key
+    }
+    full_key = title_key(base_title, config)
+    if full_key:
+        keys.add(full_key)
+    return keys
+
+
+def release_family_key(config: ProjectConfig, release: Release) -> str:
+    base_keys = sorted(release_title_keys(config, release.title))
+    return f"{release.release_date}|{'/'.join(base_keys)}"
+
+
+def is_official_title_track(config: ProjectConfig, song: dict) -> bool:
+    return title_key(song["title"]["ja"], config) in release_title_keys(
+        config,
+        song["releaseTitle"]["ja"],
+    )
+
+
+def merge_release_evidence(preferred: dict, other: dict | None) -> dict:
+    if other is None:
+        return preferred
+    result = dict(preferred)
+    for field_name in (
+        "_explicitOwners",
+        "_editionEvidence",
+        "_releaseUrls",
+    ):
+        result[field_name] = sorted(
+            {
+                *preferred.get(field_name, []),
+                *other.get(field_name, []),
+            },
+        )
+    return result
+
+
+def resolve_new_song_ownership(
+    config: ProjectConfig,
+    song: dict,
+    credit: dict[str, str] | None,
+    *,
+    key: str,
+    committed_by_key: dict[str, dict],
+    known_other_project_title_keys: set[str],
+) -> tuple[str, str]:
+    """Return ACCEPT/REJECT/REVIEW plus a durable evidence label or reason."""
+    committed_song = committed_by_key.get(key)
+    if committed_song and committed_song.get("sourceStatus") not in {
+        "announced",
+        "credits_pending",
+    }:
+        return "ACCEPT", "committed-existing"
+
+    if credit:
+        credit_owners = project_owners_from_artist(credit.get("artist", ""))
+        if "shared" in credit_owners or len(credit_owners) > 1:
+            return "REVIEW", "credits identify a shared or multi-group artist"
+        if credit_owners == {config.project_id}:
+            if not has_complete_credit_row(credit) and not is_trusted_utanet_credit_url(
+                credit.get("url", ""),
+            ):
+                return "REVIEW", "partial artist evidence lacks a trusted Uta-Net song URL"
+            return (
+                "ACCEPT",
+                "verified-credits"
+                if has_complete_credit_row(credit)
+                else "verified-artist",
+            )
+        if credit_owners:
+            if committed_song:
+                return (
+                    "REVIEW",
+                    "credits conflict with the committed project and identify "
+                    f"{', '.join(sorted(credit_owners))}",
+                )
+            return "REJECT", f"credits identify {', '.join(sorted(credit_owners))}"
+        return "REVIEW", "credits do not identify a supported group artist"
+
+    if committed_song:
+        return "ACCEPT", "committed-existing"
+
+    explicit_owners = set(song.get("_explicitOwners", []))
+    if explicit_owners:
+        if explicit_owners == {config.project_id}:
+            return "ACCEPT", "explicit-current-group"
+        if config.project_id not in explicit_owners and "shared" not in explicit_owners:
+            return "REJECT", f"track label identifies {', '.join(sorted(explicit_owners))}"
+        return "REVIEW", "track labels identify shared or conflicting ownership"
+
+    if key in known_other_project_title_keys:
+        return "REJECT", "title already exists in a sister-group catalog"
+
+    if is_official_title_track(config, song):
+        return "ACCEPT", "official-title-track"
+
+    editions_by_family: dict[str, set[str]] = {}
+    for evidence in song.get("_editionEvidence", []):
+        family, separator, letter = evidence.rpartition("|")
+        if separator and family and letter:
+            editions_by_family.setdefault(family, set()).add(letter)
+    if any(
+        "A" in letters and len(letters) >= 3
+        for letters in editions_by_family.values()
+    ):
+        return "ACCEPT", "official-multi-edition"
+
+    return (
+        "REVIEW",
+        "no credits, explicit owner, title-track match, or Type A plus at least two other same-release editions",
+    )
+
+
+def validate_official_catalog_coverage(
+    config: ProjectConfig,
+    official_songs: dict[str, dict],
+    committed_songs: list[dict],
+    *,
+    minimum_count_ratio: float = 0.9,
+    minimum_overlap_ratio: float = 0.75,
+) -> None:
+    committed_official_keys = {
+        title_key(song.get("title", {}).get("ja", ""), config)
+        for song in committed_songs
+        if is_same_https_host(song.get("officialUrl", ""), config.official_base)
+        and "/discography/detail/" in song.get("officialUrl", "")
+    }
+    committed_official_keys.discard("")
+    if not committed_official_keys:
+        return
+
+    rediscovered = committed_official_keys.intersection(official_songs)
+    required_count = math.ceil(len(committed_official_keys) * minimum_count_ratio)
+    required_overlap = math.ceil(len(committed_official_keys) * minimum_overlap_ratio)
+    if len(official_songs) < required_count or len(rediscovered) < required_overlap:
+        missing_titles = sorted(committed_official_keys - rediscovered)[:8]
+        raise RuntimeError(
+            f"Official discography coverage for {config.project_id} fell to "
+            f"{len(official_songs)} discovered and {len(rediscovered)}/"
+            f"{len(committed_official_keys)} rediscovered; "
+            f"missing title keys include {missing_titles}",
+        )
+
+
+def register_title_key_variant(
+    config: ProjectConfig,
+    titles_by_key: dict[str, str],
+    title: str,
+    *,
+    source: str,
+) -> str:
+    key = title_key(title, config)
+    normalized_title = normalize(title)
+    prior_title = titles_by_key.get(key)
+    if prior_title is not None and prior_title != normalized_title:
+        raise RuntimeError(
+            f"title-key collision in {source} for {config.project_id}: "
+            f"{prior_title!r} and {normalized_title!r} both map to {key!r}",
+        )
+    titles_by_key[key] = normalized_title
+    return key
+
+
+def register_official_title_key(
+    config: ProjectConfig,
+    titles_by_key: dict[str, str],
+    title: str,
+) -> str:
+    return register_title_key_variant(
+        config,
+        titles_by_key,
+        title,
+        source="official discography",
+    )
+
+
+def index_songs_by_title_key(
+    config: ProjectConfig,
+    songs: list[dict],
+    *,
+    source: str,
+) -> dict[str, dict]:
+    titles_by_key: dict[str, str] = {}
+    songs_by_key: dict[str, dict] = {}
+    for song in songs:
+        title = song.get("title", {}).get("ja")
+        if not title:
+            continue
+        key = register_title_key_variant(
+            config,
+            titles_by_key,
+            title,
+            source=source,
+        )
+        if key in songs_by_key:
+            raise RuntimeError(
+                f"Duplicate song title in {source} for {config.project_id}: {title}",
+            )
+        songs_by_key[key] = song
+    return songs_by_key
+
+
+def register_credit_row(
+    config: ProjectConfig,
+    credit_rows: dict[str, dict[str, str]],
+    row: dict[str, str],
+) -> str:
+    key = title_key(row.get("title", ""), config)
+    if not key:
+        raise RuntimeError(f"Uta-Net returned a credit row without a title for {config.project_id}")
+
+    existing = credit_rows.get(key)
+    if existing:
+        existing_title = normalize(existing.get("title"))
+        row_title = normalize(row.get("title"))
+        if existing_title != row_title:
+            raise RuntimeError(
+                f"title-key collision in Uta-Net credits for {config.project_id}: "
+                f"{existing_title!r} and {row_title!r} both map to {key!r}",
+            )
+        fields = ("artist", "lyricist", "composer", "arranger")
+        if any(normalize(existing.get(field)) != normalize(row.get(field)) for field in fields):
+            raise RuntimeError(
+                f"Conflicting Uta-Net credits for {config.project_id}: {row_title}",
+            )
+        row_url = normalize(row.get("url"))
+        existing_url = normalize(existing.get("url"))
+        if row_url and (not existing_url or row_url < existing_url):
+            credit_rows[key] = row
+        return key
+
+    credit_rows[key] = row
+    return key
+
+
+def load_existing_romaji(
+    config: ProjectConfig,
+    existing_songs: list[dict] | None = None,
+) -> dict[str, str]:
+    songs = existing_songs if existing_songs is not None else load_existing_songs(config)
     return {
         title_key(song["title"]["ja"], config): song["title"].get("romaji", "")
         for song in songs
@@ -536,6 +1056,36 @@ def split_artist_members(
         if member_id and member_id not in ids:
             ids.append(member_id)
     return ids
+
+
+def group_member_ids_for_release(members: list[dict], release_date: str | None) -> list[str]:
+    ids: list[str] = []
+    for member in members:
+        if member.get("active"):
+            ids.append(member["id"])
+            continue
+        graduation_date = member.get("graduationDate")
+        if release_date and graduation_date and release_date <= graduation_date:
+            ids.append(member["id"])
+    return ids
+
+
+def member_ids_for_artist(
+    config: ProjectConfig,
+    artist: str,
+    member_name_to_id: dict[str, str],
+    members: list[dict],
+    release_date: str | None,
+) -> list[str]:
+    if is_group_artist(config, artist):
+        return group_member_ids_for_release(members, release_date)
+
+    member_ids = split_artist_members(config, artist, member_name_to_id)
+    if is_participating_artist(config, artist) and not member_ids:
+        raise RuntimeError(
+            f"Unable to map credited artist members for {config.project_id}: {artist}",
+        )
+    return member_ids
 
 
 def parse_members(config: ProjectConfig) -> list[dict]:
@@ -655,20 +1205,261 @@ def apply_member_color_override(config: ProjectConfig, member: dict) -> dict:
     return member
 
 
-def build_song_data(config: ProjectConfig) -> tuple[list[dict], dict[str, int]]:
-    members = json.loads(config.members_path.read_text(encoding="utf-8"))
-    active_member_ids = [member["id"] for member in members if member.get("active")]
+def has_known_announcement_metadata(song: dict) -> bool:
+    required_values = (
+        song.get("title", {}).get("ja", ""),
+        song.get("releaseTitle", {}).get("ja", ""),
+        song.get("coverSourceUrl", ""),
+        song.get("officialUrl", ""),
+    )
+    return all(required_values) and not any(
+        marker.lower() in normalize(value).lower()
+        for value in required_values[:2]
+        for marker in UNKNOWN_METADATA_MARKERS
+    )
+
+
+def credit_from_existing_song(song: dict | None) -> dict[str, str] | None:
+    if not song:
+        return None
+    credits = song.get("credits") or {}
+    values = {
+        role: normalize((credits.get(role) or {}).get("ja"))
+        for role in ("lyricist", "composer", "arranger")
+    }
+    if not all(values.values()):
+        return None
+    return {
+        "title": normalize(song.get("title", {}).get("ja")),
+        "artist": normalize(song.get("artist", {}).get("ja")),
+        **values,
+        "url": normalize(song.get("creditSourceUrl")),
+    }
+
+
+def has_complete_credit_row(credit: dict[str, str] | None) -> bool:
+    return bool(
+        credit
+        and all(normalize(credit.get(role)) for role in ("lyricist", "composer", "arranger"))
+    )
+
+
+def merge_official_songs_with_credits(
+    official_songs: dict[str, dict],
+    credit_rows: dict[str, dict[str, str]],
+    existing_by_key: dict[str, dict],
+) -> tuple[dict[str, dict], dict[str, int]]:
+    final_songs: dict[str, dict] = {}
+    stats = {
+        "officialMetadataWithoutCredits": 0,
+        "preservedExistingCredits": 0,
+        "incompleteCurrentCreditsDeferred": 0,
+        "excludedIncompleteOfficialAnnouncements": 0,
+    }
+
+    for key, song in official_songs.items():
+        credit = credit_rows.get(key)
+        if has_complete_credit_row(credit):
+            credited_song = {**song, "credit": credit, "_creditOrigin": "current"}
+            if song.get("releaseDate", "") > current_catalog_date().isoformat():
+                credited_song.update(
+                    {
+                        "sourceStatus": "announced",
+                        "sourceNote": ANNOUNCED_CREDITS_VERIFIED_SOURCE_NOTE,
+                        "tags": ["announced"],
+                    },
+                )
+            final_songs[key] = credited_song
+            continue
+
+        if credit:
+            stats["incompleteCurrentCreditsDeferred"] += 1
+
+        existing_credit = credit_from_existing_song(existing_by_key.get(key))
+        if existing_credit:
+            final_songs[key] = {
+                **song,
+                "credit": existing_credit,
+                "_creditOrigin": "existing",
+            }
+            stats["preservedExistingCredits"] += 1
+            continue
+
+        if has_known_announcement_metadata(song):
+            is_future_release = (
+                song.get("releaseDate", "") > current_catalog_date().isoformat()
+            )
+            pending_status = "announced" if is_future_release else "credits_pending"
+            source_note = (
+                ANNOUNCED_SOURCE_NOTE
+                if is_future_release
+                else CREDITS_PENDING_SOURCE_NOTE
+            )
+            final_songs[key] = {
+                **song,
+                "sourceStatus": pending_status,
+                "sourceNote": source_note,
+                "tags": [pending_status],
+            }
+            stats["officialMetadataWithoutCredits"] += 1
+            continue
+
+        stats["excludedIncompleteOfficialAnnouncements"] += 1
+
+    return final_songs, stats
+
+
+def merge_existing_song_update(
+    existing_song: dict,
+    scraped_song: dict,
+    *,
+    today: date | None = None,
+    config: ProjectConfig | None = None,
+    members: list[dict] | None = None,
+    member_name_to_id: dict[str, str] | None = None,
+) -> dict:
+    """Keep existing records byte-stable except for a verified announcement upgrade."""
+    result = deepcopy(existing_song)
+    if existing_song.get("sourceStatus") not in {"announced", "credits_pending"}:
+        return result
+
+    release_date = result.get("releaseDate")
+    release_has_arrived = False
+    if release_date:
+        try:
+            release_has_arrived = date.fromisoformat(release_date) <= (
+                today or current_catalog_date()
+            )
+        except ValueError:
+            pass
+
+    credit = scraped_song.get("credit")
+    has_current_credit = scraped_song.get("_creditOrigin") == "current" and bool(
+        credit,
+    )
+    if has_current_credit:
+        result["credits"] = {
+            "lyricist": localized(credit["lyricist"]),
+            "composer": localized(credit["composer"]),
+            "arranger": localized(credit["arranger"]),
+        }
+        if credit.get("url"):
+            result["creditSourceUrl"] = credit["url"]
+        if config and members is not None and member_name_to_id is not None:
+            artist = normalize(credit.get("artist"))
+            participant_ids = member_ids_for_artist(
+                config,
+                artist,
+                member_name_to_id,
+                members,
+                result.get("releaseDate"),
+            )
+            result["artist"] = localized(artist)
+            result["memberIds"] = participant_ids
+            result["ownershipEvidence"] = "verified-credits"
+            result["tags"] = [
+                tag
+                for tag in result.get("tags", [])
+                if tag not in {"solo", "unit"}
+            ]
+            if not is_group_artist(config, artist):
+                result["tags"].append(
+                    "solo" if len(participant_ids) == 1 else "unit",
+                )
+
+    has_complete_credit = credit_from_existing_song(result) is not None
+
+    if release_has_arrived:
+        if has_complete_credit:
+            result["sourceStatus"] = "released"
+            result.pop("sourceNote", None)
+            result["tags"] = [
+                tag
+                for tag in result.get("tags", [])
+                if tag not in {"announced", "credits_pending"}
+            ]
+        elif existing_song.get("sourceStatus") == "announced":
+            result["sourceStatus"] = "credits_pending"
+            result["sourceNote"] = CREDITS_PENDING_SOURCE_NOTE
+            result["tags"] = sorted(
+                {
+                    *(
+                        tag
+                        for tag in result.get("tags", [])
+                        if tag != "announced"
+                    ),
+                    "credits_pending",
+                },
+            )
+    elif has_current_credit:
+        result["sourceStatus"] = "announced"
+        result["sourceNote"] = ANNOUNCED_CREDITS_VERIFIED_SOURCE_NOTE
+        result["tags"] = sorted(
+            {
+                *(
+                    tag
+                    for tag in result.get("tags", [])
+                    if tag != "credits_pending"
+                ),
+                "announced",
+            },
+        )
+
+    return result
+
+
+def build_song_data(
+    config: ProjectConfig,
+    members: list[dict] | None = None,
+) -> tuple[list[dict], dict[str, int]]:
+    if members is None:
+        members = json.loads(config.members_path.read_text(encoding="utf-8"))
     member_name_to_id = {
         normalize(member["name"]["ja"]).replace(" ", ""): member["id"]
         for member in members
     }
-    existing_romaji = load_existing_romaji(config)
+    existing_songs = load_existing_songs(config)
+    existing_by_key = index_songs_by_title_key(
+        config,
+        existing_songs,
+        source="working catalog",
+    )
+    committed_songs_value = load_head_json(
+        f"src/projects/{config.project_id}/songs.json",
+    )
+    committed_songs = (
+        committed_songs_value if isinstance(committed_songs_value, list) else []
+    )
+    committed_by_key = index_songs_by_title_key(
+        config,
+        committed_songs,
+        source="committed catalog",
+    )
+    known_other_project_title_keys = load_known_other_project_title_keys(config)
+    existing_romaji = load_existing_romaji(config, existing_songs)
 
     releases: list[Release] = []
+    release_contract_errors: list[str] = []
     for kind in (1, 2):
         for detail_path in list_official_detail_paths(config, kind):
-            releases.append(parse_release(config, detail_path))
+            release = parse_release(config, detail_path)
+            releases.append(release)
+            try:
+                validate_release_contract(
+                    release,
+                    allow_empty_tracks=(
+                        urlparse(release.url).path
+                        in config.legacy_incomplete_release_paths
+                    ),
+                )
+            except RuntimeError as exc:
+                release_contract_errors.append(str(exc))
             time.sleep(0.08)
+    if release_contract_errors:
+        raise RuntimeError(
+            "Official release detail contracts failed:\n  - "
+            + "\n  - ".join(release_contract_errors),
+        )
     release_cover_sources = {
         release.url: release.cover_source_url
         for release in releases
@@ -676,12 +1467,20 @@ def build_song_data(config: ProjectConfig) -> tuple[list[dict], dict[str, int]]:
     }
 
     official_songs: dict[str, dict] = {}
+    official_titles_by_key = {
+        key: normalize(song["title"]["ja"])
+        for key, song in committed_by_key.items()
+    }
+    excluded_known_sister_group_songs = 0
     for release in releases:
         for track in release.tracks:
-            key = title_key(track.title, config)
+            key = register_official_title_key(
+                config,
+                official_titles_by_key,
+                track.title,
+            )
             if key == "overture":
                 continue
-
             candidate = {
                 "title": localized(track.title),
                 "releaseTitle": localized(release.title),
@@ -693,58 +1492,121 @@ def build_song_data(config: ProjectConfig) -> tuple[list[dict], dict[str, int]]:
                 else ("title" if track.track_no == 1 else "coupling"),
                 "coverSourceUrl": release.cover_source_url,
                 "officialUrl": release.url,
+                "_explicitOwners": (
+                    [track.explicit_owner] if track.explicit_owner else []
+                ),
+                "_editionEvidence": [
+                    f"{release_family_key(config, release)}|{edition_letter}"
+                    for edition_letter in [release_edition_letter(release.title)]
+                    if edition_letter
+                ],
+                "_releaseUrls": [release.url],
             }
 
-            if key not in official_songs or should_prefer_release(
-                candidate,
-                official_songs.get(key),
-            ):
-                official_songs[key] = candidate
+            current_candidate = official_songs.get(key)
+            if should_prefer_release(candidate, current_candidate):
+                official_songs[key] = merge_release_evidence(
+                    candidate,
+                    current_candidate,
+                )
+            else:
+                official_songs[key] = merge_release_evidence(
+                    current_candidate,
+                    candidate,
+                )
+
+    if len(official_songs) < config.minimum_official_songs:
+        raise RuntimeError(
+            f"Official discography for {config.project_id} returned only "
+            f"{len(official_songs)} songs; expected at least "
+            f"{config.minimum_official_songs}",
+        )
+    validate_official_catalog_coverage(config, official_songs, committed_songs)
 
     credit_rows: dict[str, dict[str, str]] = {}
-    for row in parse_utanet_artist_rows(config):
-        credit_rows[title_key(row["title"], config)] = row
+    credit_source_available = True
+    try:
+        for row in parse_utanet_artist_rows(config):
+            register_credit_row(config, credit_rows, row)
+        if not credit_rows:
+            credit_source_available = False
+            print(
+                f"Warning: Uta-Net artist index was empty for {config.project_id}",
+                file=sys.stderr,
+            )
+    except requests.RequestException as exc:
+        credit_source_available = False
+        print(
+            f"Warning: Uta-Net artist index unavailable for {config.project_id}: {exc}",
+            file=sys.stderr,
+        )
 
     searched_credit_count = 0
-    for key, song in list(official_songs.items()):
-        if key in credit_rows:
-            continue
-        row = search_utanet_credit(config, song["title"]["ja"])
-        if row:
-            credit_rows[title_key(row["title"], config)] = row
-            searched_credit_count += 1
-            time.sleep(0.08)
+    if credit_source_available:
+        for key, song in list(official_songs.items()):
+            if key in credit_rows:
+                continue
+            try:
+                row = search_utanet_credit(config, song["title"]["ja"])
+            except requests.RequestException as exc:
+                credit_source_available = False
+                print(
+                    f"Warning: Uta-Net search unavailable for {config.project_id}: {exc}",
+                    file=sys.stderr,
+                )
+                break
+            if row:
+                register_credit_row(config, credit_rows, row)
+                searched_credit_count += 1
+                time.sleep(0.08)
 
-    final_songs: dict[str, dict] = {}
-    excluded_official_without_credits = 0
-    for key, song in official_songs.items():
-        credit = credit_rows.get(key)
-        if not credit:
-            excluded_official_without_credits += 1
+    # A release page can contain a sister group's track without labeling the row.
+    # Never default a brand-new, no-credit title to the current group. Require
+    # explicit artist/track evidence or a conservative official-release signal.
+    ownership_review_errors: list[str] = []
+    for key in list(official_songs):
+        song = official_songs[key]
+        decision, evidence_or_reason = resolve_new_song_ownership(
+            config,
+            song,
+            credit_rows.get(key),
+            key=key,
+            committed_by_key=committed_by_key,
+            known_other_project_title_keys=known_other_project_title_keys,
+        )
+        if decision == "REJECT":
+            del official_songs[key]
+            excluded_known_sister_group_songs += 1
             continue
-        final_songs[key] = {**song, "credit": credit}
+        if decision == "REVIEW":
+            ownership_review_errors.append(
+                f"{song['title']['ja']} ({song['officialUrl']}, track "
+                f"{song['trackNo']}): {evidence_or_reason}",
+            )
+            continue
+        if evidence_or_reason in PENDING_OWNERSHIP_EVIDENCE:
+            song["_ownershipEvidence"] = evidence_or_reason
+        if evidence_or_reason == "verified-artist":
+            song["_ownershipSourceUrl"] = credit_rows[key].get("url")
+            song["_ownershipArtist"] = credit_rows[key].get("artist")
 
-    for key, credit in credit_rows.items():
-        if key in final_songs or not is_participating_artist(config, credit["artist"]):
-            continue
-        release_date, cover_source_url = parse_utanet_song_detail(credit["url"])
-        final_songs[key] = {
-            "title": localized(credit["title"]),
-            "releaseTitle": localized(credit["title"]),
-            "releaseType": "digital",
-            "releaseDate": release_date,
-            "trackNo": 1,
-            "trackType": "title",
-            "coverSourceUrl": cover_source_url,
-            "officialUrl": credit["url"],
-            "credit": credit,
-        }
-        time.sleep(0.08)
+    if ownership_review_errors:
+        formatted_errors = "\n  - ".join(ownership_review_errors)
+        raise RuntimeError(
+            f"New songs need manual artist-ownership review for "
+            f"{config.project_id}:\n  - {formatted_errors}",
+        )
+
+    final_songs, official_merge_stats = merge_official_songs_with_credits(
+        official_songs,
+        credit_rows,
+        existing_by_key,
+    )
 
     special_tracks_added = 0
     for track in config.special_tracks:
         key = title_key(track["title"], config)
-        if key in final_songs:
+        if key in final_songs and final_songs[key].get("credit"):
             continue
 
         cover_source_url = track.get("coverSourceUrl") or release_cover_sources.get(
@@ -769,6 +1631,10 @@ def build_song_data(config: ProjectConfig) -> tuple[list[dict], dict[str, int]]:
         special_tracks_added += 1
 
     used_ids: set[str] = set()
+    reserved_existing_ids = {
+        song["id"] for song in existing_songs if isinstance(song.get("id"), str)
+    }
+    generated_keys: set[str] = set()
     output: list[dict] = []
     for song in sorted(
         final_songs.values(),
@@ -779,30 +1645,53 @@ def build_song_data(config: ProjectConfig) -> tuple[list[dict], dict[str, int]]:
         ),
     ):
         key = title_key(song["title"]["ja"], config)
+        generated_keys.add(key)
+        existing_song = existing_by_key.get(key)
         preferred_romaji = existing_romaji.get(key)
         if preferred_romaji:
             song["title"]["romaji"] = preferred_romaji
 
         song_id_base = slugify(song["title"]["romaji"] or song["title"]["ja"])
-        song_id = song_id_base
-        suffix = 2
-        while song_id in used_ids:
-            song_id = f"{song_id_base}-{suffix}"
-            suffix += 1
+        if existing_song and existing_song.get("id") not in used_ids:
+            song_id = existing_song["id"]
+        else:
+            song_id = song_id_base
+            suffix = 2
+            while song_id in used_ids or song_id in reserved_existing_ids:
+                song_id = f"{song_id_base}-{suffix}"
+                suffix += 1
         used_ids.add(song_id)
 
-        credit = song["credit"]
-        artist = credit["artist"] or config.group_artist
-        artist_member_ids = split_artist_members(config, artist, member_name_to_id)
+        if existing_song and key in committed_by_key:
+            output.append(
+                merge_existing_song_update(
+                    existing_song,
+                    song,
+                    config=config,
+                    members=members,
+                    member_name_to_id=member_name_to_id,
+                ),
+            )
+            continue
+
+        credit = song.get("credit")
+        artist = (
+            (credit or {}).get("artist")
+            or song.get("_ownershipArtist")
+            or config.group_artist
+        )
         is_group_song = is_group_artist(config, artist)
 
         source_cover = song.get("coverSourceUrl")
-        if not source_cover and credit.get("url"):
-            _, source_cover = parse_utanet_song_detail(credit["url"])
         if not source_cover:
             raise RuntimeError(f"No cover source found for {song['title']['ja']}")
 
-        cover_url = download_cover(config, source_cover, song_id)
+        cover_url = download_cover(
+            config,
+            source_cover,
+            song_id,
+            refresh=existing_song is not None and key not in committed_by_key,
+        )
         time.sleep(0.08)
 
         tags = [
@@ -811,14 +1700,26 @@ def build_song_data(config: ProjectConfig) -> tuple[list[dict], dict[str, int]]:
             song["releaseDate"][:4] if song.get("releaseDate") else "date-tbd",
             *song.get("tags", []),
         ]
-        if not is_group_song and is_participating_artist(config, artist):
-            tags.append("solo" if len(artist_member_ids) <= 1 else "unit")
-
         member_ids = song.get("memberIds")
         if member_ids is None:
-            member_ids = list(active_member_ids if is_group_song else artist_member_ids)
+            if (
+                song.get("sourceStatus") in {"announced", "credits_pending"}
+                and song.get("_ownershipEvidence")
+                not in {"verified-credits", "verified-artist"}
+            ):
+                member_ids = []
+            else:
+                member_ids = member_ids_for_artist(
+                    config,
+                    artist,
+                    member_name_to_id,
+                    members,
+                    song.get("releaseDate"),
+                )
         else:
             member_ids = list(member_ids)
+        if not is_group_song and is_participating_artist(config, artist):
+            tags.append("solo" if len(member_ids) == 1 else "unit")
         for override_member_id in config.group_member_overrides.get(song["title"]["ja"], []):
             if override_member_id not in member_ids:
                 member_ids.append(override_member_id)
@@ -839,18 +1740,25 @@ def build_song_data(config: ProjectConfig) -> tuple[list[dict], dict[str, int]]:
             "coverSourceUrl": source_cover,
             "memberIds": member_ids,
             "tags": sorted(set(tags)),
-            "credits": {
+            "officialUrl": song.get("officialUrl") or (credit or {}).get("url"),
+        }
+
+        if credit:
+            output_song["credits"] = {
                 "lyricist": localized(credit["lyricist"]),
                 "composer": localized(credit["composer"]),
                 "arranger": localized(credit["arranger"]),
-            },
-            "officialUrl": song.get("officialUrl") or credit.get("url"),
-            "creditSourceUrl": credit.get("url"),
-        }
+            }
+            if credit.get("url"):
+                output_song["creditSourceUrl"] = credit["url"]
 
         for optional_key in ("visibility", "sourceStatus", "sourceNote"):
             if song.get(optional_key):
                 output_song[optional_key] = song[optional_key]
+        if song.get("_ownershipEvidence"):
+            output_song["ownershipEvidence"] = song["_ownershipEvidence"]
+        if song.get("_ownershipSourceUrl"):
+            output_song["creditSourceUrl"] = song["_ownershipSourceUrl"]
 
         if not output_song["releaseDate"]:
             output_song.pop("releaseDate")
@@ -859,13 +1767,58 @@ def build_song_data(config: ProjectConfig) -> tuple[list[dict], dict[str, int]]:
 
         output.append(output_song)
 
+    preserved_existing_songs = 0
+    for existing_song in existing_songs:
+        key = title_key(existing_song.get("title", {}).get("ja", ""), config)
+        if not key or key in generated_keys:
+            continue
+        if existing_song.get("id") in used_ids:
+            raise RuntimeError(
+                f"Existing song id collision while preserving {existing_song.get('id')}",
+            )
+        used_ids.add(existing_song["id"])
+        output.append(merge_existing_song_update(existing_song, {}))
+        preserved_existing_songs += 1
+
+    def sort_key(item: dict) -> tuple[str, int, str]:
+        return (
+            item.get("releaseDate") or "9999-99-99",
+            item.get("trackNo", 99),
+            item.get("title", {}).get("ja", ""),
+        )
+
+    output_by_id = {song["id"]: song for song in output}
+    existing_ids = {song["id"] for song in existing_songs}
+    stable_output = [
+        output_by_id[song["id"]]
+        for song in existing_songs
+        if song["id"] in output_by_id
+    ]
+    for new_song in sorted(
+        (song for song in output if song["id"] not in existing_ids),
+        key=sort_key,
+    ):
+        insertion_index = next(
+            (
+                index
+                for index, current_song in enumerate(stable_output)
+                if sort_key(current_song) > sort_key(new_song)
+            ),
+            len(stable_output),
+        )
+        stable_output.insert(insertion_index, new_song)
+    output = stable_output
+
     stats = {
         "officialReleases": len(releases),
         "officialSongs": len(official_songs),
+        "excludedKnownSisterGroupSongs": excluded_known_sister_group_songs,
+        "creditSourceAvailable": credit_source_available,
         "creditRows": len(credit_rows),
         "searchedCreditRows": searched_credit_count,
-        "excludedOfficialWithoutCredits": excluded_official_without_credits,
+        **official_merge_stats,
         "specialTracksAdded": special_tracks_added,
+        "preservedExistingSongs": preserved_existing_songs,
         "finalSongs": len(output),
     }
     return output, stats
@@ -880,6 +1833,15 @@ def build_equal_love_config() -> ProjectConfig:
         utanet_artist_id="23032",
         utanet_artist_path="/artist/23032/",
         sister_group_markers=("≠ME", "≒JOY"),
+        minimum_official_songs=70,
+        # These four old pages publish title/date/cover but have an empty CD list.
+        # Keep the exception URL-exact so every new detail page still fails closed.
+        legacy_incomplete_release_paths=(
+            "/discography/detail/3/",
+            "/discography/detail/6/",
+            "/discography/detail/46/",
+            "/discography/detail/78/",
+        ),
         graduated_members=[
             GraduatedMemberOverride(
                 id="satake-nonno",
@@ -976,6 +1938,7 @@ def build_nearly_equal_joy_config() -> ProjectConfig:
         utanet_artist_id="32604",
         utanet_artist_path="/artist/32604/",
         sister_group_markers=("=LOVE", "＝LOVE", "≠ME"),
+        minimum_official_songs=15,
         clear_member_color_arrays=True,
         graduated_members=[
             GraduatedMemberOverride(
@@ -1091,6 +2054,17 @@ def build_not_equal_me_config() -> ProjectConfig:
         utanet_artist_id="27489",
         utanet_artist_path="/artist/27489/6/",
         sister_group_markers=("=LOVE", "＝LOVE", "≒JOY"),
+        minimum_official_songs=45,
+        # These old pages have official metadata but an empty CD track list.
+        legacy_incomplete_release_paths=(
+            "/discography/detail/22/",
+            "/discography/detail/26/",
+            "/discography/detail/40/",
+            "/discography/detail/46/",
+            "/discography/detail/47/",
+            "/discography/detail/48/",
+            "/discography/detail/49/",
+        ),
         credit_overrides={
             "#おふしょるにっと": {"arranger": "yuma"},
             "誰もいない森の奥で一本の木が倒れたら音はするか?": {
@@ -1266,21 +2240,36 @@ PROJECT_CONFIGS = {
 }
 
 
-def sync_project(config: ProjectConfig) -> None:
-    members = parse_members(config)
-    config.members_path.write_text(
-        json.dumps(members, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-    )
+def write_json_atomically(path: Path, value: list[dict]) -> None:
+    if path.exists():
+        try:
+            existing_value = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            existing_value = None
+        if existing_value == value:
+            return
 
-    songs, stats = build_song_data(config)
-    config.songs_path.write_text(
-        json.dumps(songs, ensure_ascii=False, indent=2) + "\n",
+    temporary_path = path.with_suffix(f"{path.suffix}.tmp")
+    temporary_path.write_text(
+        json.dumps(value, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
+    temporary_path.replace(path)
+
+
+def sync_project(config: ProjectConfig, *, songs_only: bool = False) -> None:
+    members = load_existing_members(config) if songs_only else parse_members(config)
+    if not members:
+        raise RuntimeError(f"No existing members found for {config.project_id}")
+    songs, stats = build_song_data(config, members)
+
+    if not songs_only:
+        write_json_atomically(config.members_path, members)
+    write_json_atomically(config.songs_path, songs)
 
     print(json.dumps({"project": config.project_id, **stats}, ensure_ascii=False, indent=2))
-    print(f"Wrote {len(members)} members to {config.members_path}")
+    if not songs_only:
+        print(f"Wrote {len(members)} members to {config.members_path}")
     print(f"Wrote {len(songs)} songs to {config.songs_path}")
 
 
@@ -1292,12 +2281,17 @@ def parse_args() -> argparse.Namespace:
         required=True,
         help="Project id to sync.",
     )
+    parser.add_argument(
+        "--songs-only",
+        action="store_true",
+        help="Use the checked-in member roster and update only songs/covers.",
+    )
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
-    sync_project(PROJECT_CONFIGS[args.project]())
+    sync_project(PROJECT_CONFIGS[args.project](), songs_only=args.songs_only)
 
 
 if __name__ == "__main__":
