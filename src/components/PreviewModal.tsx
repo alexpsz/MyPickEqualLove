@@ -1,6 +1,11 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useRef } from "react";
+import * as m from "motion/react-m";
+import { useDialogA11y } from "../utils/useDialogA11y";
+import AppIcon from "./AppIcon";
+import { APPLE_OPACITY, APPLE_SPRING_GENTLE } from "./AppleMotion";
+import type { PresenceState } from "./MotionPresence";
 
 interface PreviewModalProps {
   previewUrl: string;
@@ -16,6 +21,10 @@ interface PreviewModalProps {
   shareText: string;
   shareHashtags: string[];
   shareTitle: string;
+  presenceState: PresenceState;
+  returnFocusRef?: React.RefObject<HTMLElement | null>;
+  returnFocusKey: string;
+  returnFocusFallbackKey: string;
 }
 
 export default function PreviewModal({
@@ -32,34 +41,86 @@ export default function PreviewModal({
   shareText,
   shareHashtags,
   shareTitle,
+  presenceState,
+  returnFocusRef,
+  returnFocusKey,
+  returnFocusFallbackKey,
 }: PreviewModalProps) {
+  const panelRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
   const shareConfig = {
     pageUrl,
     shareText,
     shareHashtags,
   };
 
+  useDialogA11y({
+    dialogRef: panelRef,
+    onClose,
+    active: presenceState !== "exiting",
+    initialFocusRef: closeButtonRef,
+    returnFocusRef,
+    returnFocusKey,
+    returnFocusFallbackKey,
+  });
+
+  useEffect(() => {
+    if (generating && presenceState !== "exiting") {
+      closeButtonRef.current?.focus();
+    }
+  }, [generating, presenceState]);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-      <button
+    <div
+      className="motion-overlay fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4"
+      data-presence={presenceState}
+    >
+      <m.button
         type="button"
         onClick={onClose}
-        className="absolute inset-0 cursor-default bg-slate-900/45 backdrop-blur-sm"
+        disabled={presenceState === "exiting"}
+        tabIndex={-1}
+        aria-hidden={presenceState === "exiting"}
+        className="overlay-scrim absolute inset-0 cursor-default bg-black/25 backdrop-blur-[2px]"
         aria-label="Close image preview"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={APPLE_OPACITY}
       />
 
-      <div className="official-panel relative z-10 flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden bg-white">
-        <div className="flex flex-col justify-between gap-4 border-b border-black bg-white p-4 sm:flex-row sm:items-center sm:p-6">
+      <m.div
+        ref={panelRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-hidden={presenceState === "exiting"}
+        inert={presenceState === "exiting"}
+        aria-labelledby="preview-modal-title"
+        className="apple-sheet relative z-10 flex max-h-[92dvh] w-full max-w-4xl flex-col overflow-hidden rounded-b-none border-x-0 border-b-0 focus:outline-none sm:rounded-[var(--radius-lg)] sm:border"
+        initial={{ opacity: 0, y: 18, scale: 0.985 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 18, scale: 0.985 }}
+        transition={{
+          opacity: APPLE_OPACITY,
+          y: APPLE_SPRING_GENTLE,
+          scale: APPLE_SPRING_GENTLE,
+        }}
+      >
+        <div className="flex flex-col justify-between gap-3 border-b border-[var(--line)] bg-white p-4 sm:flex-row sm:items-center sm:px-6">
           <div>
-            <h3 className="text-lg font-bold uppercase tracking-[0.22em] text-black">
+            <h3
+              id="preview-modal-title"
+              className="text-[20px] font-semibold tracking-[-0.03em] text-[var(--foreground)]"
+            >
               Image Preview
             </h3>
-            <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--project-primary)]">
+            <p className="mt-0.5 text-[13px] text-[var(--muted)]">
               {previewLabel}
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-2.5">
+          <div className="flex flex-wrap items-center gap-2">
             <ToggleOption
               checked={showTitles}
               disabled={generating}
@@ -73,33 +134,28 @@ export default function PreviewModal({
               label="Transparent Background"
             />
             <button
+              ref={closeButtonRef}
               type="button"
               onClick={onClose}
-              className="flex h-9 w-9 items-center justify-center border border-black bg-white text-black transition-colors hover:bg-black hover:text-white"
+              className="icon-button icon-button-compact"
               aria-label="Close image preview"
             >
-              <svg
-                className="h-4 w-4 fill-current"
-                viewBox="0 0 20 20"
-                aria-hidden="true"
-              >
-                <path d="M10 8.586L2.929 1.515 1.515 2.929 8.586 10l-7.071 7.071 1.414 1.414L10 11.414l7.071 7.071 1.414-1.414L11.414 10l7.071-7.071-1.414-1.414L10 8.586z" />
-              </svg>
+              <AppIcon name="close" size={16} />
             </button>
           </div>
         </div>
 
-        <div className="no-scrollbar official-stripe relative flex max-h-[60vh] flex-1 justify-center overflow-y-auto p-6">
+        <div className="no-scrollbar relative flex min-h-0 flex-1 justify-center overflow-y-auto bg-[var(--background)] p-4 sm:p-6">
           <img
             src={previewUrl}
             alt={`${shareTitle} Preview`}
-            className={`max-h-[52vh] max-w-full border border-black bg-white object-contain transition-opacity duration-200 ${
+            className={`block max-h-[58dvh] max-w-full bg-white object-contain shadow-[var(--shadow-panel)] transition-[opacity,filter] duration-150 ${
               generating ? "opacity-50 blur-[2px]" : "opacity-100"
             }`}
           />
           {generating && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="flex items-center gap-2 rounded-full bg-slate-900/80 px-4 py-2 text-xs font-bold text-white shadow-lg">
+              <div className="preview-status flex items-center gap-2 rounded-full bg-black/80 px-4 py-2 text-[13px] font-medium text-white shadow-lg backdrop-blur-md">
                 <span className="h-3.5 w-3.5 rounded-full border-2 border-white/20 border-t-white animate-spin" />
                 Updating Preview...
               </div>
@@ -107,8 +163,12 @@ export default function PreviewModal({
           )}
         </div>
 
-        <div className="flex flex-wrap items-center justify-end gap-3.5 border-t border-black bg-white p-5">
-          <button type="button" onClick={onClose} className="official-button">
+        <div className="flex flex-wrap items-center justify-end gap-2 border-t border-[var(--line)] bg-white p-3 pb-[max(.75rem,env(safe-area-inset-bottom))] sm:px-5">
+          <button
+            type="button"
+            onClick={onClose}
+            className="official-button official-button-quiet"
+          >
             Close
           </button>
           <button
@@ -118,13 +178,7 @@ export default function PreviewModal({
             }}
             className="official-button official-button-primary"
           >
-            <svg
-              className="h-3.5 w-3.5 fill-current"
-              viewBox="0 0 20 20"
-              aria-hidden="true"
-            >
-              <path d="M13 8V2H7v6H2l8 8 8-8h-5zM2 18h16v2H2v-2z" />
-            </svg>
+            <AppIcon name="download" />
             Download Image
           </button>
           <button
@@ -132,7 +186,7 @@ export default function PreviewModal({
             onClick={() => {
               shareToX(shareConfig);
             }}
-            className="official-button bg-black text-white hover:bg-[var(--project-primary)]"
+            className="official-button border-slate-950 bg-slate-950 text-white"
           >
             <svg
               className="h-3.5 w-3.5 fill-current"
@@ -144,7 +198,7 @@ export default function PreviewModal({
             Share to X
           </button>
         </div>
-      </div>
+      </m.div>
     </div>
   );
 }
@@ -253,13 +307,17 @@ function ToggleOption({
   label: string;
 }) {
   return (
-    <label className="flex cursor-pointer select-none items-center justify-center gap-2 border border-black bg-white px-4 py-2 text-xs font-bold uppercase tracking-[0.08em] text-black transition-colors hover:bg-[var(--paper-soft)]">
+    <label className="flex min-h-11 cursor-pointer select-none items-center justify-center gap-2 rounded-[var(--radius-sm)] px-2 text-[13px] font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--background)]">
       <input
         type="checkbox"
         checked={checked}
         disabled={disabled}
         onChange={(event) => onChange(event.target.checked)}
-        className="h-4 w-4 rounded border-slate-300 text-rose-500 transition focus:ring-rose-400 disabled:opacity-50"
+        className="peer sr-only"
+      />
+      <span
+        aria-hidden="true"
+        className="relative h-[26px] w-[44px] shrink-0 rounded-full bg-[var(--line-strong)] transition-colors duration-150 after:absolute after:left-[2px] after:top-[2px] after:h-[22px] after:w-[22px] after:rounded-full after:bg-white after:shadow-sm after:transition-transform after:duration-150 peer-checked:bg-[var(--project-primary)] peer-checked:after:translate-x-[18px] peer-focus-visible:ring-2 peer-focus-visible:ring-[var(--focus-ring)] peer-focus-visible:ring-offset-2 peer-disabled:opacity-50"
       />
       {label}
     </label>

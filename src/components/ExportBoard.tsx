@@ -23,9 +23,9 @@ interface ExportBoardProps {
 }
 
 const EXPORT_FONT_FAMILY =
-  '"Comfortaa", "Work Sans", "Noto Sans JP", sans-serif';
+  '-apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans JP", sans-serif';
 const EXPORT_TITLE_FONT_FAMILY =
-  '"Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif';
+  '"Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
 
 const MEMBER_COLOR_STRIP = MEMBERS.slice()
   .filter((member) => member.active !== false)
@@ -217,9 +217,10 @@ function TopTenGrid({
         zIndex: 1,
         display: "grid",
         gridTemplateColumns: "repeat(2, 1fr)",
-        gridTemplateRows: "repeat(5, 154px)",
+        gridTemplateRows: "repeat(5, minmax(0, 1fr))",
         gap: "14px",
-        flex: "0 0 auto",
+        flex: "1 1 0",
+        minHeight: 0,
       }}
     >
       {slots.map((slot) => (
@@ -230,6 +231,7 @@ function TopTenGrid({
           showTitles={showTitles}
           showSlotTitle={false}
           compact
+          fillHeight
         />
       ))}
     </main>
@@ -281,6 +283,7 @@ function ExportPickCard({
   showTitles,
   showSlotTitle,
   compact = false,
+  fillHeight = false,
   size,
   dense = false,
 }: {
@@ -289,6 +292,7 @@ function ExportPickCard({
   showTitles: boolean;
   showSlotTitle: boolean;
   compact?: boolean;
+  fillHeight?: boolean;
   size?: number;
   dense?: boolean;
 }) {
@@ -297,7 +301,7 @@ function ExportPickCard({
   return (
     <div
       style={{
-        height: `${cardSize}px`,
+        height: fillHeight ? "100%" : `${cardSize}px`,
         overflow: "hidden",
         border: "2px solid #000",
         background: song ? "#ffffff" : "#f8f8f8",
@@ -311,8 +315,9 @@ function ExportPickCard({
             src={song.coverUrl}
             alt={`${song.title.ja} cover`}
             style={{
-              width: `${cardSize}px`,
-              height: `${cardSize}px`,
+              width: fillHeight ? "auto" : `${cardSize}px`,
+              height: fillHeight ? "100%" : `${cardSize}px`,
+              aspectRatio: fillHeight ? "1 / 1" : undefined,
               objectFit: "cover",
               flexShrink: 0,
               display: "block",
@@ -329,7 +334,9 @@ function ExportPickCard({
                   : "18px 22px 16px",
               display: "flex",
               flexDirection: "column",
-              justifyContent: showSlotTitle ? "space-between" : "flex-end",
+              alignItems: showSlotTitle ? "stretch" : "center",
+              justifyContent: showSlotTitle ? "space-between" : "center",
+              textAlign: showSlotTitle ? "left" : "center",
               background: "#fff",
               borderLeft: "2px solid #000",
             }}
@@ -362,10 +369,11 @@ function ExportPickCard({
                   marginTop: showTitles ? "12px" : 0,
                   display: "flex",
                   flexWrap: "wrap",
+                  justifyContent: showSlotTitle ? "flex-start" : "center",
                   gap: "8px",
                 }}
               >
-                <span style={exportTagStyle}>
+                <span data-export-year-tag style={exportTagStyle}>
                   <span style={exportTagTextStyle}>
                     {song.releaseDate?.slice(0, 4) ?? "TBD"}
                   </span>
@@ -404,9 +412,7 @@ function ExportPickCard({
 }
 
 const exportTagStyle: React.CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
+  display: "inline-block",
   minWidth: "44px",
   height: "24px",
   boxSizing: "border-box",
@@ -417,14 +423,15 @@ const exportTagStyle: React.CSSProperties = {
   fontSize: "10px",
   fontWeight: 900,
   letterSpacing: "0.12em",
-  lineHeight: 1,
+  lineHeight: "22px",
+  textAlign: "center",
   textTransform: "uppercase",
 };
 
 const exportTagTextStyle: React.CSSProperties = {
-  display: "block",
+  display: "inline-block",
   lineHeight: 1,
-  transform: "translateY(-6px)",
+  transform: "translateY(-5px)",
 };
 
 const exportSlotLabelStyle: React.CSSProperties = {

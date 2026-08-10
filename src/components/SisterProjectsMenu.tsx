@@ -1,200 +1,228 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import * as m from "motion/react-m";
 import {
   EXTERNAL_MY_PICK_LINKS,
   SISTER_PROJECT_LINKS,
 } from "../config/project";
+import { DIALOG_RETURN_KEYS, useDialogA11y } from "../utils/useDialogA11y";
+import AppIcon from "./AppIcon";
+import { APPLE_OPACITY, APPLE_SPRING_GENTLE } from "./AppleMotion";
+import MotionPresence, { type PresenceState } from "./MotionPresence";
 
-export default function SisterProjectsMenu() {
+export default function SisterProjectsMenu({
+  triggerClassName = "",
+}: {
+  triggerClassName?: string;
+}) {
   const [isOpen, setIsOpen] = useState(false);
-  const panelRef = useRef<HTMLDivElement>(null);
+  const [portalReady, setPortalReady] = useState(false);
 
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setIsOpen(false);
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    const timer = window.setTimeout(() => panelRef.current?.focus(), 0);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.clearTimeout(timer);
-    };
-  }, [isOpen]);
+  useEffect(() => setPortalReady(true), []);
 
   return (
     <>
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="absolute left-4 top-4 z-20 flex h-11 w-11 items-center justify-center border border-black bg-white text-black transition-colors hover:bg-black hover:text-white sm:left-6 sm:top-6"
-        title="Open sister MyPick sites"
-        aria-label="Open sister MyPick sites"
+        className={`${triggerClassName} icon-button`}
+        title="Open other MyPick sites"
+        aria-label="Open other MyPick sites"
         aria-controls="sister-projects-drawer"
         aria-expanded={isOpen}
+        data-dialog-return-key={DIALOG_RETURN_KEYS.sisterProjects}
       >
-        <svg
-          className="h-5 w-5 stroke-current"
-          fill="none"
-          viewBox="0 0 24 24"
-          strokeWidth="2"
-          aria-hidden="true"
-        >
-          <path
-            strokeLinecap="square"
-            strokeLinejoin="miter"
-            d="M4 7h16M4 12h16M4 17h16"
-          />
-        </svg>
+        <AppIcon name="menu" />
       </button>
 
-      {isOpen && (
-        <div className="fixed inset-0 z-50">
+      {portalReady
+        ? createPortal(
+            <MotionPresence value={isOpen ? true : null}>
+              {(_, presenceState) => (
+                <SisterProjectsDrawer
+                  presenceState={presenceState}
+                  onClose={() => setIsOpen(false)}
+                />
+              )}
+            </MotionPresence>,
+            document.body,
+          )
+        : null}
+    </>
+  );
+}
+
+function SisterProjectsDrawer({
+  presenceState,
+  onClose,
+}: {
+  presenceState: PresenceState;
+  onClose: () => void;
+}) {
+  const panelRef = useRef<HTMLElement>(null);
+
+  useDialogA11y({
+    dialogRef: panelRef,
+    onClose,
+    active: presenceState !== "exiting",
+    returnFocusKey: DIALOG_RETURN_KEYS.sisterProjects,
+  });
+
+  return (
+    <div
+      className="motion-overlay fixed inset-0 z-50"
+      data-presence={presenceState}
+    >
+      <m.button
+        type="button"
+        onClick={onClose}
+        disabled={presenceState === "exiting"}
+        tabIndex={-1}
+        aria-hidden={presenceState === "exiting"}
+        className="overlay-scrim absolute inset-0 cursor-default bg-black/20 backdrop-blur-[2px]"
+        aria-label="Dismiss other MyPick sites"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={APPLE_OPACITY}
+      />
+
+      <m.aside
+        id="sister-projects-drawer"
+        ref={panelRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-hidden={presenceState === "exiting"}
+        inert={presenceState === "exiting"}
+        aria-labelledby="sister-projects-title"
+        className="apple-sheet absolute inset-y-0 left-0 flex w-[min(92vw,420px)] flex-col overflow-hidden rounded-l-none border-y-0 border-l-0 focus:outline-none"
+        initial={{ x: "-100%" }}
+        animate={{ x: 0 }}
+        exit={{ x: "-100%" }}
+        transition={APPLE_SPRING_GENTLE}
+      >
+        <div className="flex items-center justify-between gap-4 border-b border-[var(--line)] px-4 pb-3 pt-[max(1rem,env(safe-area-inset-top))] sm:px-5">
+          <div>
+            <h2
+              id="sister-projects-title"
+              className="text-[22px] font-semibold tracking-[-0.035em] text-[var(--foreground)]"
+            >
+              Other Picks
+            </h2>
+            <p className="mt-0.5 text-[13px] text-[var(--muted)]">
+              Explore the MyPick family
+            </p>
+          </div>
           <button
             type="button"
-            onClick={() => setIsOpen(false)}
-            className="absolute inset-0 cursor-default bg-slate-900/35 backdrop-blur-sm"
-            aria-label="Dismiss sister MyPick sites"
-          />
-
-          <aside
-            id="sister-projects-drawer"
-            ref={panelRef}
-            tabIndex={-1}
-            className="official-panel absolute inset-y-0 left-0 flex w-[min(88vw,390px)] flex-col overflow-hidden bg-white focus:outline-none"
-            aria-label="Sister MyPick sites"
+            onClick={onClose}
+            className="icon-button icon-button-compact"
+            aria-label="Close other MyPick sites"
           >
-            <div className="flex items-center justify-between gap-4 border-b border-black bg-white p-5">
-              <h2 className="text-lg font-bold uppercase tracking-[0.22em] text-black">
-                Other Picks
-              </h2>
-              <button
-                type="button"
-                onClick={() => setIsOpen(false)}
-                className="flex h-9 w-9 items-center justify-center border border-black bg-white text-black transition-colors hover:bg-black hover:text-white"
-                aria-label="Close sister MyPick sites"
-              >
-                <svg
-                  className="h-4 w-4 fill-current"
-                  viewBox="0 0 20 20"
-                  aria-hidden="true"
-                >
-                  <path d="M10 8.586 2.929 1.515 1.515 2.929 8.586 10l-7.071 7.071 1.414 1.414L10 11.414l7.071 7.071 1.414-1.414L11.414 10l7.071-7.071-1.414-1.414L10 8.586z" />
-                </svg>
-              </button>
-            </div>
-
-            <nav className="official-stripe flex-1 overflow-y-auto p-5">
-              <div className="flex flex-col gap-4">
-                <div className="grid gap-4">
-                  {SISTER_PROJECT_LINKS.map((link) => (
-                    <a
-                      key={link.id}
-                      href={link.siteUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="group grid min-h-28 grid-cols-[1fr_auto] items-center gap-4 border border-black bg-white p-4 text-left shadow-[8px_8px_0_rgba(0,0,0,0.08)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[10px_10px_0_rgba(0,0,0,0.12)] focus:outline-none focus:ring-2 focus:ring-[var(--project-primary)]"
-                    >
-                      <span className="min-w-0">
-                        <span className="mb-3 flex items-center gap-2">
-                          <span
-                            className="h-3 w-3 border border-black"
-                            style={{ backgroundColor: link.themeColor }}
-                            aria-hidden="true"
-                          />
-                          <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
-                            Sister Site
-                          </span>
-                        </span>
-                        <span className="block break-words text-lg font-bold leading-tight text-black">
-                          {link.displayName}
-                        </span>
-                        <span className="mt-2 block text-sm font-bold text-slate-500">
-                          {link.groupName}
-                        </span>
-                      </span>
-
-                      <span className="flex h-9 w-9 items-center justify-center border border-black text-black transition-colors group-hover:bg-black group-hover:text-white">
-                        <svg
-                          className="h-4 w-4 stroke-current"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          strokeWidth="2"
-                          aria-hidden="true"
-                        >
-                          <path
-                            strokeLinecap="square"
-                            strokeLinejoin="miter"
-                            d="M7 17 17 7M9 7h8v8"
-                          />
-                        </svg>
-                      </span>
-                    </a>
-                  ))}
-                </div>
-
-                <div
-                  className="flex items-center gap-3 py-2"
-                  aria-hidden="true"
-                >
-                  <span className="h-px flex-1 bg-black/10" />
-                  <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-slate-400">
-                    Other MyPicks
-                  </span>
-                  <span className="h-px flex-1 bg-black/10" />
-                </div>
-
-                <div className="grid gap-3">
-                  {EXTERNAL_MY_PICK_LINKS.map((link) => (
-                    <a
-                      key={link.id}
-                      href={link.siteUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="group grid min-h-20 grid-cols-[1fr_auto] items-center gap-4 border border-black/15 bg-white/95 p-4 text-left shadow-[5px_5px_0_rgba(0,0,0,0.045)] transition duration-200 hover:-translate-y-0.5 hover:border-black/35 hover:shadow-[7px_7px_0_rgba(0,0,0,0.07)] focus:outline-none focus:ring-2 focus:ring-[var(--project-primary)]"
-                    >
-                      <span className="min-w-0">
-                        <span className="block break-words text-base font-bold leading-tight text-slate-900">
-                          {link.displayName}
-                        </span>
-                        <span className="mt-2 block break-words text-sm font-bold leading-snug text-slate-500">
-                          {link.groupName}
-                        </span>
-                      </span>
-
-                      <span className="flex h-8 w-8 items-center justify-center border border-black/25 text-slate-500 transition-colors group-hover:border-black group-hover:bg-black group-hover:text-white">
-                        <svg
-                          className="h-4 w-4 stroke-current"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          strokeWidth="2"
-                          aria-hidden="true"
-                        >
-                          <path
-                            strokeLinecap="square"
-                            strokeLinejoin="miter"
-                            d="M7 17 17 7M9 7h8v8"
-                          />
-                        </svg>
-                      </span>
-                    </a>
-                  ))}
-                </div>
-
-                <p className="pt-2 text-[10px] font-medium leading-relaxed text-slate-400">
-                  These sites are fan-made projects developed by other authors
-                  and are not affiliated with or maintained by the author of
-                  this site.
-                </p>
-              </div>
-            </nav>
-          </aside>
+            <AppIcon name="close" size={16} />
+          </button>
         </div>
-      )}
-    </>
+
+        <nav className="min-h-0 flex-1 overflow-y-auto bg-[var(--background)] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-5">
+          <DrawerSection label="Official MyPick sites">
+            {SISTER_PROJECT_LINKS.map((link, index) => (
+              <DrawerLink
+                key={link.id}
+                href={link.siteUrl}
+                title={link.displayName}
+                subtitle={link.groupName}
+                color={link.themeColor}
+                divided={index > 0}
+              />
+            ))}
+          </DrawerSection>
+
+          <div className="mt-5">
+            <DrawerSection label="Community MyPicks">
+              {EXTERNAL_MY_PICK_LINKS.map((link, index) => (
+                <DrawerLink
+                  key={link.id}
+                  href={link.siteUrl}
+                  title={link.displayName}
+                  subtitle={link.groupName}
+                  divided={index > 0}
+                />
+              ))}
+            </DrawerSection>
+          </div>
+
+          <p className="px-1 pt-4 text-xs leading-relaxed text-[var(--muted)]">
+            Community sites are maintained by their respective authors and are
+            not affiliated with this project.
+          </p>
+        </nav>
+      </m.aside>
+    </div>
+  );
+}
+
+function DrawerSection({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section>
+      <h3 className="mb-2 px-1 text-xs font-semibold text-[var(--muted)]">
+        {label}
+      </h3>
+      <div className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--line)] bg-white">
+        {children}
+      </div>
+    </section>
+  );
+}
+
+function DrawerLink({
+  href,
+  title,
+  subtitle,
+  color,
+  divided,
+}: {
+  href: string;
+  title: string;
+  subtitle: string;
+  color?: string;
+  divided: boolean;
+}) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`group flex min-h-[66px] items-center gap-3 px-4 py-3 transition-colors duration-150 hover:bg-[var(--background)] focus:outline-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring)] active:bg-[var(--project-primary-wash)] ${
+        divided ? "border-t border-[var(--line)]" : ""
+      }`}
+    >
+      <span
+        className="h-3 w-3 shrink-0 rounded-full"
+        style={{ backgroundColor: color ?? "var(--muted-soft)" }}
+        aria-hidden="true"
+      />
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-[15px] font-semibold tracking-[-0.015em] text-[var(--foreground)]">
+          {title}
+        </span>
+        <span className="mt-0.5 block truncate text-xs text-[var(--muted)]">
+          {subtitle}
+        </span>
+      </span>
+      <AppIcon
+        name="external"
+        size={16}
+        className="text-[var(--muted-soft)] transition-colors group-hover:text-[var(--foreground)]"
+      />
+    </a>
   );
 }

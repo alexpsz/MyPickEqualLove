@@ -1,6 +1,8 @@
 "use client";
 
 import React from "react";
+import { DIALOG_RETURN_KEYS } from "../utils/useDialogA11y";
+import AppIcon from "./AppIcon";
 
 interface ControlsProps {
   onClearAll: () => void;
@@ -12,7 +14,10 @@ interface ControlsProps {
   generating: boolean;
   hasPicks: boolean;
   totalSongs: number;
+  selectedCount: number;
+  slotCount: number;
   metricLabel?: string;
+  generateButtonRef?: React.Ref<HTMLButtonElement>;
   children?: React.ReactNode;
 }
 
@@ -26,128 +31,127 @@ export default function Controls({
   generating,
   hasPicks,
   totalSongs,
+  selectedCount,
+  slotCount,
   metricLabel = "Songs",
+  generateButtonRef,
   children,
 }: ControlsProps) {
   return (
-    <div className="relative z-10 mx-auto mb-8 grid w-full max-w-7xl gap-4 px-5 md:mb-12 md:grid-cols-[1fr_auto] md:px-8">
-      <div className="official-panel-soft official-stripe grid gap-3 px-4 py-3">
-        <Metric
-          label={metricLabel}
-          value={totalSongs}
-          color="var(--project-primary)"
-        />
-
-        {children}
-
-        <div className="grid gap-2">
-          <label
-            htmlFor="export-nickname"
-            className="text-[10px] font-bold uppercase tracking-[0.16em] text-black"
+    <div
+      data-page-reveal
+      className="app-content-shell relative z-10 mb-4 px-4 sm:mb-5 sm:px-6 md:px-8"
+    >
+      <section className="official-panel-soft grid gap-3 p-3.5 sm:p-5">
+        <div className="flex flex-wrap items-center gap-x-7 gap-y-2 border-b border-[var(--line)] pb-2.5 sm:pb-3">
+          <Metric label={metricLabel} value={totalSongs} />
+          <div
+            className="flex items-center gap-2 text-[13px] font-semibold tracking-[-0.01em]"
+            aria-live="polite"
           >
-            Your name
-          </label>
-          <div className="flex min-h-11 items-center border border-black bg-white transition-colors focus-within:border-[var(--project-primary)]">
-            <input
-              id="export-nickname"
-              type="text"
-              value={nickname}
-              maxLength={nicknameMaxLength}
-              disabled={generating}
-              onChange={(event) => onNicknameChange(event.target.value)}
-              placeholder="Your name (optional)"
-              className="min-w-0 flex-1 bg-transparent px-3 py-2 text-sm font-bold text-black outline-none placeholder:text-slate-400 disabled:opacity-50"
-            />
-            <span className="px-3 text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500">
-              {nickname.length}/{nicknameMaxLength}
+            <span className="text-[var(--muted)]">Selected</span>
+            <span className="tabular-nums text-[var(--foreground)]">
+              {selectedCount}/{slotCount}
             </span>
           </div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-slate-500">
-            Optional - appears as &quot;Selected by ...&quot; in the export.
-          </p>
         </div>
-      </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={onGlobalSearch}
-          className="official-button"
-        >
-          <svg
-            className="h-3 w-3 stroke-current"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth="2.5"
-            aria-hidden="true"
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+          <div
+            className={`grid gap-4 ${
+              children
+                ? "sm:grid-cols-[minmax(220px,0.72fr)_minmax(0,1fr)] sm:items-end"
+                : "lg:max-w-[620px]"
+            }`}
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            />
-          </svg>
-          Search All Songs
-        </button>
-        <button
-          type="button"
-          onClick={onClearAll}
-          disabled={!hasPicks}
-          className="official-button"
-        >
-          Clear Board
-        </button>
-        <button
-          type="button"
-          onClick={onGenerate}
-          disabled={generating || !hasPicks}
-          className="official-button official-button-primary min-w-[164px]"
-        >
-          {generating ? (
-            <>
-              <span className="inline-block h-3.5 w-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-              Generating...
-            </>
-          ) : (
-            <>
-              <svg
-                className="h-3.5 w-3.5 fill-none stroke-current"
-                viewBox="0 0 24 24"
-                strokeWidth="2"
-                aria-hidden="true"
+            <div className="grid gap-2">
+              <label
+                htmlFor="export-nickname"
+                className="sr-only text-xs font-semibold tracking-[0.02em] text-[var(--muted)] sm:not-sr-only"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                Export name
+              </label>
+              <div className="flex min-h-11 items-center rounded-[var(--radius-sm)] border border-[var(--line-strong)] bg-white transition-[border-color,box-shadow] focus-within:border-[var(--focus-ring)] focus-within:shadow-[0_0_0_2px_var(--focus-ring)]">
+                <input
+                  id="export-nickname"
+                  type="text"
+                  value={nickname}
+                  maxLength={nicknameMaxLength}
+                  disabled={generating}
+                  onChange={(event) => onNicknameChange(event.target.value)}
+                  placeholder="Export name (optional)"
+                  className="min-w-0 flex-1 bg-transparent px-3 py-2 text-[15px] font-normal text-[var(--foreground)] outline-none placeholder:text-[var(--muted-soft)] disabled:opacity-50"
                 />
-              </svg>
-              Generate Image
-            </>
-          )}
-        </button>
-      </div>
+                <span className="px-3 text-xs font-medium tabular-nums text-[var(--muted)]">
+                  {nickname.length}/{nicknameMaxLength}
+                </span>
+              </div>
+              <p className="hidden text-xs leading-relaxed text-[var(--muted)] sm:block">
+                Appears as &quot;Selected by ...&quot; in the export.
+              </p>
+            </div>
+
+            {children ? <div className="grid gap-3">{children}</div> : null}
+          </div>
+
+          <div className="grid grid-cols-2 items-center gap-2 sm:flex sm:flex-wrap sm:justify-end">
+            <button
+              type="button"
+              onClick={onGlobalSearch}
+              data-dialog-return-key={DIALOG_RETURN_KEYS.globalSearch}
+              className="official-button w-full sm:w-auto"
+            >
+              <AppIcon name="search" />
+              Search songs
+            </button>
+            <button
+              type="button"
+              onClick={onClearAll}
+              disabled={!hasPicks}
+              className="official-button official-button-quiet order-3 col-span-2 !min-h-9 justify-self-center !px-3 sm:order-none sm:col-span-1 sm:!min-h-11"
+            >
+              Clear
+            </button>
+            <button
+              ref={generateButtonRef}
+              type="button"
+              onClick={onGenerate}
+              disabled={generating || !hasPicks}
+              data-dialog-return-key={DIALOG_RETURN_KEYS.generateImage}
+              className="official-button official-button-primary min-w-0 w-full sm:min-w-[168px] sm:w-auto"
+            >
+              {generating ? (
+                <>
+                  <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-black/20 border-t-black" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <AppIcon name="image" />
+                  Generate image
+                </>
+              )}
+            </button>
+          </div>
+          <span className="sr-only" aria-live="polite">
+            {generating ? "Generating image preview" : ""}
+          </span>
+        </div>
+      </section>
     </div>
   );
 }
 
-function Metric({
-  label,
-  value,
-  color,
-}: {
-  label: string;
-  value: number;
-  color: string;
-}) {
+function Metric({ label, value }: { label: string; value: number }) {
   return (
-    <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em]">
-      <span
-        className="inline-block h-2.5 w-2.5"
-        style={{ backgroundColor: color }}
+    <div className="flex items-center gap-2 text-[13px] font-semibold tracking-[-0.01em]">
+      <AppIcon
+        name="music"
+        className="text-[var(--project-primary)]"
+        strokeWidth={2}
       />
-      <span className="text-black">{label}</span>
-      <span className="text-slate-500">{value}</span>
+      <span className="text-[var(--muted)]">{label}</span>
+      <span className="tabular-nums text-[var(--foreground)]">{value}</span>
     </div>
   );
 }

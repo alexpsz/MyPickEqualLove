@@ -1,14 +1,13 @@
 "use client";
 
 import React from "react";
-import type { PickExperienceLayout } from "../schema/pick-experience";
 import type { PickSlot, PickSlotId, Picks } from "../schema/music";
-import PickSlotCard from "./PickSlotCard";
+import PickSlotCard, { type InteractivePickLayout } from "./PickSlotCard";
 
 interface PickBoardProps {
   slots: PickSlot[];
   picks: Picks;
-  layout?: PickExperienceLayout;
+  layout?: InteractivePickLayout;
   showSlotMetadata?: boolean;
   onSlotClick: (slotId: PickSlotId) => void;
   onClearSlot: (slotId: PickSlotId, event: React.MouseEvent) => void;
@@ -22,21 +21,15 @@ export default function PickBoard({
   onSlotClick,
   onClearSlot,
 }: PickBoardProps) {
-  const selectedCount = Object.keys(picks).length;
   const gridClassName =
-    layout === "five-memory-list"
-      ? "grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2"
-      : "grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5";
+    layout === "live-memory-grid"
+      ? "live-memory-grid grid min-w-0 grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-3"
+      : "top10-interactive-grid grid min-w-0 grid-cols-2 gap-3 max-[359px]:grid-cols-1 md:grid-cols-4 xl:grid-cols-5";
 
   return (
-    <section className="relative z-10">
-      <div className="mb-8 flex flex-col items-start justify-between gap-4 border-b border-black pb-6 md:flex-row md:items-end">
-        <div>
-          <h2 className="section-title">PICKS</h2>
-          <p className="mt-5 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
-            {selectedCount}/{slots.length} songs selected
-          </p>
-        </div>
+    <section data-page-reveal className="relative z-10 [--reveal-delay:160ms]">
+      <div className="mb-3 flex items-end justify-between gap-4">
+        <h2 className="section-title">PICKS</h2>
       </div>
 
       <div className={gridClassName}>

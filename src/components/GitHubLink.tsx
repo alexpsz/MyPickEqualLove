@@ -8,19 +8,19 @@ interface GitHubLinkProps {
 
 export default function GitHubLink({
   repoUrl = PROJECT_CONFIG.repoUrl,
-  className = "absolute right-4 top-4 sm:right-6 sm:top-6",
+  className = "",
 }: GitHubLinkProps) {
   return (
     <a
       href={repoUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className={`${className} z-20 border border-black bg-white p-2 text-black transition-colors hover:bg-black hover:text-white`}
+      className={`${className} icon-button h-11 w-11`}
       title="View on GitHub"
       aria-label="View source on GitHub"
     >
       <svg
-        className="h-6 w-6"
+        className="relative z-10 h-5 w-5"
         fill="currentColor"
         viewBox="0 0 24 24"
         aria-hidden="true"

@@ -1,4 +1,6 @@
-import React from "react";
+"use client";
+
+import React, { useEffect, useRef } from "react";
 import {
   PUBLISHED_LIVE_EXPERIENCES,
   STANDARD_PICK_EXPERIENCE,
@@ -11,6 +13,15 @@ interface ExperienceNavigationProps {
 export default function ExperienceNavigation({
   activeExperienceId,
 }: ExperienceNavigationProps) {
+  const activeItemRef = useRef<HTMLAnchorElement>(null);
+
+  useEffect(() => {
+    activeItemRef.current?.scrollIntoView({
+      block: "nearest",
+      inline: "center",
+    });
+  }, [activeExperienceId]);
+
   if (PUBLISHED_LIVE_EXPERIENCES.length === 0) {
     return null;
   }
@@ -31,26 +42,30 @@ export default function ExperienceNavigation({
   return (
     <nav
       aria-label="Pick experience navigation"
-      className="relative z-10 mx-auto mb-5 flex w-full max-w-7xl px-5 md:px-8"
+      data-page-reveal
+      className="app-content-shell relative z-10 mb-3 flex px-4 sm:px-6 md:px-8"
     >
-      <div className="no-scrollbar flex max-w-full gap-2 overflow-x-auto border-y border-black bg-white px-2 py-2">
-        {items.map((item) => {
-          const active = item.id === activeExperienceId;
-          return (
-            <a
-              key={item.id}
-              href={item.href}
-              aria-current={active ? "page" : undefined}
-              className={`shrink-0 border px-3 py-2 text-[10px] font-black uppercase tracking-[0.1em] transition-colors ${
-                active
-                  ? "border-[var(--project-primary)] bg-[var(--project-primary)] text-white"
-                  : "border-slate-300 bg-white text-slate-600 hover:border-black hover:text-black"
-              }`}
-            >
-              {item.label}
-            </a>
-          );
-        })}
+      <div className="relative max-w-full after:pointer-events-none after:absolute after:inset-y-1 after:right-0 after:w-8 after:rounded-r-[var(--radius-sm)] after:bg-gradient-to-l after:from-white after:to-transparent sm:after:hidden">
+        <div className="no-scrollbar flex max-w-full gap-1 overflow-x-auto rounded-[var(--radius-sm)] border border-[var(--line)] bg-white p-1 shadow-[0_1px_3px_rgba(0,0,0,0.035)]">
+          {items.map((item) => {
+            const active = item.id === activeExperienceId;
+            return (
+              <a
+                key={item.id}
+                ref={active ? activeItemRef : undefined}
+                href={item.href}
+                aria-current={active ? "page" : undefined}
+                className={`shrink-0 rounded-[9px] border px-4 py-2.5 text-[13px] font-medium tracking-[-0.01em] transition-[background-color,border-color,color,transform] duration-150 active:scale-[0.98] ${
+                  active
+                    ? "border-transparent bg-[var(--project-primary)] text-[var(--project-contrast)] shadow-sm"
+                    : "border-transparent bg-transparent text-[var(--muted)] hover:bg-[var(--background)] hover:text-[var(--foreground)]"
+                }`}
+              >
+                {item.label}
+              </a>
+            );
+          })}
+        </div>
       </div>
     </nav>
   );

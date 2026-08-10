@@ -1,20 +1,24 @@
 "use client";
 
-import React from "react";
-import { PROJECT_THEME_COLOR } from "../config/project";
-import type { PickExperienceLayout } from "../schema/pick-experience";
+import React, { useRef } from "react";
+import { AnimatePresence, useIsPresent } from "motion/react";
+import * as m from "motion/react-m";
 import type { PickSlot, Song } from "../schema/music";
+import { getPickSlotReturnKey } from "../utils/useDialogA11y";
+import AppIcon from "./AppIcon";
+import { APPLE_OPACITY, APPLE_SPRING } from "./AppleMotion";
+import { usePrefersReducedMotion } from "./MotionPresence";
 
 interface PickSlotCardProps {
   slot: PickSlot;
   song?: Song;
-  layout?: PickExperienceLayout;
+  layout?: InteractivePickLayout;
   showSlotMetadata?: boolean;
   onClick: () => void;
   onClear: (event: React.MouseEvent) => void;
 }
 
-const getYear = (song: Song) => song.releaseDate?.slice(0, 4) ?? "TBD";
+export type InteractivePickLayout = "top10-grid" | "live-memory-grid";
 
 export default function PickSlotCard({
   slot,
@@ -24,105 +28,217 @@ export default function PickSlotCard({
   onClick,
   onClear,
 }: PickSlotCardProps) {
-  const color = PROJECT_THEME_COLOR;
-  const compact = layout === "five-memory-list";
+  const compact = layout === "live-memory-grid";
+  const prefersReducedMotion = usePrefersReducedMotion();
+  const articleRef = useRef<HTMLElement>(null);
+
+  const handleClear = (event: React.MouseEvent) => {
+    onClear(event);
+    window.requestAnimationFrame(() => {
+      articleRef.current
+        ?.querySelector<HTMLElement>('[data-card-current="true"] button')
+        ?.focus();
+    });
+  };
 
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={onClick}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          onClick();
-        }
-      }}
-      className={`group relative grid min-w-0 cursor-pointer grid-rows-[auto_1fr] overflow-hidden border border-black bg-white transition-transform duration-300 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-[var(--project-primary)] ${
-        compact ? "min-h-[260px]" : "min-h-[292px]"
-      }`}
-      aria-label={
-        song ? `Replace ${slot.label}: ${song.title.ja}` : `Pick ${slot.label}`
-      }
+    <article
+      ref={articleRef}
+      className="group relative min-w-0 overflow-hidden rounded-[var(--radius-md)] border border-[var(--line)] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.025),0_8px_24px_rgba(0,0,0,0.035)] transition-[border-color,box-shadow] duration-150"
     >
-      {song ? (
-        <div className="row-span-2 grid min-w-0 max-w-full grid-rows-[auto_auto] overflow-hidden">
-          <div className="relative min-w-0 max-w-full overflow-hidden border-b border-black bg-[var(--paper-soft)]">
-            <img
-              src={song.coverUrl}
-              alt={`${song.title.ja} cover`}
-              className="block h-auto w-full max-w-full transition-transform duration-500 group-hover:scale-105"
-              loading="lazy"
+      <div className="relative">
+        <AnimatePresence initial={false} mode="sync">
+          <AnimatedCardFace
+            key={song?.id ?? "empty"}
+            reducedMotion={prefersReducedMotion}
+          >
+            <CardFace
+              slot={slot}
+              song={song}
+              compact={compact}
+              showSlotMetadata={showSlotMetadata}
+              onClick={onClick}
+              onClear={handleClear}
             />
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/85 via-black/45 to-transparent" />
-            {showSlotMetadata ? (
-              <div className="absolute left-2 top-2 max-w-[calc(100%-3.5rem)] border border-black bg-white/95 px-2 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-black">
-                <span className="line-clamp-1">{slot.label}</span>
-              </div>
-            ) : null}
-            <div className="absolute inset-x-0 bottom-0 p-3 text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.8)]">
-              <div className="line-clamp-2 text-base font-bold leading-tight">
+          </AnimatedCardFace>
+        </AnimatePresence>
+      </div>
+    </article>
+  );
+}
+
+function AnimatedCardFace({
+  children,
+  reducedMotion,
+}: {
+  children: React.ReactNode;
+  reducedMotion: boolean;
+}) {
+  const isPresent = useIsPresent();
+
+  return (
+    <m.div
+      initial={{ opacity: 0, scale: 0.985 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.985 }}
+      transition={
+        reducedMotion
+          ? { duration: 0 }
+          : { opacity: APPLE_OPACITY, scale: APPLE_SPRING }
+      }
+      data-card-current={isPresent ? "true" : "false"}
+      aria-hidden={!isPresent}
+      inert={!isPresent}
+      className={`${isPresent ? "relative" : "absolute inset-0"} origin-center bg-white`}
+    >
+      {children}
+    </m.div>
+  );
+}
+
+function CardFace({
+  slot,
+  song,
+  compact,
+  showSlotMetadata,
+  onClick,
+  onClear,
+}: {
+  slot: PickSlot;
+  song?: Song;
+  compact: boolean;
+  showSlotMetadata: boolean;
+  onClick: () => void;
+  onClear: (event: React.MouseEvent) => void;
+}) {
+  if (!song) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        data-dialog-return-key={getPickSlotReturnKey(slot.id)}
+        className={`grid w-full text-left transition-transform duration-100 active:scale-[0.985] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring)] ${
+          compact
+            ? "min-h-[224px] grid-rows-[44px_minmax(180px,1fr)]"
+            : "grid-rows-[44px_auto_44px]"
+        }`}
+        aria-label={`Pick ${slot.label}`}
+      >
+        <CardHeader label={slot.label} stateLabel="Empty" />
+        <div
+          className={`flex flex-col items-center justify-center gap-3 border-y border-[var(--line)] px-4 text-center ${
+            compact ? "min-h-[180px]" : "aspect-square w-full"
+          }`}
+        >
+          <span className="flex h-10 w-10 items-center justify-center rounded-full border border-dashed border-[var(--line-strong)] text-[var(--muted)] transition-[background-color,border-color,color,transform] duration-150 group-hover:border-[var(--project-primary)] group-hover:bg-[var(--project-primary-wash)] group-hover:text-[var(--foreground)] group-active:scale-95">
+            <AppIcon name="plus" />
+          </span>
+          {compact ? (
+            <span className="max-w-[15rem] text-[13px] font-medium leading-snug text-[var(--muted)]">
+              {showSlotMetadata
+                ? (slot.subtitle ?? "Choose a song")
+                : "Choose a song"}
+            </span>
+          ) : null}
+        </div>
+        {!compact ? (
+          <span className="flex min-h-11 items-center justify-center px-3 text-center text-[13px] font-medium leading-snug text-[var(--muted)]">
+            Choose a song
+          </span>
+        ) : null}
+      </button>
+    );
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={onClick}
+        data-dialog-return-key={getPickSlotReturnKey(slot.id)}
+        className={`grid w-full text-left transition-transform duration-100 active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring)] ${
+          compact
+            ? "min-h-[224px] grid-rows-[44px_minmax(180px,1fr)]"
+            : "grid-rows-[44px_auto_44px]"
+        }`}
+        aria-label={`Replace ${slot.label}: ${song.title.ja}`}
+      >
+        <CardHeader label={slot.label} reserveAction />
+        {compact ? (
+          <div className="flex min-h-[180px] min-w-0 border-t border-[var(--line)] bg-[var(--paper-soft)]">
+            <div className="aspect-square w-[clamp(132px,46%,180px)] shrink-0 self-center overflow-hidden border-r border-[var(--line)] bg-white">
+              <img
+                src={song.coverUrl}
+                alt={`${song.title.ja} cover`}
+                className="block h-full w-full object-contain"
+                loading="lazy"
+              />
+            </div>
+            <div className="flex min-w-0 flex-1 flex-col justify-center px-4 py-3">
+              <div className="line-clamp-2 text-sm font-semibold tracking-[-0.015em] text-[var(--foreground)]">
                 {song.title.ja}
               </div>
-              <div className="mt-1 truncate text-[10px] font-bold uppercase tracking-[0.16em] text-white/80">
-                {song.title.romaji}
+              {showSlotMetadata && slot.subtitle ? (
+                <div className="mt-1.5 line-clamp-3 text-xs leading-relaxed text-[var(--muted)]">
+                  {slot.subtitle}
+                </div>
+              ) : null}
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="aspect-square w-full overflow-hidden border-y border-[var(--line)] bg-[var(--paper-soft)]">
+              <img
+                src={song.coverUrl}
+                alt={`${song.title.ja} cover`}
+                className="block h-full w-full object-contain"
+                loading="lazy"
+              />
+            </div>
+            <div className="flex min-h-11 min-w-0 items-center px-3.5">
+              <div className="truncate text-sm font-semibold tracking-[-0.015em] text-[var(--foreground)]">
+                {song.title.ja}
               </div>
             </div>
-          </div>
+          </>
+        )}
+      </button>
 
-          <div className="min-w-0 space-y-3 overflow-hidden p-3">
-            {showSlotMetadata && slot.subtitle ? (
-              <p className="line-clamp-2 text-[10px] font-bold leading-relaxed text-slate-500">
-                {slot.subtitle}
-              </p>
-            ) : null}
-            <div className="flex flex-wrap gap-1.5">
-              <span className="official-chip" style={{ color }}>
-                {getYear(song)}
-              </span>
-              {song.trackType && (
-                <span className="official-chip" style={{ color }}>
-                  {song.trackType}
-                </span>
-              )}
-            </div>
-          </div>
+      <button
+        type="button"
+        onClick={onClear}
+        className="icon-button icon-button-compact icon-button-overlay right-0 top-0 z-20 text-[var(--muted)]"
+        aria-label={`Clear ${song.title.ja}`}
+      >
+        <AppIcon name="close" size={14} />
+      </button>
+    </>
+  );
+}
 
-          <button
-            type="button"
-            onClick={onClear}
-            className="absolute right-2 top-2 z-20 flex h-7 w-7 items-center justify-center border border-black bg-white text-black opacity-0 transition-all duration-300 hover:bg-black hover:text-white group-hover:opacity-100"
-            aria-label={`Clear ${song.title.ja}`}
-          >
-            <svg
-              className="h-3 w-3 fill-current"
-              viewBox="0 0 20 20"
-              aria-hidden="true"
-            >
-              <path d="M10 8.586L2.929 1.515 1.515 2.929 8.586 10l-7.071 7.071 1.414 1.414L10 11.414l7.071 7.071 1.414-1.414L11.414 10l7.071-7.071-1.414-1.414L10 8.586z" />
-            </svg>
-          </button>
-        </div>
-      ) : (
-        <>
-          <div className="flex items-center justify-end border-b border-black">
-            <div className="px-3 py-2 text-[9px] font-bold uppercase tracking-[0.18em] text-black">
-              {showSlotMetadata ? slot.label : "My Pick"}
-            </div>
-          </div>
-          <div className="official-stripe flex min-h-[240px] flex-col items-center justify-center gap-4 p-5 text-center">
-            <div
-              className="flex h-16 w-16 items-center justify-center rounded-full text-3xl font-light text-white"
-              style={{ backgroundColor: color }}
-            >
-              +
-            </div>
-            <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-black">
-              {showSlotMetadata ? (slot.subtitle ?? "Pick Song") : "Pick Song"}
-            </div>
-          </div>
-        </>
-      )}
+function CardHeader({
+  label,
+  stateLabel,
+  reserveAction = false,
+}: {
+  label: string;
+  stateLabel?: string;
+  reserveAction?: boolean;
+}) {
+  return (
+    <div
+      className={`flex min-h-11 items-center justify-between gap-3 py-2.5 pl-3.5 ${
+        reserveAction ? "pr-12" : "pr-3.5"
+      }`}
+    >
+      <span className="min-w-0 truncate text-[13px] font-semibold tracking-[-0.01em] text-[var(--foreground)]">
+        {label}
+      </span>
+      {stateLabel ? (
+        <span className="shrink-0 text-xs font-medium text-[var(--muted)]">
+          {stateLabel}
+        </span>
+      ) : null}
     </div>
   );
 }

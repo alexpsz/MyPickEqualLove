@@ -42,25 +42,34 @@ import {
 } from "../data/pickExperiences";
 import type { PickExperience } from "../schema/pick-experience";
 import type { PickSlotId, Picks, Song, StoredPicks } from "../schema/music";
+import { centerExportYearInk } from "../utils/centerExportYearInk";
 import { convertColorString } from "../utils/colors";
 import { getMemberColorGradient } from "../utils/memberColors";
+import {
+  DIALOG_RETURN_KEYS,
+  getPickSlotReturnKey,
+} from "../utils/useDialogA11y";
+import AppTopBar from "./AppTopBar";
+import AppleMotion from "./AppleMotion";
 import Controls from "./Controls";
 import ExperienceNavigation from "./ExperienceNavigation";
 import ExportBoard from "./ExportBoard";
 import Footer from "./Footer";
-import GitHubLink from "./GitHubLink";
 import Header from "./Header";
+import MotionPresence from "./MotionPresence";
 import PickBoard from "./PickBoard";
 import PreviewModal from "./PreviewModal";
 import ReplacementModal from "./ReplacementModal";
 import SearchModal from "./SearchModal";
-import SisterProjectsMenu from "./SisterProjectsMenu";
 
 interface PickExperienceClientProps {
   experience: PickExperience;
 }
 
 const MAX_NICKNAME_LENGTH = 32;
+
+const getPreviewOptionsKey = (showTitles: boolean, transparentBg: boolean) =>
+  `${showTitles ? "titles" : "no-titles"}:${transparentBg ? "transparent" : "opaque"}`;
 
 export default function PickExperienceClient({
   experience,
@@ -101,6 +110,12 @@ export default function PickExperienceClient({
   const [nicknameDraft, setNicknameDraft] = useState("");
   const [hydrated, setHydrated] = useState(false);
   const generatingRef = useRef(false);
+  const previewTriggerRef = useRef<HTMLButtonElement>(null);
+  const searchReturnFocusKeyRef = useRef<string>(
+    DIALOG_RETURN_KEYS.globalSearch,
+  );
+  const previewGenerationIdRef = useRef(0);
+  const lastGeneratedPreviewOptionsRef = useRef<string | null>(null);
 
   const picks = useMemo<Picks>(() => {
     const entries = Object.entries(storedPicks)
@@ -246,11 +261,13 @@ export default function PickExperienceClient({
   };
 
   const handleSlotClick = (slotId: PickSlotId) => {
+    searchReturnFocusKeyRef.current = getPickSlotReturnKey(slotId);
     setActiveSlotId(slotId);
     setShowModal(true);
   };
 
   const handleGlobalSearchClick = () => {
+    searchReturnFocusKeyRef.current = DIALOG_RETURN_KEYS.globalSearch;
     setActiveSlotId(null);
     setShowModal(true);
   };
@@ -346,6 +363,8 @@ export default function PickExperienceClient({
       await new Promise((resolve) => window.setTimeout(resolve, 0));
     }
 
+    const generationId = ++previewGenerationIdRef.current;
+    const previewOptionsKey = getPreviewOptionsKey(showTitles, transparentBg);
     generatingRef.current = true;
     setGenerating(true);
 
@@ -387,11 +406,17 @@ export default function PickExperienceClient({
           scale: EXPORT_CONFIG.scale,
           logging: false,
         });
-        setPreviewUrl(canvas.toDataURL("image/png"));
+        centerExportYearInk(canvas, exportElement);
+        if (generationId === previewGenerationIdRef.current) {
+          lastGeneratedPreviewOptionsRef.current = previewOptionsKey;
+          setPreviewUrl(canvas.toDataURL("image/png"));
+        }
       }
     } catch (error) {
       console.error("Failed to generate image", error);
-      window.alert("Failed to generate image. Please try again.");
+      if (generationId === previewGenerationIdRef.current) {
+        window.alert("Failed to generate image. Please try again.");
+      }
     } finally {
       window.getComputedStyle = originalGetComputedStyle;
       generatingRef.current = false;
@@ -402,17 +427,30 @@ export default function PickExperienceClient({
     experience,
     exportCanvasId,
     saveStoredPicks,
+    showTitles,
     storedPicks,
     transparentBg,
   ]);
 
+  const previewOptionsKey = getPreviewOptionsKey(showTitles, transparentBg);
+
   useEffect(() => {
-    if (!previewUrl) return;
+    if (
+      !previewUrl ||
+      lastGeneratedPreviewOptionsRef.current === previewOptionsKey
+    ) {
+      return;
+    }
     const timer = window.setTimeout(() => {
       void handleGenerateImage();
     }, 100);
     return () => window.clearTimeout(timer);
-  }, [handleGenerateImage, previewUrl, showTitles, transparentBg]);
+  }, [handleGenerateImage, previewOptionsKey, previewUrl]);
+
+  const handleClosePreview = () => {
+    previewGenerationIdRef.current += 1;
+    setPreviewUrl(null);
+  };
 
   const isStandard = experience.kind === "standard";
   const headerMeta = [
@@ -424,118 +462,160 @@ export default function PickExperienceClient({
     .join(" / ");
 
   return (
-    <div className="site-shell relative flex flex-1 flex-col">
-      <div
-        className="relative z-10 h-2 w-full"
-        style={{ background: MEMBER_COLOR_BAR_BACKGROUND }}
-      />
-
-      <SisterProjectsMenu />
-      <GitHubLink />
-      <Header
-        titlePrefix={isStandard ? undefined : experience.title}
-        titleAccent={isStandard ? undefined : PROJECT_CONFIG.groupName}
-        subtitle={isStandard ? undefined : experience.subtitle}
-        description={isStandard ? undefined : experience.description}
-        meta={isStandard ? undefined : headerMeta}
-      />
-
-      <ExperienceNavigation activeExperienceId={experience.id} />
-
-      <Controls
-        onClearAll={handleClearAllPicks}
-        onGenerate={handleGenerateImage}
-        onGlobalSearch={handleGlobalSearchClick}
-        nickname={nicknameDraft}
-        nicknameMaxLength={MAX_NICKNAME_LENGTH}
-        onNicknameChange={handleNicknameChange}
-        generating={generating}
-        hasPicks={Object.keys(picks).length > 0}
-        totalSongs={eligibleSongsCount}
-        metricLabel={isStandard ? "Songs" : "Eligible Songs"}
-      >
-        {contextOptions.length > 0 ? (
-          <ContextSelector
-            contexts={contextOptions}
-            activeContextId={activeContext?.id}
-            onChange={handleContextChange}
-          />
-        ) : null}
-        {experience.id === "kokuritsu_2026" ? (
-          <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-slate-500">
-            「帰り道に聴いた曲」は全楽曲から選べます。FREE
-            PICKは国立で披露された楽曲から選べます。
-          </p>
-        ) : null}
-      </Controls>
-
-      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-3 sm:px-6">
-        <PickBoard
-          slots={slots}
-          picks={picks}
-          layout={experience.export.layout}
-          showSlotMetadata={!isStandard}
-          onSlotClick={handleSlotClick}
-          onClearSlot={handleClearSlot}
+    <div
+      className="site-shell relative flex flex-1 flex-col"
+      data-ready={hydrated}
+      aria-busy={!hydrated}
+    >
+      <AppleMotion>
+        <AppTopBar
+          memberColorBackground={MEMBER_COLOR_BAR_BACKGROUND}
+          asHeading={isStandard}
         />
-      </main>
-
-      <Footer />
-
-      {showModal && (
-        <SearchModal
-          songs={searchSongs}
-          members={MEMBERS}
-          releaseTypes={RELEASE_TYPES}
-          trackTypes={TRACK_TYPES}
-          years={RELEASE_YEARS}
-          autoFocusSearch={activeSlotId === null}
-          contextLabel={
-            selectedSlot
-              ? selectedSlot.label
-              : (activeContext?.exportLabel ?? experience.title)
-          }
-          resultBadgesBySongId={songBadgesBySongId}
-          emptyMessage="No songs are eligible for this slot with the current filters."
-          onClose={() => {
-            setShowModal(false);
-            setActiveSlotId(null);
-          }}
-          onSelect={handleSelectSong}
+        <Header
+          titlePrefix={isStandard ? undefined : experience.title}
+          titleAccent={isStandard ? undefined : PROJECT_CONFIG.groupName}
+          subtitle={isStandard ? undefined : experience.subtitle}
+          description={isStandard ? undefined : experience.description}
+          meta={isStandard ? undefined : headerMeta}
+          showTitle={!isStandard}
         />
-      )}
 
-      {pendingReplacementSong && (
-        <ReplacementModal
-          song={pendingReplacementSong}
-          slots={slots}
-          picks={picks}
-          slotStates={replacementSlotStates}
-          showSlotLabels={!isStandard}
-          onReplace={handleReplaceSlot}
-          onClose={() => setPendingReplacementSong(null)}
-        />
-      )}
+        <ExperienceNavigation activeExperienceId={experience.id} />
 
-      {previewUrl && (
-        <PreviewModal
-          previewUrl={previewUrl}
-          onClose={() => setPreviewUrl(null)}
-          showTitles={showTitles}
-          onToggleShowTitles={setShowTitles}
-          transparentBg={transparentBg}
-          onToggleTransparentBg={setTransparentBg}
+        <Controls
+          onClearAll={handleClearAllPicks}
+          onGenerate={handleGenerateImage}
+          onGlobalSearch={handleGlobalSearchClick}
+          nickname={nicknameDraft}
+          nicknameMaxLength={MAX_NICKNAME_LENGTH}
+          onNicknameChange={handleNicknameChange}
           generating={generating}
-          pageUrl={pageUrl}
-          previewLabel={previewLabel}
-          imageFileName={imageFileName}
-          shareText={experience.share.text}
-          shareHashtags={experience.share.hashtags}
-          shareTitle={experience.export.title}
-        />
-      )}
+          hasPicks={Object.keys(picks).length > 0}
+          totalSongs={eligibleSongsCount}
+          selectedCount={Object.keys(picks).length}
+          slotCount={slots.length}
+          metricLabel={isStandard ? "Songs" : "Eligible Songs"}
+          generateButtonRef={previewTriggerRef}
+        >
+          {contextOptions.length > 0 ? (
+            <ContextSelector
+              contexts={contextOptions}
+              activeContextId={activeContext?.id}
+              onChange={handleContextChange}
+            />
+          ) : null}
+          {experience.id === "kokuritsu_2026" ? (
+            <p className="text-[11px] font-medium leading-relaxed text-slate-500">
+              「帰り道に聴いた曲」は全楽曲から選べます。FREE
+              PICKは国立で披露された楽曲から選べます。
+            </p>
+          ) : null}
+        </Controls>
 
-      <div className="pointer-events-none fixed -left-[9999px] -top-[9999px] select-none overflow-hidden">
+        <main className="app-content-shell flex flex-1 flex-col px-4 sm:px-6 md:px-8">
+          <PickBoard
+            slots={slots}
+            picks={picks}
+            layout={isStandard ? "top10-grid" : "live-memory-grid"}
+            showSlotMetadata={!isStandard}
+            onSlotClick={handleSlotClick}
+            onClearSlot={handleClearSlot}
+          />
+        </main>
+
+        <Footer />
+
+        <MotionPresence
+          value={
+            showModal
+              ? {
+                  songs: searchSongs,
+                  autoFocusSearch: activeSlotId === null,
+                  returnFocusKey: searchReturnFocusKeyRef.current,
+                  contextLabel: selectedSlot
+                    ? selectedSlot.label
+                    : (activeContext?.exportLabel ?? experience.title),
+                }
+              : null
+          }
+        >
+          {(searchPresentation, presenceState) => (
+            <SearchModal
+              songs={searchPresentation.songs}
+              members={MEMBERS}
+              releaseTypes={RELEASE_TYPES}
+              trackTypes={TRACK_TYPES}
+              years={RELEASE_YEARS}
+              autoFocusSearch={searchPresentation.autoFocusSearch}
+              contextLabel={searchPresentation.contextLabel}
+              resultBadgesBySongId={songBadgesBySongId}
+              emptyMessage="No songs are eligible for this slot with the current filters."
+              presenceState={presenceState}
+              returnFocusKey={searchPresentation.returnFocusKey}
+              onClose={() => {
+                setShowModal(false);
+                setActiveSlotId(null);
+              }}
+              onSelect={handleSelectSong}
+            />
+          )}
+        </MotionPresence>
+
+        <MotionPresence
+          value={
+            pendingReplacementSong
+              ? {
+                  song: pendingReplacementSong,
+                  slotStates: replacementSlotStates,
+                }
+              : null
+          }
+        >
+          {(replacement, presenceState) => (
+            <ReplacementModal
+              song={replacement.song}
+              slots={slots}
+              picks={picks}
+              slotStates={replacement.slotStates}
+              showSlotLabels={!isStandard}
+              presenceState={presenceState}
+              onReplace={handleReplaceSlot}
+              onClose={() => setPendingReplacementSong(null)}
+            />
+          )}
+        </MotionPresence>
+
+        <MotionPresence value={previewUrl}>
+          {(renderedPreviewUrl, presenceState) => (
+            <PreviewModal
+              previewUrl={renderedPreviewUrl}
+              onClose={handleClosePreview}
+              showTitles={showTitles}
+              onToggleShowTitles={setShowTitles}
+              transparentBg={transparentBg}
+              onToggleTransparentBg={setTransparentBg}
+              generating={generating}
+              pageUrl={pageUrl}
+              previewLabel={previewLabel}
+              imageFileName={imageFileName}
+              shareText={experience.share.text}
+              shareHashtags={experience.share.hashtags}
+              shareTitle={experience.export.title}
+              presenceState={presenceState}
+              returnFocusRef={previewTriggerRef}
+              returnFocusKey={DIALOG_RETURN_KEYS.generateImage}
+              returnFocusFallbackKey={DIALOG_RETURN_KEYS.globalSearch}
+            />
+          )}
+        </MotionPresence>
+      </AppleMotion>
+
+      <div
+        className="pointer-events-none fixed -left-[9999px] -top-[9999px] select-none overflow-hidden"
+        aria-hidden="true"
+        inert
+      >
         <ExportBoard
           experience={experience}
           context={activeContext}
@@ -563,20 +643,20 @@ function ContextSelector({
 }) {
   return (
     <div className="grid gap-2">
-      <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-black">
+      <div className="text-xs font-semibold text-[var(--muted)]">
         振り返る公演
       </div>
-      <div className="flex flex-wrap gap-2">
+      <div className="inline-flex w-fit max-w-full flex-wrap rounded-[var(--radius-sm)] bg-[var(--background)] p-1">
         {contexts.map((context) => (
           <button
             key={context.id}
             type="button"
             onClick={() => onChange(context.id)}
             aria-pressed={activeContextId === context.id}
-            className={`border px-3 py-2 text-[10px] font-black uppercase tracking-[0.1em] transition-colors ${
+            className={`min-h-9 rounded-[9px] border px-3 py-2 text-[13px] font-medium transition-[background-color,border-color,color,box-shadow,transform] duration-150 active:scale-[0.98] ${
               activeContextId === context.id
-                ? "border-[var(--project-primary)] bg-[var(--project-primary)] text-white"
-                : "border-slate-300 bg-white text-slate-600 hover:border-black hover:text-black"
+                ? "border-[var(--line)] bg-white text-[var(--foreground)] shadow-sm"
+                : "border-transparent bg-transparent text-[var(--muted)] hover:text-[var(--foreground)]"
             }`}
           >
             {context.label}

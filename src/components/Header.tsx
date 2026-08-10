@@ -7,6 +7,7 @@ interface HeaderProps {
   subtitle?: string;
   description?: string;
   meta?: string;
+  showTitle?: boolean;
 }
 
 export default function Header({
@@ -15,28 +16,36 @@ export default function Header({
   subtitle = PROJECT_CONFIG.subtitle,
   description = "Select your favorite tracks and export a clean board for sharing.",
   meta,
+  showTitle = true,
 }: HeaderProps) {
   return (
-    <header className="relative z-10 mx-auto w-full max-w-7xl px-5 pb-8 pt-7 md:px-8 md:pb-12 md:pt-10">
-      <div className="grid gap-6 py-10 md:grid-cols-[1fr_auto] md:items-end md:py-14">
-        <div>
-          <h1 className="max-w-4xl text-5xl font-light leading-none tracking-[-0.01em] text-black sm:text-7xl md:text-8xl">
-            {titlePrefix}
-            <span className="mt-2 block font-bold text-[var(--project-accent)]">
-              {titleAccent}
-            </span>
+    <header
+      data-page-reveal
+      className="app-content-shell relative z-10 px-4 py-3.5 sm:px-6 sm:py-6 md:px-8"
+    >
+      <div
+        className={
+          showTitle
+            ? "grid gap-2.5 sm:gap-4 md:grid-cols-[minmax(0,1fr)_minmax(340px,0.72fr)] md:items-center md:gap-8"
+            : "max-w-2xl"
+        }
+      >
+        {showTitle ? (
+          <h1 className="brand-type flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1 text-[clamp(1.875rem,4vw,2.75rem)] font-medium leading-[1.02] tracking-[-0.045em] text-[var(--foreground)]">
+            <span>{titlePrefix}</span>
+            <span className="font-semibold">{titleAccent}</span>
           </h1>
-        </div>
+        ) : null}
 
-        <div className="official-panel max-w-sm p-5 md:mb-2">
-          <p className="text-sm font-bold leading-relaxed text-black">
+        <div className="border-l-[3px] border-[var(--project-primary)] pl-3.5 sm:pl-5">
+          <p className="text-[15px] font-semibold leading-snug tracking-[-0.01em] text-[var(--foreground)]">
             {subtitle}
           </p>
-          <p className="mt-3 border-t border-black pt-3 text-[11px] leading-relaxed text-slate-600">
+          <p className="mt-1 text-[13px] leading-relaxed text-[var(--muted)] sm:mt-1.5 sm:text-sm">
             {description}
           </p>
           {meta ? (
-            <p className="mt-3 border-t border-black pt-3 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--project-primary)]">
+            <p className="mt-2 text-xs font-medium text-[var(--muted)]">
               {meta}
             </p>
           ) : null}
