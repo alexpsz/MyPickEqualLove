@@ -6,6 +6,7 @@
     "node": ">=20.9.0"
   },
   "scripts": {
+    "prepare": "node scripts/install-git-hooks.mjs",
     "dev": "next dev --webpack",
     "dev:equal-love": "node scripts/run-project-command.mjs equal-love dev",
     "dev:nearly-equal-joy": "node scripts/run-project-command.mjs nearly-equal-joy dev",
@@ -31,6 +32,8 @@
     "check:data:sync": "node scripts/check-discography-update.mjs",
     "check:data:sync:strict": "node scripts/check-discography-update.mjs --enforce-allowlist",
     "test:discography": "python scripts/test_sync_project_discography.py && node scripts/check-discography-update.mjs --self-test",
+    "check:repo-boundary": "node scripts/check-repository-boundary.mjs",
+    "hooks:install": "node scripts/install-git-hooks.mjs",
     "validate:data": "node scripts/validate-project-data.mjs",
     "validate:data:project": "node scripts/validate-project-data.mjs --project"
   },

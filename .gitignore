@@ -1,9 +1,35 @@
-node_modules
-.next
-out
-build
-dist
-memory/
+# Dependencies and generated output
+/node_modules/
+/.next/
+/out/
+/build/
+/dist/
+/coverage/
+/.cache/
+/.turbo/
+*.tsbuildinfo
+
+# Local-only project workflow
+/memory/
+/agent.md
+/AGENTS.md
+/CLAUDE.md
+/.agents/
+/.claude/
+/.codex/
+/.internal/
+/internal/
+/docs/internal/
+/docs/live-implementation-plan.md
+
+# Local environment and provider state
+/.env
+/.env.*
+!/.env.example
+/.vercel/
+/.wrangler/
+
+# OS, editor, logs, and Python caches
 .DS_Store
 *.log
 __pycache__/
