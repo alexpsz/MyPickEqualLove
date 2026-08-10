@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef } from "react";
 import * as m from "motion/react-m";
+import { useLocale } from "../i18n/LocaleProvider";
 import { useDialogA11y } from "../utils/useDialogA11y";
 import AppIcon from "./AppIcon";
 import { APPLE_OPACITY, APPLE_SPRING_GENTLE } from "./AppleMotion";
@@ -46,6 +47,7 @@ export default function PreviewModal({
   returnFocusKey,
   returnFocusFallbackKey,
 }: PreviewModalProps) {
+  const { t } = useLocale();
   const panelRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const shareConfig = {
@@ -82,7 +84,7 @@ export default function PreviewModal({
         tabIndex={-1}
         aria-hidden={presenceState === "exiting"}
         className="overlay-scrim absolute inset-0 cursor-default bg-black/25 backdrop-blur-[2px]"
-        aria-label="Close image preview"
+        aria-label={t("preview.closeAria")}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -113,7 +115,7 @@ export default function PreviewModal({
               id="preview-modal-title"
               className="text-[20px] font-semibold tracking-[-0.03em] text-[var(--foreground)]"
             >
-              Image Preview
+              {t("preview.title")}
             </h3>
             <p className="mt-0.5 text-[13px] text-[var(--muted)]">
               {previewLabel}
@@ -125,20 +127,20 @@ export default function PreviewModal({
               checked={showTitles}
               disabled={generating}
               onChange={onToggleShowTitles}
-              label="Show Song Titles"
+              label={t("preview.showTitles")}
             />
             <ToggleOption
               checked={transparentBg}
               disabled={generating}
               onChange={onToggleTransparentBg}
-              label="Transparent Background"
+              label={t("preview.transparentBackground")}
             />
             <button
               ref={closeButtonRef}
               type="button"
               onClick={onClose}
               className="icon-button icon-button-compact"
-              aria-label="Close image preview"
+              aria-label={t("preview.closeAria")}
             >
               <AppIcon name="close" size={16} />
             </button>
@@ -148,7 +150,7 @@ export default function PreviewModal({
         <div className="no-scrollbar relative flex min-h-0 flex-1 justify-center overflow-y-auto bg-[var(--background)] p-4 sm:p-6">
           <img
             src={previewUrl}
-            alt={`${shareTitle} Preview`}
+            alt={t("preview.imageAlt", { title: shareTitle })}
             className={`block max-h-[58dvh] max-w-full bg-white object-contain shadow-[var(--shadow-panel)] transition-[opacity,filter] duration-150 ${
               generating ? "opacity-50 blur-[2px]" : "opacity-100"
             }`}
@@ -157,7 +159,7 @@ export default function PreviewModal({
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="preview-status flex items-center gap-2 rounded-full bg-black/80 px-4 py-2 text-[13px] font-medium text-white shadow-lg backdrop-blur-md">
                 <span className="h-3.5 w-3.5 rounded-full border-2 border-white/20 border-t-white animate-spin" />
-                Updating Preview...
+                {t("preview.updating")}
               </div>
             </div>
           )}
@@ -169,17 +171,23 @@ export default function PreviewModal({
             onClick={onClose}
             className="official-button official-button-quiet"
           >
-            Close
+            {t("preview.close")}
           </button>
           <button
             type="button"
             onClick={() => {
-              void downloadImage(previewUrl, imageFileName, shareTitle);
+              void downloadImage(
+                previewUrl,
+                imageFileName,
+                shareTitle,
+                t("errors.downloadFailed"),
+                t("errors.downloadBlocked"),
+              );
             }}
             className="official-button official-button-primary"
           >
             <AppIcon name="download" />
-            Download Image
+            {t("preview.downloadImage")}
           </button>
           <button
             type="button"
@@ -195,7 +203,7 @@ export default function PreviewModal({
             >
               <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
             </svg>
-            Share to X
+            {t("preview.shareToX")}
           </button>
         </div>
       </m.div>
@@ -328,6 +336,8 @@ async function downloadImage(
   previewUrl: string,
   fileName: string,
   shareTitle: string,
+  downloadFailedMessage: string,
+  downloadBlockedMessage: string,
 ) {
   try {
     const browser = getBrowserProfile();
@@ -354,12 +364,10 @@ async function downloadImage(
       return;
     }
 
-    openImageFallback(blob);
+    openImageFallback(blob, downloadBlockedMessage);
   } catch (error) {
     console.error("Failed to download image", error);
-    window.alert(
-      "This browser could not start the download. Please long-press or right-click the preview image to save it.",
-    );
+    window.alert(downloadFailedMessage);
   }
 }
 
@@ -443,14 +451,12 @@ function triggerAnchorDownload(blob: Blob, fileName: string) {
   }, 30_000);
 }
 
-function openImageFallback(blob: Blob) {
+function openImageFallback(blob: Blob, downloadBlockedMessage: string) {
   const blobUrl = URL.createObjectURL(blob);
   const openedWindow = window.open(blobUrl, "_blank");
 
   if (!openedWindow) {
-    window.alert(
-      "This browser blocked the automatic download. Please long-press or right-click the preview image to save it.",
-    );
+    window.alert(downloadBlockedMessage);
     URL.revokeObjectURL(blobUrl);
     return;
   }

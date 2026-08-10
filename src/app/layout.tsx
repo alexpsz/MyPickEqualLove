@@ -2,12 +2,16 @@ import type { Metadata } from "next";
 import type { CSSProperties, ReactNode } from "react";
 import "./globals.css";
 import { PROJECT_CONFIG } from "../config/project";
+import { localizeProjectCopy } from "../i18n/content";
+import LocaleProvider from "../i18n/LocaleProvider";
 import { SITE_URL } from "../utils/constants";
+
+const metadataCopy = localizeProjectCopy(PROJECT_CONFIG.id, "en");
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: `${PROJECT_CONFIG.displayName} | ${PROJECT_CONFIG.subtitle}`,
-  description: PROJECT_CONFIG.description,
+  title: `${PROJECT_CONFIG.displayName} | ${metadataCopy.subtitle}`,
+  description: metadataCopy.description,
   keywords: PROJECT_CONFIG.keywords,
   alternates: {
     canonical: "/",
@@ -17,10 +21,10 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: PROJECT_CONFIG.displayName,
-    description: PROJECT_CONFIG.description,
+    description: metadataCopy.description,
     url: SITE_URL,
     siteName: PROJECT_CONFIG.displayName,
-    locale: "ja_JP",
+    locale: "en_US",
     type: "website",
     images: [
       {
@@ -34,7 +38,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary",
     title: PROJECT_CONFIG.displayName,
-    description: PROJECT_CONFIG.description,
+    description: metadataCopy.description,
     images: [PROJECT_CONFIG.iconPath],
   },
   robots: {
@@ -49,13 +53,18 @@ export default function RootLayout({
   children: ReactNode;
 }>) {
   return (
-    <html lang="ja" className="h-full antialiased">
+    <html
+      lang="en"
+      data-locale="en"
+      className="h-full antialiased"
+      suppressHydrationWarning
+    >
       <body
         className="flex min-h-full flex-col"
         style={projectThemeStyle}
         suppressHydrationWarning
       >
-        {children}
+        <LocaleProvider>{children}</LocaleProvider>
       </body>
     </html>
   );

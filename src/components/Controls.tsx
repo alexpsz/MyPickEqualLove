@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useLocale } from "../i18n/LocaleProvider";
 import { DIALOG_RETURN_KEYS } from "../utils/useDialogA11y";
 import AppIcon from "./AppIcon";
 
@@ -33,10 +34,12 @@ export default function Controls({
   totalSongs,
   selectedCount,
   slotCount,
-  metricLabel = "Songs",
+  metricLabel,
   generateButtonRef,
   children,
 }: ControlsProps) {
+  const { t } = useLocale();
+
   return (
     <div
       data-page-reveal
@@ -44,12 +47,17 @@ export default function Controls({
     >
       <section className="official-panel-soft grid gap-3 p-3.5 sm:p-5">
         <div className="flex flex-wrap items-center gap-x-7 gap-y-2 border-b border-[var(--line)] pb-2.5 sm:pb-3">
-          <Metric label={metricLabel} value={totalSongs} />
+          <Metric
+            label={metricLabel ?? t("controls.songs")}
+            value={totalSongs}
+          />
           <div
             className="flex items-center gap-2 text-[13px] font-semibold tracking-[-0.01em]"
             aria-live="polite"
           >
-            <span className="text-[var(--muted)]">Selected</span>
+            <span className="text-[var(--muted)]">
+              {t("controls.selected")}
+            </span>
             <span className="tabular-nums text-[var(--foreground)]">
               {selectedCount}/{slotCount}
             </span>
@@ -69,7 +77,7 @@ export default function Controls({
                 htmlFor="export-nickname"
                 className="sr-only text-xs font-semibold tracking-[0.02em] text-[var(--muted)] sm:not-sr-only"
               >
-                Export name
+                {t("controls.exportName")}
               </label>
               <div className="flex min-h-11 items-center rounded-[var(--radius-sm)] border border-[var(--line-strong)] bg-white transition-[border-color,box-shadow] focus-within:border-[var(--focus-ring)] focus-within:shadow-[0_0_0_2px_var(--focus-ring)]">
                 <input
@@ -79,7 +87,7 @@ export default function Controls({
                   maxLength={nicknameMaxLength}
                   disabled={generating}
                   onChange={(event) => onNicknameChange(event.target.value)}
-                  placeholder="Export name (optional)"
+                  placeholder={t("controls.exportNamePlaceholder")}
                   className="min-w-0 flex-1 bg-transparent px-3 py-2 text-[15px] font-normal text-[var(--foreground)] outline-none placeholder:text-[var(--muted-soft)] disabled:opacity-50"
                 />
                 <span className="px-3 text-xs font-medium tabular-nums text-[var(--muted)]">
@@ -87,7 +95,7 @@ export default function Controls({
                 </span>
               </div>
               <p className="hidden text-xs leading-relaxed text-[var(--muted)] sm:block">
-                Appears as &quot;Selected by ...&quot; in the export.
+                {t("controls.exportNameHint")}
               </p>
             </div>
 
@@ -102,7 +110,7 @@ export default function Controls({
               className="official-button w-full sm:w-auto"
             >
               <AppIcon name="search" />
-              Search songs
+              {t("controls.searchSongs")}
             </button>
             <button
               type="button"
@@ -110,7 +118,7 @@ export default function Controls({
               disabled={!hasPicks}
               className="official-button official-button-quiet order-3 col-span-2 !min-h-9 justify-self-center !px-3 sm:order-none sm:col-span-1 sm:!min-h-11"
             >
-              Clear
+              {t("controls.clear")}
             </button>
             <button
               ref={generateButtonRef}
@@ -123,18 +131,18 @@ export default function Controls({
               {generating ? (
                 <>
                   <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-black/20 border-t-black" />
-                  Generating...
+                  {t("controls.generating")}
                 </>
               ) : (
                 <>
                   <AppIcon name="image" />
-                  Generate image
+                  {t("controls.generateImage")}
                 </>
               )}
             </button>
           </div>
           <span className="sr-only" aria-live="polite">
-            {generating ? "Generating image preview" : ""}
+            {generating ? t("controls.generatingPreview") : ""}
           </span>
         </div>
       </section>

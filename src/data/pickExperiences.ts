@@ -266,10 +266,12 @@ export function getReplacementSlotStates({
   experience,
   songId,
   contextId,
+  disabledReason,
 }: {
   experience: PickExperience;
   songId: string;
   contextId?: string;
+  disabledReason: string;
 }): ReplacementSlotState[] {
   return getSortedExperienceSlots(experience).map((slot) => {
     if (isSongEligibleForSlot({ experience, slot, songId, contextId })) {
@@ -278,7 +280,7 @@ export function getReplacementSlotStates({
 
     return {
       slotId: slot.id,
-      disabledReason: "This song cannot be placed in this slot.",
+      disabledReason,
     };
   });
 }
@@ -332,7 +334,11 @@ export function parseStoredPicksForExperience({
   });
 }
 
-export function getSongBadgesBySongId(experience: PickExperience) {
+export function getSongBadgesBySongId(
+  experience: PickExperience,
+  catalogOnlyBadge?: string,
+  performanceLabels?: Readonly<Record<string, string>>,
+) {
   const performances = experience.performances ?? [];
   const hasStrictSlot = experience.slots.some(
     (slot) => slot.eligibility !== "catalog",
@@ -357,15 +363,15 @@ export function getSongBadgesBySongId(experience: PickExperience) {
       eventSongIds.add(songId);
       badgesBySongId[songId] = [
         ...(badgesBySongId[songId] ?? []),
-        performance.label,
+        performanceLabels?.[performance.id] ?? performance.label,
       ];
     }
   }
 
-  if (hasStrictSlot && hasCatalogSlot) {
+  if (hasStrictSlot && hasCatalogSlot && catalogOnlyBadge) {
     for (const song of SONGS) {
       if (!eventSongIds.has(song.id)) {
-        badgesBySongId[song.id] = ["帰り道枠のみ"];
+        badgesBySongId[song.id] = [catalogOnlyBadge];
       }
     }
   }
@@ -385,19 +391,6 @@ export function getExperienceImageFileName(
     /\.png$/i,
     `_${context.id.replace(/-/g, "_").toUpperCase()}.png`,
   );
-}
-
-export function getExperiencePreviewLabel(
-  experience: PickExperience,
-  context?: ExperienceContext,
-) {
-  if (experience.kind === "standard") {
-    return `${PROJECT_CONFIG.groupName} Top Picks export`;
-  }
-
-  return [experience.export.title, context?.exportLabel]
-    .filter(Boolean)
-    .join(" · ");
 }
 
 function getSongIdsForScope(

@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useLocale } from "../i18n/LocaleProvider";
 import type { PickSlot, PickSlotId, Picks } from "../schema/music";
 import PickSlotCard, { type InteractivePickLayout } from "./PickSlotCard";
 
@@ -21,6 +22,7 @@ export default function PickBoard({
   onSlotClick,
   onClearSlot,
 }: PickBoardProps) {
+  const { t } = useLocale();
   const gridClassName =
     layout === "live-memory-grid"
       ? "live-memory-grid grid min-w-0 grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-3"
@@ -29,7 +31,7 @@ export default function PickBoard({
   return (
     <section data-page-reveal className="relative z-10 [--reveal-delay:160ms]">
       <div className="mb-3 flex items-end justify-between gap-4">
-        <h2 className="section-title">PICKS</h2>
+        <h2 className="section-title">{t("pick.heading")}</h2>
       </div>
 
       <div className={gridClassName}>

@@ -7,9 +7,11 @@ import {
   EXTERNAL_MY_PICK_LINKS,
   SISTER_PROJECT_LINKS,
 } from "../config/project";
+import { useLocale } from "../i18n/LocaleProvider";
 import { DIALOG_RETURN_KEYS, useDialogA11y } from "../utils/useDialogA11y";
 import AppIcon from "./AppIcon";
 import { APPLE_OPACITY, APPLE_SPRING_GENTLE } from "./AppleMotion";
+import JapaneseContent from "./JapaneseContent";
 import MotionPresence, { type PresenceState } from "./MotionPresence";
 
 export default function SisterProjectsMenu({
@@ -19,6 +21,7 @@ export default function SisterProjectsMenu({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [portalReady, setPortalReady] = useState(false);
+  const { t } = useLocale();
 
   useEffect(() => setPortalReady(true), []);
 
@@ -28,8 +31,8 @@ export default function SisterProjectsMenu({
         type="button"
         onClick={() => setIsOpen(true)}
         className={`${triggerClassName} icon-button`}
-        title="Open other MyPick sites"
-        aria-label="Open other MyPick sites"
+        title={t("menu.openTitle")}
+        aria-label={t("menu.openAria")}
         aria-controls="sister-projects-drawer"
         aria-expanded={isOpen}
         data-dialog-return-key={DIALOG_RETURN_KEYS.sisterProjects}
@@ -62,6 +65,7 @@ function SisterProjectsDrawer({
   onClose: () => void;
 }) {
   const panelRef = useRef<HTMLElement>(null);
+  const { t } = useLocale();
 
   useDialogA11y({
     dialogRef: panelRef,
@@ -82,7 +86,7 @@ function SisterProjectsDrawer({
         tabIndex={-1}
         aria-hidden={presenceState === "exiting"}
         className="overlay-scrim absolute inset-0 cursor-default bg-black/20 backdrop-blur-[2px]"
-        aria-label="Dismiss other MyPick sites"
+        aria-label={t("menu.dismissAria")}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -110,24 +114,24 @@ function SisterProjectsDrawer({
               id="sister-projects-title"
               className="text-[22px] font-semibold tracking-[-0.035em] text-[var(--foreground)]"
             >
-              Other Picks
+              {t("menu.title")}
             </h2>
             <p className="mt-0.5 text-[13px] text-[var(--muted)]">
-              Explore the MyPick family
+              {t("menu.subtitle")}
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
             className="icon-button icon-button-compact"
-            aria-label="Close other MyPick sites"
+            aria-label={t("menu.closeAria")}
           >
             <AppIcon name="close" size={16} />
           </button>
         </div>
 
         <nav className="min-h-0 flex-1 overflow-y-auto bg-[var(--background)] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-5">
-          <DrawerSection label="Official MyPick sites">
+          <DrawerSection label={t("menu.officialSites")}>
             {SISTER_PROJECT_LINKS.map((link, index) => (
               <DrawerLink
                 key={link.id}
@@ -141,13 +145,19 @@ function SisterProjectsDrawer({
           </DrawerSection>
 
           <div className="mt-5">
-            <DrawerSection label="Community MyPicks">
+            <DrawerSection label={t("menu.communitySites")}>
               {EXTERNAL_MY_PICK_LINKS.map((link, index) => (
                 <DrawerLink
                   key={link.id}
                   href={link.siteUrl}
                   title={link.displayName}
-                  subtitle={link.groupName}
+                  subtitle={
+                    link.groupNameLanguage === "ja" ? (
+                      <JapaneseContent>{link.groupName}</JapaneseContent>
+                    ) : (
+                      link.groupName
+                    )
+                  }
                   divided={index > 0}
                 />
               ))}
@@ -155,8 +165,7 @@ function SisterProjectsDrawer({
           </div>
 
           <p className="px-1 pt-4 text-xs leading-relaxed text-[var(--muted)]">
-            Community sites are maintained by their respective authors and are
-            not affiliated with this project.
+            {t("menu.communityDisclaimer")}
           </p>
         </nav>
       </m.aside>
@@ -192,7 +201,7 @@ function DrawerLink({
 }: {
   href: string;
   title: string;
-  subtitle: string;
+  subtitle: React.ReactNode;
   color?: string;
   divided: boolean;
 }) {

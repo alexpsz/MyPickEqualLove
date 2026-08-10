@@ -59,6 +59,7 @@ export default function ExportBoard({
   return (
     <div
       id={exportCanvasId}
+      lang="ja"
       className="relative overflow-hidden font-sans"
       style={{
         backgroundColor: transparentBg

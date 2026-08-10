@@ -8,6 +8,7 @@ import {
   getExperiencePageUrl,
   getLiveExperienceStaticParams,
 } from "../../../data/pickExperiences";
+import { localizeExperienceUi } from "../../../i18n/content";
 
 export const dynamicParams = false;
 
@@ -42,21 +43,22 @@ export async function generateMetadata({
   }
 
   const pageUrl = getExperiencePageUrl(experience);
+  const metadataCopy = localizeExperienceUi(experience, "en");
 
   return {
     metadataBase: new URL(PROJECT_CONFIG.siteUrl),
-    title: `${experience.title} | ${PROJECT_CONFIG.displayName}`,
-    description: experience.description,
+    title: `${metadataCopy.title} | ${PROJECT_CONFIG.displayName}`,
+    description: metadataCopy.description,
     keywords: PROJECT_CONFIG.keywords,
     alternates: {
       canonical: experience.canonicalPath,
     },
     openGraph: {
-      title: experience.title,
-      description: experience.description,
+      title: metadataCopy.title,
+      description: metadataCopy.description,
       url: pageUrl,
       siteName: PROJECT_CONFIG.displayName,
-      locale: "ja_JP",
+      locale: "en_US",
       type: "website",
       images: [
         {
@@ -69,8 +71,8 @@ export async function generateMetadata({
     },
     twitter: {
       card: "summary",
-      title: experience.title,
-      description: experience.description,
+      title: metadataCopy.title,
+      description: metadataCopy.description,
       images: [PROJECT_CONFIG.iconPath],
     },
     robots: {

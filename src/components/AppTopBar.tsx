@@ -1,6 +1,7 @@
 import React from "react";
 import { PROJECT_CONFIG } from "../config/project";
 import GitHubLink from "./GitHubLink";
+import LanguageMenu from "./LanguageMenu";
 import SisterProjectsMenu from "./SisterProjectsMenu";
 
 export default function AppTopBar({
@@ -27,7 +28,10 @@ export default function AppTopBar({
             {PROJECT_CONFIG.groupName}
           </span>
         </TitleElement>
-        <GitHubLink className="shrink-0" />
+        <div className="flex shrink-0 items-center">
+          <LanguageMenu />
+          <GitHubLink />
+        </div>
       </div>
     </div>
   );

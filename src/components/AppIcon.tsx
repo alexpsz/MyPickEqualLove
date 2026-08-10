@@ -1,12 +1,14 @@
 import React from "react";
 
 export type AppIconName =
+  | "check"
   | "chevron-down"
   | "chevron-right"
   | "close"
   | "download"
   | "external"
   | "filter"
+  | "globe"
   | "image"
   | "menu"
   | "music"
@@ -46,6 +48,8 @@ export default function AppIcon({
 
 function getIconPaths(name: AppIconName) {
   switch (name) {
+    case "check":
+      return <path d="m5.5 12.25 4.1 4.1L18.75 7.2" />;
     case "chevron-down":
       return <path d="m6.75 9.25 5.25 5 5.25-5" />;
     case "chevron-right":
@@ -69,6 +73,14 @@ function getIconPaths(name: AppIconName) {
       );
     case "filter":
       return <path d="M4 6h16l-6.25 7.15V18l-3.5 1.75v-6.6L4 6Z" />;
+    case "globe":
+      return (
+        <>
+          <circle cx="12" cy="12" r="8.25" />
+          <path d="M3.75 12h16.5" />
+          <path d="M12 3.75c2.2 2.25 3.25 5 3.25 8.25S14.2 18 12 20.25C9.8 18 8.75 15.25 8.75 12S9.8 6 12 3.75Z" />
+        </>
+      );
     case "image":
       return (
         <>

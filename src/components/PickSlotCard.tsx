@@ -3,9 +3,11 @@
 import React, { useRef } from "react";
 import { AnimatePresence, useIsPresent } from "motion/react";
 import * as m from "motion/react-m";
+import { useLocale } from "../i18n/LocaleProvider";
 import type { PickSlot, Song } from "../schema/music";
 import { getPickSlotReturnKey } from "../utils/useDialogA11y";
 import AppIcon from "./AppIcon";
+import JapaneseContent from "./JapaneseContent";
 import { APPLE_OPACITY, APPLE_SPRING } from "./AppleMotion";
 import { usePrefersReducedMotion } from "./MotionPresence";
 
@@ -111,6 +113,8 @@ function CardFace({
   onClick: () => void;
   onClear: (event: React.MouseEvent) => void;
 }) {
+  const { t } = useLocale();
+
   if (!song) {
     return (
       <button
@@ -122,9 +126,9 @@ function CardFace({
             ? "min-h-[224px] grid-rows-[44px_minmax(180px,1fr)]"
             : "grid-rows-[44px_auto_44px]"
         }`}
-        aria-label={`Pick ${slot.label}`}
+        aria-label={t("pick.chooseAria", { slot: slot.label })}
       >
-        <CardHeader label={slot.label} stateLabel="Empty" />
+        <CardHeader label={slot.label} stateLabel={t("pick.empty")} />
         <div
           className={`flex flex-col items-center justify-center gap-3 border-y border-[var(--line)] px-4 text-center ${
             compact ? "min-h-[180px]" : "aspect-square w-full"
@@ -136,14 +140,14 @@ function CardFace({
           {compact ? (
             <span className="max-w-[15rem] text-[13px] font-medium leading-snug text-[var(--muted)]">
               {showSlotMetadata
-                ? (slot.subtitle ?? "Choose a song")
-                : "Choose a song"}
+                ? (slot.subtitle ?? t("pick.chooseSong"))
+                : t("pick.chooseSong")}
             </span>
           ) : null}
         </div>
         {!compact ? (
           <span className="flex min-h-11 items-center justify-center px-3 text-center text-[13px] font-medium leading-snug text-[var(--muted)]">
-            Choose a song
+            {t("pick.chooseSong")}
           </span>
         ) : null}
       </button>
@@ -161,7 +165,10 @@ function CardFace({
             ? "min-h-[224px] grid-rows-[44px_minmax(180px,1fr)]"
             : "grid-rows-[44px_auto_44px]"
         }`}
-        aria-label={`Replace ${slot.label}: ${song.title.ja}`}
+        aria-label={t("pick.replaceAria", {
+          slot: slot.label,
+          title: song.title.ja,
+        })}
       >
         <CardHeader label={slot.label} reserveAction />
         {compact ? (
@@ -169,14 +176,14 @@ function CardFace({
             <div className="aspect-square w-[clamp(132px,46%,180px)] shrink-0 self-center overflow-hidden border-r border-[var(--line)] bg-white">
               <img
                 src={song.coverUrl}
-                alt={`${song.title.ja} cover`}
+                alt={t("pick.coverAlt", { title: song.title.ja })}
                 className="block h-full w-full object-contain"
                 loading="lazy"
               />
             </div>
             <div className="flex min-w-0 flex-1 flex-col justify-center px-4 py-3">
               <div className="line-clamp-2 text-sm font-semibold tracking-[-0.015em] text-[var(--foreground)]">
-                {song.title.ja}
+                <JapaneseContent>{song.title.ja}</JapaneseContent>
               </div>
               {showSlotMetadata && slot.subtitle ? (
                 <div className="mt-1.5 line-clamp-3 text-xs leading-relaxed text-[var(--muted)]">
@@ -190,14 +197,14 @@ function CardFace({
             <div className="aspect-square w-full overflow-hidden border-y border-[var(--line)] bg-[var(--paper-soft)]">
               <img
                 src={song.coverUrl}
-                alt={`${song.title.ja} cover`}
+                alt={t("pick.coverAlt", { title: song.title.ja })}
                 className="block h-full w-full object-contain"
                 loading="lazy"
               />
             </div>
             <div className="flex min-h-11 min-w-0 items-center px-3.5">
               <div className="truncate text-sm font-semibold tracking-[-0.015em] text-[var(--foreground)]">
-                {song.title.ja}
+                <JapaneseContent>{song.title.ja}</JapaneseContent>
               </div>
             </div>
           </>
@@ -208,7 +215,7 @@ function CardFace({
         type="button"
         onClick={onClear}
         className="icon-button icon-button-compact icon-button-overlay right-0 top-0 z-20 text-[var(--muted)]"
-        aria-label={`Clear ${song.title.ja}`}
+        aria-label={t("pick.clearAria", { title: song.title.ja })}
       >
         <AppIcon name="close" size={14} />
       </button>

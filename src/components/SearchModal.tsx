@@ -2,11 +2,15 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import * as m from "motion/react-m";
-import { RELEASE_TYPE_LABELS, TRACK_TYPE_LABELS } from "../config/project";
+import { useLocale } from "../i18n/LocaleProvider";
+import type { MessageKey, MessageValues } from "../i18n/messages";
 import type { Member, ReleaseType, Song, TrackType } from "../schema/music";
 import { useDialogA11y } from "../utils/useDialogA11y";
 import AppIcon from "./AppIcon";
 import { APPLE_OPACITY, APPLE_SPRING_GENTLE } from "./AppleMotion";
+import JapaneseContent, {
+  LocalizedTextWithJapaneseValue,
+} from "./JapaneseContent";
 import type { PresenceState } from "./MotionPresence";
 
 type ReleaseFilter = "all" | ReleaseType;
@@ -29,6 +33,28 @@ interface SearchModalProps {
 }
 
 const PRIMARY_TRACK_TYPES = ["title", "coupling", "album"] as const;
+
+type Translate = (key: MessageKey, values?: MessageValues) => string;
+
+const RELEASE_TYPE_MESSAGE_KEYS: Record<ReleaseFilter, MessageKey> = {
+  all: "search.releaseType.all",
+  single: "search.releaseType.single",
+  album: "search.releaseType.album",
+  digital: "search.releaseType.digital",
+  dvd_bd: "search.releaseType.dvdBd",
+  other: "search.releaseType.other",
+};
+
+const TRACK_TYPE_MESSAGE_KEYS: Record<TrackFilter, MessageKey> = {
+  all: "search.trackType.all",
+  title: "search.trackType.title",
+  coupling: "search.trackType.coupling",
+  album: "search.trackType.album",
+  solo: "search.trackType.solo",
+  unit: "search.trackType.unit",
+  live: "search.trackType.live",
+  other: "search.trackType.other",
+};
 
 const normalizeStr = (value: string | undefined): string => {
   if (!value) return "";
@@ -97,26 +123,60 @@ const GRADUATED_MEMBER_FEATURE_TAGS = new Set([
 const isGraduatedMemberFeature = (song: Song) =>
   (song.tags ?? []).some((tag) => GRADUATED_MEMBER_FEATURE_TAGS.has(tag));
 
-const formatTypeValue = (value: string | undefined) =>
-  value?.replace(/_/g, " ").toUpperCase();
-
-const formatSongMeta = (song: Song) =>
+const formatSongMeta = (song: Song, t: Translate) =>
   [
     song.releaseDate?.slice(0, 4),
-    formatTypeValue(song.releaseType),
-    formatTypeValue(song.trackType),
+    song.releaseType
+      ? t(RELEASE_TYPE_MESSAGE_KEYS[song.releaseType])
+      : undefined,
+    song.trackType ? t(TRACK_TYPE_MESSAGE_KEYS[song.trackType]) : undefined,
   ]
     .filter(Boolean)
     .join(" · ");
 
-const formatSongCredits = (song: Song) =>
-  [
-    song.credits?.lyricist ? `Lyrics: ${song.credits.lyricist.ja}` : "",
-    song.credits?.composer ? `Music: ${song.credits.composer.ja}` : "",
-    song.credits?.arranger ? `Arrange: ${song.credits.arranger.ja}` : "",
-  ]
-    .filter(Boolean)
-    .join(" / ");
+const getSongCredits = (song: Song, t: Translate) => {
+  const credits: Array<{ text: string; value: string }> = [];
+
+  if (song.credits?.lyricist) {
+    credits.push({
+      text: t("search.creditLyrics", { name: song.credits.lyricist.ja }),
+      value: song.credits.lyricist.ja,
+    });
+  }
+  if (song.credits?.composer) {
+    credits.push({
+      text: t("search.creditMusic", { name: song.credits.composer.ja }),
+      value: song.credits.composer.ja,
+    });
+  }
+  if (song.credits?.arranger) {
+    credits.push({
+      text: t("search.creditArrange", { name: song.credits.arranger.ja }),
+      value: song.credits.arranger.ja,
+    });
+  }
+
+  return credits;
+};
+
+function SongCredits({ song, t }: { song: Song; t: Translate }) {
+  const credits = getSongCredits(song, t);
+  if (credits.length === 0) return null;
+
+  return (
+    <p className="mt-1 hidden truncate text-xs text-[var(--muted-soft)] sm:block">
+      {credits.map((credit, index) => (
+        <React.Fragment key={`${credit.value}-${index}`}>
+          {index > 0 ? " / " : null}
+          <LocalizedTextWithJapaneseValue
+            text={credit.text}
+            value={credit.value}
+          />
+        </React.Fragment>
+      ))}
+    </p>
+  );
+}
 
 export default function SearchModal({
   songs,
@@ -127,12 +187,13 @@ export default function SearchModal({
   autoFocusSearch = true,
   contextLabel,
   resultBadgesBySongId = {},
-  emptyMessage = "No songs found matching your search terms.",
+  emptyMessage,
   presenceState,
   returnFocusKey,
   onClose,
   onSelect,
 }: SearchModalProps) {
+  const { t } = useLocale();
   const [searchQuery, setSearchQuery] = useState("");
   const [releaseTypeFilter, setReleaseTypeFilter] =
     useState<ReleaseFilter>("all");
@@ -302,7 +363,7 @@ export default function SearchModal({
         disabled={presenceState === "exiting"}
         tabIndex={-1}
         aria-hidden={presenceState === "exiting"}
-        aria-label="Close song search"
+        aria-label={t("search.closeAria")}
         className="overlay-scrim absolute inset-0 cursor-default bg-black/25 backdrop-blur-[2px]"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -334,21 +395,21 @@ export default function SearchModal({
               id="search-modal-title"
               className="truncate text-[22px] font-semibold tracking-[-0.035em] text-[var(--foreground)]"
             >
-              Select a song
+              {t("search.title")}
             </h2>
             <p
               className="mt-0.5 truncate text-[13px] text-[var(--muted)]"
               aria-live="polite"
             >
               {contextLabel ? `${contextLabel} · ` : ""}
-              {filteredSongs.length} matching songs
+              {t("search.matchingSongs", { count: filteredSongs.length })}
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
             className="icon-button icon-button-compact shrink-0"
-            aria-label="Close song search"
+            aria-label={t("search.closeAria")}
           >
             <AppIcon name="close" size={16} />
           </button>
@@ -358,9 +419,7 @@ export default function SearchModal({
           <div className="apple-material sticky top-0 z-20 rounded-none border-x-0 border-t-0 px-4 py-3 sm:px-6">
             <div className="flex gap-2">
               <label className="relative min-w-0 flex-1">
-                <span className="sr-only">
-                  Search by title, member, or credit
-                </span>
+                <span className="sr-only">{t("search.fieldLabel")}</span>
                 <AppIcon
                   name="search"
                   className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--muted)]"
@@ -370,7 +429,7 @@ export default function SearchModal({
                   type="search"
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder="Song, member, or credit"
+                  placeholder={t("search.placeholder")}
                   className="h-11 w-full rounded-[var(--radius-sm)] border border-[var(--line-strong)] bg-white pl-10 pr-3 text-[15px] text-[var(--foreground)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--muted-soft)] focus:border-[var(--focus-ring)] focus:shadow-[0_0_0_2px_var(--focus-ring)]"
                 />
               </label>
@@ -382,7 +441,7 @@ export default function SearchModal({
                 aria-expanded={isMoreFiltersOpen}
               >
                 <AppIcon name="filter" size={16} />
-                <span className="hidden sm:inline">Filters</span>
+                <span className="hidden sm:inline">{t("search.filters")}</span>
                 {activeFilterCount > 0 ? (
                   <span className="rounded-full bg-[var(--project-primary)] px-1.5 text-xs font-semibold text-black">
                     {activeFilterCount}
@@ -405,7 +464,7 @@ export default function SearchModal({
                 }
                 onClick={() => selectQuickFilter("all")}
               >
-                All
+                {t("search.all")}
               </FilterChip>
               {quickTrackTypes.map((trackType) => (
                 <FilterChip
@@ -413,7 +472,7 @@ export default function SearchModal({
                   active={trackTypeFilter === trackType}
                   onClick={() => selectQuickFilter(trackType)}
                 >
-                  {TRACK_TYPE_LABELS[trackType] ?? trackType}
+                  {t(TRACK_TYPE_MESSAGE_KEYS[trackType])}
                 </FilterChip>
               ))}
               <FilterChip
@@ -422,7 +481,7 @@ export default function SearchModal({
                 }
                 onClick={() => selectQuickFilter("digital")}
               >
-                Digital
+                {t("search.digital")}
               </FilterChip>
             </div>
           </div>
@@ -440,14 +499,14 @@ export default function SearchModal({
                   className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--line)] bg-white p-4"
                 >
                   <div className="grid gap-4">
-                    <FilterRow label="Year">
+                    <FilterRow label={t("search.year")}>
                       {["all", ...years].map((year) => (
                         <FilterChip
                           key={year}
                           active={yearFilter === year}
                           onClick={() => setYearFilter(year)}
                         >
-                          {year === "all" ? "All" : year}
+                          {year === "all" ? t("search.all") : year}
                         </FilterChip>
                       ))}
                     </FilterRow>
@@ -460,7 +519,7 @@ export default function SearchModal({
                       onToggleGraduated={toggleShowGraduatedMembers}
                       onToggleMember={toggleMemberFilter}
                     />
-                    <FilterRow label="Release">
+                    <FilterRow label={t("search.release")}>
                       {(["all", ...releaseTypes] as ReleaseFilter[]).map(
                         (type) => (
                           <FilterChip
@@ -468,7 +527,7 @@ export default function SearchModal({
                             active={releaseTypeFilter === type}
                             onClick={() => setReleaseTypeFilter(type)}
                           >
-                            {RELEASE_TYPE_LABELS[type] ?? type}
+                            {t(RELEASE_TYPE_MESSAGE_KEYS[type])}
                           </FilterChip>
                         ),
                       )}
@@ -480,7 +539,7 @@ export default function SearchModal({
                         className="official-button official-button-quiet"
                       >
                         <AppIcon name="reset" size={16} />
-                        Reset filters
+                        {t("search.resetFilters")}
                       </button>
                     </div>
                   </div>
@@ -512,17 +571,19 @@ export default function SearchModal({
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start gap-2">
                         <h3 className="min-w-0 flex-1 truncate text-[15px] font-semibold tracking-[-0.015em] text-[var(--foreground)]">
-                          {song.title.ja}
+                          <JapaneseContent>{song.title.ja}</JapaneseContent>
                         </h3>
                         <span className="shrink-0 text-xs tabular-nums text-[var(--muted)]">
-                          {song.releaseDate?.slice(0, 4) ?? "TBD"}
+                          {song.releaseDate?.slice(0, 4) ?? t("search.tbd")}
                         </span>
                       </div>
                       <p className="mt-0.5 truncate text-xs text-[var(--muted)]">
                         {song.title.romaji}
                       </p>
                       <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs font-medium text-[var(--muted)]">
-                        <span className="truncate">{formatSongMeta(song)}</span>
+                        <span className="truncate">
+                          {formatSongMeta(song, t)}
+                        </span>
                         {resultBadgesBySongId[song.id]?.map((badge) => (
                           <span
                             key={badge}
@@ -532,11 +593,7 @@ export default function SearchModal({
                           </span>
                         ))}
                       </div>
-                      {formatSongCredits(song) ? (
-                        <p className="mt-1 hidden truncate text-xs text-[var(--muted-soft)] sm:block">
-                          {formatSongCredits(song)}
-                        </p>
-                      ) : null}
+                      <SongCredits song={song} t={t} />
                     </div>
                     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--background)] text-[var(--muted)] transition-[background-color,color,transform] duration-150 group-hover:bg-[var(--project-primary)] group-hover:text-black group-active:scale-95">
                       <AppIcon name="plus" size={16} />
@@ -546,14 +603,17 @@ export default function SearchModal({
               </div>
             ) : (
               <div className="rounded-[var(--radius-md)] border border-[var(--line)] bg-white px-6 py-14 text-center text-sm text-[var(--muted)]">
-                {emptyMessage}
+                {emptyMessage ?? t("search.noMatches")}
               </div>
             )}
           </div>
         </div>
 
         <div className="border-t border-[var(--line)] bg-white px-4 py-3 pb-[max(.75rem,env(safe-area-inset-bottom))] text-center text-xs text-[var(--muted)] sm:px-6">
-          Showing {filteredSongs.length} of {songs.length} songs
+          {t("search.showingCount", {
+            shown: filteredSongs.length,
+            total: songs.length,
+          })}
         </div>
       </m.div>
     </div>
@@ -602,17 +662,19 @@ function MemberFilterRow({
   onToggleGraduated: () => void;
   onToggleMember: (memberId: string) => void;
 }) {
+  const { t } = useLocale();
+
   return (
     <div className="grid gap-2 sm:grid-cols-[84px_minmax(0,1fr)] sm:items-start">
       <div className="pt-1.5 text-xs font-semibold text-[var(--muted)]">
-        Member
+        {t("search.member")}
       </div>
       <div className="flex min-w-0 flex-wrap gap-2">
         <FilterChip
           active={memberFilters.length === 0}
           onClick={onClearMembers}
         >
-          All
+          {t("search.all")}
         </FilterChip>
         {activeMembers.map((member) => (
           <FilterChip
@@ -620,7 +682,9 @@ function MemberFilterRow({
             active={memberFilters.includes(member.id)}
             onClick={() => onToggleMember(member.id)}
           >
-            {member.name.ja.replace(/\s+/g, "")}
+            <JapaneseContent>
+              {member.name.ja.replace(/\s+/g, "")}
+            </JapaneseContent>
           </FilterChip>
         ))}
         {graduatedMembers.length > 0 ? (
@@ -629,7 +693,7 @@ function MemberFilterRow({
             onClick={onToggleGraduated}
             muted
           >
-            Graduated
+            {t("search.graduated")}
           </FilterChip>
         ) : null}
         {showGraduatedMembers
@@ -640,7 +704,9 @@ function MemberFilterRow({
                 onClick={() => onToggleMember(member.id)}
                 muted
               >
-                {member.name.ja.replace(/\s+/g, "")}
+                <JapaneseContent>
+                  {member.name.ja.replace(/\s+/g, "")}
+                </JapaneseContent>
               </FilterChip>
             ))
           : null}

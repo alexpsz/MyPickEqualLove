@@ -1,23 +1,32 @@
+"use client";
+
 import React from "react";
-import { PROJECT_CONFIG } from "../config/project";
+import { PROJECT_CONFIG, PROJECT_ID } from "../config/project";
+import { localizeProjectCopy } from "../i18n/content";
+import { useLocale } from "../i18n/LocaleProvider";
 
 interface HeaderProps {
   titlePrefix?: string;
   titleAccent?: string;
   subtitle?: string;
-  description?: string;
-  meta?: string;
+  description?: React.ReactNode;
+  meta?: React.ReactNode;
   showTitle?: boolean;
 }
 
 export default function Header({
   titlePrefix = "MY PICK",
   titleAccent = PROJECT_CONFIG.groupName,
-  subtitle = PROJECT_CONFIG.subtitle,
-  description = "Select your favorite tracks and export a clean board for sharing.",
+  subtitle,
+  description,
   meta,
   showTitle = true,
 }: HeaderProps) {
+  const { locale } = useLocale();
+  const projectCopy = localizeProjectCopy(PROJECT_ID, locale);
+  const resolvedSubtitle = subtitle ?? projectCopy.subtitle;
+  const resolvedDescription = description ?? projectCopy.description;
+
   return (
     <header
       data-page-reveal
@@ -39,10 +48,10 @@ export default function Header({
 
         <div className="border-l-[3px] border-[var(--project-primary)] pl-3.5 sm:pl-5">
           <p className="text-[15px] font-semibold leading-snug tracking-[-0.01em] text-[var(--foreground)]">
-            {subtitle}
+            {resolvedSubtitle}
           </p>
           <p className="mt-1 text-[13px] leading-relaxed text-[var(--muted)] sm:mt-1.5 sm:text-sm">
-            {description}
+            {resolvedDescription}
           </p>
           {meta ? (
             <p className="mt-2 text-xs font-medium text-[var(--muted)]">

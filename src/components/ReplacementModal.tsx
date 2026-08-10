@@ -3,10 +3,14 @@
 import React, { useRef } from "react";
 import * as m from "motion/react-m";
 import type { ReplacementSlotState } from "../data/pickExperiences";
+import { useLocale } from "../i18n/LocaleProvider";
 import type { PickSlot, PickSlotId, Picks, Song } from "../schema/music";
 import { useDialogA11y } from "../utils/useDialogA11y";
 import AppIcon from "./AppIcon";
 import { APPLE_OPACITY, APPLE_SPRING_GENTLE } from "./AppleMotion";
+import JapaneseContent, {
+  LocalizedTextWithJapaneseValue,
+} from "./JapaneseContent";
 import type { PresenceState } from "./MotionPresence";
 
 interface ReplacementModalProps {
@@ -34,6 +38,7 @@ export default function ReplacementModal({
     slotStates.map((state) => [state.slotId, state]),
   );
   const panelRef = useRef<HTMLDivElement>(null);
+  const { t } = useLocale();
 
   useDialogA11y({
     dialogRef: panelRef,
@@ -53,7 +58,7 @@ export default function ReplacementModal({
         tabIndex={-1}
         aria-hidden={presenceState === "exiting"}
         className="overlay-scrim absolute inset-0 cursor-default bg-black/25 backdrop-blur-[2px]"
-        aria-label="Cancel replacement"
+        aria-label={t("replacement.cancelAria")}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -91,20 +96,22 @@ export default function ReplacementModal({
               id="replacement-modal-title"
               className="text-[20px] font-semibold tracking-[-0.03em] text-[var(--foreground)]"
             >
-              Replace a pick
+              {t("replacement.title")}
             </h2>
             <p className="mt-0.5 truncate text-[13px] text-[var(--muted)]">
-              Choose a slot for{" "}
-              <span className="font-medium text-[var(--foreground)]">
-                {song.title.ja}
-              </span>
+              <LocalizedTextWithJapaneseValue
+                text={t("replacement.chooseSlotFor", {
+                  title: song.title.ja,
+                })}
+                value={song.title.ja}
+              />
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
             className="icon-button icon-button-compact shrink-0"
-            aria-label="Close replacement dialog"
+            aria-label={t("replacement.closeAria")}
           >
             <AppIcon name="close" size={16} />
           </button>
@@ -151,10 +158,18 @@ export default function ReplacementModal({
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-xs font-medium text-[var(--muted)]">
-                        {showSlotLabels ? slot.label : `Pick ${slot.label}`}
+                        {showSlotLabels
+                          ? slot.label
+                          : t("replacement.pickLabel", { slot: slot.label })}
                       </p>
                       <p className="mt-0.5 truncate text-[15px] font-semibold text-[var(--foreground)]">
-                        {currentSong?.title.ja ?? "Empty slot"}
+                        {currentSong ? (
+                          <JapaneseContent>
+                            {currentSong.title.ja}
+                          </JapaneseContent>
+                        ) : (
+                          t("replacement.emptySlot")
+                        )}
                       </p>
                       {slotState?.disabledReason ? (
                         <p className="mt-0.5 truncate text-xs text-[var(--muted)]">
@@ -175,7 +190,7 @@ export default function ReplacementModal({
 
         <div className="flex justify-end border-t border-[var(--line)] bg-white p-3 pb-[max(.75rem,env(safe-area-inset-bottom))] sm:px-5">
           <button type="button" onClick={onClose} className="official-button">
-            Cancel
+            {t("replacement.cancel")}
           </button>
         </div>
       </m.div>

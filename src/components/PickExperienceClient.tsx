@@ -1,12 +1,14 @@
 "use client";
 
 import {
+  Fragment,
   useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
   type MouseEvent,
+  type ReactNode,
 } from "react";
 import {
   EXPORT_CONFIG,
@@ -31,7 +33,6 @@ import {
   getExperienceExportCanvasIdFor,
   getExperienceImageFileName,
   getExperiencePageUrl,
-  getExperiencePreviewLabel,
   getReplacementSlotStates,
   getSongBadgesBySongId,
   getSortedExperienceSlots,
@@ -40,10 +41,22 @@ import {
   parseStoredPicksForExperience,
   type ExperienceContext,
 } from "../data/pickExperiences";
+import { localizeExperienceUi } from "../i18n/content";
+import { useLocale } from "../i18n/LocaleProvider";
 import type { PickExperience } from "../schema/pick-experience";
 import type { PickSlotId, Picks, Song, StoredPicks } from "../schema/music";
 import { centerExportYearInk } from "../utils/centerExportYearInk";
 import { convertColorString } from "../utils/colors";
+import {
+  EXPORT_CAPTURE_PROTOCOL_VERSION,
+  EXPORT_REALM_READY_TYPE,
+  EXPORT_REALM_RESULT_TYPE,
+  captureExportImageInFrame,
+  isExportRealmHash,
+  isExportRenderRequest,
+  type ExportRenderRequest,
+  type ExportRenderResult,
+} from "../utils/exportCapture";
 import { getMemberColorGradient } from "../utils/memberColors";
 import {
   DIALOG_RETURN_KEYS,
@@ -56,6 +69,9 @@ import ExperienceNavigation from "./ExperienceNavigation";
 import ExportBoard from "./ExportBoard";
 import Footer from "./Footer";
 import Header from "./Header";
+import JapaneseContent, {
+  LocalizedTextWithJapaneseValue,
+} from "./JapaneseContent";
 import MotionPresence from "./MotionPresence";
 import PickBoard from "./PickBoard";
 import PreviewModal from "./PreviewModal";
@@ -74,9 +90,23 @@ const getPreviewOptionsKey = (showTitles: boolean, transparentBg: boolean) =>
 export default function PickExperienceClient({
   experience,
 }: PickExperienceClientProps) {
+  const { locale, t } = useLocale();
+  const isStandard = experience.kind === "standard";
+  const uiCopy = useMemo(
+    () => localizeExperienceUi(experience, locale),
+    [experience, locale],
+  );
   const contextOptions = useMemo(
     () => getExperienceContexts(experience),
     [experience],
+  );
+  const uiContextOptions = useMemo(
+    () =>
+      contextOptions.map((context) => ({
+        ...context,
+        label: uiCopy.contextLabels?.[context.id] ?? context.label,
+      })),
+    [contextOptions, uiCopy.contextLabels],
   );
   const defaultContextId = useMemo(
     () => getDefaultExperienceContextId(experience),
@@ -89,6 +119,9 @@ export default function PickExperienceClient({
     () => getExperienceContext(experience, contextId),
     [contextId, experience],
   );
+  const activeUiContextDescription = activeContext
+    ? `${uiCopy.contextLabels?.[activeContext.id] ?? activeContext.label} · ${activeContext.dateLabel}`
+    : undefined;
   const effectiveContextId = activeContext?.id;
   const storageKeys = useMemo(
     () => getStorageKeysForExperience(experience, effectiveContextId),
@@ -97,6 +130,10 @@ export default function PickExperienceClient({
   const slots = useMemo(
     () => getSortedExperienceSlots(experience),
     [experience],
+  );
+  const uiSlots = useMemo(
+    () => uiCopy.slots.slice().sort((a, b) => a.sortOrder - b.sortOrder),
+    [uiCopy.slots],
   );
   const [storedPicks, setStoredPicks] = useState<StoredPicks>({});
   const [activeSlotId, setActiveSlotId] = useState<PickSlotId | null>(null);
@@ -108,13 +145,20 @@ export default function PickExperienceClient({
   const [showTitles, setShowTitles] = useState(true);
   const [transparentBg, setTransparentBg] = useState(false);
   const [nicknameDraft, setNicknameDraft] = useState("");
+  const [frameCaptureRequest, setFrameCaptureRequest] =
+    useState<ExportRenderRequest | null>(null);
+  const [framePageUrl, setFramePageUrl] = useState<string | null>(null);
+  const [isExportRealm, setIsExportRealm] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const generatingRef = useRef(false);
+  const activeFrameRequestIdRef = useRef<string | null>(null);
+  const capturedFrameRequestIdRef = useRef<string | null>(null);
   const previewTriggerRef = useRef<HTMLButtonElement>(null);
   const searchReturnFocusKeyRef = useRef<string>(
     DIALOG_RETURN_KEYS.globalSearch,
   );
   const previewGenerationIdRef = useRef(0);
+  const activePreviewCaptureAbortRef = useRef<AbortController | null>(null);
   const lastGeneratedPreviewOptionsRef = useRef<string | null>(null);
 
   const picks = useMemo<Picks>(() => {
@@ -138,6 +182,10 @@ export default function PickExperienceClient({
     () => slots.find((slot) => slot.id === activeSlotId),
     [activeSlotId, slots],
   );
+  const selectedUiSlot = useMemo(
+    () => uiSlots.find((slot) => slot.id === activeSlotId),
+    [activeSlotId, uiSlots],
+  );
   const searchSongs = useMemo(
     () =>
       selectedSlot
@@ -150,8 +198,13 @@ export default function PickExperienceClient({
     [effectiveContextId, experience],
   );
   const songBadgesBySongId = useMemo(
-    () => getSongBadgesBySongId(experience),
-    [experience],
+    () =>
+      getSongBadgesBySongId(
+        experience,
+        uiCopy.catalogOnlyBadge,
+        uiCopy.contextLabels,
+      ),
+    [experience, uiCopy.catalogOnlyBadge, uiCopy.contextLabels],
   );
   const replacementSlotStates = useMemo(
     () =>
@@ -160,14 +213,32 @@ export default function PickExperienceClient({
             experience,
             songId: pendingReplacementSong.id,
             contextId: effectiveContextId,
+            disabledReason: t("errors.songIneligible"),
           })
         : [],
-    [effectiveContextId, experience, pendingReplacementSong],
+    [effectiveContextId, experience, pendingReplacementSong, t],
   );
-  const previewLabel = getExperiencePreviewLabel(experience, activeContext);
+  const previewLabel = isStandard
+    ? t("context.standardPreview", { group: PROJECT_CONFIG.groupName })
+    : activeUiContextDescription
+      ? t("context.livePreview", {
+          title: uiCopy.title,
+          context: activeUiContextDescription,
+        })
+      : uiCopy.title;
   const imageFileName = getExperienceImageFileName(experience, activeContext);
 
   useEffect(() => {
+    const exportRealm =
+      window.parent !== window && isExportRealmHash(window.location.hash);
+    setIsExportRealm(exportRealm);
+    if (exportRealm) {
+      setContextId(defaultContextId);
+      setStoredPicks({});
+      setHydrated(true);
+      return;
+    }
+
     const timer = window.setTimeout(() => {
       let initialContextId = defaultContextId;
       const defaultStorageKeys = getStorageKeysForExperience(
@@ -195,21 +266,24 @@ export default function PickExperienceClient({
       );
 
       const savedOptions = localStorage.getItem(initialStorageKeys.options);
-      if (savedOptions) {
-        try {
-          const options = JSON.parse(savedOptions) as {
-            showTitles?: unknown;
-            transparentBg?: unknown;
-          };
-          if (typeof options.showTitles === "boolean") {
-            setShowTitles(options.showTitles);
-          }
-          if (typeof options.transparentBg === "boolean") {
-            setTransparentBg(options.transparentBg);
-          }
-        } catch (error) {
-          console.error("Failed to parse saved options", error);
+      if (!savedOptions) {
+        setHydrated(true);
+        return;
+      }
+
+      try {
+        const options = JSON.parse(savedOptions) as {
+          showTitles?: unknown;
+          transparentBg?: unknown;
+        };
+        if (typeof options.showTitles === "boolean") {
+          setShowTitles(options.showTitles);
         }
+        if (typeof options.transparentBg === "boolean") {
+          setTransparentBg(options.transparentBg);
+        }
+      } catch (error) {
+        console.error("Failed to parse saved options", error);
       }
 
       setHydrated(true);
@@ -219,12 +293,20 @@ export default function PickExperienceClient({
   }, [contextOptions, defaultContextId, experience]);
 
   useEffect(() => {
-    if (!hydrated) return;
+    if (!hydrated || isExportRealm) return;
     localStorage.setItem(
       storageKeys.options,
       JSON.stringify({ showTitles, transparentBg }),
     );
-  }, [hydrated, showTitles, storageKeys.options, transparentBg]);
+  }, [hydrated, isExportRealm, showTitles, storageKeys.options, transparentBg]);
+
+  useEffect(
+    () => () => {
+      activePreviewCaptureAbortRef.current?.abort();
+      activePreviewCaptureAbortRef.current = null;
+    },
+    [],
+  );
 
   const saveStoredPicks = useCallback(
     (newPicks: StoredPicks) => {
@@ -241,6 +323,9 @@ export default function PickExperienceClient({
   );
 
   const handleContextChange = (nextContextId: string) => {
+    previewGenerationIdRef.current += 1;
+    activePreviewCaptureAbortRef.current?.abort();
+    activePreviewCaptureAbortRef.current = null;
     const nextStorageKeys = getStorageKeysForExperience(
       experience,
       nextContextId,
@@ -288,7 +373,7 @@ export default function PickExperienceClient({
           contextId: effectiveContextId,
         })
       ) {
-        window.alert("This song cannot be placed in that slot.");
+        window.alert(t("errors.songIneligible"));
         return;
       }
 
@@ -341,33 +426,108 @@ export default function PickExperienceClient({
   };
 
   const handleClearAllPicks = () => {
-    if (window.confirm("Are you sure you want to clear all your picks?")) {
+    if (window.confirm(t("errors.clearAllConfirm"))) {
       saveStoredPicks({});
     }
   };
 
-  const handleGenerateImage = useCallback(async () => {
-    if (generatingRef.current) return;
+  useEffect(() => {
+    if (!hydrated || !isExportRealm) return;
 
-    const filteredPicks = filterStoredPicksForExperience({
-      experience,
-      storedPicks,
-      contextId: effectiveContextId,
-    });
-    if (Object.keys(filteredPicks).length === 0) {
-      window.alert("Please select at least one song first.");
-      return;
-    }
-    if (!sameStoredPicks(filteredPicks, storedPicks)) {
-      saveStoredPicks(filteredPicks);
-      await new Promise((resolve) => window.setTimeout(resolve, 0));
-    }
+    const expectedOrigin = window.location.origin;
+    const parentWindow = window.parent;
+    const postResult = (result: ExportRenderResult) => {
+      parentWindow.postMessage(result, expectedOrigin);
+    };
+    const handleMessage = (event: MessageEvent<unknown>) => {
+      if (
+        event.origin !== expectedOrigin ||
+        event.source !== parentWindow ||
+        !isExportRenderRequest(event.data)
+      ) {
+        return;
+      }
 
-    const generationId = ++previewGenerationIdRef.current;
-    const previewOptionsKey = getPreviewOptionsKey(showTitles, transparentBg);
-    generatingRef.current = true;
-    setGenerating(true);
+      const request = event.data;
+      if (activeFrameRequestIdRef.current) {
+        if (activeFrameRequestIdRef.current !== request.requestId) {
+          postResult(
+            createExportRenderResult(
+              request.requestId,
+              undefined,
+              "Export frame is already rendering",
+            ),
+          );
+        }
+        return;
+      }
 
+      if (request.experienceId !== experience.id) {
+        postResult(
+          createExportRenderResult(
+            request.requestId,
+            undefined,
+            "Export experience does not match the current route",
+          ),
+        );
+        return;
+      }
+
+      if (
+        request.contextId !== undefined &&
+        !contextOptions.some((context) => context.id === request.contextId)
+      ) {
+        postResult(
+          createExportRenderResult(
+            request.requestId,
+            undefined,
+            "Export context does not match the current experience",
+          ),
+        );
+        return;
+      }
+
+      const nextContextId =
+        request.contextId !== undefined ? request.contextId : defaultContextId;
+      const nextPicks = filterStoredPicksForExperience({
+        experience,
+        storedPicks: request.picks,
+        contextId: nextContextId,
+      });
+      if (Object.keys(nextPicks).length === 0) {
+        postResult(
+          createExportRenderResult(
+            request.requestId,
+            undefined,
+            "Export request does not contain any eligible picks",
+          ),
+        );
+        return;
+      }
+
+      activeFrameRequestIdRef.current = request.requestId;
+      setContextId(nextContextId);
+      setStoredPicks(nextPicks);
+      setNicknameDraft(request.selectedBy.slice(0, MAX_NICKNAME_LENGTH));
+      setShowTitles(request.showTitles);
+      setTransparentBg(request.transparentBg);
+      setFramePageUrl(request.pageUrl);
+      setFrameCaptureRequest(request);
+    };
+
+    window.addEventListener("message", handleMessage);
+    parentWindow.postMessage(
+      {
+        type: EXPORT_REALM_READY_TYPE,
+        version: EXPORT_CAPTURE_PROTOCOL_VERSION,
+      },
+      expectedOrigin,
+    );
+
+    return () => window.removeEventListener("message", handleMessage);
+  }, [contextOptions, defaultContextId, experience, hydrated, isExportRealm]);
+
+  const captureExportCanvas = useCallback(async () => {
     const originalGetComputedStyle = window.getComputedStyle;
     try {
       window.getComputedStyle = ((element, pseudoElement) => {
@@ -394,41 +554,133 @@ export default function PickExperienceClient({
         });
       }) as typeof window.getComputedStyle;
 
-      const html2canvas = (await import("html2canvas")).default;
       const exportElement = document.getElementById(exportCanvasId);
+      if (!exportElement) {
+        throw new Error("Export canvas element was not found");
+      }
 
-      if (exportElement) {
-        await document.fonts.ready;
-        await new Promise((resolve) => window.setTimeout(resolve, 150));
-        const canvas = await html2canvas(exportElement, {
-          useCORS: true,
-          backgroundColor: transparentBg ? null : EXPORT_CONFIG.background,
-          scale: EXPORT_CONFIG.scale,
-          logging: false,
-        });
-        centerExportYearInk(canvas, exportElement);
-        if (generationId === previewGenerationIdRef.current) {
-          lastGeneratedPreviewOptionsRef.current = previewOptionsKey;
-          setPreviewUrl(canvas.toDataURL("image/png"));
-        }
-      }
-    } catch (error) {
-      console.error("Failed to generate image", error);
-      if (generationId === previewGenerationIdRef.current) {
-        window.alert("Failed to generate image. Please try again.");
-      }
+      const html2canvas = (await import("html2canvas")).default;
+      await Promise.all([
+        document.fonts.ready,
+        waitForExportImages(exportElement),
+      ]);
+      await new Promise((resolve) => window.setTimeout(resolve, 150));
+      const canvas = await html2canvas(exportElement, {
+        useCORS: true,
+        backgroundColor: transparentBg ? null : EXPORT_CONFIG.background,
+        scale: EXPORT_CONFIG.scale,
+        logging: false,
+      });
+      centerExportYearInk(canvas, exportElement);
+      return canvas.toDataURL("image/png");
     } finally {
       window.getComputedStyle = originalGetComputedStyle;
+    }
+  }, [exportCanvasId, transparentBg]);
+
+  useEffect(() => {
+    if (
+      !hydrated ||
+      !isExportRealm ||
+      !frameCaptureRequest ||
+      capturedFrameRequestIdRef.current === frameCaptureRequest.requestId
+    ) {
+      return;
+    }
+
+    capturedFrameRequestIdRef.current = frameCaptureRequest.requestId;
+    let cancelled = false;
+
+    const capture = async () => {
+      let result: ExportRenderResult;
+      try {
+        const dataUrl = await captureExportCanvas();
+        result = createExportRenderResult(
+          frameCaptureRequest.requestId,
+          dataUrl,
+        );
+      } catch (error) {
+        result = createExportRenderResult(
+          frameCaptureRequest.requestId,
+          undefined,
+          error instanceof Error ? error.message : "Image generation failed",
+        );
+      }
+
+      if (!cancelled) {
+        window.parent.postMessage(result, window.location.origin);
+      }
+    };
+
+    void capture();
+    return () => {
+      cancelled = true;
+    };
+  }, [captureExportCanvas, frameCaptureRequest, hydrated, isExportRealm]);
+
+  const handleGenerateImage = useCallback(async () => {
+    if (generatingRef.current) return;
+
+    const filteredPicks = filterStoredPicksForExperience({
+      experience,
+      storedPicks,
+      contextId: effectiveContextId,
+    });
+    if (Object.keys(filteredPicks).length === 0) {
+      window.alert(t("errors.selectSongFirst"));
+      return;
+    }
+    if (!sameStoredPicks(filteredPicks, storedPicks)) {
+      saveStoredPicks(filteredPicks);
+    }
+
+    const generationId = ++previewGenerationIdRef.current;
+    const previewOptionsKey = getPreviewOptionsKey(showTitles, transparentBg);
+    const captureController = new AbortController();
+    activePreviewCaptureAbortRef.current = captureController;
+    generatingRef.current = true;
+    setGenerating(true);
+
+    try {
+      const dataUrl = await captureExportImageInFrame(
+        {
+          experienceId: experience.id,
+          contextId: effectiveContextId,
+          picks: filteredPicks,
+          showTitles,
+          transparentBg,
+          selectedBy: exportNickname,
+          pageUrl,
+        },
+        { signal: captureController.signal },
+      );
+      if (generationId === previewGenerationIdRef.current) {
+        lastGeneratedPreviewOptionsRef.current = previewOptionsKey;
+        setPreviewUrl(dataUrl);
+      }
+    } catch (error) {
+      if (!isAbortError(error)) {
+        console.error("Failed to generate image", error);
+        if (generationId === previewGenerationIdRef.current) {
+          window.alert(t("errors.imageGenerationFailed"));
+        }
+      }
+    } finally {
+      if (activePreviewCaptureAbortRef.current === captureController) {
+        activePreviewCaptureAbortRef.current = null;
+      }
       generatingRef.current = false;
       setGenerating(false);
     }
   }, [
     effectiveContextId,
     experience,
-    exportCanvasId,
+    exportNickname,
+    pageUrl,
     saveStoredPicks,
     showTitles,
     storedPicks,
+    t,
     transparentBg,
   ]);
 
@@ -449,17 +701,16 @@ export default function PickExperienceClient({
 
   const handleClosePreview = () => {
     previewGenerationIdRef.current += 1;
+    activePreviewCaptureAbortRef.current?.abort();
+    activePreviewCaptureAbortRef.current = null;
     setPreviewUrl(null);
   };
 
-  const isStandard = experience.kind === "standard";
-  const headerMeta = [
-    experience.eventName,
-    activeContext?.exportLabel,
-    experience.venue,
-  ]
-    .filter(Boolean)
-    .join(" / ");
+  const headerMeta = buildHeaderMeta(
+    uiCopy.eventName,
+    activeUiContextDescription,
+    uiCopy.venue,
+  );
 
   return (
     <div
@@ -473,10 +724,19 @@ export default function PickExperienceClient({
           asHeading={isStandard}
         />
         <Header
-          titlePrefix={isStandard ? undefined : experience.title}
+          titlePrefix={isStandard ? undefined : uiCopy.title}
           titleAccent={isStandard ? undefined : PROJECT_CONFIG.groupName}
-          subtitle={isStandard ? undefined : experience.subtitle}
-          description={isStandard ? undefined : experience.description}
+          subtitle={isStandard ? undefined : uiCopy.subtitle}
+          description={
+            isStandard ? undefined : experience.venue ? (
+              <LocalizedTextWithJapaneseValue
+                text={uiCopy.description}
+                value={experience.venue}
+              />
+            ) : (
+              uiCopy.description
+            )
+          }
           meta={isStandard ? undefined : headerMeta}
           showTitle={!isStandard}
         />
@@ -495,27 +755,28 @@ export default function PickExperienceClient({
           totalSongs={eligibleSongsCount}
           selectedCount={Object.keys(picks).length}
           slotCount={slots.length}
-          metricLabel={isStandard ? "Songs" : "Eligible Songs"}
+          metricLabel={
+            isStandard ? t("controls.songs") : t("controls.eligibleSongs")
+          }
           generateButtonRef={previewTriggerRef}
         >
           {contextOptions.length > 0 ? (
             <ContextSelector
-              contexts={contextOptions}
+              contexts={uiContextOptions}
               activeContextId={activeContext?.id}
               onChange={handleContextChange}
             />
           ) : null}
           {experience.id === "kokuritsu_2026" ? (
             <p className="text-[11px] font-medium leading-relaxed text-slate-500">
-              「帰り道に聴いた曲」は全楽曲から選べます。FREE
-              PICKは国立で披露された楽曲から選べます。
+              {uiCopy.hint}
             </p>
           ) : null}
         </Controls>
 
         <main className="app-content-shell flex flex-1 flex-col px-4 sm:px-6 md:px-8">
           <PickBoard
-            slots={slots}
+            slots={uiSlots}
             picks={picks}
             layout={isStandard ? "top10-grid" : "live-memory-grid"}
             showSlotMetadata={!isStandard}
@@ -533,9 +794,9 @@ export default function PickExperienceClient({
                   songs: searchSongs,
                   autoFocusSearch: activeSlotId === null,
                   returnFocusKey: searchReturnFocusKeyRef.current,
-                  contextLabel: selectedSlot
-                    ? selectedSlot.label
-                    : (activeContext?.exportLabel ?? experience.title),
+                  contextLabel: selectedUiSlot
+                    ? selectedUiSlot.label
+                    : (activeUiContextDescription ?? uiCopy.title),
                 }
               : null
           }
@@ -550,7 +811,7 @@ export default function PickExperienceClient({
               autoFocusSearch={searchPresentation.autoFocusSearch}
               contextLabel={searchPresentation.contextLabel}
               resultBadgesBySongId={songBadgesBySongId}
-              emptyMessage="No songs are eligible for this slot with the current filters."
+              emptyMessage={t("search.noEligibleMatches")}
               presenceState={presenceState}
               returnFocusKey={searchPresentation.returnFocusKey}
               onClose={() => {
@@ -575,7 +836,7 @@ export default function PickExperienceClient({
           {(replacement, presenceState) => (
             <ReplacementModal
               song={replacement.song}
-              slots={slots}
+              slots={uiSlots}
               picks={picks}
               slotStates={replacement.slotStates}
               showSlotLabels={!isStandard}
@@ -599,9 +860,9 @@ export default function PickExperienceClient({
               pageUrl={pageUrl}
               previewLabel={previewLabel}
               imageFileName={imageFileName}
-              shareText={experience.share.text}
+              shareText={uiCopy.shareText}
               shareHashtags={experience.share.hashtags}
-              shareTitle={experience.export.title}
+              shareTitle={uiCopy.title}
               presenceState={presenceState}
               returnFocusRef={previewTriggerRef}
               returnFocusKey={DIALOG_RETURN_KEYS.generateImage}
@@ -611,25 +872,60 @@ export default function PickExperienceClient({
         </MotionPresence>
       </AppleMotion>
 
-      <div
-        className="pointer-events-none fixed -left-[9999px] -top-[9999px] select-none overflow-hidden"
-        aria-hidden="true"
-        inert
-      >
-        <ExportBoard
-          experience={experience}
-          context={activeContext}
-          exportCanvasId={exportCanvasId}
-          slots={slots}
-          picks={picks}
-          showTitles={showTitles}
-          transparentBg={transparentBg}
-          selectedBy={exportNickname}
-          pageUrl={pageUrl}
-        />
-      </div>
+      {isExportRealm ? (
+        <div
+          className="pointer-events-none fixed -left-[9999px] -top-[9999px] select-none overflow-hidden"
+          aria-hidden="true"
+          inert
+        >
+          <ExportBoard
+            experience={experience}
+            context={activeContext}
+            exportCanvasId={exportCanvasId}
+            slots={slots}
+            picks={picks}
+            showTitles={showTitles}
+            transparentBg={transparentBg}
+            selectedBy={exportNickname}
+            pageUrl={framePageUrl ?? pageUrl}
+          />
+        </div>
+      ) : null}
     </div>
   );
+}
+
+function buildHeaderMeta(
+  eventName?: string,
+  contextDescription?: string,
+  venue?: string,
+) {
+  const parts: Array<{ key: string; content: ReactNode }> = [];
+
+  if (eventName) {
+    parts.push({
+      key: "event",
+      content: <JapaneseContent>{eventName}</JapaneseContent>,
+    });
+  }
+  if (contextDescription) {
+    parts.push({ key: "context", content: contextDescription });
+  }
+  if (venue) {
+    parts.push({
+      key: "venue",
+      content: <JapaneseContent>{venue}</JapaneseContent>,
+    });
+  }
+
+  if (parts.length === 0) return undefined;
+
+  return parts.map(({ key, content }, index) => (
+    <Fragment key={key}>
+      {index > 0 ? " / " : null}
+      {content}
+    </Fragment>
+  ));
 }
 
 function ContextSelector({
@@ -641,10 +937,12 @@ function ContextSelector({
   activeContextId?: string;
   onChange: (contextId: string) => void;
 }) {
+  const { t } = useLocale();
+
   return (
     <div className="grid gap-2">
       <div className="text-xs font-semibold text-[var(--muted)]">
-        振り返る公演
+        {t("context.selectorLabel")}
       </div>
       <div className="inline-flex w-fit max-w-full flex-wrap rounded-[var(--radius-sm)] bg-[var(--background)] p-1">
         {contexts.map((context) => (
@@ -710,4 +1008,50 @@ function sameStoredPicks(left: StoredPicks, right: StoredPicks) {
 
 function normalizeNickname(nickname: string) {
   return nickname.trim().replace(/\s+/g, " ").slice(0, MAX_NICKNAME_LENGTH);
+}
+
+function isAbortError(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "name" in error &&
+    error.name === "AbortError"
+  );
+}
+
+function createExportRenderResult(
+  requestId: string,
+  dataUrl?: string,
+  error?: string,
+): ExportRenderResult {
+  return {
+    type: EXPORT_REALM_RESULT_TYPE,
+    version: EXPORT_CAPTURE_PROTOCOL_VERSION,
+    requestId,
+    dataUrl,
+    error,
+  };
+}
+
+async function waitForExportImages(exportElement: HTMLElement) {
+  await Promise.all(
+    Array.from(exportElement.querySelectorAll("img")).map(async (image) => {
+      if (!image.complete) {
+        await new Promise<void>((resolve) => {
+          const finish = () => {
+            image.removeEventListener("load", finish);
+            image.removeEventListener("error", finish);
+            resolve();
+          };
+          image.addEventListener("load", finish);
+          image.addEventListener("error", finish);
+          if (image.complete) finish();
+        });
+      }
+
+      if (typeof image.decode === "function") {
+        await image.decode().catch(() => undefined);
+      }
+    }),
+  );
 }

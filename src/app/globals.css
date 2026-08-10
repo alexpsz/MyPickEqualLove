@@ -30,17 +30,40 @@
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
   --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
   --app-content-max: 108rem;
+  --font-latin-content:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+    "Segoe UI", "Noto Sans JP", sans-serif;
+  --font-simplified-chinese-content:
+    -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei",
+    "Noto Sans SC", "Segoe UI", sans-serif;
+  --font-japanese-content:
+    -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Yu Gothic",
+    Meiryo, "Noto Sans JP", "Segoe UI", sans-serif;
+  --font-korean-content:
+    -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic",
+    "Noto Sans KR", "Segoe UI", sans-serif;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans:
-    -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
-    "Segoe UI", "Noto Sans JP", sans-serif;
-  --font-serif:
-    -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
-    "Segoe UI", "Noto Sans JP", sans-serif;
+  --font-sans: var(--font-latin-content);
+  --font-serif: var(--font-latin-content);
+}
+
+html[data-locale="zh-CN"] {
+  --font-sans: var(--font-simplified-chinese-content);
+  --font-serif: var(--font-sans);
+}
+
+html[data-locale="ja"] {
+  --font-sans: var(--font-japanese-content);
+  --font-serif: var(--font-sans);
+}
+
+html[data-locale="ko"] {
+  --font-sans: var(--font-korean-content);
+  --font-serif: var(--font-sans);
 }
 
 html,
@@ -90,6 +113,7 @@ a {
 .site-shell {
   position: relative;
   isolation: isolate;
+  font-family: var(--font-sans);
 }
 
 .app-content-shell {
@@ -101,6 +125,26 @@ a {
 .brand-type {
   font-family: var(--font-sans);
   font-optical-sizing: auto;
+}
+
+.japanese-content {
+  font-family: var(--font-japanese-content);
+}
+
+.native-language-label[data-language="zh-CN"] {
+  font-family: var(--font-simplified-chinese-content);
+}
+
+.native-language-label[data-language="en"] {
+  font-family: var(--font-latin-content);
+}
+
+.native-language-label[data-language="ja"] {
+  font-family: var(--font-japanese-content);
+}
+
+.native-language-label[data-language="ko"] {
+  font-family: var(--font-korean-content);
 }
 
 @layer components {

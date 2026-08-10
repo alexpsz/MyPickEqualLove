@@ -73,6 +73,7 @@ export interface ExternalMyPickLink {
   id: string;
   displayName: string;
   groupName: string;
+  groupNameLanguage?: "ja";
   siteUrl: string;
 }
 
@@ -100,6 +101,7 @@ export const EXTERNAL_MY_PICK_LINKS: ExternalMyPickLink[] = [
     id: "llernote",
     displayName: "My Pick LLerNote",
     groupName: "ラブライブ！シリーズ",
+    groupNameLanguage: "ja",
     siteUrl: "https://hamproductions.github.io/llernote/mypick/",
   },
   {
@@ -112,6 +114,7 @@ export const EXTERNAL_MY_PICK_LINKS: ExternalMyPickLink[] = [
     id: "nijigasaki",
     displayName: "My Pick Nijigasaki",
     groupName: "虹ヶ咲学園スクールアイドル同好会",
+    groupNameLanguage: "ja",
     siteUrl: "https://mypick-nijigaku.naufalalfa.com/",
   },
   {
@@ -124,12 +127,14 @@ export const EXTERNAL_MY_PICK_LINKS: ExternalMyPickLink[] = [
     id: "hasunosora",
     displayName: "My Pick Hasunosora",
     groupName: "蓮ノ空女学院スクールアイドルクラブ",
+    groupNameLanguage: "ja",
     siteUrl: "https://mypick.rurino.dev/",
   },
   {
     id: "ikizulive",
     displayName: "My Pick IKIZULIVE!",
     groupName: "いきづらい部！",
+    groupNameLanguage: "ja",
     siteUrl: "https://mypick-ikizulive.kotoha.moe/",
   },
 ];
@@ -150,23 +155,3 @@ export const THEME_STRIP_COLORS = Array.from(
   { length: 10 },
   () => PROJECT_THEME_COLOR,
 );
-
-export const RELEASE_TYPE_LABELS: Record<string, string> = {
-  all: "All",
-  single: "Single",
-  album: "Album",
-  digital: "Digital",
-  dvd_bd: "DVD/BD",
-  other: "Other",
-};
-
-export const TRACK_TYPE_LABELS: Record<string, string> = {
-  all: "All Tracks",
-  title: "Title Song",
-  coupling: "Coupling",
-  album: "Album Track",
-  solo: "Solo",
-  unit: "Unit",
-  live: "Live",
-  other: "Other",
-};

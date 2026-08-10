@@ -5,6 +5,8 @@ import {
   PUBLISHED_LIVE_EXPERIENCES,
   STANDARD_PICK_EXPERIENCE,
 } from "../data/pickExperiences";
+import { localizeExperienceUi } from "../i18n/content";
+import { useLocale } from "../i18n/LocaleProvider";
 
 interface ExperienceNavigationProps {
   activeExperienceId: string;
@@ -14,6 +16,7 @@ export default function ExperienceNavigation({
   activeExperienceId,
 }: ExperienceNavigationProps) {
   const activeItemRef = useRef<HTMLAnchorElement>(null);
+  const { locale, t } = useLocale();
 
   useEffect(() => {
     activeItemRef.current?.scrollIntoView({
@@ -30,18 +33,18 @@ export default function ExperienceNavigation({
     {
       id: STANDARD_PICK_EXPERIENCE.id,
       href: STANDARD_PICK_EXPERIENCE.canonicalPath,
-      label: "通常版 My Pick",
+      label: t("navigation.standard"),
     },
     ...PUBLISHED_LIVE_EXPERIENCES.map((experience) => ({
       id: experience.id,
       href: experience.canonicalPath,
-      label: experience.title,
+      label: localizeExperienceUi(experience, locale).title,
     })),
   ];
 
   return (
     <nav
-      aria-label="Pick experience navigation"
+      aria-label={t("navigation.ariaLabel")}
       data-page-reveal
       className="app-content-shell relative z-10 mb-3 flex px-4 sm:px-6 md:px-8"
     >

@@ -1,5 +1,8 @@
+"use client";
+
 import React from "react";
 import { PROJECT_CONFIG } from "../config/project";
+import { useLocale } from "../i18n/LocaleProvider";
 
 interface GitHubLinkProps {
   repoUrl?: string;
@@ -10,14 +13,16 @@ export default function GitHubLink({
   repoUrl = PROJECT_CONFIG.repoUrl,
   className = "",
 }: GitHubLinkProps) {
+  const { t } = useLocale();
+
   return (
     <a
       href={repoUrl}
       target="_blank"
       rel="noopener noreferrer"
       className={`${className} icon-button h-11 w-11`}
-      title="View on GitHub"
-      aria-label="View source on GitHub"
+      title={t("github.viewTitle")}
+      aria-label={t("github.viewAria")}
     >
       <svg
         className="relative z-10 h-5 w-5"
