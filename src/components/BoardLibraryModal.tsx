@@ -396,18 +396,6 @@ export default function BoardLibraryModal({
                             {isRenaming ? (
                               <>
                                 <button
-                                  ref={(element) => {
-                                    if (element) {
-                                      reviewButtonRefs.current.set(
-                                        snapshot.id,
-                                        element,
-                                      );
-                                    } else {
-                                      reviewButtonRefs.current.delete(
-                                        snapshot.id,
-                                      );
-                                    }
-                                  }}
                                   type="button"
                                   onClick={() => handleRename(snapshot.id)}
                                   className="official-button"
@@ -425,6 +413,18 @@ export default function BoardLibraryModal({
                             ) : (
                               <>
                                 <button
+                                  ref={(element) => {
+                                    if (element) {
+                                      reviewButtonRefs.current.set(
+                                        snapshot.id,
+                                        element,
+                                      );
+                                    } else {
+                                      reviewButtonRefs.current.delete(
+                                        snapshot.id,
+                                      );
+                                    }
+                                  }}
                                   type="button"
                                   onClick={() => {
                                     setPreviewSnapshotId(snapshot.id);
@@ -497,7 +497,15 @@ function RestorePreview({
   onRestore: () => void;
 }) {
   const { t } = useLocale();
+  const backButtonRef = useRef<HTMLButtonElement>(null);
   const alreadyMatches = sameStoredPicks(currentPicks, snapshot.picks);
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() =>
+      backButtonRef.current?.focus(),
+    );
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
 
   return (
     <div className="grid gap-4">
@@ -535,7 +543,12 @@ function RestorePreview({
         </div>
       )}
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-        <button type="button" onClick={onBack} className="official-button">
+        <button
+          ref={backButtonRef}
+          type="button"
+          onClick={onBack}
+          className="official-button"
+        >
           {t("boardLibrary.back")}
         </button>
         <button
