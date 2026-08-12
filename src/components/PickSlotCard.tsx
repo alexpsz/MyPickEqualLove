@@ -21,6 +21,18 @@ interface PickSlotCardProps {
   showSlotMetadata?: boolean;
   onClick: () => void;
   onClear: (event: React.MouseEvent) => void;
+  reorderHandleProps?: ReorderHandleProps;
+}
+
+export interface ReorderHandleProps {
+  active: boolean;
+  onClick: React.MouseEventHandler<HTMLButtonElement>;
+  onKeyDown: React.KeyboardEventHandler<HTMLButtonElement>;
+  onPointerDown: React.PointerEventHandler<HTMLButtonElement>;
+  onPointerMove: React.PointerEventHandler<HTMLButtonElement>;
+  onPointerUp: React.PointerEventHandler<HTMLButtonElement>;
+  onPointerCancel: React.PointerEventHandler<HTMLButtonElement>;
+  onLostPointerCapture: React.PointerEventHandler<HTMLButtonElement>;
 }
 
 export type InteractivePickLayout = "top10-grid" | "live-memory-grid";
@@ -32,7 +44,9 @@ export default function PickSlotCard({
   showSlotMetadata = false,
   onClick,
   onClear,
+  reorderHandleProps,
 }: PickSlotCardProps) {
+  const { t } = useLocale();
   const compact = layout === "live-memory-grid";
   const prefersReducedMotion = usePrefersReducedMotion();
   const articleRef = useRef<HTMLElement>(null);
@@ -68,6 +82,31 @@ export default function PickSlotCard({
           </AnimatedCardFace>
         </AnimatePresence>
       </div>
+      {song && reorderHandleProps ? (
+        <button
+          type="button"
+          data-reorder-handle
+          aria-label={t("reorder.handleAria", {
+            title: song.title.ja,
+            position: slot.label,
+          })}
+          aria-describedby="pick-reorder-instructions"
+          aria-pressed={reorderHandleProps.active}
+          aria-controls={
+            reorderHandleProps.active ? "pick-reorder-toolbar" : undefined
+          }
+          className="pick-reorder-handle icon-button icon-button-compact icon-button-overlay right-11 top-0 z-30 text-[var(--muted)]"
+          onClick={reorderHandleProps.onClick}
+          onKeyDown={reorderHandleProps.onKeyDown}
+          onPointerDown={reorderHandleProps.onPointerDown}
+          onPointerMove={reorderHandleProps.onPointerMove}
+          onPointerUp={reorderHandleProps.onPointerUp}
+          onPointerCancel={reorderHandleProps.onPointerCancel}
+          onLostPointerCapture={reorderHandleProps.onLostPointerCapture}
+        >
+          <AppIcon name="grip" size={14} />
+        </button>
+      ) : null}
     </article>
   );
 }
@@ -304,7 +343,7 @@ function CardHeader({
   return (
     <div
       className={`flex min-h-11 items-center justify-between gap-3 py-2.5 pl-3.5 ${
-        reserveAction ? "pr-12" : "pr-3.5"
+        reserveAction ? "pr-24" : "pr-3.5"
       }`}
     >
       <span className="min-w-0 truncate text-[13px] font-semibold tracking-[-0.01em] text-[var(--foreground)]">

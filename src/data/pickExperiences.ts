@@ -29,6 +29,28 @@ export interface ReplacementSlotState {
   disabledReason?: string;
 }
 
+export type RelocatePickResult =
+  | {
+      ok: true;
+      mode: "move" | "swap";
+      nextPicks: StoredPicks;
+      movedSongId: string;
+      displacedSongId?: string;
+      fromSlotId: PickSlotId;
+      toSlotId: PickSlotId;
+    }
+  | {
+      ok: false;
+      reason:
+        | "same-slot"
+        | "invalid-slot"
+        | "source-empty"
+        | "ineligible"
+        | "storage";
+      fromSlotId: PickSlotId;
+      toSlotId: PickSlotId;
+    };
+
 const STANDARD_EXPERIENCE_ID = "standard";
 const COMBINED_CONTEXT_ID = "both";
 export const EMPTY_LIVE_EXPERIENCE_SLUG = "__empty-live__";
@@ -270,6 +292,76 @@ export function getReplacementSlotStates({
   });
 }
 
+export function relocateStoredPick({
+  experience,
+  storedPicks,
+  fromSlotId,
+  toSlotId,
+  contextId,
+}: {
+  experience: PickExperience;
+  storedPicks: StoredPicks;
+  fromSlotId: PickSlotId;
+  toSlotId: PickSlotId;
+  contextId?: string;
+}): RelocatePickResult {
+  if (fromSlotId === toSlotId) {
+    return { ok: false, reason: "same-slot", fromSlotId, toSlotId };
+  }
+
+  const slots = getSortedExperienceSlots(experience);
+  const slotsById = new Map(slots.map((slot) => [slot.id, slot]));
+  if (!slotsById.has(fromSlotId) || !slotsById.has(toSlotId)) {
+    return { ok: false, reason: "invalid-slot", fromSlotId, toSlotId };
+  }
+
+  const normalizedPicks = filterStoredPicksForExperience({
+    experience,
+    storedPicks,
+    contextId,
+  });
+  const movedSongId = normalizedPicks[fromSlotId];
+  if (!movedSongId) {
+    return { ok: false, reason: "source-empty", fromSlotId, toSlotId };
+  }
+
+  const displacedSongId = normalizedPicks[toSlotId];
+  const nextPicks = { ...normalizedPicks, [toSlotId]: movedSongId };
+  if (displacedSongId) {
+    nextPicks[fromSlotId] = displacedSongId;
+  } else {
+    delete nextPicks[fromSlotId];
+  }
+
+  const seenSongIds = new Set<string>();
+  for (const slot of slots) {
+    const songId = nextPicks[slot.id];
+    if (!songId) continue;
+    if (
+      seenSongIds.has(songId) ||
+      !isSongEligibleForSlot({
+        experience,
+        slot,
+        songId,
+        contextId,
+      })
+    ) {
+      return { ok: false, reason: "ineligible", fromSlotId, toSlotId };
+    }
+    seenSongIds.add(songId);
+  }
+
+  return {
+    ok: true,
+    mode: displacedSongId ? "swap" : "move",
+    nextPicks,
+    movedSongId,
+    displacedSongId,
+    fromSlotId,
+    toSlotId,
+  };
+}
+
 export function filterStoredPicksForExperience({
   experience,
   storedPicks,
@@ -280,23 +372,22 @@ export function filterStoredPicksForExperience({
   contextId?: string;
 }): StoredPicks {
   const slots = getSortedExperienceSlots(experience);
-  const slotIds = new Set(slots.map((slot) => slot.id));
-  const slotsById = Object.fromEntries(slots.map((slot) => [slot.id, slot]));
   const nextPicks: StoredPicks = {};
+  const seenSongIds = new Set<string>();
 
-  for (const [slotId, songId] of Object.entries(storedPicks)) {
-    const slot = slotsById[slotId];
+  for (const slot of slots) {
+    const songId = storedPicks[slot.id];
     if (
-      !slotIds.has(slotId) ||
-      !slot ||
       typeof songId !== "string" ||
-      !Object.prototype.hasOwnProperty.call(SONGS_BY_ID, songId)
+      !Object.prototype.hasOwnProperty.call(SONGS_BY_ID, songId) ||
+      seenSongIds.has(songId)
     ) {
       continue;
     }
 
     if (isSongEligibleForSlot({ experience, slot, songId, contextId })) {
-      nextPicks[slotId] = songId;
+      nextPicks[slot.id] = songId;
+      seenSongIds.add(songId);
     }
   }
 

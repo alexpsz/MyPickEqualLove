@@ -10,6 +10,7 @@ export type AppIconName =
   | "external"
   | "filter"
   | "globe"
+  | "grip"
   | "image"
   | "info"
   | "menu"
@@ -92,6 +93,17 @@ function getIconPaths(name: AppIconName) {
           <circle cx="12" cy="12" r="8.25" />
           <path d="M3.75 12h16.5" />
           <path d="M12 3.75c2.2 2.25 3.25 5 3.25 8.25S14.2 18 12 20.25C9.8 18 8.75 15.25 8.75 12S9.8 6 12 3.75Z" />
+        </>
+      );
+    case "grip":
+      return (
+        <>
+          <circle cx="8" cy="7" r="1" fill="currentColor" stroke="none" />
+          <circle cx="16" cy="7" r="1" fill="currentColor" stroke="none" />
+          <circle cx="8" cy="12" r="1" fill="currentColor" stroke="none" />
+          <circle cx="16" cy="12" r="1" fill="currentColor" stroke="none" />
+          <circle cx="8" cy="17" r="1" fill="currentColor" stroke="none" />
+          <circle cx="16" cy="17" r="1" fill="currentColor" stroke="none" />
         </>
       );
     case "image":

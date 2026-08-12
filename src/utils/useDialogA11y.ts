@@ -22,6 +22,11 @@ export function getPickSlotReturnKey(slotId: string) {
   return `pick-slot-${slotId}`;
 }
 
+export function setActiveDialogReturnFocusKey(key: string) {
+  if (!rootDialogSessionActive) return;
+  rootDialogOpenerKey = key;
+}
+
 let bodyLockCount = 0;
 let previousBodyOverflow = "";
 let rootDialogOpener: HTMLElement | null = null;

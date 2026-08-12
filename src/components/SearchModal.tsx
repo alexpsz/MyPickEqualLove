@@ -41,6 +41,7 @@ interface SearchModalProps {
   autoFocusSearch?: boolean;
   contextLabel?: string;
   resultBadgesBySongId?: Record<string, string[]>;
+  selectedSongsById?: Record<string, SelectedSongPresentation>;
   emptyMessage?: string;
   selectedRanksBySongId?: Record<string, number>;
   favoriteSongIds?: string[];
@@ -53,6 +54,11 @@ interface SearchModalProps {
   onSelect: (song: Song) => void;
   onToggleFavorite: (songId: string) => void;
   onOpenDetail: (song: Song, trigger: HTMLButtonElement) => void;
+}
+
+export interface SelectedSongPresentation {
+  position: string;
+  action: "focus" | "move" | "swap" | "here";
 }
 
 const PRIMARY_TRACK_TYPES = ["title", "coupling", "album"] as const;
@@ -145,6 +151,7 @@ export default function SearchModal({
   autoFocusSearch = true,
   contextLabel,
   resultBadgesBySongId = {},
+  selectedSongsById = {},
   emptyMessage,
   selectedRanksBySongId = {},
   favoriteSongIds = [],
@@ -564,6 +571,7 @@ export default function SearchModal({
             {filteredSongs.length > 0 ? (
               <div className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--line)] bg-white">
                 {filteredSongs.map((song, index) => {
+                  const selected = selectedSongsById[song.id];
                   const selectedRank = selectedRanksBySongId[song.id];
                   const isFavorite = favoriteSongIdSet.has(song.id);
                   const isRecentlyViewed = recentSongIdSet.has(song.id);
@@ -572,8 +580,8 @@ export default function SearchModal({
                     <div
                       key={song.id}
                       className={`song-result-row flex min-h-[76px] w-full items-stretch transition-colors duration-150 hover:bg-[var(--background)] ${
-                        index > 0 ? "border-t border-[var(--line)]" : ""
-                      }`}
+                        selected ? "bg-[var(--project-primary-wash)]" : ""
+                      } ${index > 0 ? "border-t border-[var(--line)]" : ""}`}
                     >
                       <button
                         type="button"
@@ -604,7 +612,26 @@ export default function SearchModal({
                             <span className="truncate">
                               {formatSongMeta(song, t)}
                             </span>
-                            {selectedRank !== undefined ? (
+                            {selected ? (
+                              <>
+                                <ResultBadge>
+                                  {t("search.selectedAt", {
+                                    position: selected.position,
+                                  })}
+                                </ResultBadge>
+                                <ResultBadge muted>
+                                  {t(
+                                    selected.action === "move"
+                                      ? "search.moveSelected"
+                                      : selected.action === "swap"
+                                        ? "search.swapSelected"
+                                        : selected.action === "here"
+                                          ? "search.alreadyHere"
+                                          : "search.focusSelected",
+                                  )}
+                                </ResultBadge>
+                              </>
+                            ) : selectedRank !== undefined ? (
                               <ResultBadge>
                                 {t("search.selectedRank", {
                                   rank: selectedRank,
@@ -626,7 +653,10 @@ export default function SearchModal({
                           <SongCredits song={song} t={t} />
                         </div>
                         <span className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--background)] text-[var(--muted)] transition-[background-color,color,transform] duration-150 group-hover:bg-[var(--project-primary)] group-hover:text-black group-active:scale-95 sm:flex">
-                          <AppIcon name="plus" size={16} />
+                          <AppIcon
+                            name={selected ? "check" : "plus"}
+                            size={16}
+                          />
                         </span>
                       </button>
 

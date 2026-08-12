@@ -42,7 +42,9 @@ import {
   getSortedExperienceSlots,
   getStorageKeysForExperience,
   isSongEligibleForSlot,
+  relocateStoredPick,
   type ExperienceContext,
+  type RelocatePickResult,
 } from "../data/pickExperiences";
 import { localizeExperienceUi } from "../i18n/content";
 import { useLocale } from "../i18n/LocaleProvider";
@@ -95,6 +97,7 @@ import {
 import {
   DIALOG_RETURN_KEYS,
   getPickSlotReturnKey,
+  setActiveDialogReturnFocusKey,
 } from "../utils/useDialogA11y";
 import AppTopBar from "./AppTopBar";
 import AppleMotion from "./AppleMotion";
@@ -113,7 +116,7 @@ import MotionPresence from "./MotionPresence";
 import PickBoard from "./PickBoard";
 import PreviewModal from "./PreviewModal";
 import ReplacementModal from "./ReplacementModal";
-import SearchModal from "./SearchModal";
+import SearchModal, { type SelectedSongPresentation } from "./SearchModal";
 import SongDetailModal from "./SongDetailModal";
 
 interface PickExperienceClientProps {
@@ -206,6 +209,7 @@ export default function PickExperienceClient({
     useState<StorageLoadStatus>("empty");
   const [boardLibraryLoaded, setBoardLibraryLoaded] = useState(false);
   const [boardStatusMessage, setBoardStatusMessage] = useState("");
+  const storedPicksRef = useRef<StoredPicks>({});
   const generatingRef = useRef(false);
   const activeFrameRequestIdRef = useRef<string | null>(null);
   const capturedFrameRequestIdRef = useRef<string | null>(null);
@@ -286,6 +290,40 @@ export default function PickExperienceClient({
         : [],
     [effectiveContextId, experience, pendingReplacementSong, t],
   );
+  const selectedSongsById = useMemo(() => {
+    const result: Record<string, SelectedSongPresentation> = {};
+    for (const slot of slots) {
+      const songId = storedPicks[slot.id];
+      const uiSlot = uiSlots.find((candidate) => candidate.id === slot.id);
+      if (!songId || !uiSlot) continue;
+
+      let action: SelectedSongPresentation["action"] = "focus";
+      if (activeSlotId === slot.id) {
+        action = "here";
+      } else if (activeSlotId) {
+        const relocation = relocateStoredPick({
+          experience,
+          storedPicks,
+          fromSlotId: slot.id,
+          toSlotId: activeSlotId,
+          contextId: effectiveContextId,
+        });
+        if (relocation.ok) {
+          action = storedPicks[activeSlotId] ? "swap" : "move";
+        }
+      }
+
+      result[songId] = { position: uiSlot.label, action };
+    }
+    return result;
+  }, [
+    activeSlotId,
+    effectiveContextId,
+    experience,
+    slots,
+    storedPicks,
+    uiSlots,
+  ]);
   const previewLabel = isStandard
     ? t("context.standardPreview", { group: PROJECT_CONFIG.groupName })
     : activeUiContextDescription
@@ -326,6 +364,7 @@ export default function PickExperienceClient({
     setIsExportRealm(exportRealm);
     if (exportRealm) {
       setContextId(defaultContextId);
+      storedPicksRef.current = {};
       dispatchBoardHistory({ type: "reset", picks: {} });
       setHydrated(true);
       return;
@@ -369,6 +408,7 @@ export default function PickExperienceClient({
             contextId: initialContextId,
           }),
       });
+      storedPicksRef.current = boardResult.picks;
       dispatchBoardHistory({ type: "reset", picks: boardResult.picks });
 
       const optionsResult = loadStoredOptions({
@@ -386,6 +426,10 @@ export default function PickExperienceClient({
 
     return () => window.clearTimeout(timer);
   }, [contextOptions, defaultContextId, experience]);
+
+  useEffect(() => {
+    storedPicksRef.current = storedPicks;
+  }, [storedPicks]);
 
   useEffect(() => {
     if (!hydrated || isExportRealm) return;
@@ -454,6 +498,7 @@ export default function PickExperienceClient({
       if (!saveStoredBoard(localStorage, storageKey, filteredPicks)) {
         return false;
       }
+      storedPicksRef.current = filteredPicks;
       dispatchBoardHistory({ type: "reset", picks: filteredPicks });
       return true;
     },
@@ -474,6 +519,7 @@ export default function PickExperienceClient({
         return false;
       }
       cancelStalePreview();
+      storedPicksRef.current = filteredPicks;
       dispatchBoardHistory(action);
       return true;
     },
@@ -497,6 +543,7 @@ export default function PickExperienceClient({
         return;
       }
       cancelStalePreview();
+      storedPicksRef.current = filteredPicks;
       dispatchBoardHistory(action);
       setBoardStatusMessage(
         t(type === "undo" ? "history.undoDone" : "history.redoDone"),
@@ -546,6 +593,7 @@ export default function PickExperienceClient({
           contextId: nextContextId,
         }),
     });
+    storedPicksRef.current = boardResult.picks;
     dispatchBoardHistory({ type: "reset", picks: boardResult.picks });
   };
 
@@ -610,6 +658,35 @@ export default function PickExperienceClient({
   );
 
   const handleSelectSong = (song: Song) => {
+    const currentPicks = storedPicksRef.current;
+    const existingSlotId = slots.find(
+      (slot) => currentPicks[slot.id] === song.id,
+    )?.id;
+    if (existingSlotId) {
+      if (activeSlotId && activeSlotId !== existingSlotId) {
+        const relocation = relocateStoredPick({
+          experience,
+          storedPicks: currentPicks,
+          fromSlotId: existingSlotId,
+          toSlotId: activeSlotId,
+          contextId: effectiveContextId,
+        });
+        if (!relocation.ok) {
+          setActiveDialogReturnFocusKey(getPickSlotReturnKey(existingSlotId));
+        } else {
+          if (!commitUserMutation("sort", relocation.nextPicks)) {
+            return;
+          }
+          setActiveDialogReturnFocusKey(getPickSlotReturnKey(activeSlotId));
+        }
+      } else {
+        setActiveDialogReturnFocusKey(getPickSlotReturnKey(existingSlotId));
+      }
+      setShowModal(false);
+      setActiveSlotId(null);
+      return;
+    }
+
     if (activeSlotId) {
       const slot = slots.find((candidate) => candidate.id === activeSlotId);
       if (
@@ -627,7 +704,7 @@ export default function PickExperienceClient({
 
       if (
         !commitUserMutation("pick", {
-          ...storedPicks,
+          ...currentPicks,
           [activeSlotId]: song.id,
         })
       ) {
@@ -641,14 +718,14 @@ export default function PickExperienceClient({
 
     const emptySlotId = findFirstEligibleEmptySlot({
       experience,
-      storedPicks,
+      storedPicks: currentPicks,
       songId: song.id,
       contextId: effectiveContextId,
     });
     if (emptySlotId) {
       if (
         !commitUserMutation("pick", {
-          ...storedPicks,
+          ...currentPicks,
           [emptySlotId]: song.id,
         })
       ) {
@@ -684,20 +761,36 @@ export default function PickExperienceClient({
       return;
     }
 
-    if (
-      !commitUserMutation("replace", {
-        ...storedPicks,
-        [slotId]: pendingReplacementSong.id,
-      })
-    ) {
-      return;
+    const currentPicks = storedPicksRef.current;
+    const existingSlotId = slots.find(
+      (slot) => currentPicks[slot.id] === pendingReplacementSong.id,
+    )?.id;
+    if (existingSlotId && existingSlotId !== slotId) {
+      const relocation = relocateStoredPick({
+        experience,
+        storedPicks: currentPicks,
+        fromSlotId: existingSlotId,
+        toSlotId: slotId,
+        contextId: effectiveContextId,
+      });
+      if (!relocation.ok) return;
+      if (!commitUserMutation("sort", relocation.nextPicks)) return;
+    } else {
+      if (
+        !commitUserMutation("replace", {
+          ...currentPicks,
+          [slotId]: pendingReplacementSong.id,
+        })
+      ) {
+        return;
+      }
     }
     setPendingReplacementSong(null);
   };
 
   const handleClearSlot = (slotId: PickSlotId, event: MouseEvent) => {
     event.stopPropagation();
-    const newPicks = { ...storedPicks };
+    const newPicks = { ...storedPicksRef.current };
     delete newPicks[slotId];
     commitUserMutation("clear", newPicks);
   };
@@ -707,6 +800,36 @@ export default function PickExperienceClient({
       commitUserMutation("clear", {});
     }
   };
+
+  const previewRelocation = useCallback(
+    (fromSlotId: PickSlotId, toSlotId: PickSlotId): RelocatePickResult =>
+      relocateStoredPick({
+        experience,
+        storedPicks: storedPicksRef.current,
+        fromSlotId,
+        toSlotId,
+        contextId: effectiveContextId,
+      }),
+    [effectiveContextId, experience],
+  );
+
+  const handleRelocate = useCallback(
+    (fromSlotId: PickSlotId, toSlotId: PickSlotId): RelocatePickResult => {
+      const result = previewRelocation(fromSlotId, toSlotId);
+      if (!result.ok) return result;
+
+      if (!commitUserMutation("sort", result.nextPicks)) {
+        return {
+          ok: false,
+          reason: "storage",
+          fromSlotId,
+          toSlotId,
+        };
+      }
+      return result;
+    },
+    [commitUserMutation, previewRelocation],
+  );
 
   useEffect(() => {
     if (!hydrated || !isExportRealm) return;
@@ -784,6 +907,7 @@ export default function PickExperienceClient({
 
       activeFrameRequestIdRef.current = request.requestId;
       setContextId(nextContextId);
+      storedPicksRef.current = nextPicks;
       dispatchBoardHistory({ type: "reset", picks: nextPicks });
       setNicknameDraft(request.selectedBy.slice(0, MAX_NICKNAME_LENGTH));
       setShowTitles(request.showTitles);
@@ -1165,6 +1289,8 @@ export default function PickExperienceClient({
             showSlotMetadata={!isStandard}
             onSlotClick={handleSlotClick}
             onClearSlot={handleClearSlot}
+            previewRelocation={previewRelocation}
+            onRelocate={handleRelocate}
           />
         </main>
 
@@ -1211,6 +1337,7 @@ export default function PickExperienceClient({
               autoFocusSearch={searchPresentation.autoFocusSearch}
               contextLabel={searchPresentation.contextLabel}
               resultBadgesBySongId={songBadgesBySongId}
+              selectedSongsById={selectedSongsById}
               emptyMessage={t("search.noEligibleMatches")}
               selectedRanksBySongId={selectedRanksBySongId}
               favoriteSongIds={songDiscoveryState.favoriteSongIds}
