@@ -7,6 +7,10 @@ const require = createRequire(import.meta.url);
 const ts = require("typescript");
 
 const sourceUrl = new URL("../src/utils/songSearch.ts", import.meta.url);
+const storageSourceUrl = new URL(
+  "../src/utils/songDiscoveryStorage.ts",
+  import.meta.url,
+);
 const creditsSourceUrl = new URL(
   "../src/utils/songCredits.ts",
   import.meta.url,
@@ -36,6 +40,18 @@ const {
   normalizeSongSearchText,
   rankSongsByQuery,
 } = await import(moduleUrl);
+const storageSource = await readFile(storageSourceUrl, "utf8");
+const storageCompiled = ts.transpileModule(storageSource, {
+  compilerOptions,
+  fileName: storageSourceUrl.pathname,
+}).outputText;
+const storageModuleUrl = `data:text/javascript;base64,${Buffer.from(storageCompiled).toString("base64")}`;
+const {
+  createEmptySongDiscoveryState,
+  loadSongDiscoveryState,
+  recordRecentSongId,
+  saveSongDiscoveryState,
+} = await import(storageModuleUrl);
 
 const membersById = {
   member: {
@@ -125,6 +141,122 @@ test("Enter selects the first ranked result but not during IME or modifiers", ()
   );
 });
 
+test("loads only the current v1 discovery schema and filters song IDs", () => {
+  withLocalStorage(
+    JSON.stringify({
+      version: 1,
+      favoriteSongIds: ["song-a", "missing", "song-a", 17],
+      recentSongIds: ["song-b", "song-a", "song-b", null],
+    }),
+    ({ storage }) => {
+      assert.deepEqual(
+        loadSongDiscoveryState("discovery", new Set(["song-a", "song-b"])),
+        {
+          version: 1,
+          favoriteSongIds: ["song-a"],
+          recentSongIds: ["song-b", "song-a"],
+        },
+      );
+      assert.equal(storage.setCalls, 0);
+      saveSongDiscoveryState("discovery", {
+        version: 1,
+        favoriteSongIds: ["song-b"],
+        recentSongIds: ["song-a"],
+      });
+      assert.deepEqual(JSON.parse(storage.getItem("discovery")), {
+        version: 1,
+        favoriteSongIds: ["song-b"],
+        recentSongIds: ["song-a"],
+      });
+      assert.equal(storage.setCalls, 1);
+    },
+  );
+});
+
+test("fails closed for unknown versions without overwriting their payload", () => {
+  const original = JSON.stringify({
+    version: 999,
+    favoriteSongIds: ["future-song"],
+    futureField: true,
+  });
+
+  withLocalStorage(original, ({ storage }) => {
+    assert.deepEqual(
+      loadSongDiscoveryState("discovery", new Set(["future-song"])),
+      createEmptySongDiscoveryState(),
+    );
+    saveSongDiscoveryState("discovery", {
+      version: 1,
+      favoriteSongIds: ["song-a"],
+      recentSongIds: [],
+    });
+    assert.equal(storage.getItem("discovery"), original);
+    assert.equal(storage.setCalls, 0);
+  });
+});
+
+test("fails closed for bad JSON, non-object roots, and missing versions", () => {
+  for (const serialized of [
+    "{",
+    "null",
+    "[]",
+    '"text"',
+    "42",
+    JSON.stringify({ favoriteSongIds: ["song-a"] }),
+  ]) {
+    withLocalStorage(serialized, () => {
+      assert.deepEqual(
+        loadSongDiscoveryState("discovery", new Set(["song-a"])),
+        createEmptySongDiscoveryState(),
+      );
+    });
+  }
+});
+
+test("keeps recent song IDs newest-first, unique, and within the limit", () => {
+  const initial = {
+    version: 1,
+    favoriteSongIds: [],
+    recentSongIds: ["song-b", "song-a", "song-c"],
+  };
+
+  assert.deepEqual(recordRecentSongId(initial, "song-a", 2).recentSongIds, [
+    "song-a",
+    "song-b",
+  ]);
+  assert.deepEqual(recordRecentSongId(initial, "song-d", 3).recentSongIds, [
+    "song-d",
+    "song-b",
+    "song-a",
+  ]);
+});
+
+test("storage access failures fall back without throwing", () => {
+  const originalWindow = globalThis.window;
+  globalThis.window = {
+    localStorage: {
+      getItem() {
+        throw new Error("storage unavailable");
+      },
+      setItem() {
+        throw new Error("storage unavailable");
+      },
+    },
+  };
+
+  try {
+    assert.deepEqual(
+      loadSongDiscoveryState("discovery", new Set(["song-a"])),
+      createEmptySongDiscoveryState(),
+    );
+    assert.doesNotThrow(() =>
+      saveSongDiscoveryState("discovery", createEmptySongDiscoveryState()),
+    );
+  } finally {
+    restoreWindow(originalWindow);
+  }
+});
+
 function createSong(id, ja, romaji, overrides = {}) {
   return {
     id,
@@ -138,4 +270,35 @@ function createSong(id, ja, romaji, overrides = {}) {
     },
     ...overrides,
   };
+}
+
+function withLocalStorage(serialized, callback) {
+  const originalWindow = globalThis.window;
+  const values = new Map();
+  if (serialized !== undefined) values.set("discovery", serialized);
+  const storage = {
+    setCalls: 0,
+    getItem(key) {
+      return values.get(key) ?? null;
+    },
+    setItem(key, value) {
+      this.setCalls += 1;
+      values.set(key, value);
+    },
+  };
+  globalThis.window = { localStorage: storage };
+
+  try {
+    return callback({ storage });
+  } finally {
+    restoreWindow(originalWindow);
+  }
+}
+
+function restoreWindow(originalWindow) {
+  if (originalWindow === undefined) {
+    delete globalThis.window;
+  } else {
+    globalThis.window = originalWindow;
+  }
 }

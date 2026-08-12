@@ -22,20 +22,15 @@ export function loadSongDiscoveryState(
     const serialized = window.localStorage.getItem(storageKey);
     if (!serialized) return createEmptySongDiscoveryState();
 
-    const value = JSON.parse(serialized) as Record<string, unknown>;
-    const favoriteSongIds = readSongIds(
-      value.favoriteSongIds ?? value.favorites,
-      validSongIds,
-    );
-    const recentSongIds = readSongIds(
-      value.recentSongIds ?? value.recent,
-      validSongIds,
-    );
+    const value: unknown = JSON.parse(serialized);
+    if (!isRecord(value) || value.version !== SONG_DISCOVERY_STORAGE_VERSION) {
+      return createEmptySongDiscoveryState();
+    }
 
     return {
       version: SONG_DISCOVERY_STORAGE_VERSION,
-      favoriteSongIds,
-      recentSongIds,
+      favoriteSongIds: readSongIds(value.favoriteSongIds, validSongIds),
+      recentSongIds: readSongIds(value.recentSongIds, validSongIds),
     };
   } catch {
     return createEmptySongDiscoveryState();
@@ -47,6 +42,8 @@ export function saveSongDiscoveryState(
   state: SongDiscoveryState,
 ) {
   try {
+    const existing = window.localStorage.getItem(storageKey);
+    if (existing && hasUnsupportedStoredVersion(existing)) return;
     window.localStorage.setItem(storageKey, JSON.stringify(state));
   } catch {
     // Browsing modes and storage quotas can make localStorage unavailable.
@@ -78,6 +75,19 @@ export function recordRecentSongId(
       ...state.recentSongIds.filter((candidate) => candidate !== songId),
     ].slice(0, limit),
   };
+}
+
+function hasUnsupportedStoredVersion(serialized: string) {
+  try {
+    const value: unknown = JSON.parse(serialized);
+    return isRecord(value) && value.version !== SONG_DISCOVERY_STORAGE_VERSION;
+  } catch {
+    return false;
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function readSongIds(value: unknown, validSongIds: ReadonlySet<string>) {
