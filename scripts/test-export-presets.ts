@@ -16,11 +16,13 @@ import {
   parseStoredExportOptions,
   serializeExportOptions,
 } from "../src/utils/exportOptions";
+import { getExportQrTarget, isExportQrTarget } from "../src/utils/exportQr";
 
 test("default contract remains Classic portrait at scale 2", () => {
   assert.deepEqual(DEFAULT_EXPORT_OPTIONS, {
     showTitles: true,
     transparentBg: false,
+    showQrCode: false,
     templateId: "classic",
     sizePresetId: "portrait",
   });
@@ -141,6 +143,7 @@ test("v2 options round trip only lightweight values", () => {
   const options = {
     showTitles: false,
     transparentBg: true,
+    showQrCode: true,
     templateId: "spotlight" as const,
     sizePresetId: "story" as const,
   };
@@ -148,6 +151,7 @@ test("v2 options round trip only lightweight values", () => {
 
   assert.deepEqual(parseStoredExportOptions(serialized, null), options);
   assert.deepEqual(Object.keys(JSON.parse(serialized)).sort(), [
+    "showQrCode",
     "showTitles",
     "sizePresetId",
     "templateId",
@@ -180,6 +184,7 @@ test("published schemaVersion 2 options migrate onto Classic portrait", () => {
     {
       showTitles: false,
       transparentBg: true,
+      showQrCode: false,
       templateId: "classic",
       sizePresetId: "portrait",
     },
@@ -198,6 +203,7 @@ test("invalid schemaVersion options fail closed without legacy fallback", () => 
       schemaVersion: 2,
       showTitles: false,
       transparentBg: true,
+      showQrCode: false,
     },
   ];
 
@@ -218,6 +224,7 @@ test("legacy booleans migrate onto Classic portrait", () => {
     {
       showTitles: false,
       transparentBg: true,
+      showQrCode: false,
       templateId: "classic",
       sizePresetId: "portrait",
     },
@@ -252,6 +259,52 @@ test("unknown versions and invalid ids fail closed", () => {
     parseStoredExportOptions("not-json", null),
     DEFAULT_EXPORT_OPTIONS,
   );
+});
+
+test("published v2 options without QR migrate to disabled QR", () => {
+  const oldV2 = JSON.stringify({
+    version: 2,
+    showTitles: false,
+    transparentBg: true,
+    templateId: "spotlight",
+    sizePresetId: "story",
+  });
+  assert.deepEqual(parseStoredExportOptions(oldV2, null), {
+    showTitles: false,
+    transparentBg: true,
+    showQrCode: false,
+    templateId: "spotlight",
+    sizePresetId: "story",
+  });
+
+  assert.deepEqual(
+    parseStoredExportOptions(
+      JSON.stringify({ ...JSON.parse(oldV2), showQrCode: "yes" }),
+      JSON.stringify({ showTitles: true, transparentBg: false }),
+    ),
+    DEFAULT_EXPORT_OPTIONS,
+  );
+});
+
+test("QR targets accept only canonical HTTP or HTTPS page URLs", () => {
+  for (const value of [
+    "https://mypick.kozueginko.com/",
+    "https://mypick.kozueginko.com/live/kokuritsu-2026/",
+    "http://localhost:3000/",
+  ]) {
+    assert.equal(getExportQrTarget(value), value);
+    assert.equal(isExportQrTarget(value), true);
+  }
+
+  for (const value of [
+    "https://mypick.kozueginko.com/?board=1",
+    "https://mypick.kozueginko.com/#state",
+    "https://user:pass@mypick.kozueginko.com/",
+    "ftp://mypick.kozueginko.com/",
+    "not-a-url",
+  ]) {
+    assert.equal(isExportQrTarget(value), false);
+  }
 });
 
 test("default filename is unchanged and non-default presets are explicit", () => {

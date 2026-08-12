@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import * as m from "motion/react-m";
 import {
   EXPORT_SIZE_PRESET_ORDER,
@@ -12,12 +12,22 @@ import {
   getExportTemplateMessageKey,
 } from "../i18n/content";
 import { useLocale } from "../i18n/LocaleProvider";
+import type { MessageKey } from "../i18n/messages";
 import type {
   ExportCardType,
   ExportSizePresetId,
   ExportTemplateId,
 } from "../schema/export";
 import { useDialogA11y } from "../utils/useDialogA11y";
+import {
+  copyPreviewImage,
+  copyPreviewPageLink,
+  preparePreviewImageArtifact,
+  sharePreviewImage,
+  type ImageActionOutcome,
+  type ImageActionResult,
+  type PreviewImageArtifact,
+} from "../utils/imageActions";
 import AppIcon from "./AppIcon";
 import { APPLE_OPACITY, APPLE_SPRING_GENTLE } from "./AppleMotion";
 import type { PresenceState } from "./MotionPresence";
@@ -29,6 +39,8 @@ interface PreviewModalProps {
   onToggleShowTitles: (show: boolean) => void;
   transparentBg: boolean;
   onToggleTransparentBg: (transparent: boolean) => void;
+  showQrCode: boolean;
+  onToggleShowQrCode: (show: boolean) => void;
   templateId: ExportTemplateId;
   onTemplateChange: (templateId: ExportTemplateId) => void;
   sizePresetId: ExportSizePresetId;
@@ -57,6 +69,8 @@ export default function PreviewModal({
   onToggleShowTitles,
   transparentBg,
   onToggleTransparentBg,
+  showQrCode,
+  onToggleShowQrCode,
   templateId,
   onTemplateChange,
   sizePresetId,
@@ -80,6 +94,15 @@ export default function PreviewModal({
   const { t } = useLocale();
   const panelRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const actionRunIdRef = useRef(0);
+  const [imageActionStatus, setImageActionStatus] = useState<{
+    action: "share" | "copy" | "link";
+    outcome: ImageActionOutcome;
+  } | null>(null);
+  const [imageActionPending, setImageActionPending] = useState(false);
+  const [imagePreparationFailed, setImagePreparationFailed] = useState(false);
+  const [previewArtifact, setPreviewArtifact] =
+    useState<PreviewImageArtifact | null>(null);
   const shareConfig = {
     pageUrl,
     shareText,
@@ -101,6 +124,84 @@ export default function PreviewModal({
       closeButtonRef.current?.focus();
     }
   }, [generating, presenceState]);
+
+  useEffect(() => {
+    actionRunIdRef.current += 1;
+    setImageActionPending(false);
+    setImageActionStatus(null);
+    setImagePreparationFailed(false);
+    setPreviewArtifact(null);
+    let active = true;
+
+    void preparePreviewImageArtifact({
+      dataUrl: previewUrl,
+      fileName: imageFileName,
+    }).then(
+      (artifact) => {
+        if (active) setPreviewArtifact(artifact);
+      },
+      () => {
+        if (active) {
+          setImagePreparationFailed(true);
+        }
+      },
+    );
+
+    return () => {
+      active = false;
+    };
+  }, [imageFileName, previewUrl]);
+
+  useEffect(
+    () => () => {
+      actionRunIdRef.current += 1;
+    },
+    [],
+  );
+
+  const actionInert = imageActionPending || presenceState === "exiting";
+  const currentPreviewArtifact =
+    previewArtifact?.dataUrl === previewUrl &&
+    previewArtifact.fileName === imageFileName
+      ? previewArtifact
+      : null;
+  const imageActionsDisabled =
+    actionsDisabled || actionInert || !currentPreviewArtifact;
+  const linkActionsDisabled = actionInert;
+  const imageActionMessage = imagePreparationFailed
+    ? t("preview.imageUnavailable")
+    : imageActionStatus
+      ? getImageActionMessage(
+          t,
+          imageActionStatus.action,
+          imageActionStatus.outcome,
+        )
+      : null;
+
+  const runImageAction = async (action: "share" | "copy" | "link") => {
+    if (actionInert) return;
+
+    const runId = ++actionRunIdRef.current;
+    setImageActionPending(true);
+    setImageActionStatus(null);
+    let result: ImageActionResult;
+    if (action === "link") {
+      result = await copyPreviewPageLink(pageUrl);
+    } else {
+      const artifact = currentPreviewArtifact;
+      if (actionsDisabled || !artifact) {
+        setImageActionPending(false);
+        return;
+      }
+      result =
+        action === "share"
+          ? await sharePreviewImage(artifact, shareTitle)
+          : await copyPreviewImage(artifact);
+    }
+    if (runId !== actionRunIdRef.current) return;
+    setImageActionStatus({ action, outcome: result.outcome });
+    setImageActionPending(false);
+  };
 
   return (
     <div
@@ -198,6 +299,12 @@ export default function PreviewModal({
                 }))}
               />
             ) : null}
+            <ToggleOption
+              checked={showQrCode}
+              disabled={generating}
+              onChange={onToggleShowQrCode}
+              label={t("preview.showQrCode")}
+            />
             <SelectOption
               id="export-size"
               label={t("preview.sizeLabel")}
@@ -260,33 +367,66 @@ export default function PreviewModal({
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-2 border-t border-[var(--line)] bg-white p-3 pb-[max(.75rem,env(safe-area-inset-bottom))] sm:px-5">
+          {imageActionMessage ? (
+            <p
+              role="status"
+              aria-live="polite"
+              className="basis-full text-right text-[12px] text-[var(--muted)]"
+            >
+              {imageActionMessage}
+            </p>
+          ) : null}
           <button
             type="button"
-            onClick={onClose}
-            className="official-button official-button-quiet"
+            onClick={() => {
+              void runImageAction("share");
+            }}
+            disabled={imageActionsDisabled}
+            className="official-button official-button-primary disabled:opacity-50"
           >
-            {t("preview.close")}
+            <AppIcon name="share" />
+            {t("preview.shareImage")}
           </button>
           <button
             type="button"
-            disabled={actionsDisabled}
             onClick={() => {
-              void downloadImage(
-                previewUrl,
-                imageFileName,
-                shareTitle,
-                t("errors.downloadFailed"),
-                t("errors.downloadBlocked"),
-              );
+              void runImageAction("copy");
             }}
-            className="official-button official-button-primary disabled:opacity-50"
+            disabled={imageActionsDisabled}
+            className="official-button border border-[var(--line-strong)] bg-white disabled:opacity-50"
+          >
+            <AppIcon name="copy" />
+            {t("preview.copyImage")}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              void runImageAction("link");
+            }}
+            disabled={linkActionsDisabled}
+            className="official-button border border-[var(--line-strong)] bg-white disabled:opacity-50"
+          >
+            <AppIcon name="copy" />
+            {t("preview.copyLink")}
+          </button>
+          <button
+            type="button"
+            disabled={imageActionsDisabled}
+            onClick={() => {
+              if (!currentPreviewArtifact) return;
+              void downloadImage(currentPreviewArtifact, {
+                failed: t("errors.downloadFailed"),
+                blocked: t("errors.downloadBlocked"),
+              });
+            }}
+            className="official-button border border-[var(--line-strong)] bg-white disabled:opacity-50"
           >
             <AppIcon name="download" />
             {t("preview.downloadImage")}
           </button>
           <button
             type="button"
-            disabled={actionsDisabled}
+            disabled={actionsDisabled || actionInert}
             onClick={() => {
               shareToX(shareConfig);
             }}
@@ -300,6 +440,13 @@ export default function PreviewModal({
               <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
             </svg>
             {t("preview.shareToX")}
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="official-button official-button-quiet"
+          >
+            {t("preview.close")}
           </button>
         </div>
       </m.div>
@@ -466,22 +613,47 @@ function ToggleOption({
   );
 }
 
-async function downloadImage(
-  previewUrl: string,
-  fileName: string,
-  shareTitle: string,
-  downloadFailedMessage: string,
-  downloadBlockedMessage: string,
+function getImageActionMessage(
+  t: (key: MessageKey) => string,
+  action: "share" | "copy" | "link",
+  outcome: ImageActionOutcome,
+) {
+  const keys: Record<
+    "share" | "copy" | "link",
+    Record<ImageActionOutcome, MessageKey>
+  > = {
+    share: {
+      success: "preview.shareImage.success",
+      unavailable: "preview.shareImage.unavailable",
+      cancelled: "preview.shareImage.cancelled",
+      denied: "preview.shareImage.denied",
+      failed: "preview.shareImage.failed",
+    },
+    copy: {
+      success: "preview.copyImage.success",
+      unavailable: "preview.copyImage.unavailable",
+      cancelled: "preview.copyImage.cancelled",
+      denied: "preview.copyImage.denied",
+      failed: "preview.copyImage.failed",
+    },
+    link: {
+      success: "preview.copyLink.success",
+      unavailable: "preview.copyLink.unavailable",
+      cancelled: "preview.copyLink.cancelled",
+      denied: "preview.copyLink.denied",
+      failed: "preview.copyLink.failed",
+    },
+  };
+  return t(keys[action][outcome]);
+}
+
+function downloadImage(
+  artifact: PreviewImageArtifact,
+  messages: { failed: string; blocked: string },
 ) {
   try {
     const browser = getBrowserProfile();
-    const blobResult = toImageBlob(previewUrl);
-    const blob = blobResult instanceof Blob ? blobResult : await blobResult;
-    const shareResult = shareImage(blob, fileName, browser, shareTitle);
-
-    if (shareResult instanceof Promise ? await shareResult : shareResult) {
-      return;
-    }
+    const { blob, fileName } = artifact;
 
     const legacyNavigator = navigator as NavigatorWithLegacySave;
     if (typeof legacyNavigator.msSaveOrOpenBlob === "function") {
@@ -498,68 +670,10 @@ async function downloadImage(
       return;
     }
 
-    openImageFallback(blob, downloadBlockedMessage);
+    openImageFallback(blob, messages.blocked);
   } catch (error) {
     console.error("Failed to download image", error);
-    window.alert(downloadFailedMessage);
-  }
-}
-
-function toImageBlob(previewUrl: string): Blob | Promise<Blob> {
-  if (previewUrl.startsWith("data:")) {
-    return dataUrlToBlob(previewUrl);
-  }
-
-  return fetch(previewUrl).then((response) => response.blob());
-}
-
-function dataUrlToBlob(dataUrl: string) {
-  const [header, data = ""] = dataUrl.split(",");
-  const mimeType = header.match(/data:([^;]+)/)?.[1] || "image/png";
-  const byteString = header.includes(";base64")
-    ? atob(data)
-    : decodeURIComponent(data);
-  const bytes = new Uint8Array(byteString.length);
-
-  for (let index = 0; index < byteString.length; index += 1) {
-    bytes[index] = byteString.charCodeAt(index);
-  }
-
-  return new Blob([bytes], { type: mimeType });
-}
-
-function shareImage(
-  blob: Blob,
-  fileName: string,
-  browser: BrowserProfile,
-  shareTitle: string,
-): boolean | Promise<boolean> {
-  if (!browser.prefersShareFallback || typeof navigator.share !== "function") {
-    return false;
-  }
-
-  try {
-    const file = new File([blob], fileName, {
-      type: blob.type || "image/png",
-    });
-    const shareData: ShareData = {
-      files: [file],
-      title: shareTitle,
-    };
-
-    if (
-      typeof navigator.canShare === "function" &&
-      !navigator.canShare(shareData)
-    ) {
-      return false;
-    }
-
-    return navigator.share(shareData).then(
-      () => true,
-      () => false,
-    );
-  } catch {
-    return false;
+    window.alert(messages.failed);
   }
 }
 
@@ -626,7 +740,6 @@ function getBrowserProfile(): BrowserProfile {
 
   return {
     prefersOpenImageFallback: prefersFallback,
-    prefersShareFallback: prefersFallback,
   };
 }
 
@@ -662,7 +775,6 @@ const UNRELIABLE_ANDROID_DOWNLOAD_AGENTS = [
 
 interface BrowserProfile {
   prefersOpenImageFallback: boolean;
-  prefersShareFallback: boolean;
 }
 
 interface NavigatorWithLegacySave extends Navigator {

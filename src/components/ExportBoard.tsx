@@ -5,12 +5,14 @@ import {
   resolveExportComposition,
   type ExportComposition,
 } from "../config/exportPresets";
+import { EXPORT_QR_CONFIG } from "../config/exportQr";
 import { MEMBERS } from "../data/songs";
 import type { ExperienceContext } from "../data/pickExperiences";
 import type { ExportSizePresetId, ExportTemplateId } from "../schema/export";
 import type { PickExperience } from "../schema/pick-experience";
 import type { PickSlot, Picks } from "../schema/music";
 import { getColorBackground, getMemberColors } from "../utils/memberColors";
+import ExportQrCode from "./ExportQrCode";
 
 interface ExportBoardProps {
   experience: PickExperience;
@@ -20,6 +22,7 @@ interface ExportBoardProps {
   picks: Picks;
   showTitles?: boolean;
   transparentBg?: boolean;
+  showQrCode?: boolean;
   templateId: ExportTemplateId;
   sizePresetId: ExportSizePresetId;
   selectedBy?: string;
@@ -50,6 +53,7 @@ export default function ExportBoard({
   picks,
   showTitles = true,
   transparentBg = false,
+  showQrCode = false,
   templateId,
   sizePresetId,
   selectedBy = "",
@@ -61,12 +65,24 @@ export default function ExportBoard({
   const subtitle = [experience.export.subtitle, context?.exportLabel]
     .filter(Boolean)
     .join(" · ");
-  const composition = resolveExportComposition(
+  const baseComposition = resolveExportComposition(
     templateId,
     sizePresetId,
     experience.export.layout,
     PROJECT_THEME_COLOR,
   );
+  const composition =
+    showQrCode &&
+    experience.export.layout === "five-memory-list" &&
+    sizePresetId !== "square"
+      ? {
+          ...baseComposition,
+          content: {
+            ...baseComposition.content,
+            ...EXPORT_QR_CONFIG.fiveMemory[sizePresetId],
+          },
+        }
+      : baseComposition;
   const { canvas, size, visual } = composition;
 
   return (
@@ -207,8 +223,28 @@ export default function ExportBoard({
           textTransform: "uppercase",
         }}
       >
-        <span>{PROJECT_CONFIG.appName}</span>
-        <span>{pageLabel}</span>
+        {showQrCode ? (
+          <>
+            <div
+              style={{
+                display: "flex",
+                minWidth: 0,
+                flexDirection: "column",
+                alignItems: "flex-start",
+                gap: "10px",
+              }}
+            >
+              <span>{PROJECT_CONFIG.appName}</span>
+              <span style={{ overflowWrap: "anywhere" }}>{pageLabel}</span>
+            </div>
+            <ExportQrCode pageUrl={pageUrl} />
+          </>
+        ) : (
+          <>
+            <span>{PROJECT_CONFIG.appName}</span>
+            <span>{pageLabel}</span>
+          </>
+        )}
       </footer>
     </div>
   );

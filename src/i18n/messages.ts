@@ -250,6 +250,7 @@ const en = {
   "preview.title": "Image preview",
   "preview.showTitles": "Show song titles",
   "preview.transparentBackground": "Transparent background",
+  "preview.showQrCode": "Show QR code",
   "preview.templateLabel": "Template",
   "preview.sizeLabel": "Social size",
   "preview.template.classic": "Classic",
@@ -263,6 +264,28 @@ const en = {
   "preview.close": "Close",
   "preview.downloadImage": "Download image",
   "preview.shareToX": "Share to X",
+  "preview.imageUnavailable":
+    "The generated image could not be prepared. Generate it again to continue.",
+  "preview.shareImage": "Share image",
+  "preview.shareImage.success": "Image shared.",
+  "preview.shareImage.unavailable":
+    "Image sharing is not available here. Download the image to share it.",
+  "preview.shareImage.cancelled": "Image sharing cancelled.",
+  "preview.shareImage.denied": "Allow image sharing to continue.",
+  "preview.shareImage.failed": "Could not share the image. Please try again.",
+  "preview.copyImage": "Copy image",
+  "preview.copyImage.success": "Image copied.",
+  "preview.copyImage.unavailable":
+    "Image copying is not available here. Download the image instead.",
+  "preview.copyImage.cancelled": "Image copying cancelled.",
+  "preview.copyImage.denied": "Allow clipboard access to copy the image.",
+  "preview.copyImage.failed": "Could not copy the image. Please try again.",
+  "preview.copyLink": "Copy page link",
+  "preview.copyLink.success": "Page link copied.",
+  "preview.copyLink.unavailable": "Link copying is not available here.",
+  "preview.copyLink.cancelled": "Link copying cancelled.",
+  "preview.copyLink.denied": "Allow clipboard access to copy the page link.",
+  "preview.copyLink.failed": "Could not copy the page link. Please try again.",
 
   "preview.cardTypeLabel": "Share card",
   "preview.cardType.poster": "Poster",
@@ -748,6 +771,7 @@ const ja: MessageCatalog = {
   "preview.title": "画像プレビュー",
   "preview.showTitles": "曲名を表示",
   "preview.transparentBackground": "背景を透明にする",
+  "preview.showQrCode": "QRコードを表示",
   "preview.templateLabel": "テンプレート",
   "preview.sizeLabel": "SNSサイズ",
   "preview.template.classic": "クラシック",
@@ -761,6 +785,34 @@ const ja: MessageCatalog = {
   "preview.close": "閉じる",
   "preview.downloadImage": "画像をダウンロード",
   "preview.shareToX": "Xでシェア",
+  "preview.imageUnavailable":
+    "生成画像を準備できませんでした。もう一度生成してからお試しください。",
+  "preview.shareImage": "画像を共有",
+  "preview.shareImage.success": "画像を共有しました。",
+  "preview.shareImage.unavailable":
+    "このブラウザでは画像共有を利用できません。画像をダウンロードして共有してください。",
+  "preview.shareImage.cancelled": "画像の共有をキャンセルしました。",
+  "preview.shareImage.denied": "画像を共有するには許可が必要です。",
+  "preview.shareImage.failed":
+    "画像を共有できませんでした。もう一度お試しください。",
+  "preview.copyImage": "画像をコピー",
+  "preview.copyImage.success": "画像をコピーしました。",
+  "preview.copyImage.unavailable":
+    "このブラウザでは画像のコピーを利用できません。画像をダウンロードしてください。",
+  "preview.copyImage.cancelled": "画像のコピーをキャンセルしました。",
+  "preview.copyImage.denied":
+    "画像をコピーするにはクリップボードの許可が必要です。",
+  "preview.copyImage.failed":
+    "画像をコピーできませんでした。もう一度お試しください。",
+  "preview.copyLink": "ページリンクをコピー",
+  "preview.copyLink.success": "ページリンクをコピーしました。",
+  "preview.copyLink.unavailable":
+    "このブラウザではページリンクをコピーできません。",
+  "preview.copyLink.cancelled": "ページリンクのコピーをキャンセルしました。",
+  "preview.copyLink.denied":
+    "ページリンクをコピーするにはクリップボードの許可が必要です。",
+  "preview.copyLink.failed":
+    "ページリンクをコピーできませんでした。もう一度お試しください。",
 
   "preview.cardTypeLabel": "共有カード",
   "preview.cardType.poster": "ポスター",
@@ -1209,6 +1261,7 @@ const zhCN: MessageCatalog = {
   "preview.title": "图片预览",
   "preview.showTitles": "显示歌曲标题",
   "preview.transparentBackground": "透明背景",
+  "preview.showQrCode": "显示二维码",
   "preview.templateLabel": "模板",
   "preview.sizeLabel": "社交媒体尺寸",
   "preview.template.classic": "经典",
@@ -1222,6 +1275,26 @@ const zhCN: MessageCatalog = {
   "preview.close": "关闭",
   "preview.downloadImage": "下载图片",
   "preview.shareToX": "分享到 X",
+  "preview.imageUnavailable": "无法准备生成的图片。请重新生成后再试。",
+  "preview.shareImage": "分享图片",
+  "preview.shareImage.success": "图片已分享。",
+  "preview.shareImage.unavailable":
+    "此浏览器无法直接分享图片。请先下载图片后再分享。",
+  "preview.shareImage.cancelled": "已取消分享图片。",
+  "preview.shareImage.denied": "请允许图片分享后再继续。",
+  "preview.shareImage.failed": "无法分享图片，请重试。",
+  "preview.copyImage": "复制图片",
+  "preview.copyImage.success": "图片已复制。",
+  "preview.copyImage.unavailable": "此浏览器无法复制图片。请改为下载图片。",
+  "preview.copyImage.cancelled": "已取消复制图片。",
+  "preview.copyImage.denied": "复制图片需要允许访问剪贴板。",
+  "preview.copyImage.failed": "无法复制图片，请重试。",
+  "preview.copyLink": "复制页面链接",
+  "preview.copyLink.success": "页面链接已复制。",
+  "preview.copyLink.unavailable": "此浏览器无法复制页面链接。",
+  "preview.copyLink.cancelled": "已取消复制页面链接。",
+  "preview.copyLink.denied": "复制页面链接需要允许访问剪贴板。",
+  "preview.copyLink.failed": "无法复制页面链接，请重试。",
 
   "preview.cardTypeLabel": "分享卡片",
   "preview.cardType.poster": "海报",
@@ -1685,6 +1758,7 @@ const ko: MessageCatalog = {
   "preview.title": "이미지 미리보기",
   "preview.showTitles": "곡명 표시",
   "preview.transparentBackground": "투명 배경",
+  "preview.showQrCode": "QR 코드 표시",
   "preview.templateLabel": "템플릿",
   "preview.sizeLabel": "소셜 미디어 크기",
   "preview.template.classic": "클래식",
@@ -1698,6 +1772,34 @@ const ko: MessageCatalog = {
   "preview.close": "닫기",
   "preview.downloadImage": "이미지 다운로드",
   "preview.shareToX": "X에 공유",
+  "preview.imageUnavailable":
+    "생성된 이미지를 준비할 수 없습니다. 다시 생성한 뒤 시도해 주세요.",
+  "preview.shareImage": "이미지 공유",
+  "preview.shareImage.success": "이미지를 공유했습니다.",
+  "preview.shareImage.unavailable":
+    "이 브라우저에서는 이미지 공유를 사용할 수 없습니다. 이미지를 다운로드한 뒤 공유해 주세요.",
+  "preview.shareImage.cancelled": "이미지 공유를 취소했습니다.",
+  "preview.shareImage.denied": "이미지를 공유하려면 권한을 허용해 주세요.",
+  "preview.shareImage.failed":
+    "이미지를 공유할 수 없습니다. 다시 시도해 주세요.",
+  "preview.copyImage": "이미지 복사",
+  "preview.copyImage.success": "이미지를 복사했습니다.",
+  "preview.copyImage.unavailable":
+    "이 브라우저에서는 이미지 복사를 사용할 수 없습니다. 이미지를 다운로드해 주세요.",
+  "preview.copyImage.cancelled": "이미지 복사를 취소했습니다.",
+  "preview.copyImage.denied":
+    "이미지를 복사하려면 클립보드 권한을 허용해 주세요.",
+  "preview.copyImage.failed":
+    "이미지를 복사할 수 없습니다. 다시 시도해 주세요.",
+  "preview.copyLink": "페이지 링크 복사",
+  "preview.copyLink.success": "페이지 링크를 복사했습니다.",
+  "preview.copyLink.unavailable":
+    "이 브라우저에서는 페이지 링크를 복사할 수 없습니다.",
+  "preview.copyLink.cancelled": "페이지 링크 복사를 취소했습니다.",
+  "preview.copyLink.denied":
+    "페이지 링크를 복사하려면 클립보드 권한을 허용해 주세요.",
+  "preview.copyLink.failed":
+    "페이지 링크를 복사할 수 없습니다. 다시 시도해 주세요.",
 
   "preview.cardTypeLabel": "공유 카드",
   "preview.cardType.poster": "포스터",

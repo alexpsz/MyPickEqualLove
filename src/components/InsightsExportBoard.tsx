@@ -1,4 +1,5 @@
 import React from "react";
+import { EXPORT_QR_CONFIG } from "../config/exportQr";
 import { PROJECT_CONFIG, PROJECT_THEME_COLOR } from "../config/project";
 import { MEMBERS_BY_ID } from "../data/songs";
 import type { ExportSizePresetId } from "../schema/export";
@@ -9,6 +10,7 @@ import {
   limitInsightExportValues,
 } from "../utils/pickInsights";
 import { getInsightsExportLayoutMetrics } from "../utils/insightsExportLayout";
+import ExportQrCode from "./ExportQrCode";
 
 interface InsightsExportBoardProps {
   exportCanvasId: string;
@@ -16,6 +18,7 @@ interface InsightsExportBoardProps {
   selectedBy?: string;
   pageUrl: string;
   sizePresetId: ExportSizePresetId;
+  showQrCode?: boolean;
 }
 
 const EXPORT_FONT_FAMILY =
@@ -29,6 +32,7 @@ export default function InsightsExportBoard({
   selectedBy = "",
   pageUrl,
   sizePresetId,
+  showQrCode = false,
 }: InsightsExportBoardProps) {
   const insights = derivePickInsights(picks, MEMBERS_BY_ID);
   const selectedByLabel = selectedBy.trim();
@@ -68,6 +72,9 @@ export default function InsightsExportBoard({
         style={{
           ...exportHeaderStyle,
           height: `${layout.headerHeight}px`,
+          ...(showQrCode
+            ? { paddingRight: "172px", textAlign: "left" as const }
+            : {}),
         }}
       >
         <div style={exportEyebrowStyle}>MY PICK INSIGHTS</div>
@@ -78,6 +85,20 @@ export default function InsightsExportBoard({
         <div style={exportSummaryStyle}>
           {insights.selectedCount} PICKS ANALYZED
         </div>
+        {showQrCode ? (
+          <div
+            style={{
+              position: "absolute",
+              top: `${Math.max(
+                0,
+                (layout.headerHeight - EXPORT_QR_CONFIG.size) / 2,
+              )}px`,
+              right: "34px",
+            }}
+          >
+            <ExportQrCode pageUrl={pageUrl} />
+          </div>
+        ) : null}
       </header>
       <main
         data-export-boundary="insights-content"

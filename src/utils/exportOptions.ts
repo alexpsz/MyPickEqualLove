@@ -45,14 +45,24 @@ export function parseCurrentExportOptions(
     ) {
       return { status: "invalid" };
     }
+    const baseOptions = {
+      showTitles: value.showTitles,
+      transparentBg: value.transparentBg,
+      templateId: value.templateId,
+      sizePresetId: value.sizePresetId,
+    };
+    if (!Object.prototype.hasOwnProperty.call(value, "showQrCode")) {
+      return {
+        status: "intermediate",
+        options: { ...baseOptions, showQrCode: false },
+      };
+    }
+    if (typeof value.showQrCode !== "boolean") {
+      return { status: "invalid" };
+    }
     return {
       status: "canonical",
-      options: {
-        showTitles: value.showTitles,
-        transparentBg: value.transparentBg,
-        templateId: value.templateId,
-        sizePresetId: value.sizePresetId,
-      },
+      options: { ...baseOptions, showQrCode: value.showQrCode },
     };
   }
 
@@ -106,6 +116,7 @@ export function serializeExportOptions(options: ExportOptions) {
     version: EXPORT_OPTIONS_VERSION,
     showTitles: options.showTitles,
     transparentBg: options.transparentBg,
+    showQrCode: options.showQrCode,
     templateId: options.templateId,
     sizePresetId: options.sizePresetId,
   };

@@ -18,6 +18,7 @@ export type ExportExperienceLayout = "top10-grid" | "five-memory-list";
 export interface ExportOptions {
   showTitles: boolean;
   transparentBg: boolean;
+  showQrCode: boolean;
   templateId: ExportTemplateId;
   sizePresetId: ExportSizePresetId;
 }

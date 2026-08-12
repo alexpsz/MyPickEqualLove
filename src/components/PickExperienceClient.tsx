@@ -223,13 +223,17 @@ const getPreviewOptionsKey = (
   cardType: ExportCardType,
   showTitles: boolean,
   transparentBg: boolean,
+  showQrCode: boolean,
   templateId: ExportTemplateId,
   sizePresetId: ExportSizePresetId,
 ) => {
-  if (cardType === "insights") return `insights:${sizePresetId}`;
+  if (cardType === "insights") {
+    return `insights:${sizePresetId}:${showQrCode ? "qr" : "no-qr"}`;
+  }
   return [
     showTitles ? "titles" : "no-titles",
     transparentBg ? "transparent" : "opaque",
+    showQrCode ? "qr" : "no-qr",
     templateId,
     sizePresetId,
   ].join(":");
@@ -308,6 +312,9 @@ export default function PickExperienceClient({
   );
   const [transparentBg, setTransparentBg] = useState(
     DEFAULT_EXPORT_OPTIONS.transparentBg,
+  );
+  const [showQrCode, setShowQrCode] = useState(
+    DEFAULT_EXPORT_OPTIONS.showQrCode,
   );
   const [templateId, setTemplateId] = useState<ExportTemplateId>(
     DEFAULT_EXPORT_OPTIONS.templateId,
@@ -668,6 +675,7 @@ export default function PickExperienceClient({
       if (optionsResult.options) {
         setShowTitles(optionsResult.options.showTitles);
         setTransparentBg(optionsResult.options.transparentBg);
+        setShowQrCode(optionsResult.options.showQrCode);
         setTemplateId(optionsResult.options.templateId);
         setSizePresetId(optionsResult.options.sizePresetId);
       }
@@ -947,6 +955,7 @@ export default function PickExperienceClient({
       const options = result.options ?? DEFAULT_EXPORT_OPTIONS;
       setShowTitles(options.showTitles);
       setTransparentBg(options.transparentBg);
+      setShowQrCode(options.showQrCode);
       setTemplateId(options.templateId);
       setSizePresetId(options.sizePresetId);
     };
@@ -2112,6 +2121,17 @@ export default function PickExperienceClient({
         return;
       }
 
+      if (request.pageUrl !== pageUrl) {
+        postResult(
+          createExportRenderResult(
+            request.requestId,
+            undefined,
+            "Export page URL does not match the current route",
+          ),
+        );
+        return;
+      }
+
       if (
         request.contextId !== undefined &&
         !contextOptions.some((context) => context.id === request.contextId)
@@ -2140,6 +2160,7 @@ export default function PickExperienceClient({
       setNicknameDraft(request.selectedBy.slice(0, MAX_NICKNAME_LENGTH));
       setShowTitles(request.showTitles);
       setTransparentBg(request.transparentBg);
+      setShowQrCode(request.showQrCode);
       setTemplateId(request.templateId);
       setSizePresetId(request.sizePresetId);
       setFramePageUrl(request.pageUrl);
@@ -2156,7 +2177,14 @@ export default function PickExperienceClient({
     );
 
     return () => window.removeEventListener("message", handleMessage);
-  }, [contextOptions, defaultContextId, experience, hydrated, isExportRealm]);
+  }, [
+    contextOptions,
+    defaultContextId,
+    experience,
+    hydrated,
+    isExportRealm,
+    pageUrl,
+  ]);
 
   const captureExportCanvas = useCallback(async () => {
     const originalGetComputedStyle = window.getComputedStyle;
@@ -2302,6 +2330,7 @@ export default function PickExperienceClient({
         cardType,
         effectiveShowTitles,
         effectiveTransparentBg,
+        showQrCode,
         effectiveTemplateId,
         sizePresetId,
       );
@@ -2330,6 +2359,7 @@ export default function PickExperienceClient({
             cardType,
             showTitles: effectiveShowTitles,
             transparentBg: effectiveTransparentBg,
+            showQrCode,
             templateId: effectiveTemplateId,
             sizePresetId,
             selectedBy: exportNickname,
@@ -2383,6 +2413,7 @@ export default function PickExperienceClient({
       previewLabel,
       resetBoardWithoutHistory,
       showTitles,
+      showQrCode,
       sizePresetId,
       storedPicks,
       t,
@@ -2397,6 +2428,7 @@ export default function PickExperienceClient({
     requestedCardType,
     showTitles,
     transparentBg,
+    showQrCode,
     templateId,
     sizePresetId,
   );
@@ -2456,6 +2488,7 @@ export default function PickExperienceClient({
         setOptionsStorageWritable(true);
         setShowTitles(result.options.showTitles);
         setTransparentBg(result.options.transparentBg);
+        setShowQrCode(result.options.showQrCode);
         setTemplateId(result.options.templateId);
         setSizePresetId(result.options.sizePresetId);
         setBoardStatusMessage("");
@@ -2478,6 +2511,13 @@ export default function PickExperienceClient({
     void updateExportOptions((current) => ({
       ...current,
       transparentBg: value,
+    }));
+  };
+
+  const handleShowQrCodeChange = (value: boolean) => {
+    void updateExportOptions((current) => ({
+      ...current,
+      showQrCode: value,
     }));
   };
 
@@ -2879,6 +2919,8 @@ export default function PickExperienceClient({
               onToggleShowTitles={handleShowTitlesChange}
               transparentBg={transparentBg}
               onToggleTransparentBg={handleTransparentBackgroundChange}
+              showQrCode={showQrCode}
+              onToggleShowQrCode={handleShowQrCodeChange}
               templateId={templateId}
               onTemplateChange={handleTemplateChange}
               sizePresetId={sizePresetId}
@@ -2929,6 +2971,7 @@ export default function PickExperienceClient({
               selectedBy={exportNickname}
               pageUrl={framePageUrl ?? pageUrl}
               sizePresetId={sizePresetId}
+              showQrCode={showQrCode}
             />
           ) : (
             <ExportBoard
@@ -2939,6 +2982,7 @@ export default function PickExperienceClient({
               picks={picks}
               showTitles={showTitles}
               transparentBg={transparentBg}
+              showQrCode={showQrCode}
               templateId={templateId}
               sizePresetId={sizePresetId}
               selectedBy={exportNickname}

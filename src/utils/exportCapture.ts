@@ -10,6 +10,7 @@ import {
   type ExportTemplateId,
 } from "../schema/export";
 import type { StoredPicks } from "../schema/music";
+import { isExportQrTarget } from "./exportQr";
 
 export const EXPORT_CAPTURE_PROTOCOL_VERSION = 2 as const;
 export const EXPORT_REALM_HASH = "#__mypick_export_realm_v2";
@@ -34,6 +35,7 @@ export interface ExportRenderRequest {
   cardType: ExportCardType;
   showTitles: boolean;
   transparentBg: boolean;
+  showQrCode: boolean;
   templateId: ExportTemplateId;
   sizePresetId: ExportSizePresetId;
   selectedBy: string;
@@ -91,10 +93,11 @@ export function isExportRenderRequest(
     isExportCardType(value.cardType) &&
     typeof value.showTitles === "boolean" &&
     typeof value.transparentBg === "boolean" &&
+    typeof value.showQrCode === "boolean" &&
     isExportTemplateId(value.templateId) &&
     isExportSizePresetId(value.sizePresetId) &&
     typeof value.selectedBy === "string" &&
-    typeof value.pageUrl === "string"
+    isExportQrTarget(value.pageUrl)
   );
 }
 

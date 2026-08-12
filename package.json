@@ -39,6 +39,7 @@
     "test:export-presets": "node scripts/run-export-preset-tests.mjs",
     "test:pick-assistant": "node scripts/run-pick-assistant-tests.mjs",
     "test:pick-insights": "node scripts/run-pick-insights-tests.mjs",
+    "test:image-actions": "node scripts/run-image-action-tests.mjs",
     "check:repo-boundary": "node scripts/check-repository-boundary.mjs",
     "hooks:install": "node scripts/install-git-hooks.mjs",
     "validate:data": "node scripts/validate-project-data.mjs",
@@ -48,6 +49,7 @@
     "html2canvas": "^1.4.1",
     "motion": "^13.0.0",
     "next": "^16.2.7",
+    "qrcode.react": "^4.2.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
   },

@@ -6,6 +6,7 @@ export type AppIconName =
   | "chevron-down"
   | "chevron-right"
   | "close"
+  | "copy"
   | "download"
   | "external"
   | "filter"
@@ -19,6 +20,7 @@ export type AppIconName =
   | "reset"
   | "redo"
   | "search"
+  | "share"
   | "star"
   | "undo";
 
@@ -70,6 +72,13 @@ function getIconPaths(name: AppIconName) {
       return <path d="m9.25 6.5 5.5 5.5-5.5 5.5" />;
     case "close":
       return <path d="m6.75 6.75 10.5 10.5m0-10.5-10.5 10.5" />;
+    case "copy":
+      return (
+        <>
+          <rect x="8.25" y="8.25" width="10.25" height="11.25" rx="1.75" />
+          <path d="M15.75 8.25V6.5A2 2 0 0 0 13.75 4.5h-7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h1.5" />
+        </>
+      );
     case "download":
       return (
         <>
@@ -152,6 +161,15 @@ function getIconPaths(name: AppIconName) {
         <>
           <circle cx="10.75" cy="10.75" r="6.25" />
           <path d="m15.5 15.5 4 4" />
+        </>
+      );
+    case "share":
+      return (
+        <>
+          <circle cx="18" cy="5.75" r="2.25" />
+          <circle cx="6" cy="12" r="2.25" />
+          <circle cx="18" cy="18.25" r="2.25" />
+          <path d="m7.9 10.95 8.2-4.15M7.9 13.05l8.2 4.15" />
         </>
       );
     case "redo":

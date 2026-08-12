@@ -295,6 +295,7 @@ test("combined export protocol requires card type, template, and size", () => {
     cardType: "insights",
     showTitles: false,
     transparentBg: false,
+    showQrCode: true,
     templateId: "classic",
     sizePresetId: "square",
     selectedBy: "tester",
@@ -315,6 +316,18 @@ test("combined export protocol requires card type, template, and size", () => {
   );
   assert.equal(
     isExportRenderRequest({ ...request, templateId: undefined }),
+    false,
+  );
+  assert.equal(
+    isExportRenderRequest({ ...request, showQrCode: undefined }),
+    false,
+  );
+  assert.equal(isExportRenderRequest({ ...request, showQrCode: "yes" }), false);
+  assert.equal(
+    isExportRenderRequest({
+      ...request,
+      pageUrl: "https://example.test/?share=1",
+    }),
     false,
   );
 });
