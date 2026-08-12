@@ -1,11 +1,13 @@
 import React from "react";
+import { PROJECT_CONFIG, PROJECT_THEME_COLOR } from "../config/project";
 import {
-  EXPORT_CONFIG,
-  PROJECT_CONFIG,
-  PROJECT_THEME_COLOR,
-} from "../config/project";
+  EXPORT_BACKGROUND,
+  resolveExportComposition,
+  type ExportComposition,
+} from "../config/exportPresets";
 import { MEMBERS } from "../data/songs";
 import type { ExperienceContext } from "../data/pickExperiences";
+import type { ExportSizePresetId, ExportTemplateId } from "../schema/export";
 import type { PickExperience } from "../schema/pick-experience";
 import type { PickSlot, Picks } from "../schema/music";
 import { getColorBackground, getMemberColors } from "../utils/memberColors";
@@ -18,6 +20,8 @@ interface ExportBoardProps {
   picks: Picks;
   showTitles?: boolean;
   transparentBg?: boolean;
+  templateId: ExportTemplateId;
+  sizePresetId: ExportSizePresetId;
   selectedBy?: string;
   pageUrl: string;
 }
@@ -46,6 +50,8 @@ export default function ExportBoard({
   picks,
   showTitles = true,
   transparentBg = false,
+  templateId,
+  sizePresetId,
   selectedBy = "",
   pageUrl,
 }: ExportBoardProps) {
@@ -55,6 +61,13 @@ export default function ExportBoard({
   const subtitle = [experience.export.subtitle, context?.exportLabel]
     .filter(Boolean)
     .join(" · ");
+  const composition = resolveExportComposition(
+    templateId,
+    sizePresetId,
+    experience.export.layout,
+    PROJECT_THEME_COLOR,
+  );
+  const { canvas, size, visual } = composition;
 
   return (
     <div
@@ -62,17 +75,15 @@ export default function ExportBoard({
       lang="ja"
       className="relative overflow-hidden font-sans"
       style={{
-        backgroundColor: transparentBg
-          ? "transparent"
-          : EXPORT_CONFIG.background,
-        width: `${EXPORT_CONFIG.width}px`,
-        height: `${EXPORT_CONFIG.height}px`,
+        backgroundColor: transparentBg ? "transparent" : EXPORT_BACKGROUND,
+        width: `${size.width}px`,
+        height: `${size.height}px`,
         boxSizing: "border-box",
-        padding: "44px 54px 34px",
+        padding: canvas.padding,
         display: "flex",
         flexDirection: "column",
-        gap: "20px",
-        border: "2px solid #000",
+        gap: `${canvas.gap}px`,
+        border: visual.rootBorder,
         fontFamily: EXPORT_FONT_FAMILY,
       }}
     >
@@ -80,27 +91,29 @@ export default function ExportBoard({
         style={{
           position: "absolute",
           inset: 0,
-          background:
-            "repeating-linear-gradient(135deg, rgba(0,0,0,0.035) 0, rgba(0,0,0,0.035) 1px, transparent 1px, transparent 9px)",
+          background: visual.textureBackground,
           pointerEvents: "none",
         }}
       />
 
       <header
         data-export-header="hasunosora-style"
+        data-export-boundary="header"
         style={{
           position: "relative",
           zIndex: 1,
-          background: "#ffffff",
-          padding: "30px 34px 24px",
-          textAlign: "center",
+          background: visual.headerBackground,
+          padding: canvas.headerPadding,
+          textAlign: visual.headerTextAlign,
+          border: visual.headerBorder,
+          borderRadius: visual.headerRadius,
         }}
       >
         <div
           style={{
-            color: "#07182a",
+            color: visual.headerTitleColor,
             fontFamily: EXPORT_FONT_FAMILY,
-            fontSize: "40px",
+            fontSize: `${canvas.headerTitleSize}px`,
             fontWeight: 700,
             letterSpacing: "0.18em",
             lineHeight: 1,
@@ -117,7 +130,7 @@ export default function ExportBoard({
               margin: "14px auto 0",
               maxWidth: "860px",
               color: "#6f8199",
-              fontSize: "20px",
+              fontSize: `${canvas.selectedBySize}px`,
               fontWeight: 900,
               letterSpacing: "0.08em",
               lineHeight: 1.25,
@@ -131,7 +144,7 @@ export default function ExportBoard({
           style={{
             marginTop: selectedByLabel ? "10px" : "12px",
             color: "#6f8199",
-            fontSize: "14px",
+            fontSize: `${canvas.subtitleSize}px`,
             fontWeight: 900,
             letterSpacing: "0.2em",
             textIndent: "0.2em",
@@ -142,9 +155,9 @@ export default function ExportBoard({
         <div
           data-member-color-strip="true"
           style={{
-            marginTop: "14px",
+            marginTop: `${canvas.memberStripMarginTop}px`,
             display: "flex",
-            justifyContent: "center",
+            justifyContent: visual.memberStripJustify,
             gap: `${MEMBER_COLOR_STRIP_GAP}px`,
           }}
         >
@@ -169,27 +182,26 @@ export default function ExportBoard({
         </div>
       </header>
 
-      {experience.export.layout === "five-memory-list" ? (
-        <FiveMemoryList
-          slots={sortedSlots}
-          picks={picks}
-          showTitles={showTitles}
-        />
-      ) : (
-        <TopTenGrid slots={sortedSlots} picks={picks} showTitles={showTitles} />
-      )}
+      <ExportContent
+        composition={composition}
+        showSlotTitle={experience.export.layout === "five-memory-list"}
+        slots={sortedSlots}
+        picks={picks}
+        showTitles={showTitles}
+      />
 
       <footer
+        data-export-boundary="footer"
         style={{
           position: "relative",
           zIndex: 1,
-          borderTop: "2px solid #000",
-          paddingTop: "14px",
+          borderTop: visual.footerBorder,
+          paddingTop: `${canvas.footerPaddingTop}px`,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          color: "#000",
-          fontSize: "15px",
+          color: visual.footerColor,
+          fontSize: `${canvas.footerFontSize}px`,
           fontWeight: 900,
           letterSpacing: "0.18em",
           textTransform: "uppercase",
@@ -202,76 +214,50 @@ export default function ExportBoard({
   );
 }
 
-function TopTenGrid({
+function ExportContent({
+  composition,
+  showSlotTitle,
   slots,
   picks,
   showTitles,
 }: {
+  composition: ExportComposition;
+  showSlotTitle: boolean;
   slots: PickSlot[];
   picks: Picks;
   showTitles: boolean;
 }) {
+  const { content } = composition;
+  const isGrid = content.mode === "grid";
+
   return (
     <main
+      data-export-boundary="content"
       style={{
         position: "relative",
         zIndex: 1,
-        display: "grid",
-        gridTemplateColumns: "repeat(2, 1fr)",
-        gridTemplateRows: "repeat(5, minmax(0, 1fr))",
-        gap: "14px",
-        flex: "1 1 0",
-        minHeight: 0,
+        display: isGrid ? "grid" : "flex",
+        gridTemplateColumns: isGrid
+          ? `repeat(${content.columns}, 1fr)`
+          : undefined,
+        gridTemplateRows:
+          isGrid && content.rows
+            ? `repeat(${content.rows}, minmax(0, 1fr))`
+            : undefined,
+        flexDirection: isGrid ? undefined : "column",
+        gap: `${content.gap}px`,
+        flex: isGrid ? "1 1 0" : "0 0 auto",
+        minHeight: isGrid ? 0 : undefined,
       }}
     >
       {slots.map((slot) => (
         <ExportPickCard
           key={slot.id}
+          composition={composition}
           slot={slot}
           song={picks[slot.id]}
           showTitles={showTitles}
-          showSlotTitle={false}
-          compact
-          fillHeight
-        />
-      ))}
-    </main>
-  );
-}
-
-function FiveMemoryList({
-  slots,
-  picks,
-  showTitles,
-}: {
-  slots: PickSlot[];
-  picks: Picks;
-  showTitles: boolean;
-}) {
-  const dense = slots.length > 5;
-  const cardSize = dense ? 154 : 166;
-  const gap = dense ? 10 : 13;
-
-  return (
-    <main
-      style={{
-        position: "relative",
-        zIndex: 1,
-        display: "flex",
-        flexDirection: "column",
-        gap: `${gap}px`,
-        flex: "0 0 auto",
-      }}
-    >
-      {slots.map((slot) => (
-        <ExportPickCard
-          key={slot.id}
-          slot={slot}
-          song={picks[slot.id]}
-          showTitles={showTitles}
-          showSlotTitle
-          size={cardSize}
-          dense={dense}
+          showSlotTitle={showSlotTitle}
         />
       ))}
     </main>
@@ -279,33 +265,29 @@ function FiveMemoryList({
 }
 
 function ExportPickCard({
+  composition,
   slot,
   song,
   showTitles,
   showSlotTitle,
-  compact = false,
-  fillHeight = false,
-  size,
-  dense = false,
 }: {
+  composition: ExportComposition;
   slot: PickSlot;
   song: Picks[string] | undefined;
   showTitles: boolean;
   showSlotTitle: boolean;
-  compact?: boolean;
-  fillHeight?: boolean;
-  size?: number;
-  dense?: boolean;
 }) {
-  const cardSize = size ?? (compact ? 154 : 166);
+  const { content, visual } = composition;
+  const cardSize = content.fixedCardSize;
 
   return (
     <div
       style={{
-        height: fillHeight ? "100%" : `${cardSize}px`,
+        height: content.fillHeight ? "100%" : `${cardSize}px`,
         overflow: "hidden",
-        border: "2px solid #000",
-        background: song ? "#ffffff" : "#f8f8f8",
+        border: visual.cardBorder,
+        borderRadius: visual.cardRadius,
+        background: song ? visual.cardBackground : visual.emptyBackground,
         display: "flex",
         position: "relative",
       }}
@@ -316,9 +298,9 @@ function ExportPickCard({
             src={song.coverUrl}
             alt={`${song.title.ja} cover`}
             style={{
-              width: fillHeight ? "auto" : `${cardSize}px`,
-              height: fillHeight ? "100%" : `${cardSize}px`,
-              aspectRatio: fillHeight ? "1 / 1" : undefined,
+              width: content.fillHeight ? "auto" : `${cardSize}px`,
+              height: content.fillHeight ? "100%" : `${cardSize}px`,
+              aspectRatio: content.fillHeight ? "1 / 1" : undefined,
               objectFit: "cover",
               flexShrink: 0,
               display: "block",
@@ -328,18 +310,14 @@ function ExportPickCard({
             style={{
               flex: 1,
               minWidth: 0,
-              padding: compact
-                ? "18px 18px 14px"
-                : dense
-                  ? "14px 20px 12px"
-                  : "18px 22px 16px",
+              padding: content.cardPadding,
               display: "flex",
               flexDirection: "column",
               alignItems: showSlotTitle ? "stretch" : "center",
               justifyContent: showSlotTitle ? "space-between" : "center",
               textAlign: showSlotTitle ? "left" : "center",
-              background: "#fff",
-              borderLeft: "2px solid #000",
+              background: visual.cardBackground,
+              borderLeft: visual.cardDivider,
             }}
           >
             {showSlotTitle ? (
@@ -354,7 +332,7 @@ function ExportPickCard({
               {showTitles && (
                 <div
                   style={{
-                    fontSize: compact ? "24px" : dense ? "25px" : "28px",
+                    fontSize: `${content.titleFontSize}px`,
                     lineHeight: 1.16,
                     fontWeight: 900,
                     fontFamily: EXPORT_TITLE_FONT_FAMILY,
@@ -367,7 +345,7 @@ function ExportPickCard({
               )}
               <div
                 style={{
-                  marginTop: showTitles ? "12px" : 0,
+                  marginTop: showTitles ? `${content.tagMarginTop}px` : 0,
                   display: "flex",
                   flexWrap: "wrap",
                   justifyContent: showSlotTitle ? "flex-start" : "center",

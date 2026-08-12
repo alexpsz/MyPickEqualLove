@@ -13,7 +13,9 @@ import type {
   PickExperience,
   SongEligibilityScope,
 } from "../schema/pick-experience";
+import type { ExportSizePresetId, ExportTemplateId } from "../schema/export";
 import type { PickSlotId, Song, StoredPicks } from "../schema/music";
+import { buildExportImageFileName } from "../utils/exportFileName";
 import { SONGS, SONGS_BY_ID } from "./songs";
 
 export interface ExperienceContext {
@@ -463,14 +465,14 @@ export function getSongBadgesBySongId(
 export function getExperienceImageFileName(
   experience: PickExperience,
   context?: ExperienceContext,
+  templateId: ExportTemplateId = "classic",
+  sizePresetId: ExportSizePresetId = "portrait",
 ) {
-  if (!context) {
-    return experience.export.imageFileName;
-  }
-
-  return experience.export.imageFileName.replace(
-    /\.png$/i,
-    `_${context.id.replace(/-/g, "_").toUpperCase()}.png`,
+  return buildExportImageFileName(
+    experience.export.imageFileName,
+    context?.id,
+    templateId,
+    sizePresetId,
   );
 }
 

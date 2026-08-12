@@ -1,7 +1,12 @@
 import type { StoredPicks } from "../schema/music";
+import type { ExportOptions } from "../schema/export";
+import {
+  parseCurrentExportOptions,
+  parseLegacyExportOptions,
+  serializeExportOptions,
+} from "./exportOptions";
 
 export const CURRENT_BOARD_SCHEMA_VERSION = 2;
-export const BOARD_OPTIONS_SCHEMA_VERSION = 2;
 export const BOARD_LIBRARY_SCHEMA_VERSION = 1;
 export const BOARD_NAME_MAX_LENGTH = 40;
 export const BOARD_SNAPSHOT_LIMIT_PER_SCOPE = 20;
@@ -36,11 +41,6 @@ export interface BoardLibraryDocument {
   snapshots: BoardSnapshot[];
 }
 
-export interface BoardOptions {
-  showTitles: boolean;
-  transparentBg: boolean;
-}
-
 export type StorageLoadStatus =
   | "empty"
   | "loaded"
@@ -59,7 +59,7 @@ export type StoredBoardImportResult =
   | { ok: false; error: "storage"; rollbackComplete: boolean };
 
 export interface StoredOptionsLoadResult {
-  options: BoardOptions | null;
+  options: ExportOptions | null;
   status: StorageLoadStatus;
 }
 
@@ -261,7 +261,18 @@ export function loadStoredOptions({
   }
 
   if (serialized !== null) {
-    return parseVersionedOptions(serialized);
+    const parsed = parseCurrentExportOptions(serialized);
+    if (parsed.status === "canonical") {
+      return { options: parsed.options, status: "loaded" };
+    }
+    if (parsed.status === "intermediate") {
+      const migrated = saveStoredOptions(storage, versionedKey, parsed.options);
+      return {
+        options: parsed.options,
+        status: migrated ? "migrated" : "unavailable",
+      };
+    }
+    return { options: null, status: parsed.status };
   }
 
   let legacySerialized: string | null;
@@ -274,7 +285,7 @@ export function loadStoredOptions({
     return { options: null, status: "empty" };
   }
 
-  const options = parseOptionsPayload(legacySerialized, false);
+  const options = parseLegacyExportOptions(legacySerialized);
   if (!options) {
     return { options: null, status: "invalid" };
   }
@@ -286,17 +297,12 @@ export function loadStoredOptions({
 export function saveStoredOptions(
   storage: StorageLike,
   versionedKey: string,
-  options: BoardOptions,
+  options: ExportOptions,
 ) {
   try {
-    storage.setItem(
-      versionedKey,
-      JSON.stringify({
-        schemaVersion: BOARD_OPTIONS_SCHEMA_VERSION,
-        ...options,
-      }),
-    );
-    return true;
+    const serialized = serializeExportOptions(options);
+    storage.setItem(versionedKey, serialized);
+    return storage.getItem(versionedKey) === serialized;
   } catch {
     return false;
   }
@@ -580,50 +586,6 @@ function parseVersionedBoard(
   const picks = parseStoredPicksValue(parsed.picks);
   if (!picks) return { picks: {}, status: "invalid" };
   return { picks: sanitize(picks), status: "loaded" };
-}
-
-function parseVersionedOptions(serialized: string): StoredOptionsLoadResult {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(serialized) as unknown;
-  } catch {
-    return { options: null, status: "invalid" };
-  }
-  if (!isRecord(parsed)) return { options: null, status: "invalid" };
-  if (parsed.schemaVersion !== BOARD_OPTIONS_SCHEMA_VERSION) {
-    return { options: null, status: "unsupported" };
-  }
-
-  const options = parseOptionsValue(parsed);
-  return {
-    options,
-    status: options ? "loaded" : "invalid",
-  };
-}
-
-function parseOptionsPayload(serialized: string, versioned: boolean) {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(serialized) as unknown;
-  } catch {
-    return null;
-  }
-  if (!isRecord(parsed)) return null;
-  if (versioned && parsed.schemaVersion !== BOARD_OPTIONS_SCHEMA_VERSION) {
-    return null;
-  }
-  return parseOptionsValue(parsed);
-}
-
-function parseOptionsValue(
-  value: Record<string, unknown>,
-): BoardOptions | null {
-  const showTitles = value.showTitles;
-  const transparentBg = value.transparentBg;
-  if (typeof showTitles !== "boolean" || typeof transparentBg !== "boolean") {
-    return null;
-  }
-  return { showTitles, transparentBg };
 }
 
 function parseStoredPicksRecord(serialized: string) {

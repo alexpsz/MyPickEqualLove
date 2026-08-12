@@ -1,4 +1,5 @@
 import type { ProjectId } from "../projects/registry";
+import type { ExportExperienceLayout } from "./export";
 import type { PickSlot } from "./music";
 
 export type PickExperienceKind =
@@ -13,7 +14,7 @@ export type SongEligibilityScope =
   | "selected-performance"
   | "event-union";
 
-export type PickExperienceLayout = "top10-grid" | "five-memory-list";
+export type PickExperienceLayout = ExportExperienceLayout;
 
 export interface ExperiencePickSlot extends PickSlot {
   eligibility: SongEligibilityScope;

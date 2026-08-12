@@ -1,4 +1,5 @@
 import { getExperienceContexts } from "../data/pickExperiences";
+import type { ExportSizePresetId, ExportTemplateId } from "../schema/export";
 import { PROJECTS, type ProjectId } from "../projects/registry";
 import type {
   ExperiencePickSlot,
@@ -56,6 +57,17 @@ const PROJECT_MESSAGE_KEYS: Record<ProjectId, ProjectMessageKeys> = {
     description: "project.notEqualMe.description",
     shareText: "project.notEqualMe.shareText",
   },
+};
+
+const EXPORT_TEMPLATE_MESSAGE_KEYS: Record<ExportTemplateId, MessageKey> = {
+  classic: "preview.template.classic",
+  spotlight: "preview.template.spotlight",
+};
+
+const EXPORT_SIZE_MESSAGE_KEYS: Record<ExportSizePresetId, MessageKey> = {
+  portrait: "preview.size.portrait",
+  square: "preview.size.square",
+  story: "preview.size.story",
 };
 
 const LIVE_EXPERIENCE_MESSAGE_KEYS: Readonly<
@@ -199,6 +211,14 @@ const LIVE_EXPERIENCE_MESSAGE_KEYS: Readonly<
 };
 
 assertLiveExperienceMessageCoverage();
+
+export function getExportTemplateMessageKey(templateId: ExportTemplateId) {
+  return EXPORT_TEMPLATE_MESSAGE_KEYS[templateId];
+}
+
+export function getExportSizeMessageKey(sizePresetId: ExportSizePresetId) {
+  return EXPORT_SIZE_MESSAGE_KEYS[sizePresetId];
+}
 
 export function localizeProjectCopy(projectId: ProjectId, locale: AppLocale) {
   const project = PROJECTS[projectId].config;

@@ -1,7 +1,13 @@
+import {
+  getExportSizePreset,
+  isExportSizePresetId,
+  isExportTemplateId,
+} from "../config/exportPresets";
+import type { ExportSizePresetId, ExportTemplateId } from "../schema/export";
 import type { StoredPicks } from "../schema/music";
 
-export const EXPORT_CAPTURE_PROTOCOL_VERSION = 1 as const;
-export const EXPORT_REALM_HASH = "#__mypick_export_realm_v1";
+export const EXPORT_CAPTURE_PROTOCOL_VERSION = 2 as const;
+export const EXPORT_REALM_HASH = "#__mypick_export_realm_v2";
 export const EXPORT_REALM_READY_TYPE = "mypick-export:ready";
 export const EXPORT_REALM_RENDER_TYPE = "mypick-export:render";
 export const EXPORT_REALM_RESULT_TYPE = "mypick-export:result";
@@ -22,6 +28,8 @@ export interface ExportRenderRequest {
   picks: StoredPicks;
   showTitles: boolean;
   transparentBg: boolean;
+  templateId: ExportTemplateId;
+  sizePresetId: ExportSizePresetId;
   selectedBy: string;
   pageUrl: string;
 }
@@ -76,6 +84,8 @@ export function isExportRenderRequest(
     isStoredPicks(value.picks) &&
     typeof value.showTitles === "boolean" &&
     typeof value.transparentBg === "boolean" &&
+    isExportTemplateId(value.templateId) &&
+    isExportSizePresetId(value.sizePresetId) &&
     typeof value.selectedBy === "string" &&
     typeof value.pageUrl === "string"
   );
@@ -106,6 +116,7 @@ export function captureExportImageInFrame(
   };
   const frame = document.createElement("iframe");
   const expectedOrigin = window.location.origin;
+  const sizePreset = getExportSizePreset(payload.sizePresetId);
 
   frame.src = buildExportRealmUrl(window.location.href);
   frame.setAttribute("aria-hidden", "true");
@@ -115,7 +126,7 @@ export function captureExportImageInFrame(
     left: "-12000px",
     top: "0",
     width: "1440px",
-    height: "1000px",
+    height: `${sizePreset.captureViewportHeight}px`,
     border: "0",
     opacity: "0",
     pointerEvents: "none",

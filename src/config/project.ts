@@ -5,6 +5,11 @@ import {
   PROJECTS,
 } from "../projects/registry";
 import type { ProjectId } from "../projects/registry";
+import {
+  EXPORT_BACKGROUND,
+  EXPORT_SCALE,
+  EXPORT_SIZE_PRESETS,
+} from "./exportPresets";
 
 export const PROJECT_CONFIG = CURRENT_PROJECT.config;
 export const PROJECT_ID = CURRENT_PROJECT_ID;
@@ -58,11 +63,13 @@ export function getExperienceStorageKeys(
   };
 }
 
+const DEFAULT_EXPORT_SIZE = EXPORT_SIZE_PRESETS.portrait;
+
 export const EXPORT_CONFIG = {
-  width: 1080,
-  height: 1350,
-  background: "#ffffff",
-  scale: 2,
+  width: DEFAULT_EXPORT_SIZE.width,
+  height: DEFAULT_EXPORT_SIZE.height,
+  background: EXPORT_BACKGROUND,
+  scale: EXPORT_SCALE,
 };
 
 export const EXPORT_CANVAS_ID = `mypick-${PROJECT_ID}-export-canvas`;

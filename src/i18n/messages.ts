@@ -188,6 +188,14 @@ const en = {
   "preview.title": "Image preview",
   "preview.showTitles": "Show song titles",
   "preview.transparentBackground": "Transparent background",
+  "preview.templateLabel": "Template",
+  "preview.sizeLabel": "Social size",
+  "preview.template.classic": "Classic",
+  "preview.template.spotlight": "Spotlight",
+  "preview.size.portrait": "Portrait",
+  "preview.size.square": "Square",
+  "preview.size.story": "Story",
+  "preview.sizeOption": "{name} · {ratio} · {width}×{height}",
   "preview.imageAlt": "Preview of {title}",
   "preview.updating": "Updating preview...",
   "preview.close": "Close",
@@ -243,7 +251,6 @@ const en = {
 
   "errors.songIneligible": "This song is not available for this slot.",
   "errors.clearAllConfirm": "Are you sure you want to clear all your picks?",
-  "errors.selectSongFirst": "Please select at least one song first.",
   "errors.imageGenerationFailed":
     "Failed to generate the image. Please try again.",
   "errors.downloadFailed":
@@ -587,6 +594,14 @@ const ja: MessageCatalog = {
   "preview.title": "画像プレビュー",
   "preview.showTitles": "曲名を表示",
   "preview.transparentBackground": "背景を透明にする",
+  "preview.templateLabel": "テンプレート",
+  "preview.sizeLabel": "SNSサイズ",
+  "preview.template.classic": "クラシック",
+  "preview.template.spotlight": "スポットライト",
+  "preview.size.portrait": "縦長",
+  "preview.size.square": "正方形",
+  "preview.size.story": "ストーリー",
+  "preview.sizeOption": "{name} · {ratio} · {width}×{height}",
   "preview.imageAlt": "{title}のプレビュー",
   "preview.updating": "プレビューを更新中...",
   "preview.close": "閉じる",
@@ -642,7 +657,6 @@ const ja: MessageCatalog = {
 
   "errors.songIneligible": "この楽曲はこの枠では選べません。",
   "errors.clearAllConfirm": "すべてのピックをクリアしますか？",
-  "errors.selectSongFirst": "先に楽曲を1曲以上選んでください。",
   "errors.imageGenerationFailed":
     "画像を生成できませんでした。もう一度お試しください。",
   "errors.downloadFailed":
@@ -960,6 +974,14 @@ const zhCN: MessageCatalog = {
   "preview.title": "图片预览",
   "preview.showTitles": "显示歌曲标题",
   "preview.transparentBackground": "透明背景",
+  "preview.templateLabel": "模板",
+  "preview.sizeLabel": "社交媒体尺寸",
+  "preview.template.classic": "经典",
+  "preview.template.spotlight": "聚光",
+  "preview.size.portrait": "竖版",
+  "preview.size.square": "方形",
+  "preview.size.story": "全屏竖版",
+  "preview.sizeOption": "{name} · {ratio} · {width}×{height}",
   "preview.imageAlt": "{title}预览",
   "preview.updating": "正在更新预览...",
   "preview.close": "关闭",
@@ -1011,7 +1033,6 @@ const zhCN: MessageCatalog = {
 
   "errors.songIneligible": "此歌曲不适用于该槽位。",
   "errors.clearAllConfirm": "确定要清空所有选择吗？",
-  "errors.selectSongFirst": "请先选择至少一首歌曲。",
   "errors.imageGenerationFailed": "图片生成失败，请重试。",
   "errors.downloadFailed":
     "此浏览器无法开始下载。请长按或右键单击预览图片进行保存。",
@@ -1338,6 +1359,14 @@ const ko: MessageCatalog = {
   "preview.title": "이미지 미리보기",
   "preview.showTitles": "곡명 표시",
   "preview.transparentBackground": "투명 배경",
+  "preview.templateLabel": "템플릿",
+  "preview.sizeLabel": "소셜 미디어 크기",
+  "preview.template.classic": "클래식",
+  "preview.template.spotlight": "스포트라이트",
+  "preview.size.portrait": "세로형",
+  "preview.size.square": "정사각형",
+  "preview.size.story": "스토리",
+  "preview.sizeOption": "{name} · {ratio} · {width}×{height}",
   "preview.imageAlt": "{title} 미리보기",
   "preview.updating": "미리보기 업데이트 중...",
   "preview.close": "닫기",
@@ -1393,7 +1422,6 @@ const ko: MessageCatalog = {
 
   "errors.songIneligible": "이 곡은 이 슬롯에서 선택할 수 없습니다.",
   "errors.clearAllConfirm": "선택한 곡을 모두 비울까요?",
-  "errors.selectSongFirst": "먼저 한 곡 이상 선택해 주세요.",
   "errors.imageGenerationFailed":
     "이미지를 만들지 못했습니다. 다시 시도해 주세요.",
   "errors.downloadFailed":

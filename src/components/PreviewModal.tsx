@@ -2,7 +2,17 @@
 
 import React, { useEffect, useRef } from "react";
 import * as m from "motion/react-m";
+import {
+  EXPORT_SIZE_PRESET_ORDER,
+  EXPORT_SIZE_PRESETS,
+  EXPORT_TEMPLATE_ORDER,
+} from "../config/exportPresets";
+import {
+  getExportSizeMessageKey,
+  getExportTemplateMessageKey,
+} from "../i18n/content";
 import { useLocale } from "../i18n/LocaleProvider";
+import type { ExportSizePresetId, ExportTemplateId } from "../schema/export";
 import { useDialogA11y } from "../utils/useDialogA11y";
 import AppIcon from "./AppIcon";
 import { APPLE_OPACITY, APPLE_SPRING_GENTLE } from "./AppleMotion";
@@ -15,7 +25,12 @@ interface PreviewModalProps {
   onToggleShowTitles: (show: boolean) => void;
   transparentBg: boolean;
   onToggleTransparentBg: (transparent: boolean) => void;
+  templateId: ExportTemplateId;
+  onTemplateChange: (templateId: ExportTemplateId) => void;
+  sizePresetId: ExportSizePresetId;
+  onSizePresetChange: (sizePresetId: ExportSizePresetId) => void;
   generating: boolean;
+  actionsDisabled: boolean;
   pageUrl: string;
   previewLabel: string;
   imageFileName: string;
@@ -35,7 +50,12 @@ export default function PreviewModal({
   onToggleShowTitles,
   transparentBg,
   onToggleTransparentBg,
+  templateId,
+  onTemplateChange,
+  sizePresetId,
+  onSizePresetChange,
   generating,
+  actionsDisabled,
   pageUrl,
   previewLabel,
   imageFileName,
@@ -98,6 +118,7 @@ export default function PreviewModal({
         aria-modal="true"
         aria-hidden={presenceState === "exiting"}
         inert={presenceState === "exiting"}
+        aria-busy={generating}
         aria-labelledby="preview-modal-title"
         className="apple-sheet relative z-10 flex max-h-[92dvh] w-full max-w-4xl flex-col overflow-hidden rounded-b-none border-x-0 border-b-0 focus:outline-none sm:rounded-[var(--radius-lg)] sm:border"
         initial={{ opacity: 0, y: 18, scale: 0.985 }}
@@ -123,6 +144,45 @@ export default function PreviewModal({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <button
+              ref={closeButtonRef}
+              type="button"
+              onClick={onClose}
+              className="icon-button icon-button-compact order-last"
+              aria-label={t("preview.closeAria")}
+            >
+              <AppIcon name="close" size={16} />
+            </button>
+            <SelectOption
+              id="export-template"
+              label={t("preview.templateLabel")}
+              value={templateId}
+              disabled={generating}
+              onChange={onTemplateChange}
+              options={EXPORT_TEMPLATE_ORDER.map((id) => ({
+                value: id,
+                label: t(getExportTemplateMessageKey(id)),
+              }))}
+            />
+            <SelectOption
+              id="export-size"
+              label={t("preview.sizeLabel")}
+              value={sizePresetId}
+              disabled={generating}
+              onChange={onSizePresetChange}
+              options={EXPORT_SIZE_PRESET_ORDER.map((id) => {
+                const size = EXPORT_SIZE_PRESETS[id];
+                return {
+                  value: id,
+                  label: t("preview.sizeOption", {
+                    name: t(getExportSizeMessageKey(id)),
+                    ratio: size.ratioLabel,
+                    width: size.width,
+                    height: size.height,
+                  }),
+                };
+              })}
+            />
             <ToggleOption
               checked={showTitles}
               disabled={generating}
@@ -135,15 +195,6 @@ export default function PreviewModal({
               onChange={onToggleTransparentBg}
               label={t("preview.transparentBackground")}
             />
-            <button
-              ref={closeButtonRef}
-              type="button"
-              onClick={onClose}
-              className="icon-button icon-button-compact"
-              aria-label={t("preview.closeAria")}
-            >
-              <AppIcon name="close" size={16} />
-            </button>
           </div>
         </div>
 
@@ -157,7 +208,11 @@ export default function PreviewModal({
           />
           {generating && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="preview-status flex items-center gap-2 rounded-full bg-black/80 px-4 py-2 text-[13px] font-medium text-white shadow-lg backdrop-blur-md">
+              <div
+                role="status"
+                aria-live="polite"
+                className="preview-status flex items-center gap-2 rounded-full bg-black/80 px-4 py-2 text-[13px] font-medium text-white shadow-lg backdrop-blur-md"
+              >
                 <span className="h-3.5 w-3.5 rounded-full border-2 border-white/20 border-t-white animate-spin" />
                 {t("preview.updating")}
               </div>
@@ -175,6 +230,7 @@ export default function PreviewModal({
           </button>
           <button
             type="button"
+            disabled={actionsDisabled}
             onClick={() => {
               void downloadImage(
                 previewUrl,
@@ -184,17 +240,18 @@ export default function PreviewModal({
                 t("errors.downloadBlocked"),
               );
             }}
-            className="official-button official-button-primary"
+            className="official-button official-button-primary disabled:opacity-50"
           >
             <AppIcon name="download" />
             {t("preview.downloadImage")}
           </button>
           <button
             type="button"
+            disabled={actionsDisabled}
             onClick={() => {
               shareToX(shareConfig);
             }}
-            className="official-button border-slate-950 bg-slate-950 text-white"
+            className="official-button border-slate-950 bg-slate-950 text-white disabled:opacity-50"
           >
             <svg
               className="h-3.5 w-3.5 fill-current"
@@ -301,6 +358,44 @@ function isIOSDevice() {
 
 function isAndroidDevice() {
   return /Android/i.test(navigator.userAgent);
+}
+
+function SelectOption<T extends string>({
+  id,
+  label,
+  value,
+  disabled,
+  onChange,
+  options,
+}: {
+  id: string;
+  label: string;
+  value: T;
+  disabled: boolean;
+  onChange: (value: T) => void;
+  options: ReadonlyArray<{ value: T; label: string }>;
+}) {
+  return (
+    <label
+      htmlFor={id}
+      className="grid min-w-[154px] gap-1 text-[11px] font-semibold text-[var(--muted)]"
+    >
+      <span>{label}</span>
+      <select
+        id={id}
+        value={value}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.value as T)}
+        className="min-h-11 rounded-[var(--radius-sm)] border border-[var(--line-strong)] bg-white px-3 text-[13px] font-medium text-[var(--foreground)] outline-none focus:border-[var(--focus-ring)] focus:ring-2 focus:ring-[var(--focus-ring)] disabled:opacity-50"
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
 }
 
 function ToggleOption({

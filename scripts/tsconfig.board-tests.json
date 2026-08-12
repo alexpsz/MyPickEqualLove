@@ -13,8 +13,11 @@
   },
   "include": [
     "../src/schema/music.ts",
+    "../src/schema/export.ts",
+    "../src/config/exportPresets.ts",
     "../src/utils/boardHistory.ts",
     "../src/utils/boardStorage.ts",
+    "../src/utils/exportOptions.ts",
     "./tests/board-state.test.ts"
   ]
 }

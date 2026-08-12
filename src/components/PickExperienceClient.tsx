@@ -12,13 +12,18 @@ import {
   type ReactNode,
 } from "react";
 import {
-  EXPORT_CONFIG,
   PROJECT_CONFIG,
   PROJECT_ID,
   PROJECT_THEME_COLOR,
   SONG_DISCOVERY_CONFIG,
   STORAGE_KEYS,
 } from "../config/project";
+import {
+  DEFAULT_EXPORT_OPTIONS,
+  EXPORT_BACKGROUND,
+  EXPORT_SCALE,
+  getExportSizePreset,
+} from "../config/exportPresets";
 import {
   MEMBERS,
   RELEASE_TYPES,
@@ -53,6 +58,7 @@ import {
 import { localizeExperienceUi } from "../i18n/content";
 import { useLocale } from "../i18n/LocaleProvider";
 import type { PickExperience } from "../schema/pick-experience";
+import type { ExportSizePresetId, ExportTemplateId } from "../schema/export";
 import type { PickSlotId, Picks, Song, StoredPicks } from "../schema/music";
 import {
   boardHistoryReducer,
@@ -80,6 +86,7 @@ import {
 } from "../utils/boardStorage";
 import { centerExportYearInk } from "../utils/centerExportYearInk";
 import { convertColorString } from "../utils/colors";
+import { assertExportLayoutFits } from "../utils/assertExportLayoutFits";
 import {
   buildBoardShareUrl,
   createBoardSharePreviewDiff,
@@ -146,8 +153,24 @@ interface PendingBoardShareImport {
   payload: BoardSharePayload;
 }
 
-const getPreviewOptionsKey = (showTitles: boolean, transparentBg: boolean) =>
-  `${showTitles ? "titles" : "no-titles"}:${transparentBg ? "transparent" : "opaque"}`;
+interface PreviewSnapshot {
+  dataUrl: string;
+  optionsKey: string;
+  imageFileName: string;
+}
+
+const getPreviewOptionsKey = (
+  showTitles: boolean,
+  transparentBg: boolean,
+  templateId: ExportTemplateId,
+  sizePresetId: ExportSizePresetId,
+) =>
+  [
+    showTitles ? "titles" : "no-titles",
+    transparentBg ? "transparent" : "opaque",
+    templateId,
+    sizePresetId,
+  ].join(":");
 
 export default function PickExperienceClient({
   experience,
@@ -212,10 +235,20 @@ export default function PickExperienceClient({
     useState<SongDiscoveryState>(createEmptySongDiscoveryState);
   const [pendingReplacementSong, setPendingReplacementSong] =
     useState<Song | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [preview, setPreview] = useState<PreviewSnapshot | null>(null);
   const [generating, setGenerating] = useState(false);
-  const [showTitles, setShowTitles] = useState(true);
-  const [transparentBg, setTransparentBg] = useState(false);
+  const [showTitles, setShowTitles] = useState(
+    DEFAULT_EXPORT_OPTIONS.showTitles,
+  );
+  const [transparentBg, setTransparentBg] = useState(
+    DEFAULT_EXPORT_OPTIONS.transparentBg,
+  );
+  const [templateId, setTemplateId] = useState<ExportTemplateId>(
+    DEFAULT_EXPORT_OPTIONS.templateId,
+  );
+  const [sizePresetId, setSizePresetId] = useState<ExportSizePresetId>(
+    DEFAULT_EXPORT_OPTIONS.sizePresetId,
+  );
   const [nicknameDraft, setNicknameDraft] = useState("");
   const [frameCaptureRequest, setFrameCaptureRequest] =
     useState<ExportRenderRequest | null>(null);
@@ -245,7 +278,6 @@ export default function PickExperienceClient({
   const detailTriggerRef = useRef<HTMLElement>(null);
   const previewGenerationIdRef = useRef(0);
   const activePreviewCaptureAbortRef = useRef<AbortController | null>(null);
-  const lastGeneratedPreviewOptionsRef = useRef<string | null>(null);
   const boardShareConsumedRef = useRef(false);
   const boardLinkCopiedTimerRef = useRef<number | null>(null);
   const boardSharePreviewSnapshotRef = useRef({
@@ -375,7 +407,12 @@ export default function PickExperienceClient({
           context: activeUiContextDescription,
         })
       : uiCopy.title;
-  const imageFileName = getExperienceImageFileName(experience, activeContext);
+  const imageFileName = getExperienceImageFileName(
+    experience,
+    activeContext,
+    templateId,
+    sizePresetId,
+  );
   const boardScope = useMemo<BoardScope>(
     () => ({
       projectId: PROJECT_ID,
@@ -462,6 +499,8 @@ export default function PickExperienceClient({
       if (optionsResult.options) {
         setShowTitles(optionsResult.options.showTitles);
         setTransparentBg(optionsResult.options.transparentBg);
+        setTemplateId(optionsResult.options.templateId);
+        setSizePresetId(optionsResult.options.sizePresetId);
       }
 
       setHydrated(true);
@@ -535,7 +574,7 @@ export default function PickExperienceClient({
     previewGenerationIdRef.current += 1;
     activePreviewCaptureAbortRef.current?.abort();
     activePreviewCaptureAbortRef.current = null;
-    setPreviewUrl(null);
+    setPreview(null);
   }, []);
 
   const presentBoardShareDialog = useCallback(
@@ -760,7 +799,7 @@ export default function PickExperienceClient({
     setShowBoardLibrary(false);
     setDetailSongId(null);
     setPendingReplacementSong(null);
-    setPreviewUrl(null);
+    setPreview(null);
 
     if (nextStorageKeys.context) {
       try {
@@ -1183,17 +1222,6 @@ export default function PickExperienceClient({
         storedPicks: request.picks,
         contextId: nextContextId,
       });
-      if (Object.keys(nextPicks).length === 0) {
-        postResult(
-          createExportRenderResult(
-            request.requestId,
-            undefined,
-            "Export request does not contain any eligible picks",
-          ),
-        );
-        return;
-      }
-
       activeFrameRequestIdRef.current = request.requestId;
       setContextId(nextContextId);
       storedPicksRef.current = nextPicks;
@@ -1201,6 +1229,8 @@ export default function PickExperienceClient({
       setNicknameDraft(request.selectedBy.slice(0, MAX_NICKNAME_LENGTH));
       setShowTitles(request.showTitles);
       setTransparentBg(request.transparentBg);
+      setTemplateId(request.templateId);
+      setSizePresetId(request.sizePresetId);
       setFramePageUrl(request.pageUrl);
       setFrameCaptureRequest(request);
     };
@@ -1255,18 +1285,27 @@ export default function PickExperienceClient({
         waitForExportImages(exportElement),
       ]);
       await new Promise((resolve) => window.setTimeout(resolve, 150));
+      assertExportLayoutFits(exportElement);
+      const sizePreset = getExportSizePreset(sizePresetId);
       const canvas = await html2canvas(exportElement, {
         useCORS: true,
-        backgroundColor: transparentBg ? null : EXPORT_CONFIG.background,
-        scale: EXPORT_CONFIG.scale,
+        backgroundColor: transparentBg ? null : EXPORT_BACKGROUND,
+        scale: EXPORT_SCALE,
         logging: false,
       });
+      const expectedWidth = sizePreset.width * EXPORT_SCALE;
+      const expectedHeight = sizePreset.height * EXPORT_SCALE;
+      if (canvas.width !== expectedWidth || canvas.height !== expectedHeight) {
+        throw new Error(
+          `Export canvas size mismatch: expected ${expectedWidth}x${expectedHeight}, received ${canvas.width}x${canvas.height}`,
+        );
+      }
       centerExportYearInk(canvas, exportElement);
       return canvas.toDataURL("image/png");
     } finally {
       window.getComputedStyle = originalGetComputedStyle;
     }
-  }, [exportCanvasId, transparentBg]);
+  }, [exportCanvasId, sizePresetId, transparentBg]);
 
   useEffect(() => {
     if (
@@ -1316,10 +1355,7 @@ export default function PickExperienceClient({
       storedPicks,
       contextId: effectiveContextId,
     });
-    if (Object.keys(filteredPicks).length === 0) {
-      window.alert(t("errors.selectSongFirst"));
-      return;
-    }
+    if (Object.keys(filteredPicks).length === 0) return;
     if (!sameStoredPicks(filteredPicks, storedPicks)) {
       if (!resetBoardWithoutHistory(filteredPicks)) {
         window.alert(t("boardLibrary.error.storage"));
@@ -1328,7 +1364,12 @@ export default function PickExperienceClient({
     }
 
     const generationId = ++previewGenerationIdRef.current;
-    const previewOptionsKey = getPreviewOptionsKey(showTitles, transparentBg);
+    const previewOptionsKey = getPreviewOptionsKey(
+      showTitles,
+      transparentBg,
+      templateId,
+      sizePresetId,
+    );
     const captureController = new AbortController();
     activePreviewCaptureAbortRef.current = captureController;
     generatingRef.current = true;
@@ -1342,14 +1383,19 @@ export default function PickExperienceClient({
           picks: filteredPicks,
           showTitles,
           transparentBg,
+          templateId,
+          sizePresetId,
           selectedBy: exportNickname,
           pageUrl,
         },
         { signal: captureController.signal },
       );
       if (generationId === previewGenerationIdRef.current) {
-        lastGeneratedPreviewOptionsRef.current = previewOptionsKey;
-        setPreviewUrl(dataUrl);
+        setPreview({
+          dataUrl,
+          optionsKey: previewOptionsKey,
+          imageFileName,
+        });
       }
     } catch (error) {
       if (!isAbortError(error)) {
@@ -1369,58 +1415,103 @@ export default function PickExperienceClient({
     effectiveContextId,
     experience,
     exportNickname,
+    imageFileName,
     pageUrl,
     resetBoardWithoutHistory,
     showTitles,
+    sizePresetId,
     storedPicks,
     t,
+    templateId,
     transparentBg,
   ]);
 
-  const previewOptionsKey = getPreviewOptionsKey(showTitles, transparentBg);
+  const previewOptionsKey = getPreviewOptionsKey(
+    showTitles,
+    transparentBg,
+    templateId,
+    sizePresetId,
+  );
 
   useEffect(() => {
-    if (
-      !previewUrl ||
-      lastGeneratedPreviewOptionsRef.current === previewOptionsKey
-    ) {
+    if (!preview || preview.optionsKey === previewOptionsKey) {
       return;
     }
     const timer = window.setTimeout(() => {
       void handleGenerateImage();
     }, 100);
     return () => window.clearTimeout(timer);
-  }, [handleGenerateImage, previewOptionsKey, previewUrl]);
+  }, [handleGenerateImage, preview, previewOptionsKey]);
 
   const handleClosePreview = () => {
     previewGenerationIdRef.current += 1;
     activePreviewCaptureAbortRef.current?.abort();
     activePreviewCaptureAbortRef.current = null;
-    setPreviewUrl(null);
+    setPreview(null);
   };
 
   const handleShowTitlesChange = (value: boolean) => {
-    setShowTitles(value);
     if (
       !saveStoredOptions(localStorage, storageKeys.optionsV2, {
         showTitles: value,
         transparentBg,
+        templateId,
+        sizePresetId,
       })
     ) {
       setBoardStatusMessage(t("boardLibrary.error.storage"));
+      return;
     }
+    setShowTitles(value);
+    setBoardStatusMessage("");
   };
 
   const handleTransparentBackgroundChange = (value: boolean) => {
-    setTransparentBg(value);
     if (
       !saveStoredOptions(localStorage, storageKeys.optionsV2, {
         showTitles,
         transparentBg: value,
+        templateId,
+        sizePresetId,
       })
     ) {
       setBoardStatusMessage(t("boardLibrary.error.storage"));
+      return;
     }
+    setTransparentBg(value);
+    setBoardStatusMessage("");
+  };
+
+  const handleTemplateChange = (value: ExportTemplateId) => {
+    if (
+      !saveStoredOptions(localStorage, storageKeys.optionsV2, {
+        showTitles,
+        transparentBg,
+        templateId: value,
+        sizePresetId,
+      })
+    ) {
+      setBoardStatusMessage(t("boardLibrary.error.storage"));
+      return;
+    }
+    setTemplateId(value);
+    setBoardStatusMessage("");
+  };
+
+  const handleSizePresetChange = (value: ExportSizePresetId) => {
+    if (
+      !saveStoredOptions(localStorage, storageKeys.optionsV2, {
+        showTitles,
+        transparentBg,
+        templateId,
+        sizePresetId: value,
+      })
+    ) {
+      setBoardStatusMessage(t("boardLibrary.error.storage"));
+      return;
+    }
+    setSizePresetId(value);
+    setBoardStatusMessage("");
   };
 
   const handleSaveBoard = (name: string): BoardLibraryActionResult => {
@@ -1705,19 +1796,26 @@ export default function PickExperienceClient({
           )}
         </MotionPresence>
 
-        <MotionPresence value={previewUrl}>
-          {(renderedPreviewUrl, presenceState) => (
+        <MotionPresence value={preview}>
+          {(renderedPreview, presenceState) => (
             <PreviewModal
-              previewUrl={renderedPreviewUrl}
+              previewUrl={renderedPreview.dataUrl}
               onClose={handleClosePreview}
               showTitles={showTitles}
               onToggleShowTitles={handleShowTitlesChange}
               transparentBg={transparentBg}
               onToggleTransparentBg={handleTransparentBackgroundChange}
+              templateId={templateId}
+              onTemplateChange={handleTemplateChange}
+              sizePresetId={sizePresetId}
+              onSizePresetChange={handleSizePresetChange}
               generating={generating}
+              actionsDisabled={
+                generating || renderedPreview.optionsKey !== previewOptionsKey
+              }
               pageUrl={pageUrl}
               previewLabel={previewLabel}
-              imageFileName={imageFileName}
+              imageFileName={renderedPreview.imageFileName}
               shareText={uiCopy.shareText}
               shareHashtags={experience.share.hashtags}
               shareTitle={uiCopy.title}
@@ -1747,6 +1845,8 @@ export default function PickExperienceClient({
             picks={picks}
             showTitles={showTitles}
             transparentBg={transparentBg}
+            templateId={templateId}
+            sizePresetId={sizePresetId}
             selectedBy={exportNickname}
             pageUrl={framePageUrl ?? pageUrl}
           />

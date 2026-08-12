@@ -156,6 +156,8 @@ test("legacy board and options migrate without deleting the legacy payload", () 
   assert.deepEqual(options.options, {
     showTitles: false,
     transparentBg: true,
+    templateId: "classic",
+    sizePresetId: "portrait",
   });
   assert.equal(storage.values.get("picks-v1"), legacyBoard);
   assert.equal(storage.values.get("options-v1"), legacyOptions);
@@ -163,6 +165,74 @@ test("legacy board and options migrate without deleting the legacy payload", () 
     schemaVersion: 2,
     picks: { "slot-1": "song-1" },
   });
+  assert.deepEqual(JSON.parse(storage.values.get("options-v2") ?? ""), {
+    version: 2,
+    showTitles: false,
+    transparentBg: true,
+    templateId: "classic",
+    sizePresetId: "portrait",
+  });
+});
+
+test("intermediate options migrate to the canonical export format", () => {
+  const storage = new MemoryStorage();
+  storage.values.set(
+    "options-v2",
+    JSON.stringify({
+      schemaVersion: 2,
+      showTitles: false,
+      transparentBg: true,
+    }),
+  );
+
+  const result = loadStoredOptions({
+    storage,
+    versionedKey: "options-v2",
+    legacyKey: "options-v1",
+  });
+
+  assert.equal(result.status, "migrated");
+  assert.deepEqual(result.options, {
+    showTitles: false,
+    transparentBg: true,
+    templateId: "classic",
+    sizePresetId: "portrait",
+  });
+  assert.deepEqual(JSON.parse(storage.values.get("options-v2") ?? ""), {
+    version: 2,
+    showTitles: false,
+    transparentBg: true,
+    templateId: "classic",
+    sizePresetId: "portrait",
+  });
+});
+
+test("canonical export options load without rewriting storage", () => {
+  const storage = new MemoryStorage();
+  const serialized = JSON.stringify({
+    version: 2,
+    showTitles: false,
+    transparentBg: true,
+    templateId: "spotlight",
+    sizePresetId: "story",
+  });
+  storage.values.set("options-v2", serialized);
+
+  const result = loadStoredOptions({
+    storage,
+    versionedKey: "options-v2",
+    legacyKey: "options-v1",
+  });
+
+  assert.equal(result.status, "loaded");
+  assert.deepEqual(result.options, {
+    showTitles: false,
+    transparentBg: true,
+    templateId: "spotlight",
+    sizePresetId: "story",
+  });
+  assert.equal(storage.values.get("options-v2"), serialized);
+  assert.equal(storage.writes.length, 0);
 });
 
 test("unknown or corrupt v2 data fails closed without reading legacy", () => {
