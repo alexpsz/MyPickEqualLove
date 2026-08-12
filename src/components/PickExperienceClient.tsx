@@ -65,6 +65,7 @@ import {
   createEmptyBoardLibrary,
   deleteBoardSnapshot,
   getSnapshotsForScope,
+  importStoredBoard,
   loadBoardLibrary,
   loadStoredBoard,
   loadStoredOptions,
@@ -72,7 +73,6 @@ import {
   renameBoardSnapshot,
   saveStoredBoard,
   saveStoredOptions,
-  serializeStoredBoard,
   type BoardLibraryDocument,
   type BoardScope,
   type BoardSnapshot,
@@ -538,6 +538,23 @@ export default function PickExperienceClient({
     setPreviewUrl(null);
   }, []);
 
+  const presentBoardShareDialog = useCallback(
+    (
+      dialog: BoardShareDialogState,
+      pendingImport: PendingBoardShareImport | null = null,
+    ) => {
+      cancelStalePreview();
+      setShowBoardLibrary(false);
+      setShowModal(false);
+      setDetailSongId(null);
+      setActiveSlotId(null);
+      setPendingReplacementSong(null);
+      setPendingBoardShareImport(pendingImport);
+      setBoardShareDialog(dialog);
+    },
+    [cancelStalePreview],
+  );
+
   const resetBoardWithoutHistory = useCallback(
     (newPicks: StoredPicks, storageKey = storageKeys.picksV2) => {
       const filteredPicks = sanitizeBoardPicks(newPicks);
@@ -629,7 +646,7 @@ export default function PickExperienceClient({
       if (cancelled || parsed.status === "not-share") return;
 
       if (parsed.status === "invalid") {
-        setBoardShareDialog({
+        presentBoardShareDialog({
           kind: "invalid",
           unsupportedVersion: parsed.reason === "unsupported-version",
         });
@@ -642,7 +659,7 @@ export default function PickExperienceClient({
         currentExperience: snapshot.experience,
       });
       if (resolved.status === "invalid") {
-        setBoardShareDialog({
+        presentBoardShareDialog({
           kind: "invalid",
           unsupportedVersion: resolved.reason === "unsupported-version",
         });
@@ -652,7 +669,7 @@ export default function PickExperienceClient({
       if (resolved.status === "mismatch") {
         const targetUrl = new URL(resolved.canonicalUrl);
         targetUrl.hash = originalHash.slice(1);
-        setBoardShareDialog({
+        presentBoardShareDialog({
           kind: "mismatch",
           targetName: resolved.displayName,
           targetUrl: targetUrl.toString(),
@@ -711,17 +728,23 @@ export default function PickExperienceClient({
             )?.label
           : undefined;
 
-      setPendingBoardShareImport({
-        payload: parsed.payload,
-      });
-      setBoardShareDialog({ kind: "import", changes, contextLabel });
+      presentBoardShareDialog(
+        { kind: "import", changes, contextLabel },
+        { payload: parsed.payload },
+      );
     };
 
     void prepareImport();
     return () => {
       cancelled = true;
     };
-  }, [experience.id, experience.projectId, hydrated, isExportRealm]);
+  }, [
+    experience.id,
+    experience.projectId,
+    hydrated,
+    isExportRealm,
+    presentBoardShareDialog,
+  ]);
 
   const handleContextChange = (nextContextId: string) => {
     previewGenerationIdRef.current += 1;
@@ -1045,14 +1068,36 @@ export default function PickExperienceClient({
       experience,
       resolved.contextId,
     );
-    try {
-      persistImportedBoard({
-        storageKeys: targetStorageKeys,
-        picks: resolved.picks,
-        contextId: resolved.contextId,
-      });
-    } catch (error) {
-      console.error("Failed to import shared board", error);
+    const targetBoard = loadStoredBoard({
+      storage: localStorage,
+      versionedKey: targetStorageKeys.picksV2,
+      legacyKey: targetStorageKeys.picks,
+      sanitize: (candidatePicks) =>
+        filterStoredPicksForExperience({
+          experience,
+          storedPicks: candidatePicks,
+          contextId: resolved.contextId,
+        }),
+    });
+    if (
+      targetBoard.status !== "empty" &&
+      targetBoard.status !== "loaded" &&
+      targetBoard.status !== "migrated"
+    ) {
+      window.alert(t("boardShare.importFailed"));
+      return;
+    }
+    const importResult = importStoredBoard({
+      storage: localStorage,
+      versionedKey: targetStorageKeys.picksV2,
+      picks: resolved.picks,
+      context:
+        targetStorageKeys.context && resolved.contextId
+          ? { key: targetStorageKeys.context, value: resolved.contextId }
+          : undefined,
+    });
+    if (!importResult.ok) {
+      console.error("Failed to import shared board", importResult);
       window.alert(t("boardShare.importFailed"));
       return;
     }
@@ -1789,46 +1834,6 @@ const MEMBER_COLOR_BAR_BACKGROUND = getMemberColorGradient(
   ACTIVE_MEMBERS_BY_SORT_ORDER,
   PROJECT_THEME_COLOR,
 );
-
-function persistImportedBoard({
-  storageKeys,
-  picks,
-  contextId,
-}: {
-  storageKeys: { picksV2: string; context?: string };
-  picks: StoredPicks;
-  contextId?: string;
-}) {
-  const writes = [
-    { key: storageKeys.picksV2, value: serializeStoredBoard(picks) },
-    ...(storageKeys.context && contextId
-      ? [{ key: storageKeys.context, value: contextId }]
-      : []),
-  ];
-  const previousValues = writes.map(({ key }) => ({
-    key,
-    value: localStorage.getItem(key),
-  }));
-
-  try {
-    for (const write of writes) {
-      localStorage.setItem(write.key, write.value);
-    }
-  } catch (error) {
-    for (const previous of previousValues) {
-      try {
-        if (previous.value === null) {
-          localStorage.removeItem(previous.key);
-        } else {
-          localStorage.setItem(previous.key, previous.value);
-        }
-      } catch {
-        // Best-effort rollback when browser storage becomes unavailable.
-      }
-    }
-    throw error;
-  }
-}
 
 async function copyTextToClipboard(value: string) {
   if (typeof navigator.clipboard?.writeText === "function") {

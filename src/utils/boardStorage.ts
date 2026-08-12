@@ -13,6 +13,10 @@ export interface StorageLike {
   setItem(key: string, value: string): void;
 }
 
+export interface MutableStorageLike extends StorageLike {
+  removeItem(key: string): void;
+}
+
 export interface BoardScope {
   projectId: string;
   experienceId: string;
@@ -49,6 +53,10 @@ export interface StoredBoardLoadResult {
   picks: StoredPicks;
   status: StorageLoadStatus;
 }
+
+export type StoredBoardImportResult =
+  | { ok: true }
+  | { ok: false; error: "storage"; rollbackComplete: boolean };
 
 export interface StoredOptionsLoadResult {
   options: BoardOptions | null;
@@ -136,11 +144,104 @@ export function saveStoredBoard(
   }
 }
 
-export function serializeStoredBoard(picks: StoredPicks) {
+function serializeStoredBoard(picks: StoredPicks) {
   return JSON.stringify({
     schemaVersion: CURRENT_BOARD_SCHEMA_VERSION,
     picks,
   });
+}
+
+export function importStoredBoard({
+  storage,
+  versionedKey,
+  picks,
+  context,
+}: {
+  storage: MutableStorageLike;
+  versionedKey: string;
+  picks: StoredPicks;
+  context?: { key: string; value: string };
+}): StoredBoardImportResult {
+  const boardValue = serializeStoredBoard(picks);
+  let previousBoardValue: string | null;
+  let previousContextValue: string | null = null;
+
+  try {
+    previousBoardValue = storage.getItem(versionedKey);
+    if (previousBoardValue !== null) {
+      const existing = parseVersionedBoard(
+        previousBoardValue,
+        (storedPicks) => storedPicks,
+      );
+      if (existing.status !== "loaded") {
+        return { ok: false, error: "storage", rollbackComplete: true };
+      }
+    }
+    if (context) {
+      previousContextValue = storage.getItem(context.key);
+    }
+  } catch {
+    return { ok: false, error: "storage", rollbackComplete: true };
+  }
+
+  const writes = [
+    { key: versionedKey, value: boardValue, previous: previousBoardValue },
+    ...(context
+      ? [
+          {
+            key: context.key,
+            value: context.value,
+            previous: previousContextValue,
+          },
+        ]
+      : []),
+  ];
+  const appliedWrites: typeof writes = [];
+
+  try {
+    for (const write of writes) {
+      storage.setItem(write.key, write.value);
+      appliedWrites.push(write);
+    }
+    for (const write of writes) {
+      if (storage.getItem(write.key) !== write.value) {
+        throw new Error("Stored board import verification failed");
+      }
+    }
+    return { ok: true };
+  } catch {
+    const rollbackComplete = rollbackStorageWrites(storage, appliedWrites);
+    return { ok: false, error: "storage", rollbackComplete };
+  }
+}
+
+function rollbackStorageWrites(
+  storage: MutableStorageLike,
+  writes: Array<{ key: string; previous: string | null }>,
+) {
+  let rollbackComplete = true;
+  for (const write of writes.slice().reverse()) {
+    try {
+      if (write.previous === null) {
+        storage.removeItem(write.key);
+      } else {
+        storage.setItem(write.key, write.previous);
+      }
+    } catch {
+      rollbackComplete = false;
+    }
+  }
+
+  for (const write of writes) {
+    try {
+      if (storage.getItem(write.key) !== write.previous) {
+        rollbackComplete = false;
+      }
+    } catch {
+      rollbackComplete = false;
+    }
+  }
+  return rollbackComplete;
 }
 
 export function loadStoredOptions({

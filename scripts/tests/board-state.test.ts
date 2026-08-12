@@ -13,6 +13,7 @@ import {
   createEmptyBoardLibrary,
   deleteBoardSnapshot,
   getSnapshotsForScope,
+  importStoredBoard,
   loadStoredBoard,
   loadStoredOptions,
   mutateStoredBoardLibrary,
@@ -21,16 +22,18 @@ import {
   renameBoardSnapshot,
   saveBoardLibrary,
   type BoardScope,
-  type StorageLike,
+  type MutableStorageLike,
 } from "../../src/utils/boardStorage";
 import type { StoredPicks } from "../../src/schema/music";
 
-class MemoryStorage implements StorageLike {
+class MemoryStorage implements MutableStorageLike {
   readonly values = new Map<string, string>();
   reads: string[] = [];
   writes: string[] = [];
   throwOnGet = false;
   throwOnSet = false;
+  setCalls = 0;
+  failOnSetCalls = new Set<number>();
 
   getItem(key: string) {
     if (this.throwOnGet) throw new Error("storage unavailable");
@@ -39,9 +42,17 @@ class MemoryStorage implements StorageLike {
   }
 
   setItem(key: string, value: string) {
+    this.setCalls += 1;
+    if (this.failOnSetCalls.has(this.setCalls)) {
+      throw new Error("planned write failure");
+    }
     if (this.throwOnSet) throw new Error("quota exceeded");
     this.writes.push(key);
     this.values.set(key, value);
+  }
+
+  removeItem(key: string) {
+    this.values.delete(key);
   }
 }
 
@@ -210,6 +221,102 @@ test("migration returns in-memory data but reports unavailable when writing fail
   assert.equal(result.status, "unavailable");
   assert.deepEqual(result.picks, { "slot-1": "song-1" });
   assert.equal(storage.values.has("picks-v2"), false);
+});
+
+test("share import atomically writes a versioned board and context", () => {
+  const storage = new MemoryStorage();
+  const legacy = JSON.stringify({ "slot-1": "legacy-song" });
+  storage.values.set("picks-v1", legacy);
+  storage.values.set(
+    "picks-v2",
+    JSON.stringify({ schemaVersion: 2, picks: { "slot-1": "song-1" } }),
+  );
+  storage.values.set("context", "day1");
+
+  const result = importStoredBoard({
+    storage,
+    versionedKey: "picks-v2",
+    picks: { "slot-2": "song-2" },
+    context: { key: "context", value: "day2" },
+  });
+
+  assert.deepEqual(result, { ok: true });
+  assert.deepEqual(JSON.parse(storage.values.get("picks-v2") ?? ""), {
+    schemaVersion: 2,
+    picks: { "slot-2": "song-2" },
+  });
+  assert.equal(storage.values.get("context"), "day2");
+  assert.equal(storage.values.get("picks-v1"), legacy);
+});
+
+test("share import rolls back the board when the context write fails", () => {
+  const storage = new MemoryStorage();
+  const previousBoard = JSON.stringify({
+    schemaVersion: 2,
+    picks: { "slot-1": "song-1" },
+  });
+  storage.values.set("picks-v2", previousBoard);
+  storage.values.set("context", "day1");
+  storage.failOnSetCalls.add(2);
+
+  const result = importStoredBoard({
+    storage,
+    versionedKey: "picks-v2",
+    picks: { "slot-2": "song-2" },
+    context: { key: "context", value: "day2" },
+  });
+
+  assert.deepEqual(result, {
+    ok: false,
+    error: "storage",
+    rollbackComplete: true,
+  });
+  assert.equal(storage.values.get("picks-v2"), previousBoard);
+  assert.equal(storage.values.get("context"), "day1");
+});
+
+test("share import reports an incomplete rollback when restoration fails", () => {
+  const storage = new MemoryStorage();
+  const previousBoard = JSON.stringify({
+    schemaVersion: 2,
+    picks: { "slot-1": "song-1" },
+  });
+  storage.values.set("picks-v2", previousBoard);
+  storage.values.set("context", "day1");
+  storage.failOnSetCalls.add(2);
+  storage.failOnSetCalls.add(3);
+
+  const result = importStoredBoard({
+    storage,
+    versionedKey: "picks-v2",
+    picks: { "slot-2": "song-2" },
+    context: { key: "context", value: "day2" },
+  });
+
+  assert.deepEqual(result, {
+    ok: false,
+    error: "storage",
+    rollbackComplete: false,
+  });
+});
+
+test("share import refuses corrupt or future versioned board documents", () => {
+  for (const value of ["{", JSON.stringify({ schemaVersion: 99, picks: {} })]) {
+    const storage = new MemoryStorage();
+    storage.values.set("picks-v2", value);
+    const result = importStoredBoard({
+      storage,
+      versionedKey: "picks-v2",
+      picks: { "slot-1": "song-1" },
+    });
+    assert.deepEqual(result, {
+      ok: false,
+      error: "storage",
+      rollbackComplete: true,
+    });
+    assert.equal(storage.values.get("picks-v2"), value);
+    assert.equal(storage.writes.length, 0);
+  }
 });
 
 test("snapshot names normalize, deduplicate within scope, and remain isolated", () => {
