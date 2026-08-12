@@ -588,6 +588,8 @@ export default function PickBoard({
                       active:
                         keyboardSession?.sourceSlotId === slot.id ||
                         dragSourceSlotId === slot.id,
+                      controlsKeyboardToolbar:
+                        keyboardSession?.sourceSlotId === slot.id,
                       onClick: (event) => handleReorderClick(slot.id, event),
                       onKeyDown: (event) =>
                         handleReorderKeyDown(slot.id, event),

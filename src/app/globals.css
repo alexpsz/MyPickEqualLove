@@ -436,11 +436,11 @@ a {
   -webkit-user-select: none;
 }
 
-.pick-reorder-handle[aria-pressed="true"] {
+.pick-reorder-handle[data-active="true"] {
   color: var(--foreground);
 }
 
-.pick-reorder-handle[aria-pressed="true"]::before {
+.pick-reorder-handle[data-active="true"]::before {
   border-color: var(--project-primary);
   background: var(--project-primary-wash);
 }

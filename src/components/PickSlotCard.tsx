@@ -26,6 +26,7 @@ interface PickSlotCardProps {
 
 export interface ReorderHandleProps {
   active: boolean;
+  controlsKeyboardToolbar: boolean;
   onClick: React.MouseEventHandler<HTMLButtonElement>;
   onKeyDown: React.KeyboardEventHandler<HTMLButtonElement>;
   onPointerDown: React.PointerEventHandler<HTMLButtonElement>;
@@ -91,10 +92,13 @@ export default function PickSlotCard({
             position: slot.label,
           })}
           aria-describedby="pick-reorder-instructions"
-          aria-pressed={reorderHandleProps.active}
+          aria-pressed={reorderHandleProps.controlsKeyboardToolbar}
           aria-controls={
-            reorderHandleProps.active ? "pick-reorder-toolbar" : undefined
+            reorderHandleProps.controlsKeyboardToolbar
+              ? "pick-reorder-toolbar"
+              : undefined
           }
+          data-active={reorderHandleProps.active ? "true" : undefined}
           className="pick-reorder-handle icon-button icon-button-compact icon-button-overlay right-11 top-0 z-30 text-[var(--muted)]"
           onClick={reorderHandleProps.onClick}
           onKeyDown={reorderHandleProps.onKeyDown}
