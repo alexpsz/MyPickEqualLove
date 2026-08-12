@@ -1,3 +1,6 @@
+import type { StoredPicks } from "../schema/music";
+import { sameStoredPicks } from "./boardHistory";
+
 export type ComparisonOutcome = "left" | "right" | "tie";
 
 export interface ComparisonDecision {
@@ -19,6 +22,12 @@ export interface PickAssistantSnapshot {
   mutationId: string;
   shortlistIds: string[];
   session: PickAssistantSession | null;
+}
+
+export interface PickAssistantApplicationInputs {
+  contextId?: string;
+  boardPicks: StoredPicks;
+  assistantSnapshot: PickAssistantSnapshot;
 }
 
 export type PickAssistantSnapshotStatus =
@@ -232,6 +241,17 @@ export function samePickAssistantSnapshots(
         decision.outcome === other.outcome,
       );
     })
+  );
+}
+
+export function samePickAssistantApplicationInputs(
+  left: PickAssistantApplicationInputs,
+  right: PickAssistantApplicationInputs,
+) {
+  return (
+    left.contextId === right.contextId &&
+    sameStoredPicks(left.boardPicks, right.boardPicks) &&
+    samePickAssistantSnapshots(left.assistantSnapshot, right.assistantSnapshot)
   );
 }
 

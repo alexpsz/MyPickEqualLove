@@ -120,6 +120,7 @@ import {
   parsePickAssistantSnapshot,
   planRankedPicks,
   recordComparison,
+  samePickAssistantApplicationInputs,
   samePickAssistantSnapshots,
   skipComparison,
   undoComparison,
@@ -1649,6 +1650,11 @@ export default function PickExperienceClient({
     }
 
     const currentPickCount = Object.keys(latestBoard.picks).length;
+    const preConfirmInputs = {
+      contextId: persistedContextId,
+      boardPicks: latestBoard.picks,
+      assistantSnapshot: latestAssistant.snapshot,
+    };
     if (
       currentPickCount > 0 &&
       !window.confirm(
@@ -1657,6 +1663,75 @@ export default function PickExperienceClient({
     ) {
       return;
     }
+
+    let confirmedContextId = effectiveContextId;
+    if (storageKeys.context) {
+      try {
+        confirmedContextId =
+          localStorage.getItem(storageKeys.context) ?? defaultContextId;
+      } catch {
+        setBoardStatusMessage(t("boardLibrary.error.storage"));
+        return;
+      }
+    }
+    if (confirmedContextId !== effectiveContextId) {
+      activateExperienceContext(confirmedContextId, false);
+      setBoardStatusMessage(t("assistant.previewRefreshed"));
+      return;
+    }
+
+    const confirmedBoard = loadStoredBoard({
+      storage: localStorage,
+      versionedKey: storageKeys.picksV2,
+      legacyKey: storageKeys.picks,
+      sanitize: sanitizeBoardPicks,
+    });
+    const confirmedAssistant = loadPickAssistantSnapshot(
+      localStorage,
+      storageKeys.assistant,
+      PICK_ASSISTANT_STORAGE_OPTIONS,
+    );
+    if (!isWritableStorageStatus(confirmedBoard.status)) {
+      setBoardStorageWritable(false);
+      setBoardStatusMessage(t("boardLibrary.error.storage"));
+      return;
+    }
+    if (confirmedAssistant.status !== "valid") {
+      setCurrentPickAssistantSnapshot(
+        createEmptyPickAssistantSnapshot(PICK_ASSISTANT_CONFIG.schemaVersion),
+      );
+      setPickAssistantStorageIssue(
+        confirmedAssistant.status === "missing"
+          ? "conflict"
+          : confirmedAssistant.status,
+      );
+      return;
+    }
+
+    const confirmedInputs = {
+      contextId: confirmedContextId,
+      boardPicks: confirmedBoard.picks,
+      assistantSnapshot: confirmedAssistant.snapshot,
+    };
+    if (
+      !samePickAssistantApplicationInputs(preConfirmInputs, confirmedInputs)
+    ) {
+      setCurrentPickAssistantSnapshot(confirmedAssistant.snapshot);
+      storedPicksRef.current = confirmedBoard.picks;
+      dispatchBoardHistory({ type: "reset", picks: confirmedBoard.picks });
+      assistantApplyBaselineRef.current = {
+        storageKey: storageKeys.assistant,
+        contextId: effectiveContextId,
+        boardPicks: { ...confirmedBoard.picks },
+        revision: confirmedAssistant.snapshot.revision,
+        mutationId: confirmedAssistant.snapshot.mutationId,
+      };
+      setAssistantNeedsReview(false);
+      setAssistantReviewNotice(true);
+      setBoardStatusMessage(t("assistant.previewRefreshed"));
+      return;
+    }
+
     if (!commitUserMutation("assistant", assistantApplicationPlan.nextPicks)) {
       window.alert(t("assistant.applyFailed"));
       return;

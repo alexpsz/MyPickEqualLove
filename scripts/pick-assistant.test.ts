@@ -8,6 +8,7 @@ import {
   parsePickAssistantSnapshot,
   planRankedPicks,
   recordComparison,
+  samePickAssistantApplicationInputs,
   skipComparison,
   undoComparison,
   updatePickAssistantSnapshot,
@@ -504,6 +505,56 @@ test("reset shares the save lock and cannot revive an in-flight session", async 
   assert.equal(saveResult.status, "saved");
   assert.equal(resetResult, "reset");
   assert.equal(stored, null);
+});
+
+test("application freshness gate rejects post-confirm context, board, or full snapshot changes", () => {
+  const assistantSnapshot = updatePickAssistantSnapshot(
+    createPickAssistantSnapshot(1, 9_000, "initial"),
+    { shortlistIds: ["song-1", "song-2"], session: null },
+    9_100,
+    "complete",
+  );
+  const expected = {
+    contextId: "day-1",
+    boardPicks: { first: "song-1" },
+    assistantSnapshot,
+  };
+
+  assert.equal(
+    samePickAssistantApplicationInputs(expected, {
+      contextId: "day-1",
+      boardPicks: { first: "song-1" },
+      assistantSnapshot: {
+        ...assistantSnapshot,
+        shortlistIds: assistantSnapshot.shortlistIds.slice(),
+      },
+    }),
+    true,
+  );
+  assert.equal(
+    samePickAssistantApplicationInputs(expected, {
+      ...expected,
+      contextId: "day-2",
+    }),
+    false,
+  );
+  assert.equal(
+    samePickAssistantApplicationInputs(expected, {
+      ...expected,
+      boardPicks: { first: "song-2" },
+    }),
+    false,
+  );
+  assert.equal(
+    samePickAssistantApplicationInputs(expected, {
+      ...expected,
+      assistantSnapshot: {
+        ...assistantSnapshot,
+        shortlistIds: ["song-2", "song-1"],
+      },
+    }),
+    false,
+  );
 });
 
 function getMaximumMonotonePlacementCount(
