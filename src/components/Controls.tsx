@@ -9,11 +9,17 @@ interface ControlsProps {
   onClearAll: () => void;
   onGenerate: () => void;
   onGlobalSearch: () => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  onOpenBoardLibrary: () => void;
   nickname: string;
   nicknameMaxLength: number;
   onNicknameChange: (nickname: string) => void;
   generating: boolean;
   hasPicks: boolean;
+  canUndo: boolean;
+  canRedo: boolean;
+  savedBoardCount: number;
   totalSongs: number;
   selectedCount: number;
   slotCount: number;
@@ -26,11 +32,17 @@ export default function Controls({
   onClearAll,
   onGenerate,
   onGlobalSearch,
+  onUndo,
+  onRedo,
+  onOpenBoardLibrary,
   nickname,
   nicknameMaxLength,
   onNicknameChange,
   generating,
   hasPicks,
+  canUndo,
+  canRedo,
+  savedBoardCount,
   totalSongs,
   selectedCount,
   slotCount,
@@ -114,17 +126,9 @@ export default function Controls({
             </button>
             <button
               type="button"
-              onClick={onClearAll}
-              disabled={!hasPicks}
-              className="official-button official-button-quiet order-3 col-span-2 !min-h-9 justify-self-center !px-3 sm:order-none sm:col-span-1 sm:!min-h-11"
-            >
-              {t("controls.clear")}
-            </button>
-            <button
-              ref={generateButtonRef}
-              type="button"
               onClick={onGenerate}
               disabled={generating || !hasPicks}
+              ref={generateButtonRef}
               data-dialog-return-key={DIALOG_RETURN_KEYS.generateImage}
               className="official-button official-button-primary min-w-0 w-full sm:min-w-[168px] sm:w-auto"
             >
@@ -139,6 +143,41 @@ export default function Controls({
                   {t("controls.generateImage")}
                 </>
               )}
+            </button>
+            <button
+              type="button"
+              onClick={onUndo}
+              disabled={!canUndo}
+              className="official-button w-full sm:w-auto"
+            >
+              <AppIcon name="undo" />
+              {t("controls.undo")}
+            </button>
+            <button
+              type="button"
+              onClick={onRedo}
+              disabled={!canRedo}
+              className="official-button w-full sm:w-auto"
+            >
+              <AppIcon name="redo" />
+              {t("controls.redo")}
+            </button>
+            <button
+              type="button"
+              onClick={onOpenBoardLibrary}
+              data-dialog-return-key={DIALOG_RETURN_KEYS.boardLibrary}
+              className="official-button w-full sm:w-auto"
+            >
+              <AppIcon name="archive" />
+              {t("controls.myBoards", { count: savedBoardCount })}
+            </button>
+            <button
+              type="button"
+              onClick={onClearAll}
+              disabled={!hasPicks}
+              className="official-button official-button-quiet col-span-2 !min-h-9 justify-self-center !px-3 sm:col-span-1 sm:!min-h-11"
+            >
+              {t("controls.clear")}
             </button>
           </div>
           <span className="sr-only" aria-live="polite">

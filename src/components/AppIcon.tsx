@@ -1,6 +1,7 @@
 import React from "react";
 
 export type AppIconName =
+  | "archive"
   | "check"
   | "chevron-down"
   | "chevron-right"
@@ -14,7 +15,9 @@ export type AppIconName =
   | "music"
   | "plus"
   | "reset"
-  | "search";
+  | "redo"
+  | "search"
+  | "undo";
 
 interface AppIconProps {
   name: AppIconName;
@@ -48,6 +51,14 @@ export default function AppIcon({
 
 function getIconPaths(name: AppIconName) {
   switch (name) {
+    case "archive":
+      return (
+        <>
+          <path d="M4.5 7.75h15v11.5h-15z" />
+          <path d="M3.5 4.75h17v3h-17z" />
+          <path d="M9 12h6" />
+        </>
+      );
     case "check":
       return <path d="m5.5 12.25 4.1 4.1L18.75 7.2" />;
     case "chevron-down":
@@ -119,6 +130,20 @@ function getIconPaths(name: AppIconName) {
         <>
           <circle cx="10.75" cy="10.75" r="6.25" />
           <path d="m15.5 15.5 4 4" />
+        </>
+      );
+    case "redo":
+      return (
+        <>
+          <path d="M15.75 8.25h3.75v-3.5" />
+          <path d="M19.15 8a8 8 0 1 0 .2 7.7" />
+        </>
+      );
+    case "undo":
+      return (
+        <>
+          <path d="M8.25 8.25H4.5v-3.5" />
+          <path d="M4.85 8a8 8 0 1 1-.2 7.7" />
         </>
       );
   }

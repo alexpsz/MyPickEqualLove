@@ -5,6 +5,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useReducer,
   useRef,
   useState,
   type MouseEvent,
@@ -13,6 +14,7 @@ import {
 import {
   EXPORT_CONFIG,
   PROJECT_CONFIG,
+  PROJECT_ID,
   PROJECT_THEME_COLOR,
 } from "../config/project";
 import {
@@ -38,13 +40,35 @@ import {
   getSortedExperienceSlots,
   getStorageKeysForExperience,
   isSongEligibleForSlot,
-  parseStoredPicksForExperience,
   type ExperienceContext,
 } from "../data/pickExperiences";
 import { localizeExperienceUi } from "../i18n/content";
 import { useLocale } from "../i18n/LocaleProvider";
 import type { PickExperience } from "../schema/pick-experience";
 import type { PickSlotId, Picks, Song, StoredPicks } from "../schema/music";
+import {
+  boardHistoryReducer,
+  createBoardHistoryState,
+  sameStoredPicks,
+  type BoardMutationKind,
+} from "../utils/boardHistory";
+import {
+  addBoardSnapshot,
+  createEmptyBoardLibrary,
+  deleteBoardSnapshot,
+  getSnapshotsForScope,
+  loadBoardLibrary,
+  loadStoredBoard,
+  loadStoredOptions,
+  renameBoardSnapshot,
+  saveBoardLibrary,
+  saveStoredBoard,
+  saveStoredOptions,
+  type BoardLibraryDocument,
+  type BoardScope,
+  type BoardSnapshot,
+  type StorageLoadStatus,
+} from "../utils/boardStorage";
 import { centerExportYearInk } from "../utils/centerExportYearInk";
 import { convertColorString } from "../utils/colors";
 import {
@@ -64,6 +88,9 @@ import {
 } from "../utils/useDialogA11y";
 import AppTopBar from "./AppTopBar";
 import AppleMotion from "./AppleMotion";
+import BoardLibraryModal, {
+  type BoardLibraryActionResult,
+} from "./BoardLibraryModal";
 import Controls from "./Controls";
 import ExperienceNavigation from "./ExperienceNavigation";
 import ExportBoard from "./ExportBoard";
@@ -135,9 +162,15 @@ export default function PickExperienceClient({
     () => uiCopy.slots.slice().sort((a, b) => a.sortOrder - b.sortOrder),
     [uiCopy.slots],
   );
-  const [storedPicks, setStoredPicks] = useState<StoredPicks>({});
+  const [boardHistory, dispatchBoardHistory] = useReducer(
+    boardHistoryReducer,
+    undefined,
+    () => createBoardHistoryState(),
+  );
+  const storedPicks = boardHistory.present;
   const [activeSlotId, setActiveSlotId] = useState<PickSlotId | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [showBoardLibrary, setShowBoardLibrary] = useState(false);
   const [pendingReplacementSong, setPendingReplacementSong] =
     useState<Song | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -150,6 +183,13 @@ export default function PickExperienceClient({
   const [framePageUrl, setFramePageUrl] = useState<string | null>(null);
   const [isExportRealm, setIsExportRealm] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  const [boardLibrary, setBoardLibrary] = useState<BoardLibraryDocument>(() =>
+    createEmptyBoardLibrary(),
+  );
+  const [boardLibraryStatus, setBoardLibraryStatus] =
+    useState<StorageLoadStatus>("empty");
+  const [boardLibraryLoaded, setBoardLibraryLoaded] = useState(false);
+  const [boardStatusMessage, setBoardStatusMessage] = useState("");
   const generatingRef = useRef(false);
   const activeFrameRequestIdRef = useRef<string | null>(null);
   const capturedFrameRequestIdRef = useRef<string | null>(null);
@@ -227,6 +267,30 @@ export default function PickExperienceClient({
         })
       : uiCopy.title;
   const imageFileName = getExperienceImageFileName(experience, activeContext);
+  const boardScope = useMemo<BoardScope>(
+    () => ({
+      projectId: PROJECT_ID,
+      experienceId: experience.id,
+      contextId: effectiveContextId ?? null,
+    }),
+    [effectiveContextId, experience.id],
+  );
+  const sanitizeBoardPicks = useCallback(
+    (candidatePicks: StoredPicks) =>
+      filterStoredPicksForExperience({
+        experience,
+        storedPicks: candidatePicks,
+        contextId: effectiveContextId,
+      }),
+    [effectiveContextId, experience],
+  );
+  const scopedSnapshots = useMemo(
+    () => getSnapshotsForScope(boardLibrary, boardScope, sanitizeBoardPicks),
+    [boardLibrary, boardScope, sanitizeBoardPicks],
+  );
+  const boardLibraryWritable =
+    boardLibraryLoaded &&
+    (boardLibraryStatus === "empty" || boardLibraryStatus === "loaded");
 
   useEffect(() => {
     const exportRealm =
@@ -234,7 +298,7 @@ export default function PickExperienceClient({
     setIsExportRealm(exportRealm);
     if (exportRealm) {
       setContextId(defaultContextId);
-      setStoredPicks({});
+      dispatchBoardHistory({ type: "reset", picks: {} });
       setHydrated(true);
       return;
     }
@@ -247,7 +311,12 @@ export default function PickExperienceClient({
       );
 
       if (defaultStorageKeys.context) {
-        const savedContextId = localStorage.getItem(defaultStorageKeys.context);
+        let savedContextId: string | null = null;
+        try {
+          savedContextId = localStorage.getItem(defaultStorageKeys.context);
+        } catch {
+          savedContextId = null;
+        }
         if (
           savedContextId &&
           contextOptions.some((context) => context.id === savedContextId)
@@ -261,29 +330,27 @@ export default function PickExperienceClient({
         initialContextId,
       );
       setContextId(initialContextId);
-      setStoredPicks(
-        loadStoredPicks(experience, initialStorageKeys.picks, initialContextId),
-      );
+      const boardResult = loadStoredBoard({
+        storage: localStorage,
+        versionedKey: initialStorageKeys.picksV2,
+        legacyKey: initialStorageKeys.picks,
+        sanitize: (candidatePicks) =>
+          filterStoredPicksForExperience({
+            experience,
+            storedPicks: candidatePicks,
+            contextId: initialContextId,
+          }),
+      });
+      dispatchBoardHistory({ type: "reset", picks: boardResult.picks });
 
-      const savedOptions = localStorage.getItem(initialStorageKeys.options);
-      if (!savedOptions) {
-        setHydrated(true);
-        return;
-      }
-
-      try {
-        const options = JSON.parse(savedOptions) as {
-          showTitles?: unknown;
-          transparentBg?: unknown;
-        };
-        if (typeof options.showTitles === "boolean") {
-          setShowTitles(options.showTitles);
-        }
-        if (typeof options.transparentBg === "boolean") {
-          setTransparentBg(options.transparentBg);
-        }
-      } catch (error) {
-        console.error("Failed to parse saved options", error);
+      const optionsResult = loadStoredOptions({
+        storage: localStorage,
+        versionedKey: initialStorageKeys.optionsV2,
+        legacyKey: initialStorageKeys.options,
+      });
+      if (optionsResult.options) {
+        setShowTitles(optionsResult.options.showTitles);
+        setTransparentBg(optionsResult.options.transparentBg);
       }
 
       setHydrated(true);
@@ -294,11 +361,15 @@ export default function PickExperienceClient({
 
   useEffect(() => {
     if (!hydrated || isExportRealm) return;
-    localStorage.setItem(
-      storageKeys.options,
-      JSON.stringify({ showTitles, transparentBg }),
+    const result = loadBoardLibrary(
+      localStorage,
+      storageKeys.boardLibrary,
+      PROJECT_ID,
     );
-  }, [hydrated, isExportRealm, showTitles, storageKeys.options, transparentBg]);
+    setBoardLibrary(result.document);
+    setBoardLibraryStatus(result.status);
+    setBoardLibraryLoaded(true);
+  }, [hydrated, isExportRealm, storageKeys.boardLibrary]);
 
   useEffect(
     () => () => {
@@ -308,18 +379,74 @@ export default function PickExperienceClient({
     [],
   );
 
-  const saveStoredPicks = useCallback(
-    (newPicks: StoredPicks) => {
-      const filteredPicks = filterStoredPicksForExperience({
-        experience,
-        storedPicks: newPicks,
-        contextId: effectiveContextId,
-      });
+  const cancelStalePreview = useCallback(() => {
+    previewGenerationIdRef.current += 1;
+    activePreviewCaptureAbortRef.current?.abort();
+    activePreviewCaptureAbortRef.current = null;
+    setPreviewUrl(null);
+  }, []);
 
-      setStoredPicks(filteredPicks);
-      localStorage.setItem(storageKeys.picks, JSON.stringify(filteredPicks));
+  const resetBoardWithoutHistory = useCallback(
+    (newPicks: StoredPicks, storageKey = storageKeys.picksV2) => {
+      const filteredPicks = sanitizeBoardPicks(newPicks);
+      if (!saveStoredBoard(localStorage, storageKey, filteredPicks)) {
+        return false;
+      }
+      dispatchBoardHistory({ type: "reset", picks: filteredPicks });
+      return true;
     },
-    [effectiveContextId, experience, storageKeys.picks],
+    [sanitizeBoardPicks, storageKeys.picksV2],
+  );
+
+  const commitUserMutation = useCallback(
+    (kind: BoardMutationKind, newPicks: StoredPicks) => {
+      const filteredPicks = sanitizeBoardPicks(newPicks);
+      const action = {
+        type: "commit" as const,
+        mutation: { kind, nextPicks: filteredPicks },
+      };
+      const nextHistory = boardHistoryReducer(boardHistory, action);
+      if (nextHistory === boardHistory) return true;
+      if (!saveStoredBoard(localStorage, storageKeys.picksV2, filteredPicks)) {
+        window.alert(t("boardLibrary.error.storage"));
+        return false;
+      }
+      cancelStalePreview();
+      dispatchBoardHistory(action);
+      return true;
+    },
+    [
+      boardHistory,
+      cancelStalePreview,
+      sanitizeBoardPicks,
+      storageKeys.picksV2,
+      t,
+    ],
+  );
+
+  const applyHistoryAction = useCallback(
+    (type: "undo" | "redo") => {
+      const action = { type } as const;
+      const nextHistory = boardHistoryReducer(boardHistory, action);
+      if (nextHistory === boardHistory) return;
+      const filteredPicks = sanitizeBoardPicks(nextHistory.present);
+      if (!saveStoredBoard(localStorage, storageKeys.picksV2, filteredPicks)) {
+        window.alert(t("boardLibrary.error.storage"));
+        return;
+      }
+      cancelStalePreview();
+      dispatchBoardHistory(action);
+      setBoardStatusMessage(
+        t(type === "undo" ? "history.undoDone" : "history.redoDone"),
+      );
+    },
+    [
+      boardHistory,
+      cancelStalePreview,
+      sanitizeBoardPicks,
+      storageKeys.picksV2,
+      t,
+    ],
   );
 
   const handleContextChange = (nextContextId: string) => {
@@ -333,16 +460,30 @@ export default function PickExperienceClient({
     setContextId(nextContextId);
     setActiveSlotId(null);
     setShowModal(false);
+    setShowBoardLibrary(false);
     setPendingReplacementSong(null);
     setPreviewUrl(null);
 
     if (nextStorageKeys.context) {
-      localStorage.setItem(nextStorageKeys.context, nextContextId);
+      try {
+        localStorage.setItem(nextStorageKeys.context, nextContextId);
+      } catch {
+        // Context still changes in memory when storage is unavailable.
+      }
     }
 
-    setStoredPicks(
-      loadStoredPicks(experience, nextStorageKeys.picks, nextContextId),
-    );
+    const boardResult = loadStoredBoard({
+      storage: localStorage,
+      versionedKey: nextStorageKeys.picksV2,
+      legacyKey: nextStorageKeys.picks,
+      sanitize: (candidatePicks) =>
+        filterStoredPicksForExperience({
+          experience,
+          storedPicks: candidatePicks,
+          contextId: nextContextId,
+        }),
+    });
+    dispatchBoardHistory({ type: "reset", picks: boardResult.picks });
   };
 
   const handleSlotClick = (slotId: PickSlotId) => {
@@ -377,7 +518,14 @@ export default function PickExperienceClient({
         return;
       }
 
-      saveStoredPicks({ ...storedPicks, [activeSlotId]: song.id });
+      if (
+        !commitUserMutation("pick", {
+          ...storedPicks,
+          [activeSlotId]: song.id,
+        })
+      ) {
+        return;
+      }
       setShowModal(false);
       setActiveSlotId(null);
       return;
@@ -390,7 +538,14 @@ export default function PickExperienceClient({
       contextId: effectiveContextId,
     });
     if (emptySlotId) {
-      saveStoredPicks({ ...storedPicks, [emptySlotId]: song.id });
+      if (
+        !commitUserMutation("pick", {
+          ...storedPicks,
+          [emptySlotId]: song.id,
+        })
+      ) {
+        return;
+      }
       setShowModal(false);
       return;
     }
@@ -414,7 +569,14 @@ export default function PickExperienceClient({
       return;
     }
 
-    saveStoredPicks({ ...storedPicks, [slotId]: pendingReplacementSong.id });
+    if (
+      !commitUserMutation("replace", {
+        ...storedPicks,
+        [slotId]: pendingReplacementSong.id,
+      })
+    ) {
+      return;
+    }
     setPendingReplacementSong(null);
   };
 
@@ -422,12 +584,12 @@ export default function PickExperienceClient({
     event.stopPropagation();
     const newPicks = { ...storedPicks };
     delete newPicks[slotId];
-    saveStoredPicks(newPicks);
+    commitUserMutation("clear", newPicks);
   };
 
   const handleClearAllPicks = () => {
     if (window.confirm(t("errors.clearAllConfirm"))) {
-      saveStoredPicks({});
+      commitUserMutation("clear", {});
     }
   };
 
@@ -507,7 +669,7 @@ export default function PickExperienceClient({
 
       activeFrameRequestIdRef.current = request.requestId;
       setContextId(nextContextId);
-      setStoredPicks(nextPicks);
+      dispatchBoardHistory({ type: "reset", picks: nextPicks });
       setNicknameDraft(request.selectedBy.slice(0, MAX_NICKNAME_LENGTH));
       setShowTitles(request.showTitles);
       setTransparentBg(request.transparentBg);
@@ -631,7 +793,10 @@ export default function PickExperienceClient({
       return;
     }
     if (!sameStoredPicks(filteredPicks, storedPicks)) {
-      saveStoredPicks(filteredPicks);
+      if (!resetBoardWithoutHistory(filteredPicks)) {
+        window.alert(t("boardLibrary.error.storage"));
+        return;
+      }
     }
 
     const generationId = ++previewGenerationIdRef.current;
@@ -677,7 +842,7 @@ export default function PickExperienceClient({
     experience,
     exportNickname,
     pageUrl,
-    saveStoredPicks,
+    resetBoardWithoutHistory,
     showTitles,
     storedPicks,
     t,
@@ -704,6 +869,99 @@ export default function PickExperienceClient({
     activePreviewCaptureAbortRef.current?.abort();
     activePreviewCaptureAbortRef.current = null;
     setPreviewUrl(null);
+  };
+
+  const handleShowTitlesChange = (value: boolean) => {
+    setShowTitles(value);
+    if (
+      !saveStoredOptions(localStorage, storageKeys.optionsV2, {
+        showTitles: value,
+        transparentBg,
+      })
+    ) {
+      setBoardStatusMessage(t("boardLibrary.error.storage"));
+    }
+  };
+
+  const handleTransparentBackgroundChange = (value: boolean) => {
+    setTransparentBg(value);
+    if (
+      !saveStoredOptions(localStorage, storageKeys.optionsV2, {
+        showTitles,
+        transparentBg: value,
+      })
+    ) {
+      setBoardStatusMessage(t("boardLibrary.error.storage"));
+    }
+  };
+
+  const handleSaveBoard = (name: string): BoardLibraryActionResult => {
+    if (!boardLibraryWritable) return { ok: false, error: "storage" };
+    const result = addBoardSnapshot(boardLibrary, {
+      id: window.crypto.randomUUID(),
+      name,
+      now: new Date().toISOString(),
+      scope: boardScope,
+      picks: sanitizeBoardPicks(storedPicks),
+    });
+    if (!result.ok) return result;
+    if (
+      !saveBoardLibrary(localStorage, storageKeys.boardLibrary, result.document)
+    ) {
+      return { ok: false, error: "storage" };
+    }
+    setBoardLibrary(result.document);
+    setBoardLibraryStatus("loaded");
+    return { ok: true, name: result.snapshot.name };
+  };
+
+  const handleRenameBoard = (
+    snapshotId: string,
+    name: string,
+  ): BoardLibraryActionResult => {
+    if (!boardLibraryWritable) return { ok: false, error: "storage" };
+    const result = renameBoardSnapshot(boardLibrary, {
+      snapshotId,
+      name,
+      now: new Date().toISOString(),
+    });
+    if (!result.ok) return result;
+    if (
+      !saveBoardLibrary(localStorage, storageKeys.boardLibrary, result.document)
+    ) {
+      return { ok: false, error: "storage" };
+    }
+    setBoardLibrary(result.document);
+    return { ok: true, name: result.snapshot.name };
+  };
+
+  const handleDeleteBoard = (snapshotId: string): BoardLibraryActionResult => {
+    if (!boardLibraryWritable) return { ok: false, error: "storage" };
+    const result = deleteBoardSnapshot(boardLibrary, snapshotId);
+    if (!result.ok) return result;
+    if (
+      !saveBoardLibrary(localStorage, storageKeys.boardLibrary, result.document)
+    ) {
+      return { ok: false, error: "storage" };
+    }
+    setBoardLibrary(result.document);
+    return { ok: true, name: result.snapshot.name };
+  };
+
+  const handleRestoreBoard = (
+    snapshot: BoardSnapshot,
+  ): BoardLibraryActionResult => {
+    const restoredPicks = sanitizeBoardPicks(snapshot.picks);
+    if (Object.keys(restoredPicks).length === 0) {
+      return { ok: false, error: "empty-board" };
+    }
+    if (!commitUserMutation("restore", restoredPicks)) {
+      return { ok: false, error: "storage" };
+    }
+    setBoardStatusMessage(
+      t("boardLibrary.restoreSuccess", { name: snapshot.name }),
+    );
+    return { ok: true, name: snapshot.name };
   };
 
   const headerMeta = buildHeaderMeta(
@@ -747,11 +1005,19 @@ export default function PickExperienceClient({
           onClearAll={handleClearAllPicks}
           onGenerate={handleGenerateImage}
           onGlobalSearch={handleGlobalSearchClick}
+          onUndo={() => applyHistoryAction("undo")}
+          onRedo={() => applyHistoryAction("redo")}
+          onOpenBoardLibrary={() => {
+            if (hydrated && !isExportRealm) setShowBoardLibrary(true);
+          }}
           nickname={nicknameDraft}
           nicknameMaxLength={MAX_NICKNAME_LENGTH}
           onNicknameChange={handleNicknameChange}
           generating={generating}
           hasPicks={Object.keys(picks).length > 0}
+          canUndo={boardHistory.past.length > 0}
+          canRedo={boardHistory.future.length > 0}
+          savedBoardCount={scopedSnapshots.length}
           totalSongs={eligibleSongsCount}
           selectedCount={Object.keys(picks).length}
           slotCount={slots.length}
@@ -786,6 +1052,23 @@ export default function PickExperienceClient({
         </main>
 
         <Footer />
+
+        <MotionPresence value={showBoardLibrary ? true : null}>
+          {(_boardLibraryPresentation, presenceState) => (
+            <BoardLibraryModal
+              snapshots={scopedSnapshots}
+              currentPicks={storedPicks}
+              slots={uiSlots}
+              writable={boardLibraryWritable}
+              presenceState={presenceState}
+              onSave={handleSaveBoard}
+              onRename={handleRenameBoard}
+              onDelete={handleDeleteBoard}
+              onRestore={handleRestoreBoard}
+              onClose={() => setShowBoardLibrary(false)}
+            />
+          )}
+        </MotionPresence>
 
         <MotionPresence
           value={
@@ -853,9 +1136,9 @@ export default function PickExperienceClient({
               previewUrl={renderedPreviewUrl}
               onClose={handleClosePreview}
               showTitles={showTitles}
-              onToggleShowTitles={setShowTitles}
+              onToggleShowTitles={handleShowTitlesChange}
               transparentBg={transparentBg}
-              onToggleTransparentBg={setTransparentBg}
+              onToggleTransparentBg={handleTransparentBackgroundChange}
               generating={generating}
               pageUrl={pageUrl}
               previewLabel={previewLabel}
@@ -870,6 +1153,9 @@ export default function PickExperienceClient({
             />
           )}
         </MotionPresence>
+        <span className="sr-only" aria-live="polite" aria-atomic="true">
+          {boardStatusMessage}
+        </span>
       </AppleMotion>
 
       {isExportRealm ? (
@@ -973,38 +1259,6 @@ const MEMBER_COLOR_BAR_BACKGROUND = getMemberColorGradient(
   ACTIVE_MEMBERS_BY_SORT_ORDER,
   PROJECT_THEME_COLOR,
 );
-
-function loadStoredPicks(
-  experience: PickExperience,
-  storageKey: string,
-  contextId?: string,
-) {
-  const savedPicks = localStorage.getItem(storageKey);
-  if (!savedPicks) {
-    return {};
-  }
-
-  try {
-    return parseStoredPicksForExperience({
-      experience,
-      serialized: savedPicks,
-      contextId,
-    });
-  } catch (error) {
-    console.error("Failed to parse saved picks", error);
-    return {};
-  }
-}
-
-function sameStoredPicks(left: StoredPicks, right: StoredPicks) {
-  const leftEntries = Object.entries(left);
-  const rightEntries = Object.entries(right);
-  if (leftEntries.length !== rightEntries.length) {
-    return false;
-  }
-
-  return leftEntries.every(([slotId, songId]) => right[slotId] === songId);
-}
 
 function normalizeNickname(nickname: string) {
   return nickname.trim().replace(/\s+/g, " ").slice(0, MAX_NICKNAME_LENGTH);

@@ -12,11 +12,17 @@ export const PROJECT_ID = CURRENT_PROJECT_ID;
 export const STORAGE_KEYS = {
   picks: `${PROJECT_CONFIG.storagePrefix}_mypicks_v1`,
   options: `${PROJECT_CONFIG.storagePrefix}_options_v1`,
+  picksV2: `${PROJECT_CONFIG.storagePrefix}_mypicks_v2`,
+  optionsV2: `${PROJECT_CONFIG.storagePrefix}_options_v2`,
+  boardLibrary: `${PROJECT_CONFIG.storagePrefix}_board_library_v1`,
 };
 
 export interface ExperienceStorageKeys {
   picks: string;
   options: string;
+  picksV2: string;
+  optionsV2: string;
+  boardLibrary: string;
   context?: string;
 }
 
@@ -40,6 +46,9 @@ export function getExperienceStorageKeys(
   return {
     picks: `${PROJECT_CONFIG.storagePrefix}_live_${experienceSegment}${contextSegment}_picks_v1`,
     options: `${PROJECT_CONFIG.storagePrefix}_live_${experienceSegment}_options_v1`,
+    picksV2: `${PROJECT_CONFIG.storagePrefix}_live_${experienceSegment}${contextSegment}_picks_v2`,
+    optionsV2: `${PROJECT_CONFIG.storagePrefix}_live_${experienceSegment}_options_v2`,
+    boardLibrary: STORAGE_KEYS.boardLibrary,
     context: `${PROJECT_CONFIG.storagePrefix}_live_${experienceSegment}_context_v1`,
   };
 }

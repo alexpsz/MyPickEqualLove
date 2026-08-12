@@ -301,7 +301,12 @@ export function filterStoredPicksForExperience({
 
   for (const [slotId, songId] of Object.entries(storedPicks)) {
     const slot = slotsById[slotId];
-    if (!slotIds.has(slotId) || !slot || !SONGS_BY_ID[songId]) {
+    if (
+      !slotIds.has(slotId) ||
+      !slot ||
+      typeof songId !== "string" ||
+      !Object.prototype.hasOwnProperty.call(SONGS_BY_ID, songId)
+    ) {
       continue;
     }
 

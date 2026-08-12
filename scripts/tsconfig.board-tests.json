@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "Node16",
+    "moduleResolution": "Node16",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "types": ["node"],
+    "rootDir": "..",
+    "noEmit": false,
+    "incremental": false
+  },
+  "include": [
+    "../src/schema/music.ts",
+    "../src/utils/boardHistory.ts",
+    "../src/utils/boardStorage.ts",
+    "./tests/board-state.test.ts"
+  ]
+}
