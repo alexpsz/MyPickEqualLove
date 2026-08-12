@@ -206,6 +206,8 @@ const en = {
   "boardShare.previewTitle": "Review shared board",
   "boardShare.previewBody":
     "Review every change below. Your board will change only after you confirm.",
+  "boardShare.previewRefreshed":
+    "The saved board changed while this preview was open. Review the updated changes, then confirm again.",
   "boardShare.contextChange": "This will switch to {context}.",
   "boardShare.changesHeading": "Changes",
   "boardShare.noChanges": "This shared board already matches the saved board.",
@@ -612,6 +614,8 @@ const ja: MessageCatalog = {
   "boardShare.previewTitle": "共有ボードを確認",
   "boardShare.previewBody":
     "以下の変更内容を確認してください。確定するまで現在のボードは変更されません。",
+  "boardShare.previewRefreshed":
+    "プレビュー表示中に保存済みボードが変更されました。更新後の内容を確認し、もう一度確定してください。",
   "boardShare.contextChange": "{context}に切り替わります。",
   "boardShare.changesHeading": "変更内容",
   "boardShare.noChanges": "共有ボードは保存済みのボードと同じ内容です。",
@@ -992,6 +996,8 @@ const zhCN: MessageCatalog = {
   "boardShare.previewTitle": "检查共享榜单",
   "boardShare.previewBody":
     "请检查下方每一项变化。只有明确确认后，当前榜单才会被替换。",
+  "boardShare.previewRefreshed":
+    "预览期间，已保存的榜单发生了变化。请检查更新后的内容，再次确认替换。",
   "boardShare.contextChange": "将切换至{context}。",
   "boardShare.changesHeading": "变化内容",
   "boardShare.noChanges": "共享榜单与已保存的榜单完全相同。",
@@ -1377,6 +1383,8 @@ const ko: MessageCatalog = {
   "boardShare.previewTitle": "공유 보드 확인",
   "boardShare.previewBody":
     "아래의 모든 변경 사항을 확인해 주세요. 명확히 확인하기 전에는 현재 보드가 바뀌지 않습니다.",
+  "boardShare.previewRefreshed":
+    "미리보기를 연 동안 저장된 보드가 변경되었습니다. 업데이트된 내용을 확인한 뒤 다시 확정하세요.",
   "boardShare.contextChange": "{context}(으)로 전환됩니다.",
   "boardShare.changesHeading": "변경 사항",
   "boardShare.noChanges": "공유 보드가 저장된 보드와 이미 같습니다.",

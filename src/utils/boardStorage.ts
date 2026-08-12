@@ -1,5 +1,6 @@
 import type { StoredPicks } from "../schema/music";
 import type { ExportOptions } from "../schema/export";
+import { DEFAULT_EXPORT_OPTIONS } from "../config/exportPresets";
 import {
   parseCurrentExportOptions,
   parseLegacyExportOptions,
@@ -62,6 +63,10 @@ export interface StoredOptionsLoadResult {
   options: ExportOptions | null;
   status: StorageLoadStatus;
 }
+
+export type StoredOptionsMutationResult =
+  | { ok: true; options: ExportOptions }
+  | { ok: false; status: StorageLoadStatus };
 
 export interface BoardLibraryLoadResult {
   document: BoardLibraryDocument;
@@ -306,6 +311,33 @@ export function saveStoredOptions(
   } catch {
     return false;
   }
+}
+
+export function mutateStoredOptions({
+  storage,
+  versionedKey,
+  legacyKey,
+  update,
+}: {
+  storage: StorageLike;
+  versionedKey: string;
+  legacyKey: string;
+  update: (current: ExportOptions) => ExportOptions;
+}): StoredOptionsMutationResult {
+  const current = loadStoredOptions({ storage, versionedKey, legacyKey });
+  if (!isWritableStorageStatus(current.status)) {
+    return { ok: false, status: current.status };
+  }
+
+  const options = update(current.options ?? DEFAULT_EXPORT_OPTIONS);
+  if (!saveStoredOptions(storage, versionedKey, options)) {
+    return { ok: false, status: "unavailable" };
+  }
+  return { ok: true, options };
+}
+
+function isWritableStorageStatus(status: StorageLoadStatus) {
+  return status === "empty" || status === "loaded" || status === "migrated";
 }
 
 export function loadBoardLibrary(

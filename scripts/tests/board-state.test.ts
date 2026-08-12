@@ -17,6 +17,7 @@ import {
   loadStoredBoard,
   loadStoredOptions,
   mutateStoredBoardLibrary,
+  mutateStoredOptions,
   normalizeBoardName,
   parseBoardLibrary,
   renameBoardSnapshot,
@@ -231,6 +232,81 @@ test("canonical export options load without rewriting storage", () => {
     templateId: "spotlight",
     sizePresetId: "story",
   });
+  assert.equal(storage.values.get("options-v2"), serialized);
+  assert.equal(storage.writes.length, 0);
+});
+
+test("stored options mutation starts from canonical defaults when storage is empty", () => {
+  const storage = new MemoryStorage();
+  const result = mutateStoredOptions({
+    storage,
+    versionedKey: "options-v2",
+    legacyKey: "options-v1",
+    update: (current) => ({ ...current, templateId: "spotlight" }),
+  });
+
+  assert.deepEqual(result, {
+    ok: true,
+    options: {
+      showTitles: true,
+      transparentBg: false,
+      templateId: "spotlight",
+      sizePresetId: "portrait",
+    },
+  });
+  assert.deepEqual(JSON.parse(storage.values.get("options-v2") ?? ""), {
+    version: 2,
+    showTitles: true,
+    transparentBg: false,
+    templateId: "spotlight",
+    sizePresetId: "portrait",
+  });
+});
+
+test("stored options mutation re-reads and preserves sibling fields", () => {
+  const storage = new MemoryStorage();
+  storage.values.set(
+    "options-v2",
+    JSON.stringify({
+      version: 2,
+      showTitles: false,
+      transparentBg: false,
+      templateId: "spotlight",
+      sizePresetId: "story",
+    }),
+  );
+
+  const result = mutateStoredOptions({
+    storage,
+    versionedKey: "options-v2",
+    legacyKey: "options-v1",
+    update: (current) => ({ ...current, transparentBg: true }),
+  });
+
+  assert.equal(result.ok, true);
+  if (result.ok) {
+    assert.deepEqual(result.options, {
+      showTitles: false,
+      transparentBg: true,
+      templateId: "spotlight",
+      sizePresetId: "story",
+    });
+  }
+});
+
+test("stored options mutation fails closed for unsupported data", () => {
+  const storage = new MemoryStorage();
+  const serialized = JSON.stringify({ version: 99 });
+  storage.values.set("options-v2", serialized);
+
+  const result = mutateStoredOptions({
+    storage,
+    versionedKey: "options-v2",
+    legacyKey: "options-v1",
+    update: (current) => ({ ...current, transparentBg: true }),
+  });
+
+  assert.deepEqual(result, { ok: false, status: "unsupported" });
   assert.equal(storage.values.get("options-v2"), serialized);
   assert.equal(storage.writes.length, 0);
 });

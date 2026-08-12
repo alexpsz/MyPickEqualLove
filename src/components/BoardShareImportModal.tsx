@@ -21,6 +21,7 @@ export type BoardShareDialogState =
       kind: "import";
       changes: BoardShareChange[];
       contextLabel?: string;
+      previewRefreshed?: boolean;
     }
   | {
       kind: "mismatch";
@@ -127,6 +128,15 @@ export default function BoardShareImportModal({
                 {t("boardShare.contextChange", {
                   context: state.contextLabel,
                 })}
+              </p>
+            ) : null}
+            {state.kind === "import" && state.previewRefreshed ? (
+              <p
+                role="status"
+                aria-live="polite"
+                className="mt-3 rounded-[var(--radius-sm)] border border-amber-300 bg-amber-50 px-3 py-2 text-[13px] font-medium leading-relaxed text-amber-950"
+              >
+                {t("boardShare.previewRefreshed")}
               </p>
             ) : null}
           </div>
