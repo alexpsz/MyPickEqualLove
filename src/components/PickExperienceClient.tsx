@@ -16,6 +16,8 @@ import {
   PROJECT_CONFIG,
   PROJECT_ID,
   PROJECT_THEME_COLOR,
+  SONG_DISCOVERY_CONFIG,
+  STORAGE_KEYS,
 } from "../config/project";
 import {
   MEMBERS,
@@ -83,6 +85,14 @@ import {
 } from "../utils/exportCapture";
 import { getMemberColorGradient } from "../utils/memberColors";
 import {
+  createEmptySongDiscoveryState,
+  loadSongDiscoveryState,
+  recordRecentSongId,
+  saveSongDiscoveryState,
+  toggleFavoriteSongId,
+  type SongDiscoveryState,
+} from "../utils/songDiscoveryStorage";
+import {
   DIALOG_RETURN_KEYS,
   getPickSlotReturnKey,
 } from "../utils/useDialogA11y";
@@ -104,6 +114,7 @@ import PickBoard from "./PickBoard";
 import PreviewModal from "./PreviewModal";
 import ReplacementModal from "./ReplacementModal";
 import SearchModal from "./SearchModal";
+import SongDetailModal from "./SongDetailModal";
 
 interface PickExperienceClientProps {
   experience: PickExperience;
@@ -171,6 +182,10 @@ export default function PickExperienceClient({
   const [activeSlotId, setActiveSlotId] = useState<PickSlotId | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [showBoardLibrary, setShowBoardLibrary] = useState(false);
+  const [detailSongId, setDetailSongId] = useState<string | null>(null);
+  const [detailLayerActive, setDetailLayerActive] = useState(false);
+  const [songDiscoveryState, setSongDiscoveryState] =
+    useState<SongDiscoveryState>(createEmptySongDiscoveryState);
   const [pendingReplacementSong, setPendingReplacementSong] =
     useState<Song | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -197,6 +212,7 @@ export default function PickExperienceClient({
   const searchReturnFocusKeyRef = useRef<string>(
     DIALOG_RETURN_KEYS.globalSearch,
   );
+  const detailTriggerRef = useRef<HTMLElement>(null);
   const previewGenerationIdRef = useRef(0);
   const activePreviewCaptureAbortRef = useRef<AbortController | null>(null);
   const lastGeneratedPreviewOptionsRef = useRef<string | null>(null);
@@ -208,6 +224,17 @@ export default function PickExperienceClient({
 
     return Object.fromEntries(entries);
   }, [storedPicks]);
+  const selectedRanksBySongId = useMemo(() => {
+    const ranks: Record<string, number> = {};
+    for (const slot of slots) {
+      const songId = storedPicks[slot.id];
+      if (songId && ranks[songId] === undefined) {
+        ranks[songId] = slot.sortOrder;
+      }
+    }
+    return ranks;
+  }, [slots, storedPicks]);
+  const detailSong = detailSongId ? SONGS_BY_ID[detailSongId] : undefined;
 
   const exportNickname = useMemo(
     () => normalizeNickname(nicknameDraft),
@@ -371,6 +398,16 @@ export default function PickExperienceClient({
     setBoardLibraryLoaded(true);
   }, [hydrated, isExportRealm, storageKeys.boardLibrary]);
 
+  useEffect(() => {
+    if (!hydrated || isExportRealm) return;
+    setSongDiscoveryState(
+      loadSongDiscoveryState(
+        STORAGE_KEYS.songDiscovery,
+        new Set(Object.keys(SONGS_BY_ID)),
+      ),
+    );
+  }, [hydrated, isExportRealm]);
+
   useEffect(
     () => () => {
       activePreviewCaptureAbortRef.current?.abort();
@@ -461,6 +498,7 @@ export default function PickExperienceClient({
     setActiveSlotId(null);
     setShowModal(false);
     setShowBoardLibrary(false);
+    setDetailSongId(null);
     setPendingReplacementSong(null);
     setPreviewUrl(null);
 
@@ -488,12 +526,16 @@ export default function PickExperienceClient({
 
   const handleSlotClick = (slotId: PickSlotId) => {
     searchReturnFocusKeyRef.current = getPickSlotReturnKey(slotId);
+    detailTriggerRef.current = null;
+    setDetailSongId(null);
     setActiveSlotId(slotId);
     setShowModal(true);
   };
 
   const handleGlobalSearchClick = () => {
     searchReturnFocusKeyRef.current = DIALOG_RETURN_KEYS.globalSearch;
+    detailTriggerRef.current = null;
+    setDetailSongId(null);
     setActiveSlotId(null);
     setShowModal(true);
   };
@@ -501,6 +543,38 @@ export default function PickExperienceClient({
   const handleNicknameChange = (nickname: string) => {
     setNicknameDraft(nickname.slice(0, MAX_NICKNAME_LENGTH));
   };
+
+  const updateSongDiscoveryState = useCallback(
+    (update: (current: SongDiscoveryState) => SongDiscoveryState) => {
+      setSongDiscoveryState((current) => {
+        const next = update(current);
+        saveSongDiscoveryState(STORAGE_KEYS.songDiscovery, next);
+        return next;
+      });
+    },
+    [],
+  );
+
+  const handleToggleFavorite = useCallback(
+    (songId: string) => {
+      updateSongDiscoveryState((current) =>
+        toggleFavoriteSongId(current, songId),
+      );
+    },
+    [updateSongDiscoveryState],
+  );
+
+  const handleOpenSongDetail = useCallback(
+    (song: Song, trigger: HTMLButtonElement) => {
+      detailTriggerRef.current = trigger;
+      updateSongDiscoveryState((current) =>
+        recordRecentSongId(current, song.id, SONG_DISCOVERY_CONFIG.recentLimit),
+      );
+      setDetailLayerActive(true);
+      setDetailSongId(song.id);
+    },
+    [updateSongDiscoveryState],
+  );
 
   const handleSelectSong = (song: Song) => {
     if (activeSlotId) {
@@ -527,6 +601,7 @@ export default function PickExperienceClient({
         return;
       }
       setShowModal(false);
+      setDetailSongId(null);
       setActiveSlotId(null);
       return;
     }
@@ -547,11 +622,18 @@ export default function PickExperienceClient({
         return;
       }
       setShowModal(false);
+      setDetailSongId(null);
       return;
     }
 
     setShowModal(false);
+    setDetailSongId(null);
     setPendingReplacementSong(song);
+  };
+
+  const handleSelectSongFromDetail = (song: Song) => {
+    setDetailSongId(null);
+    handleSelectSong(song);
   };
 
   const handleReplaceSlot = (slotId: PickSlotId) => {
@@ -1095,13 +1177,42 @@ export default function PickExperienceClient({
               contextLabel={searchPresentation.contextLabel}
               resultBadgesBySongId={songBadgesBySongId}
               emptyMessage={t("search.noEligibleMatches")}
+              selectedRanksBySongId={selectedRanksBySongId}
+              favoriteSongIds={songDiscoveryState.favoriteSongIds}
+              recentSongIds={songDiscoveryState.recentSongIds}
+              suspended={detailLayerActive}
+              resumeFocusRef={detailTriggerRef}
               presenceState={presenceState}
               returnFocusKey={searchPresentation.returnFocusKey}
               onClose={() => {
                 setShowModal(false);
+                setDetailSongId(null);
+                detailTriggerRef.current = null;
                 setActiveSlotId(null);
               }}
               onSelect={handleSelectSong}
+              onToggleFavorite={handleToggleFavorite}
+              onOpenDetail={handleOpenSongDetail}
+            />
+          )}
+        </MotionPresence>
+
+        <MotionPresence
+          value={showModal ? detailSong : null}
+          onExitComplete={() => setDetailLayerActive(false)}
+        >
+          {(song, presenceState) => (
+            <SongDetailModal
+              song={song}
+              members={MEMBERS}
+              isFavorite={songDiscoveryState.favoriteSongIds.includes(song.id)}
+              isRecentlyViewed={songDiscoveryState.recentSongIds.includes(
+                song.id,
+              )}
+              presenceState={presenceState}
+              onClose={() => setDetailSongId(null)}
+              onSelect={handleSelectSongFromDetail}
+              onToggleFavorite={handleToggleFavorite}
             />
           )}
         </MotionPresence>

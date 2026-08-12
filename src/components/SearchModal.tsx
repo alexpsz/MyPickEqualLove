@@ -1,11 +1,26 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type RefObject,
+} from "react";
 import * as m from "motion/react-m";
 import { useLocale } from "../i18n/LocaleProvider";
 import type { MessageKey, MessageValues } from "../i18n/messages";
 import type { Member, ReleaseType, Song, TrackType } from "../schema/music";
 import { getConfirmedSongCredits } from "../utils/songCredits";
+import {
+  RELEASE_TYPE_MESSAGE_KEYS,
+  TRACK_TYPE_MESSAGE_KEYS,
+} from "../utils/songMetadata";
+import {
+  getFirstSearchResultForEnter,
+  normalizeSongSearchText,
+  rankSongsByQuery,
+} from "../utils/songSearch";
 import { useDialogA11y } from "../utils/useDialogA11y";
 import AppIcon from "./AppIcon";
 import { APPLE_OPACITY, APPLE_SPRING_GENTLE } from "./AppleMotion";
@@ -27,101 +42,31 @@ interface SearchModalProps {
   contextLabel?: string;
   resultBadgesBySongId?: Record<string, string[]>;
   emptyMessage?: string;
+  selectedRanksBySongId?: Record<string, number>;
+  favoriteSongIds?: string[];
+  recentSongIds?: string[];
+  suspended?: boolean;
+  resumeFocusRef?: RefObject<HTMLElement | null>;
   presenceState: PresenceState;
   returnFocusKey: string;
   onClose: () => void;
   onSelect: (song: Song) => void;
+  onToggleFavorite: (songId: string) => void;
+  onOpenDetail: (song: Song, trigger: HTMLButtonElement) => void;
 }
 
 const PRIMARY_TRACK_TYPES = ["title", "coupling", "album"] as const;
 
 type Translate = (key: MessageKey, values?: MessageValues) => string;
 
-const RELEASE_TYPE_MESSAGE_KEYS: Record<ReleaseFilter, MessageKey> = {
+const RELEASE_FILTER_MESSAGE_KEYS: Record<ReleaseFilter, MessageKey> = {
   all: "search.releaseType.all",
-  single: "search.releaseType.single",
-  album: "search.releaseType.album",
-  digital: "search.releaseType.digital",
-  dvd_bd: "search.releaseType.dvdBd",
-  other: "search.releaseType.other",
+  ...RELEASE_TYPE_MESSAGE_KEYS,
 };
 
-const TRACK_TYPE_MESSAGE_KEYS: Record<TrackFilter, MessageKey> = {
+const TRACK_FILTER_MESSAGE_KEYS: Record<TrackFilter, MessageKey> = {
   all: "search.trackType.all",
-  title: "search.trackType.title",
-  coupling: "search.trackType.coupling",
-  album: "search.trackType.album",
-  solo: "search.trackType.solo",
-  unit: "search.trackType.unit",
-  live: "search.trackType.live",
-  other: "search.trackType.other",
-};
-
-const normalizeStr = (value: string | undefined): string => {
-  if (!value) return "";
-  return value
-    .normalize("NFKC")
-    .toLowerCase()
-    .replace(/\s+/g, "")
-    .replace(/[^a-z0-9\u3040-\u309f\u30a0-\u30ff\u4e00-\u9faf=]/g, "");
-};
-
-const getMemberNames = (song: Song, membersById: Record<string, Member>) =>
-  [...(song.memberIds ?? []), ...(song.centerMemberIds ?? [])]
-    .map((memberId) => membersById[memberId])
-    .filter(Boolean)
-    .flatMap((member) => [
-      member.name.ja,
-      member.name.romaji,
-      member.name.en ?? "",
-    ]);
-
-const getSearchableParts = (
-  song: Song,
-  membersById: Record<string, Member>,
-) => {
-  const credits = getConfirmedSongCredits(song);
-  const creditParts = credits
-    ? [
-        credits.lyricist.ja,
-        credits.lyricist.romaji,
-        credits.composer.ja,
-        credits.composer.romaji,
-        credits.arranger.ja,
-        credits.arranger.romaji,
-      ]
-    : [];
-
-  return {
-    titles: [song.title.ja, song.title.romaji, song.title.en],
-    secondary: [
-      song.artist.ja,
-      song.artist.romaji,
-      song.artist.en,
-      ...creditParts,
-      ...getMemberNames(song, membersById),
-    ],
-  };
-};
-
-const getMatchRank = (
-  song: Song,
-  query: string,
-  membersById: Record<string, Member>,
-) => {
-  if (!query) return 0;
-
-  const searchableParts = getSearchableParts(song, membersById);
-  const normalizedTitles = searchableParts.titles.map(normalizeStr);
-  const normalizedSecondary = searchableParts.secondary.map(normalizeStr);
-
-  if (normalizedTitles.some((part) => part === query)) return 0;
-  if (normalizedTitles.some((part) => part.startsWith(query))) return 1;
-  if (normalizedTitles.some((part) => part.includes(query))) return 2;
-  if (normalizedSecondary.some((part) => part === query)) return 3;
-  if (normalizedSecondary.some((part) => part.startsWith(query))) return 4;
-  if (normalizedSecondary.some((part) => part.includes(query))) return 5;
-  return Number.POSITIVE_INFINITY;
+  ...TRACK_TYPE_MESSAGE_KEYS,
 };
 
 const GRADUATED_MEMBER_FEATURE_TAGS = new Set([
@@ -201,10 +146,17 @@ export default function SearchModal({
   contextLabel,
   resultBadgesBySongId = {},
   emptyMessage,
+  selectedRanksBySongId = {},
+  favoriteSongIds = [],
+  recentSongIds = [],
+  suspended = false,
+  resumeFocusRef,
   presenceState,
   returnFocusKey,
   onClose,
   onSelect,
+  onToggleFavorite,
+  onOpenDetail,
 }: SearchModalProps) {
   const { t } = useLocale();
   const [searchQuery, setSearchQuery] = useState("");
@@ -215,14 +167,28 @@ export default function SearchModal({
   const [memberFilters, setMemberFilters] = useState<string[]>([]);
   const [isMoreFiltersOpen, setIsMoreFiltersOpen] = useState(false);
   const [showGraduatedMembers, setShowGraduatedMembers] = useState(false);
+  const [hideSelected, setHideSelected] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const normalizedSearchQuery = useMemo(
+    () => normalizeSongSearchText(searchQuery),
+    [searchQuery],
+  );
+  const favoriteSongIdSet = useMemo(
+    () => new Set(favoriteSongIds),
+    [favoriteSongIds],
+  );
+  const recentSongIdSet = useMemo(
+    () => new Set(recentSongIds),
+    [recentSongIds],
+  );
 
   useDialogA11y({
     dialogRef: panelRef,
     onClose,
-    active: presenceState !== "exiting",
+    active: presenceState !== "exiting" && !suspended,
     autoFocus: false,
+    initialFocusRef: resumeFocusRef,
     returnFocusKey,
   });
 
@@ -260,51 +226,54 @@ export default function SearchModal({
   }, [autoFocusSearch]);
 
   const filteredSongs = useMemo(() => {
-    const query = normalizeStr(searchQuery);
+    const filterMatches = songs.filter((song) => {
+      if (
+        !normalizedSearchQuery &&
+        !showGraduatedMembers &&
+        isGraduatedMemberFeature(song)
+      ) {
+        return false;
+      }
+      if (hideSelected && selectedRanksBySongId[song.id] !== undefined) {
+        return false;
+      }
+      if (
+        releaseTypeFilter !== "all" &&
+        song.releaseType !== releaseTypeFilter
+      ) {
+        return false;
+      }
+      if (trackTypeFilter !== "all" && song.trackType !== trackTypeFilter) {
+        return false;
+      }
+      if (yearFilter !== "all" && !song.releaseDate?.startsWith(yearFilter)) {
+        return false;
+      }
+      if (
+        memberFilters.length > 0 &&
+        !memberFilters.some(
+          (memberId) =>
+            song.memberIds?.includes(memberId) ||
+            song.centerMemberIds?.includes(memberId),
+        )
+      ) {
+        return false;
+      }
+      return true;
+    });
 
-    return songs
-      .map((song, index) => ({ song, index }))
-      .filter(({ song }) => {
-        if (!query && !showGraduatedMembers && isGraduatedMemberFeature(song)) {
-          return false;
-        }
-        if (
-          releaseTypeFilter !== "all" &&
-          song.releaseType !== releaseTypeFilter
-        ) {
-          return false;
-        }
-        if (trackTypeFilter !== "all" && song.trackType !== trackTypeFilter) {
-          return false;
-        }
-        if (yearFilter !== "all" && !song.releaseDate?.startsWith(yearFilter)) {
-          return false;
-        }
-        if (
-          memberFilters.length > 0 &&
-          !memberFilters.some(
-            (memberId) =>
-              song.memberIds?.includes(memberId) ||
-              song.centerMemberIds?.includes(memberId),
-          )
-        ) {
-          return false;
-        }
-        return (
-          getMatchRank(song, query, membersById) < Number.POSITIVE_INFINITY
-        );
-      })
-      .sort((left, right) => {
-        const leftRank = getMatchRank(left.song, query, membersById);
-        const rightRank = getMatchRank(right.song, query, membersById);
-        return leftRank - rightRank || left.index - right.index;
-      })
-      .map(({ song }) => song);
+    return rankSongsByQuery(
+      filterMatches,
+      normalizedSearchQuery,
+      membersById,
+    ).map(({ song }) => song);
   }, [
+    hideSelected,
     memberFilters,
     membersById,
+    normalizedSearchQuery,
     releaseTypeFilter,
-    searchQuery,
+    selectedRanksBySongId,
     showGraduatedMembers,
     songs,
     trackTypeFilter,
@@ -317,6 +286,7 @@ export default function SearchModal({
     setYearFilter("all");
     setMemberFilters([]);
     setShowGraduatedMembers(false);
+    setHideSelected(false);
   };
 
   const selectQuickFilter = (filter: TrackFilter | "digital") => {
@@ -357,7 +327,24 @@ export default function SearchModal({
     yearFilter !== "all",
     memberFilters.length > 0,
     showGraduatedMembers,
+    hideSelected,
   ].filter(Boolean).length;
+
+  const handleSearchKeyDown = (
+    event: React.KeyboardEvent<HTMLInputElement>,
+  ) => {
+    const firstResult = getFirstSearchResultForEnter(filteredSongs, {
+      key: event.key,
+      isComposing: event.nativeEvent.isComposing,
+      altKey: event.altKey,
+      ctrlKey: event.ctrlKey,
+      metaKey: event.metaKey,
+      shiftKey: event.shiftKey,
+    });
+    if (!firstResult) return;
+    event.preventDefault();
+    onSelect(firstResult);
+  };
 
   const panelMotion = {
     opacity: 1,
@@ -369,6 +356,8 @@ export default function SearchModal({
     <div
       className="motion-overlay fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4"
       data-presence={presenceState}
+      aria-hidden={presenceState === "exiting" || suspended}
+      inert={presenceState === "exiting" || suspended}
     >
       <m.button
         type="button"
@@ -442,6 +431,7 @@ export default function SearchModal({
                   type="search"
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.target.value)}
+                  onKeyDown={handleSearchKeyDown}
                   placeholder={t("search.placeholder")}
                   className="h-11 w-full rounded-[var(--radius-sm)] border border-[var(--line-strong)] bg-white pl-10 pr-3 text-[15px] text-[var(--foreground)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--muted-soft)] focus:border-[var(--focus-ring)] focus:shadow-[0_0_0_2px_var(--focus-ring)]"
                 />
@@ -485,7 +475,7 @@ export default function SearchModal({
                   active={trackTypeFilter === trackType}
                   onClick={() => selectQuickFilter(trackType)}
                 >
-                  {t(TRACK_TYPE_MESSAGE_KEYS[trackType])}
+                  {t(TRACK_FILTER_MESSAGE_KEYS[trackType])}
                 </FilterChip>
               ))}
               <FilterChip
@@ -496,6 +486,15 @@ export default function SearchModal({
               >
                 {t("search.digital")}
               </FilterChip>
+              {Object.keys(selectedRanksBySongId).length > 0 ? (
+                <FilterChip
+                  active={hideSelected}
+                  onClick={() => setHideSelected((current) => !current)}
+                  muted
+                >
+                  {t("search.hideSelected")}
+                </FilterChip>
+              ) : null}
             </div>
           </div>
 
@@ -540,7 +539,7 @@ export default function SearchModal({
                             active={releaseTypeFilter === type}
                             onClick={() => setReleaseTypeFilter(type)}
                           >
-                            {t(RELEASE_TYPE_MESSAGE_KEYS[type])}
+                            {t(RELEASE_FILTER_MESSAGE_KEYS[type])}
                           </FilterChip>
                         ),
                       )}
@@ -564,55 +563,118 @@ export default function SearchModal({
           <div className="px-4 py-3 sm:px-6 sm:py-4">
             {filteredSongs.length > 0 ? (
               <div className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--line)] bg-white">
-                {filteredSongs.map((song, index) => (
-                  <button
-                    key={song.id}
-                    type="button"
-                    onClick={() => onSelect(song)}
-                    className={`song-result-row group flex min-h-[76px] w-full items-center gap-3 px-3 py-2.5 text-left transition-colors duration-150 hover:bg-[var(--background)] focus:outline-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring)] active:bg-[var(--project-primary-wash)] ${
-                      index > 0 ? "border-t border-[var(--line)]" : ""
-                    }`}
-                  >
-                    <div className="h-14 w-14 shrink-0 overflow-hidden rounded-[10px] border border-[var(--line)] bg-[var(--background)]">
-                      <img
-                        src={song.coverUrl}
-                        alt=""
-                        className="h-full w-full object-cover"
-                        loading="lazy"
-                      />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-start gap-2">
-                        <h3 className="min-w-0 flex-1 truncate text-[15px] font-semibold tracking-[-0.015em] text-[var(--foreground)]">
-                          <JapaneseContent>{song.title.ja}</JapaneseContent>
-                        </h3>
-                        <span className="shrink-0 text-xs tabular-nums text-[var(--muted)]">
-                          {song.releaseDate?.slice(0, 4) ?? t("search.tbd")}
+                {filteredSongs.map((song, index) => {
+                  const selectedRank = selectedRanksBySongId[song.id];
+                  const isFavorite = favoriteSongIdSet.has(song.id);
+                  const isRecentlyViewed = recentSongIdSet.has(song.id);
+
+                  return (
+                    <div
+                      key={song.id}
+                      className={`song-result-row flex min-h-[76px] w-full items-stretch transition-colors duration-150 hover:bg-[var(--background)] ${
+                        index > 0 ? "border-t border-[var(--line)]" : ""
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => onSelect(song)}
+                        className="group flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-left focus:outline-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring)] active:bg-[var(--project-primary-wash)]"
+                      >
+                        <div className="h-14 w-14 shrink-0 overflow-hidden rounded-[10px] border border-[var(--line)] bg-[var(--background)]">
+                          <img
+                            src={song.coverUrl}
+                            alt=""
+                            className="h-full w-full object-cover"
+                            loading="lazy"
+                          />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-start gap-2">
+                            <h3 className="min-w-0 flex-1 truncate text-[15px] font-semibold tracking-[-0.015em] text-[var(--foreground)]">
+                              <JapaneseContent>{song.title.ja}</JapaneseContent>
+                            </h3>
+                            <span className="shrink-0 text-xs tabular-nums text-[var(--muted)]">
+                              {song.releaseDate?.slice(0, 4) ?? t("search.tbd")}
+                            </span>
+                          </div>
+                          <p className="mt-0.5 truncate text-xs text-[var(--muted)]">
+                            {song.title.romaji}
+                          </p>
+                          <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs font-medium text-[var(--muted)]">
+                            <span className="truncate">
+                              {formatSongMeta(song, t)}
+                            </span>
+                            {selectedRank !== undefined ? (
+                              <ResultBadge>
+                                {t("search.selectedRank", {
+                                  rank: selectedRank,
+                                })}
+                              </ResultBadge>
+                            ) : null}
+                            {isFavorite ? (
+                              <ResultBadge>{t("search.candidate")}</ResultBadge>
+                            ) : null}
+                            {isRecentlyViewed ? (
+                              <ResultBadge muted>
+                                {t("search.recentlyViewed")}
+                              </ResultBadge>
+                            ) : null}
+                            {resultBadgesBySongId[song.id]?.map((badge) => (
+                              <ResultBadge key={badge}>{badge}</ResultBadge>
+                            ))}
+                          </div>
+                          <SongCredits song={song} t={t} />
+                        </div>
+                        <span className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--background)] text-[var(--muted)] transition-[background-color,color,transform] duration-150 group-hover:bg-[var(--project-primary)] group-hover:text-black group-active:scale-95 sm:flex">
+                          <AppIcon name="plus" size={16} />
                         </span>
+                      </button>
+
+                      <div className="flex shrink-0 items-center border-l border-[var(--line)] px-1">
+                        <button
+                          type="button"
+                          onClick={() => onToggleFavorite(song.id)}
+                          aria-pressed={isFavorite}
+                          aria-label={
+                            isFavorite
+                              ? t("search.removeCandidateAria", {
+                                  title: song.title.ja,
+                                })
+                              : t("search.addCandidateAria", {
+                                  title: song.title.ja,
+                                })
+                          }
+                          title={
+                            isFavorite
+                              ? t("songDetail.removeCandidate")
+                              : t("songDetail.addCandidate")
+                          }
+                          className={`flex h-11 w-11 items-center justify-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] ${
+                            isFavorite
+                              ? "bg-[var(--project-primary-wash)] text-[var(--foreground)]"
+                              : "text-[var(--muted)] hover:bg-white hover:text-[var(--foreground)]"
+                          }`}
+                        >
+                          <AppIcon name="star" size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          aria-haspopup="dialog"
+                          aria-label={t("search.openDetailsAria", {
+                            title: song.title.ja,
+                          })}
+                          title={t("search.openDetails")}
+                          onClick={(event) =>
+                            onOpenDetail(song, event.currentTarget)
+                          }
+                          className="flex h-11 w-11 items-center justify-center rounded-full text-[var(--muted)] transition-colors hover:bg-white hover:text-[var(--foreground)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+                        >
+                          <AppIcon name="info" size={16} />
+                        </button>
                       </div>
-                      <p className="mt-0.5 truncate text-xs text-[var(--muted)]">
-                        {song.title.romaji}
-                      </p>
-                      <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs font-medium text-[var(--muted)]">
-                        <span className="truncate">
-                          {formatSongMeta(song, t)}
-                        </span>
-                        {resultBadgesBySongId[song.id]?.map((badge) => (
-                          <span
-                            key={badge}
-                            className="rounded-full bg-[var(--project-primary-wash)] px-2 py-0.5 text-[11px] text-[var(--foreground)]"
-                          >
-                            {badge}
-                          </span>
-                        ))}
-                      </div>
-                      <SongCredits song={song} t={t} />
                     </div>
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--background)] text-[var(--muted)] transition-[background-color,color,transform] duration-150 group-hover:bg-[var(--project-primary)] group-hover:text-black group-active:scale-95">
-                      <AppIcon name="plus" size={16} />
-                    </span>
-                  </button>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="rounded-[var(--radius-md)] border border-[var(--line)] bg-white px-6 py-14 text-center text-sm text-[var(--muted)]">
@@ -754,5 +816,25 @@ function FilterChip({
     >
       {children}
     </button>
+  );
+}
+
+function ResultBadge({
+  children,
+  muted = false,
+}: {
+  children: React.ReactNode;
+  muted?: boolean;
+}) {
+  return (
+    <span
+      className={`rounded-full px-2 py-0.5 text-[11px] ${
+        muted
+          ? "bg-[var(--background)] text-[var(--muted)]"
+          : "bg-[var(--project-primary-wash)] text-[var(--foreground)]"
+      }`}
+    >
+      {children}
+    </span>
   );
 }

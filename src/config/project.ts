@@ -15,7 +15,12 @@ export const STORAGE_KEYS = {
   picksV2: `${PROJECT_CONFIG.storagePrefix}_mypicks_v2`,
   optionsV2: `${PROJECT_CONFIG.storagePrefix}_options_v2`,
   boardLibrary: `${PROJECT_CONFIG.storagePrefix}_board_library_v1`,
+  songDiscovery: `${PROJECT_CONFIG.storagePrefix}_song_discovery_v1`,
 };
+
+export const SONG_DISCOVERY_CONFIG = {
+  recentLimit: 20,
+} as const;
 
 export interface ExperienceStorageKeys {
   picks: string;

@@ -11,12 +11,14 @@ export type AppIconName =
   | "filter"
   | "globe"
   | "image"
+  | "info"
   | "menu"
   | "music"
   | "plus"
   | "reset"
   | "redo"
   | "search"
+  | "star"
   | "undo";
 
 interface AppIconProps {
@@ -100,6 +102,14 @@ function getIconPaths(name: AppIconName) {
           <path d="m5.75 17 4.4-4.4 2.7 2.7 2.1-2.1 3.3 3.3" />
         </>
       );
+    case "info":
+      return (
+        <>
+          <circle cx="12" cy="12" r="8.25" />
+          <path d="M12 10.5v5" />
+          <path d="M12 7.4h.01" />
+        </>
+      );
     case "menu":
       return (
         <>
@@ -145,6 +155,10 @@ function getIconPaths(name: AppIconName) {
           <path d="M8.25 8.25H4.5v-3.5" />
           <path d="M4.85 8a8 8 0 1 1-.2 7.7" />
         </>
+      );
+    case "star":
+      return (
+        <path d="m12 3.75 2.55 5.17 5.7.83-4.12 4.02.97 5.68L12 16.77l-5.1 2.68.97-5.68-4.12-4.02 5.7-.83L12 3.75Z" />
       );
   }
 }

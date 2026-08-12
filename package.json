@@ -33,6 +33,7 @@
     "check:data:sync:strict": "node scripts/check-discography-update.mjs --enforce-allowlist",
     "test:discography": "python scripts/test_sync_project_discography.py && node scripts/check-discography-update.mjs --self-test",
     "test:board-state": "node scripts/run-board-tests.mjs",
+    "test:song-search": "node --test scripts/test-song-search.mjs",
     "check:repo-boundary": "node scripts/check-repository-boundary.mjs",
     "hooks:install": "node scripts/install-git-hooks.mjs",
     "validate:data": "node scripts/validate-project-data.mjs",
