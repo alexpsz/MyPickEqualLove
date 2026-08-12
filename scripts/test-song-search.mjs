@@ -51,6 +51,8 @@ const {
   loadSongDiscoveryState,
   recordRecentSongId,
   saveSongDiscoveryState,
+  toggleFavoriteSongId,
+  updateStoredSongDiscoveryState,
 } = await import(storageModuleUrl);
 
 const membersById = {
@@ -249,8 +251,59 @@ test("storage access failures fall back without throwing", () => {
       loadSongDiscoveryState("discovery", new Set(["song-a"])),
       createEmptySongDiscoveryState(),
     );
-    assert.doesNotThrow(() =>
+    assert.equal(
       saveSongDiscoveryState("discovery", createEmptySongDiscoveryState()),
+      false,
+    );
+  } finally {
+    restoreWindow(originalWindow);
+  }
+});
+
+test("discovery updates re-read storage and report persistence failures", () => {
+  withLocalStorage(
+    JSON.stringify({
+      version: 1,
+      favoriteSongIds: ["song-a"],
+      recentSongIds: [],
+    }),
+    ({ storage }) => {
+      const result = updateStoredSongDiscoveryState(
+        "discovery",
+        new Set(["song-a", "song-b"]),
+        (current) => toggleFavoriteSongId(current, "song-b"),
+      );
+      assert.equal(result.ok, true);
+      if (result.ok) {
+        assert.deepEqual(result.state.favoriteSongIds, ["song-b", "song-a"]);
+      }
+      assert.deepEqual(JSON.parse(storage.getItem("discovery")), {
+        version: 1,
+        favoriteSongIds: ["song-b", "song-a"],
+        recentSongIds: [],
+      });
+    },
+  );
+
+  const originalWindow = globalThis.window;
+  globalThis.window = {
+    localStorage: {
+      getItem() {
+        return null;
+      },
+      setItem() {
+        throw new Error("quota exceeded");
+      },
+    },
+  };
+  try {
+    assert.deepEqual(
+      updateStoredSongDiscoveryState(
+        "discovery",
+        new Set(["song-a"]),
+        (current) => toggleFavoriteSongId(current, "song-a"),
+      ),
+      { ok: false },
     );
   } finally {
     restoreWindow(originalWindow);

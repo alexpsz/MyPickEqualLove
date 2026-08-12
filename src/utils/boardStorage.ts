@@ -73,6 +73,10 @@ export type BoardLibraryMutationResult =
   | { ok: true; document: BoardLibraryDocument; snapshot: BoardSnapshot }
   | { ok: false; error: BoardLibraryError };
 
+export type StoredBoardLibraryMutationResult =
+  | BoardLibraryMutationResult
+  | { ok: false; error: "storage" };
+
 export function createEmptyBoardLibrary(): BoardLibraryDocument {
   return { schemaVersion: BOARD_LIBRARY_SCHEMA_VERSION, snapshots: [] };
 }
@@ -285,6 +289,26 @@ export function saveBoardLibrary(
   } catch {
     return false;
   }
+}
+
+export function mutateStoredBoardLibrary(
+  storage: StorageLike,
+  storageKey: string,
+  expectedProjectId: string,
+  mutate: (document: BoardLibraryDocument) => BoardLibraryMutationResult,
+): StoredBoardLibraryMutationResult {
+  const latest = loadBoardLibrary(storage, storageKey, expectedProjectId);
+  if (latest.status !== "empty" && latest.status !== "loaded") {
+    return { ok: false, error: "storage" };
+  }
+
+  const result = mutate(latest.document);
+  if (!result.ok) return result;
+  if (!saveBoardLibrary(storage, storageKey, result.document)) {
+    return { ok: false, error: "storage" };
+  }
+
+  return result;
 }
 
 export function getSnapshotsForScope(

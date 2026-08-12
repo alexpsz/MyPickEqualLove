@@ -62,8 +62,8 @@ import {
   loadBoardLibrary,
   loadStoredBoard,
   loadStoredOptions,
+  mutateStoredBoardLibrary,
   renameBoardSnapshot,
-  saveBoardLibrary,
   saveStoredBoard,
   saveStoredOptions,
   type BoardLibraryDocument,
@@ -88,8 +88,8 @@ import {
   createEmptySongDiscoveryState,
   loadSongDiscoveryState,
   recordRecentSongId,
-  saveSongDiscoveryState,
   toggleFavoriteSongId,
+  updateStoredSongDiscoveryState,
   type SongDiscoveryState,
 } from "../utils/songDiscoveryStorage";
 import {
@@ -121,6 +121,7 @@ interface PickExperienceClientProps {
 }
 
 const MAX_NICKNAME_LENGTH = 32;
+const VALID_SONG_IDS = new Set(Object.keys(SONGS_BY_ID));
 
 const getPreviewOptionsKey = (showTitles: boolean, transparentBg: boolean) =>
   `${showTitles ? "titles" : "no-titles"}:${transparentBg ? "transparent" : "opaque"}`;
@@ -388,24 +389,48 @@ export default function PickExperienceClient({
 
   useEffect(() => {
     if (!hydrated || isExportRealm) return;
-    const result = loadBoardLibrary(
-      localStorage,
-      storageKeys.boardLibrary,
-      PROJECT_ID,
-    );
-    setBoardLibrary(result.document);
-    setBoardLibraryStatus(result.status);
-    setBoardLibraryLoaded(true);
+    const syncBoardLibrary = () => {
+      const result = loadBoardLibrary(
+        localStorage,
+        storageKeys.boardLibrary,
+        PROJECT_ID,
+      );
+      setBoardLibrary(result.document);
+      setBoardLibraryStatus(result.status);
+      setBoardLibraryLoaded(true);
+    };
+    const handleStorage = (event: StorageEvent) => {
+      if (
+        event.storageArea === localStorage &&
+        (event.key === storageKeys.boardLibrary || event.key === null)
+      ) {
+        syncBoardLibrary();
+      }
+    };
+
+    syncBoardLibrary();
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
   }, [hydrated, isExportRealm, storageKeys.boardLibrary]);
 
   useEffect(() => {
     if (!hydrated || isExportRealm) return;
-    setSongDiscoveryState(
-      loadSongDiscoveryState(
-        STORAGE_KEYS.songDiscovery,
-        new Set(Object.keys(SONGS_BY_ID)),
-      ),
-    );
+    const syncSongDiscovery = () =>
+      setSongDiscoveryState(
+        loadSongDiscoveryState(STORAGE_KEYS.songDiscovery, VALID_SONG_IDS),
+      );
+    const handleStorage = (event: StorageEvent) => {
+      if (
+        event.storageArea === localStorage &&
+        (event.key === STORAGE_KEYS.songDiscovery || event.key === null)
+      ) {
+        syncSongDiscovery();
+      }
+    };
+
+    syncSongDiscovery();
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
   }, [hydrated, isExportRealm]);
 
   useEffect(
@@ -546,13 +571,21 @@ export default function PickExperienceClient({
 
   const updateSongDiscoveryState = useCallback(
     (update: (current: SongDiscoveryState) => SongDiscoveryState) => {
-      setSongDiscoveryState((current) => {
-        const next = update(current);
-        saveSongDiscoveryState(STORAGE_KEYS.songDiscovery, next);
-        return next;
-      });
+      const result = updateStoredSongDiscoveryState(
+        STORAGE_KEYS.songDiscovery,
+        VALID_SONG_IDS,
+        update,
+      );
+      if (!result.ok) {
+        setBoardStatusMessage(t("boardLibrary.error.storage"));
+        return false;
+      }
+
+      setSongDiscoveryState(result.state);
+      setBoardStatusMessage("");
+      return true;
     },
-    [],
+    [t],
   );
 
   const handleToggleFavorite = useCallback(
@@ -979,19 +1012,20 @@ export default function PickExperienceClient({
 
   const handleSaveBoard = (name: string): BoardLibraryActionResult => {
     if (!boardLibraryWritable) return { ok: false, error: "storage" };
-    const result = addBoardSnapshot(boardLibrary, {
-      id: window.crypto.randomUUID(),
-      name,
-      now: new Date().toISOString(),
-      scope: boardScope,
-      picks: sanitizeBoardPicks(storedPicks),
-    });
+    const result = mutateStoredBoardLibrary(
+      localStorage,
+      storageKeys.boardLibrary,
+      PROJECT_ID,
+      (latestDocument) =>
+        addBoardSnapshot(latestDocument, {
+          id: window.crypto.randomUUID(),
+          name,
+          now: new Date().toISOString(),
+          scope: boardScope,
+          picks: sanitizeBoardPicks(storedPicks),
+        }),
+    );
     if (!result.ok) return result;
-    if (
-      !saveBoardLibrary(localStorage, storageKeys.boardLibrary, result.document)
-    ) {
-      return { ok: false, error: "storage" };
-    }
     setBoardLibrary(result.document);
     setBoardLibraryStatus("loaded");
     return { ok: true, name: result.snapshot.name };
@@ -1002,30 +1036,31 @@ export default function PickExperienceClient({
     name: string,
   ): BoardLibraryActionResult => {
     if (!boardLibraryWritable) return { ok: false, error: "storage" };
-    const result = renameBoardSnapshot(boardLibrary, {
-      snapshotId,
-      name,
-      now: new Date().toISOString(),
-    });
+    const result = mutateStoredBoardLibrary(
+      localStorage,
+      storageKeys.boardLibrary,
+      PROJECT_ID,
+      (latestDocument) =>
+        renameBoardSnapshot(latestDocument, {
+          snapshotId,
+          name,
+          now: new Date().toISOString(),
+        }),
+    );
     if (!result.ok) return result;
-    if (
-      !saveBoardLibrary(localStorage, storageKeys.boardLibrary, result.document)
-    ) {
-      return { ok: false, error: "storage" };
-    }
     setBoardLibrary(result.document);
     return { ok: true, name: result.snapshot.name };
   };
 
   const handleDeleteBoard = (snapshotId: string): BoardLibraryActionResult => {
     if (!boardLibraryWritable) return { ok: false, error: "storage" };
-    const result = deleteBoardSnapshot(boardLibrary, snapshotId);
+    const result = mutateStoredBoardLibrary(
+      localStorage,
+      storageKeys.boardLibrary,
+      PROJECT_ID,
+      (latestDocument) => deleteBoardSnapshot(latestDocument, snapshotId),
+    );
     if (!result.ok) return result;
-    if (
-      !saveBoardLibrary(localStorage, storageKeys.boardLibrary, result.document)
-    ) {
-      return { ok: false, error: "storage" };
-    }
     setBoardLibrary(result.document);
     return { ok: true, name: result.snapshot.name };
   };

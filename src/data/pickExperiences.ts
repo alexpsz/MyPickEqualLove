@@ -5,7 +5,7 @@ import {
   PROJECT_CONFIG,
   PROJECT_ID,
 } from "../config/project";
-import { CURRENT_PROJECT, PROJECTS } from "../projects/registry";
+import { CURRENT_PROJECT } from "../projects/registry";
 import type {
   ExperiencePickSlot,
   LivePerformance,
@@ -65,19 +65,6 @@ export const ROUTABLE_LIVE_EXPERIENCES = LIVE_EXPERIENCES.filter(
   (experience) =>
     experience.status === "published" || experience.status === "archived",
 );
-export const GLOBAL_LIVE_EXPERIENCE_SLUGS = Array.from(
-  new Set(
-    Object.values(PROJECTS).flatMap((project) =>
-      project.liveExperiences
-        .filter(
-          (experience) =>
-            experience.status === "published" ||
-            experience.status === "archived",
-        )
-        .map((experience) => experience.slug),
-    ),
-  ),
-);
 export const PUBLISHED_LIVE_EXPERIENCES = LIVE_EXPERIENCES.filter(
   (experience) => experience.status === "published",
 );
@@ -89,11 +76,9 @@ export function findLiveExperienceBySlug(slug: string) {
 }
 
 export function getLiveExperienceStaticParams() {
-  const slugs = new Set([
-    ...GLOBAL_LIVE_EXPERIENCE_SLUGS,
-    ...ROUTABLE_LIVE_EXPERIENCES.map((experience) => experience.slug),
-  ]);
-  const params = Array.from(slugs).map((eventSlug) => ({ eventSlug }));
+  const params = ROUTABLE_LIVE_EXPERIENCES.map(({ slug: eventSlug }) => ({
+    eventSlug,
+  }));
 
   if (params.length > 0) {
     return params;

@@ -43,11 +43,24 @@ export function saveSongDiscoveryState(
 ) {
   try {
     const existing = window.localStorage.getItem(storageKey);
-    if (existing && hasUnsupportedStoredVersion(existing)) return;
+    if (existing && hasUnsupportedStoredVersion(existing)) return false;
     window.localStorage.setItem(storageKey, JSON.stringify(state));
+    return true;
   } catch {
     // Browsing modes and storage quotas can make localStorage unavailable.
+    return false;
   }
+}
+
+export function updateStoredSongDiscoveryState(
+  storageKey: string,
+  validSongIds: ReadonlySet<string>,
+  update: (current: SongDiscoveryState) => SongDiscoveryState,
+) {
+  const next = update(loadSongDiscoveryState(storageKey, validSongIds));
+  return saveSongDiscoveryState(storageKey, next)
+    ? ({ ok: true, state: next } as const)
+    : ({ ok: false } as const);
 }
 
 export function toggleFavoriteSongId(

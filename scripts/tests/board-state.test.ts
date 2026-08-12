@@ -15,6 +15,7 @@ import {
   getSnapshotsForScope,
   loadStoredBoard,
   loadStoredOptions,
+  mutateStoredBoardLibrary,
   normalizeBoardName,
   parseBoardLibrary,
   renameBoardSnapshot,
@@ -372,4 +373,86 @@ test("library parser rejects corrupt, unsupported, duplicate, and over-capacity 
     ).status,
     "invalid",
   );
+});
+
+test("stored library mutations re-read current storage before writing", () => {
+  const storage = new MemoryStorage();
+  const first = mutateStoredBoardLibrary(
+    storage,
+    "library",
+    standardScope.projectId,
+    (document) =>
+      addBoardSnapshot(document, {
+        id: "one",
+        name: "One",
+        now: "2026-08-12T10:00:00.000Z",
+        scope: standardScope,
+        picks: { "slot-1": "song-1" },
+      }),
+  );
+  assert.equal(first.ok, true);
+
+  const staleDocument = createEmptyBoardLibrary();
+  const second = mutateStoredBoardLibrary(
+    storage,
+    "library",
+    standardScope.projectId,
+    (latestDocument) => {
+      assert.notDeepEqual(latestDocument, staleDocument);
+      return addBoardSnapshot(latestDocument, {
+        id: "two",
+        name: "Two",
+        now: "2026-08-12T10:01:00.000Z",
+        scope: standardScope,
+        picks: { "slot-2": "song-2" },
+      });
+    },
+  );
+  assert.equal(second.ok, true);
+  if (second.ok) {
+    assert.deepEqual(
+      second.document.snapshots.map(({ id }) => id),
+      ["one", "two"],
+    );
+  }
+});
+
+test("stored library mutation fails closed for unsupported or unavailable storage", () => {
+  const storage = new MemoryStorage();
+  storage.values.set(
+    "library",
+    JSON.stringify({ schemaVersion: 999, snapshots: [] }),
+  );
+  const unsupported = mutateStoredBoardLibrary(
+    storage,
+    "library",
+    standardScope.projectId,
+    (document) =>
+      addBoardSnapshot(document, {
+        id: "one",
+        name: "One",
+        now: "2026-08-12T10:00:00.000Z",
+        scope: standardScope,
+        picks: { "slot-1": "song-1" },
+      }),
+  );
+  assert.deepEqual(unsupported, { ok: false, error: "storage" });
+  assert.equal(storage.writes.length, 0);
+
+  storage.values.delete("library");
+  storage.throwOnSet = true;
+  const unavailable = mutateStoredBoardLibrary(
+    storage,
+    "library",
+    standardScope.projectId,
+    (document) =>
+      addBoardSnapshot(document, {
+        id: "one",
+        name: "One",
+        now: "2026-08-12T10:00:00.000Z",
+        scope: standardScope,
+        picks: { "slot-1": "song-1" },
+      }),
+  );
+  assert.deepEqual(unavailable, { ok: false, error: "storage" });
 });
