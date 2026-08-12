@@ -1,1 +1,80 @@
-[]
+[
+  {
+    "id": "not_equal_me_7th_anniversary_2026",
+    "projectId": "not-equal-me",
+    "slug": "not-equal-me-7th-anniversary-2026",
+    "kind": "live-wishlist",
+    "status": "published",
+    "title": "7周年記念 ファン・ウィッシュリスト My Pick",
+    "subtitle": "≠ME 7th ANNIVERSARY PREMIUM CONCERTを記念して、全楽曲から6つのテーマで選ぼう。",
+    "description": "夢の開幕、7年間の歩み、Ｋアリーナ横浜で高まりたい曲、推しの見せ場、感謝、8年目への一歩。ファンが考えた6つのテーマごとに≠MEの楽曲を1曲ずつ選ぶ企画です。すべて全楽曲から選べ、実際のセットリストを示すものではありません。",
+    "canonicalPath": "/live/not-equal-me-7th-anniversary-2026/",
+    "eventName": "≠ME 7th ANNIVERSARY PREMIUM CONCERT",
+    "venue": "Ｋアリーナ横浜",
+    "officialUrl": "https://not-equal-me.jp/feature/specialsite_7thanniversary",
+    "eventEvidence": {
+      "dates": ["2026-02-23"],
+      "verificationStatus": "verified",
+      "sourceUrls": [
+        "https://not-equal-me.jp/feature/specialsite_7thanniversary",
+        "https://not-equal-me.jp/news/detail/6885",
+        "https://not-equal-me.jp/schedule/detail/6886"
+      ],
+      "sourceNote": "Official pages verify the event name, date, venue, and day/night performances. No public track list is encoded; this full-catalog fan wishlist does not represent the concert setlist."
+    },
+    "slots": [
+      {
+        "id": "dream-opening",
+        "label": "夢の開幕曲",
+        "subtitle": "7周年の幕開けを想像して選ぶ一曲",
+        "sortOrder": 1,
+        "eligibility": "catalog"
+      },
+      {
+        "id": "journey",
+        "label": "7年間の歩みを感じる曲",
+        "subtitle": "≠MEのこれまでを重ねて選ぶ一曲",
+        "sortOrder": 2,
+        "eligibility": "catalog"
+      },
+      {
+        "id": "venue-energy",
+        "label": "Ｋアリーナ横浜で高まりたい曲",
+        "subtitle": "会場いっぱいの熱を想像して選ぶ一曲",
+        "sortOrder": 3,
+        "eligibility": "catalog"
+      },
+      {
+        "id": "oshi-spotlight",
+        "label": "推しの見せ場に選びたい曲",
+        "subtitle": "推しがいちばん輝く瞬間を想像する一曲",
+        "sortOrder": 4,
+        "eligibility": "catalog"
+      },
+      {
+        "id": "gratitude",
+        "label": "7周年に贈りたい感謝の曲",
+        "subtitle": "ここまでのありがとうを込めて選ぶ一曲",
+        "sortOrder": 5,
+        "eligibility": "catalog"
+      },
+      {
+        "id": "next-chapter",
+        "label": "8年目へつなぎたい曲",
+        "subtitle": "7周年の先へ進む景色を思い描く一曲",
+        "sortOrder": 6,
+        "eligibility": "catalog"
+      }
+    ],
+    "export": {
+      "title": "7周年記念 ファン・ウィッシュリスト My Pick",
+      "subtitle": "≠ME 7th ANNIVERSARY PREMIUM CONCERT",
+      "imageFileName": "NotEqualMe_7thAnniversary2026_FanWishlist.png",
+      "layout": "five-memory-list"
+    },
+    "share": {
+      "text": "≠ME 7th ANNIVERSARY PREMIUM CONCERTを記念して、全楽曲から選ぶファン・ウィッシュリスト My Pickを作りました！\n（実際のセットリストではありません。ダウンロードした画像を添付してください）",
+      "hashtags": ["#MyPickノイミー", "#ノイミー"]
+    }
+  }
+]

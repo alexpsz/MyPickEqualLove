@@ -36,6 +36,13 @@ export interface LivePerformance {
   verificationStatus: "unverified" | "partial" | "verified";
 }
 
+export interface LiveEventEvidence {
+  dates: string[];
+  sourceUrls: string[];
+  sourceNote: string;
+  verificationStatus: "unverified" | "partial" | "verified";
+}
+
 export interface PickExperienceExportConfig {
   title: string;
   subtitle: string;
@@ -61,6 +68,7 @@ export interface PickExperience {
   eventName?: string;
   venue?: string;
   officialUrl?: string;
+  eventEvidence?: LiveEventEvidence;
   performances?: LivePerformance[];
   includeCombinedPerformance?: boolean;
   defaultContextId?: string;

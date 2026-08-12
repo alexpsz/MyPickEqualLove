@@ -396,13 +396,72 @@ function validateLiveExperiences(
     if (!experienceKinds.has(experience.kind)) {
       errors.push(`${prefix}: invalid kind ${experience.kind}`);
     }
+    if (experience.kind === "standard") {
+      errors.push(`${prefix}: live experience files cannot use standard kind`);
+    }
     if (!experienceStatuses.has(experience.status)) {
       errors.push(`${prefix}: invalid status ${experience.status}`);
     }
 
+    validateLiveEventEvidence(prefix, experience, errors);
     validatePublishedExperienceFields(prefix, experience, errors);
     validateExperienceSlots(prefix, experience, errors);
     validateExperiencePerformances(prefix, experience, songIds, errors);
+  }
+}
+
+function validateLiveEventEvidence(prefix, experience, errors) {
+  if (experience.status === "draft") {
+    return;
+  }
+
+  if (!experience.eventName || !experience.venue) {
+    errors.push(`${prefix}: routable experience needs eventName and venue`);
+  }
+  if (
+    typeof experience.officialUrl !== "string" ||
+    !experience.officialUrl.startsWith("https://")
+  ) {
+    errors.push(`${prefix}: routable experience needs https officialUrl`);
+  }
+
+  const evidence = experience.eventEvidence;
+  if (!evidence || typeof evidence !== "object" || Array.isArray(evidence)) {
+    errors.push(`${prefix}: routable experience needs eventEvidence`);
+    return;
+  }
+  if (evidence.verificationStatus !== "verified") {
+    errors.push(
+      `${prefix}: routable eventEvidence must have verified event metadata`,
+    );
+  }
+  if (
+    !Array.isArray(evidence.dates) ||
+    evidence.dates.length === 0 ||
+    evidence.dates.some((date) => !isValidIsoDate(date))
+  ) {
+    errors.push(
+      `${prefix}: eventEvidence.dates must contain valid YYYY-MM-DD dates`,
+    );
+  }
+  if (
+    !Array.isArray(evidence.sourceUrls) ||
+    evidence.sourceUrls.length === 0 ||
+    evidence.sourceUrls.some(
+      (sourceUrl) =>
+        typeof sourceUrl !== "string" || !sourceUrl.startsWith("https://"),
+    )
+  ) {
+    errors.push(
+      `${prefix}: eventEvidence.sourceUrls must include https sources`,
+    );
+  } else if (!evidence.sourceUrls.includes(experience.officialUrl)) {
+    errors.push(
+      `${prefix}: officialUrl must be included in eventEvidence.sourceUrls`,
+    );
+  }
+  if (typeof evidence.sourceNote !== "string" || !evidence.sourceNote.trim()) {
+    errors.push(`${prefix}: eventEvidence.sourceNote is required`);
   }
 }
 
@@ -411,8 +470,10 @@ function validatePublishedExperienceFields(prefix, experience, errors) {
     return;
   }
 
-  if (!experience.title || !experience.description) {
-    errors.push(`${prefix}: published experience needs title and description`);
+  if (!experience.title || !experience.subtitle || !experience.description) {
+    errors.push(
+      `${prefix}: published experience needs title, subtitle and description`,
+    );
   }
   if (!experience.export?.title || !experience.export?.subtitle) {
     errors.push(`${prefix}: published experience needs export title/subtitle`);
@@ -449,6 +510,7 @@ function validateExperienceSlots(prefix, experience, errors) {
   }
 
   const slotIds = new Set();
+  const slotLabels = new Set();
   const sortOrders = [];
   const hasPerformances = Array.isArray(experience.performances)
     ? experience.performances.length > 0
@@ -466,6 +528,13 @@ function validateExperienceSlots(prefix, experience, errors) {
 
     if (!slot.label) {
       errors.push(`${prefix}: slot ${slot.id} needs label`);
+    } else if (slotLabels.has(slot.label)) {
+      errors.push(`${prefix}: duplicate slot label ${slot.label}`);
+    } else {
+      slotLabels.add(slot.label);
+    }
+    if (experience.status === "published" && !slot.subtitle) {
+      errors.push(`${prefix}: published slot ${slot.id} needs subtitle`);
     }
     if (typeof slot.sortOrder !== "number") {
       errors.push(`${prefix}: slot ${slot.id} needs numeric sortOrder`);
@@ -477,9 +546,26 @@ function validateExperienceSlots(prefix, experience, errors) {
         `${prefix}: slot ${slot.id} has invalid eligibility ${slot.eligibility}`,
       );
     }
-    if (slot.eligibility === "selected-performance" && !hasPerformances) {
+    if (slot.eligibility !== "catalog" && !hasPerformances) {
       errors.push(
-        `${prefix}: slot ${slot.id} cannot use selected-performance without performances`,
+        `${prefix}: slot ${slot.id} cannot use ${slot.eligibility} without performances`,
+      );
+    }
+  }
+
+  if (experience.kind === "live-wishlist") {
+    if (experience.slots.some((slot) => slot.eligibility !== "catalog")) {
+      errors.push(
+        `${prefix}: live-wishlist slots must use catalog eligibility`,
+      );
+    }
+    if (
+      experience.performances !== undefined ||
+      experience.defaultContextId !== undefined ||
+      experience.includeCombinedPerformance !== undefined
+    ) {
+      errors.push(
+        `${prefix}: live-wishlist cannot define performances or performance context`,
       );
     }
   }
@@ -528,7 +614,7 @@ function validateExperiencePerformances(prefix, experience, songIds, errors) {
     if (!performance.label) {
       errors.push(`${performancePrefix}: label is required`);
     }
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(performance.date ?? "")) {
+    if (!isValidIsoDate(performance.date)) {
       errors.push(`${performancePrefix}: date must be YYYY-MM-DD`);
     }
     if (!verificationStatuses.has(performance.verificationStatus)) {
@@ -763,6 +849,20 @@ function currentJapanDate() {
     parts.map((part) => [part.type, part.value]),
   );
   return `${values.year}-${values.month}-${values.day}`;
+}
+
+function isValidIsoDate(value) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return (
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
+  );
 }
 
 function validateActiveMemberColors(

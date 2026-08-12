@@ -11,7 +11,16 @@
     "canonicalPath": "/live/kokuritsu-2026/",
     "eventName": "＝LOVE STADIUM LIVE「Beyond \"KYUN\"♡」",
     "venue": "国立競技場",
-    "officialUrl": "https://x.com/equal_love_12/status/2068677833850057105?s=46",
+    "officialUrl": "https://equal-love.jp/news/detail/11476",
+    "eventEvidence": {
+      "dates": ["2026-06-20", "2026-06-21"],
+      "verificationStatus": "verified",
+      "sourceUrls": [
+        "https://equal-love.jp/news/detail/11476",
+        "https://equal-love.jp/news/detail/11595"
+      ],
+      "sourceNote": "Official event pages verify the event name, both dates, and MUFG Stadium (National Stadium). Setlist verification remains separate in performances."
+    },
     "includeCombinedPerformance": true,
     "defaultContextId": "both",
     "slots": [
@@ -169,6 +178,13 @@
     "canonicalPath": "/live/tokyo-dome-2027/",
     "eventName": "＝LOVE in TOKYO DOME",
     "venue": "東京ドーム",
+    "officialUrl": "https://equal-love.jp/news/detail/11613",
+    "eventEvidence": {
+      "dates": ["2027-01-19", "2027-01-20"],
+      "verificationStatus": "verified",
+      "sourceUrls": ["https://equal-love.jp/news/detail/11613"],
+      "sourceNote": "The official announcement verifies the event name, both dates, and Tokyo Dome. This wishlist does not represent a setlist."
+    },
     "slots": [
       {
         "id": "opening",

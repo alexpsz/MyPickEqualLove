@@ -1,1 +1,80 @@
-[]
+[
+  {
+    "id": "joy_4th_anniversary_2026",
+    "projectId": "nearly-equal-joy",
+    "slug": "joy-4th-anniversary-2026",
+    "kind": "live-wishlist",
+    "status": "published",
+    "title": "4周年記念 ファン・ウィッシュリスト My Pick",
+    "subtitle": "≒JOY 4th ANNIVERSARY PREMIUM CONCERTを記念して、全楽曲から6つのテーマで選ぼう。",
+    "description": "夢の開幕、4年間の歩み、日本武道館で高まりたい曲、推しの見せ場、感謝、次の一歩。ファンが考えた6つのテーマごとに≒JOYの楽曲を1曲ずつ選ぶ企画です。すべて全楽曲から選べ、実際のセットリストを示すものではありません。",
+    "canonicalPath": "/live/joy-4th-anniversary-2026/",
+    "eventName": "≒JOY 4th ANNIVERSARY PREMIUM CONCERT",
+    "venue": "日本武道館",
+    "officialUrl": "https://nearly-equal-joy.jp/feature/specialsite_4thanniversary",
+    "eventEvidence": {
+      "dates": ["2026-03-13"],
+      "verificationStatus": "verified",
+      "sourceUrls": [
+        "https://nearly-equal-joy.jp/feature/specialsite_4thanniversary",
+        "https://nearly-equal-joy.jp/news/detail/3157",
+        "https://nearly-equal-joy.jp/news/detail/3182"
+      ],
+      "sourceNote": "Official pages verify the event name, date, venue, and day/night performances. No public track list is encoded; this full-catalog fan wishlist does not represent the concert setlist."
+    },
+    "slots": [
+      {
+        "id": "dream-opening",
+        "label": "夢の開幕曲",
+        "subtitle": "4周年の幕開けを想像して選ぶ一曲",
+        "sortOrder": 1,
+        "eligibility": "catalog"
+      },
+      {
+        "id": "journey",
+        "label": "4年間の歩みを感じる曲",
+        "subtitle": "≒JOYのこれまでを重ねて選ぶ一曲",
+        "sortOrder": 2,
+        "eligibility": "catalog"
+      },
+      {
+        "id": "venue-energy",
+        "label": "日本武道館で高まりたい曲",
+        "subtitle": "会場いっぱいの熱を想像して選ぶ一曲",
+        "sortOrder": 3,
+        "eligibility": "catalog"
+      },
+      {
+        "id": "oshi-spotlight",
+        "label": "推しの見せ場に選びたい曲",
+        "subtitle": "推しがいちばん輝く瞬間を想像する一曲",
+        "sortOrder": 4,
+        "eligibility": "catalog"
+      },
+      {
+        "id": "gratitude",
+        "label": "4周年に贈りたい感謝の曲",
+        "subtitle": "ここまでのありがとうを込めて選ぶ一曲",
+        "sortOrder": 5,
+        "eligibility": "catalog"
+      },
+      {
+        "id": "next-chapter",
+        "label": "次の一歩に選びたい曲",
+        "subtitle": "4周年の先へ進む景色を思い描く一曲",
+        "sortOrder": 6,
+        "eligibility": "catalog"
+      }
+    ],
+    "export": {
+      "title": "4周年記念 ファン・ウィッシュリスト My Pick",
+      "subtitle": "≒JOY 4th ANNIVERSARY PREMIUM CONCERT",
+      "imageFileName": "NearlyEqualJoy_4thAnniversary2026_FanWishlist.png",
+      "layout": "five-memory-list"
+    },
+    "share": {
+      "text": "≒JOY 4th ANNIVERSARY PREMIUM CONCERTを記念して、全楽曲から選ぶファン・ウィッシュリスト My Pickを作りました！\n（実際のセットリストではありません。ダウンロードした画像を添付してください）",
+      "hashtags": ["#MyPickニアジョイ", "#ニアジョイ"]
+    }
+  }
+]

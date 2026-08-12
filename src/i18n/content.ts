@@ -132,6 +132,70 @@ const LIVE_EXPERIENCE_MESSAGE_KEYS: Readonly<
     },
     shareText: "live.tokyoDome2027.shareText",
   },
+  joy_4th_anniversary_2026: {
+    title: "live.joy4th2026.title",
+    subtitle: "live.joy4th2026.subtitle",
+    description: "live.joy4th2026.description",
+    slots: {
+      "dream-opening": {
+        label: "live.joy4th2026.slot.dreamOpening.label",
+        subtitle: "live.joy4th2026.slot.dreamOpening.subtitle",
+      },
+      journey: {
+        label: "live.joy4th2026.slot.journey.label",
+        subtitle: "live.joy4th2026.slot.journey.subtitle",
+      },
+      "venue-energy": {
+        label: "live.joy4th2026.slot.venueEnergy.label",
+        subtitle: "live.joy4th2026.slot.venueEnergy.subtitle",
+      },
+      "oshi-spotlight": {
+        label: "live.joy4th2026.slot.oshiSpotlight.label",
+        subtitle: "live.joy4th2026.slot.oshiSpotlight.subtitle",
+      },
+      gratitude: {
+        label: "live.joy4th2026.slot.gratitude.label",
+        subtitle: "live.joy4th2026.slot.gratitude.subtitle",
+      },
+      "next-chapter": {
+        label: "live.joy4th2026.slot.nextChapter.label",
+        subtitle: "live.joy4th2026.slot.nextChapter.subtitle",
+      },
+    },
+    shareText: "live.joy4th2026.shareText",
+  },
+  not_equal_me_7th_anniversary_2026: {
+    title: "live.notEqualMe7th2026.title",
+    subtitle: "live.notEqualMe7th2026.subtitle",
+    description: "live.notEqualMe7th2026.description",
+    slots: {
+      "dream-opening": {
+        label: "live.notEqualMe7th2026.slot.dreamOpening.label",
+        subtitle: "live.notEqualMe7th2026.slot.dreamOpening.subtitle",
+      },
+      journey: {
+        label: "live.notEqualMe7th2026.slot.journey.label",
+        subtitle: "live.notEqualMe7th2026.slot.journey.subtitle",
+      },
+      "venue-energy": {
+        label: "live.notEqualMe7th2026.slot.venueEnergy.label",
+        subtitle: "live.notEqualMe7th2026.slot.venueEnergy.subtitle",
+      },
+      "oshi-spotlight": {
+        label: "live.notEqualMe7th2026.slot.oshiSpotlight.label",
+        subtitle: "live.notEqualMe7th2026.slot.oshiSpotlight.subtitle",
+      },
+      gratitude: {
+        label: "live.notEqualMe7th2026.slot.gratitude.label",
+        subtitle: "live.notEqualMe7th2026.slot.gratitude.subtitle",
+      },
+      "next-chapter": {
+        label: "live.notEqualMe7th2026.slot.nextChapter.label",
+        subtitle: "live.notEqualMe7th2026.slot.nextChapter.subtitle",
+      },
+    },
+    shareText: "live.notEqualMe7th2026.shareText",
+  },
 };
 
 assertLiveExperienceMessageCoverage();
