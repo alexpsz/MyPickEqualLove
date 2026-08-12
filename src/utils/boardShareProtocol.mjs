@@ -166,6 +166,32 @@ export function validateBoardShareImport(payload, target) {
   return { ok: true, picks };
 }
 
+/**
+ * @param {{
+ *   slotIds: string[],
+ *   currentPicks: Record<string, string>,
+ *   importedPicks: Record<string, string>,
+ *   currentContextId: string | null,
+ *   importedContextId: string | null
+ * }} snapshot
+ */
+export function createBoardSharePreviewDiff(snapshot) {
+  const changes = snapshot.slotIds.flatMap((slotId) => {
+    const currentSongId = snapshot.currentPicks[slotId];
+    const importedSongId = snapshot.importedPicks[slotId];
+    return currentSongId === importedSongId
+      ? []
+      : [{ slotId, currentSongId, importedSongId }];
+  });
+
+  return {
+    changes,
+    contextChanged:
+      snapshot.importedContextId !== null &&
+      snapshot.importedContextId !== snapshot.currentContextId,
+  };
+}
+
 /** @param {unknown} value @returns {BoardSharePayload} */
 function normalizeBoardSharePayload(value) {
   if (!isRecord(value)) {

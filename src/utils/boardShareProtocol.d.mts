@@ -67,3 +67,18 @@ export function validateBoardShareImport(
 ):
   | { ok: true; picks: Record<string, string> }
   | { ok: false; reason: BoardShareInvalidReason };
+
+export function createBoardSharePreviewDiff(snapshot: {
+  slotIds: string[];
+  currentPicks: Record<string, string>;
+  importedPicks: Record<string, string>;
+  currentContextId: string | null;
+  importedContextId: string | null;
+}): {
+  changes: Array<{
+    slotId: string;
+    currentSongId: string | undefined;
+    importedSongId: string | undefined;
+  }>;
+  contextChanged: boolean;
+};

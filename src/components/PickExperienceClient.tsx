@@ -82,6 +82,7 @@ import { centerExportYearInk } from "../utils/centerExportYearInk";
 import { convertColorString } from "../utils/colors";
 import {
   buildBoardShareUrl,
+  createBoardSharePreviewDiff,
   isBoardShareHash,
   parseBoardShareUrl,
   type BoardSharePayload,
@@ -247,6 +248,22 @@ export default function PickExperienceClient({
   const lastGeneratedPreviewOptionsRef = useRef<string | null>(null);
   const boardShareConsumedRef = useRef(false);
   const boardLinkCopiedTimerRef = useRef<number | null>(null);
+  const boardSharePreviewSnapshotRef = useRef({
+    experience,
+    effectiveContextId,
+    storedPicks,
+    slots,
+    uiSlots,
+    uiContextOptions,
+  });
+  boardSharePreviewSnapshotRef.current = {
+    experience,
+    effectiveContextId,
+    storedPicks,
+    slots,
+    uiSlots,
+    uiContextOptions,
+  };
 
   const picks = useMemo<Picks>(() => {
     const entries = Object.entries(storedPicks)
@@ -619,9 +636,10 @@ export default function PickExperienceClient({
         return;
       }
 
+      const snapshot = boardSharePreviewSnapshotRef.current;
       const resolved = resolveBoardSharePayload({
         payload: parsed.payload,
-        currentExperience: experience,
+        currentExperience: snapshot.experience,
       });
       if (resolved.status === "invalid") {
         setBoardShareDialog({
@@ -643,44 +661,52 @@ export default function PickExperienceClient({
       }
 
       const targetStorageKeys = getStorageKeysForExperience(
-        experience,
+        snapshot.experience,
         resolved.contextId,
       );
       const currentTargetPicks =
-        resolved.contextId === effectiveContextId
-          ? storedPicks
+        resolved.contextId === snapshot.effectiveContextId
+          ? snapshot.storedPicks
           : loadStoredBoard({
               storage: localStorage,
               versionedKey: targetStorageKeys.picksV2,
               legacyKey: targetStorageKeys.picks,
               sanitize: (candidatePicks) =>
                 filterStoredPicksForExperience({
-                  experience,
+                  experience: snapshot.experience,
                   storedPicks: candidatePicks,
                   contextId: resolved.contextId,
                 }),
             }).picks;
-      const changes = slots.flatMap((slot) => {
-        const currentSongId = currentTargetPicks[slot.id];
-        const importedSongId = resolved.picks[slot.id];
-        if (currentSongId === importedSongId) return [];
-        const uiSlot = uiSlots.find((candidate) => candidate.id === slot.id);
-        return [
-          {
-            slotId: slot.id,
-            slotLabel: uiSlot?.label ?? slot.label,
-            currentTitle: currentSongId
-              ? SONGS_BY_ID[currentSongId]?.title.ja
-              : undefined,
-            importedTitle: importedSongId
-              ? SONGS_BY_ID[importedSongId]?.title.ja
-              : undefined,
-          },
-        ];
+      const previewDiff = createBoardSharePreviewDiff({
+        slotIds: snapshot.slots.map((slot) => slot.id),
+        currentPicks: currentTargetPicks,
+        importedPicks: resolved.picks,
+        currentContextId: snapshot.effectiveContextId ?? null,
+        importedContextId: resolved.contextId ?? null,
       });
+      const uiSlotsById = new Map(
+        snapshot.uiSlots.map((slot) => [slot.id, slot]),
+      );
+      const slotsById = new Map(snapshot.slots.map((slot) => [slot.id, slot]));
+      const changes = previewDiff.changes.map(
+        ({ slotId, currentSongId, importedSongId }) => ({
+          slotId,
+          slotLabel:
+            uiSlotsById.get(slotId)?.label ??
+            slotsById.get(slotId)?.label ??
+            slotId,
+          currentTitle: currentSongId
+            ? SONGS_BY_ID[currentSongId]?.title.ja
+            : undefined,
+          importedTitle: importedSongId
+            ? SONGS_BY_ID[importedSongId]?.title.ja
+            : undefined,
+        }),
+      );
       const contextLabel =
-        resolved.contextId && resolved.contextId !== effectiveContextId
-          ? uiContextOptions.find(
+        resolved.contextId && previewDiff.contextChanged
+          ? snapshot.uiContextOptions.find(
               (context) => context.id === resolved.contextId,
             )?.label
           : undefined;
@@ -695,16 +721,7 @@ export default function PickExperienceClient({
     return () => {
       cancelled = true;
     };
-  }, [
-    effectiveContextId,
-    experience,
-    hydrated,
-    isExportRealm,
-    slots,
-    storedPicks,
-    uiContextOptions,
-    uiSlots,
-  ]);
+  }, [experience.id, experience.projectId, hydrated, isExportRealm]);
 
   const handleContextChange = (nextContextId: string) => {
     previewGenerationIdRef.current += 1;

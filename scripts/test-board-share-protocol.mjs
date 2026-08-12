@@ -7,6 +7,7 @@ import {
   BOARD_SHARE_PROTOCOL_VERSION,
   BoardShareProtocolError,
   buildBoardShareUrl,
+  createBoardSharePreviewDiff,
   isBoardShareHash,
   parseBoardShareUrl,
   validateBoardShareImport,
@@ -247,6 +248,48 @@ test("export realm and board share hashes never overlap", async () => {
     standardPayload,
   );
   assert.equal(new URL(shareUrl).hash === EXPORT_REALM_HASH, false);
+});
+
+test("import preview diff is computed from the latest completion-time snapshot", () => {
+  const importedPicks = { "slot-1": "shared-song" };
+  const stalePreview = createBoardSharePreviewDiff({
+    slotIds: ["slot-1", "slot-2"],
+    currentPicks: { "slot-1": "old-song" },
+    importedPicks,
+    currentContextId: "day2",
+    importedContextId: "day1",
+  });
+  const latestPreview = createBoardSharePreviewDiff({
+    slotIds: ["slot-1", "slot-2"],
+    currentPicks: {
+      "slot-1": "shared-song",
+      "slot-2": "newly-selected-song",
+    },
+    importedPicks,
+    currentContextId: "day1",
+    importedContextId: "day1",
+  });
+
+  assert.deepEqual(stalePreview, {
+    changes: [
+      {
+        slotId: "slot-1",
+        currentSongId: "old-song",
+        importedSongId: "shared-song",
+      },
+    ],
+    contextChanged: true,
+  });
+  assert.deepEqual(latestPreview, {
+    changes: [
+      {
+        slotId: "slot-2",
+        currentSongId: "newly-selected-song",
+        importedSongId: undefined,
+      },
+    ],
+    contextChanged: false,
+  });
 });
 
 async function buildSignedUrl(bytes) {
