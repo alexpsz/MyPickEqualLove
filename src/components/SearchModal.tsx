@@ -5,6 +5,7 @@ import * as m from "motion/react-m";
 import { useLocale } from "../i18n/LocaleProvider";
 import type { MessageKey, MessageValues } from "../i18n/messages";
 import type { Member, ReleaseType, Song, TrackType } from "../schema/music";
+import { getConfirmedSongCredits } from "../utils/songCredits";
 import { useDialogA11y } from "../utils/useDialogA11y";
 import AppIcon from "./AppIcon";
 import { APPLE_OPACITY, APPLE_SPRING_GENTLE } from "./AppleMotion";
@@ -78,21 +79,30 @@ const getMemberNames = (song: Song, membersById: Record<string, Member>) =>
 const getSearchableParts = (
   song: Song,
   membersById: Record<string, Member>,
-) => ({
-  titles: [song.title.ja, song.title.romaji, song.title.en],
-  secondary: [
-    song.artist.ja,
-    song.artist.romaji,
-    song.artist.en,
-    song.credits?.lyricist?.ja,
-    song.credits?.lyricist?.romaji,
-    song.credits?.composer?.ja,
-    song.credits?.composer?.romaji,
-    song.credits?.arranger?.ja,
-    song.credits?.arranger?.romaji,
-    ...getMemberNames(song, membersById),
-  ],
-});
+) => {
+  const credits = getConfirmedSongCredits(song);
+  const creditParts = credits
+    ? [
+        credits.lyricist.ja,
+        credits.lyricist.romaji,
+        credits.composer.ja,
+        credits.composer.romaji,
+        credits.arranger.ja,
+        credits.arranger.romaji,
+      ]
+    : [];
+
+  return {
+    titles: [song.title.ja, song.title.romaji, song.title.en],
+    secondary: [
+      song.artist.ja,
+      song.artist.romaji,
+      song.artist.en,
+      ...creditParts,
+      ...getMemberNames(song, membersById),
+    ],
+  };
+};
 
 const getMatchRank = (
   song: Song,
@@ -134,34 +144,37 @@ const formatSongMeta = (song: Song, t: Translate) =>
     .filter(Boolean)
     .join(" · ");
 
-const getSongCredits = (song: Song, t: Translate) => {
-  const credits: Array<{ text: string; value: string }> = [];
-
-  if (song.credits?.lyricist) {
-    credits.push({
-      text: t("search.creditLyrics", { name: song.credits.lyricist.ja }),
-      value: song.credits.lyricist.ja,
-    });
-  }
-  if (song.credits?.composer) {
-    credits.push({
-      text: t("search.creditMusic", { name: song.credits.composer.ja }),
-      value: song.credits.composer.ja,
-    });
-  }
-  if (song.credits?.arranger) {
-    credits.push({
-      text: t("search.creditArrange", { name: song.credits.arranger.ja }),
-      value: song.credits.arranger.ja,
-    });
-  }
-
-  return credits;
-};
-
 function SongCredits({ song, t }: { song: Song; t: Translate }) {
-  const credits = getSongCredits(song, t);
-  if (credits.length === 0) return null;
+  const confirmedCredits = getConfirmedSongCredits(song);
+
+  if (!confirmedCredits) {
+    return (
+      <p className="mt-1 hidden truncate text-xs text-[var(--muted-soft)] sm:block">
+        {t("credits.unconfirmed")}
+      </p>
+    );
+  }
+
+  const credits = [
+    {
+      text: t("search.creditLyrics", {
+        name: confirmedCredits.lyricist.ja,
+      }),
+      value: confirmedCredits.lyricist.ja,
+    },
+    {
+      text: t("search.creditMusic", {
+        name: confirmedCredits.composer.ja,
+      }),
+      value: confirmedCredits.composer.ja,
+    },
+    {
+      text: t("search.creditArrange", {
+        name: confirmedCredits.arranger.ja,
+      }),
+      value: confirmedCredits.arranger.ja,
+    },
+  ];
 
   return (
     <p className="mt-1 hidden truncate text-xs text-[var(--muted-soft)] sm:block">

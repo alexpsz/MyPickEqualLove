@@ -5,9 +5,12 @@ import { AnimatePresence, useIsPresent } from "motion/react";
 import * as m from "motion/react-m";
 import { useLocale } from "../i18n/LocaleProvider";
 import type { PickSlot, Song } from "../schema/music";
+import { getConfirmedSongCredits } from "../utils/songCredits";
 import { getPickSlotReturnKey } from "../utils/useDialogA11y";
 import AppIcon from "./AppIcon";
-import JapaneseContent from "./JapaneseContent";
+import JapaneseContent, {
+  LocalizedTextWithJapaneseValue,
+} from "./JapaneseContent";
 import { APPLE_OPACITY, APPLE_SPRING } from "./AppleMotion";
 import { usePrefersReducedMotion } from "./MotionPresence";
 
@@ -114,13 +117,14 @@ function CardFace({
   onClear: (event: React.MouseEvent) => void;
 }) {
   const { t } = useLocale();
+  const returnKey = getPickSlotReturnKey(slot.id);
 
   if (!song) {
     return (
       <button
         type="button"
         onClick={onClick}
-        data-dialog-return-key={getPickSlotReturnKey(slot.id)}
+        data-dialog-return-key={returnKey}
         className={`grid w-full text-left transition-transform duration-100 active:scale-[0.985] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring)] ${
           compact
             ? "min-h-[224px] grid-rows-[44px_minmax(180px,1fr)]"
@@ -154,17 +158,20 @@ function CardFace({
     );
   }
 
+  const creditsDescriptionId = `${returnKey}-credits-${song.id}`;
+
   return (
     <>
       <button
         type="button"
         onClick={onClick}
-        data-dialog-return-key={getPickSlotReturnKey(slot.id)}
-        className={`grid w-full text-left transition-transform duration-100 active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring)] ${
+        data-dialog-return-key={returnKey}
+        className={`pick-card-action grid w-full text-left transition-transform duration-100 active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring)] ${
           compact
             ? "min-h-[224px] grid-rows-[44px_minmax(180px,1fr)]"
             : "grid-rows-[44px_auto_44px]"
         }`}
+        aria-describedby={creditsDescriptionId}
         aria-label={t("pick.replaceAria", {
           slot: slot.label,
           title: song.title.ja,
@@ -173,13 +180,14 @@ function CardFace({
         <CardHeader label={slot.label} reserveAction />
         {compact ? (
           <div className="flex min-h-[180px] min-w-0 border-t border-[var(--line)] bg-[var(--paper-soft)]">
-            <div className="aspect-square w-[clamp(132px,46%,180px)] shrink-0 self-center overflow-hidden border-r border-[var(--line)] bg-white">
+            <div className="pick-cover-surface pick-cover-surface-compact relative isolate aspect-square w-[clamp(150px,46%,180px)] shrink-0 self-center overflow-hidden border-r border-[var(--line)] bg-white">
               <img
                 src={song.coverUrl}
                 alt={t("pick.coverAlt", { title: song.title.ja })}
-                className="block h-full w-full object-contain"
+                className="pick-cover-image block h-full w-full object-contain"
                 loading="lazy"
               />
+              <CoverCreditsOverlay id={creditsDescriptionId} song={song} />
             </div>
             <div className="flex min-w-0 flex-1 flex-col justify-center px-4 py-3">
               <div className="line-clamp-2 text-sm font-semibold tracking-[-0.015em] text-[var(--foreground)]">
@@ -194,13 +202,14 @@ function CardFace({
           </div>
         ) : (
           <>
-            <div className="aspect-square w-full overflow-hidden border-y border-[var(--line)] bg-[var(--paper-soft)]">
+            <div className="pick-cover-surface relative isolate aspect-square w-full overflow-hidden border-y border-[var(--line)] bg-[var(--paper-soft)]">
               <img
                 src={song.coverUrl}
                 alt={t("pick.coverAlt", { title: song.title.ja })}
-                className="block h-full w-full object-contain"
+                className="pick-cover-image block h-full w-full object-contain"
                 loading="lazy"
               />
+              <CoverCreditsOverlay id={creditsDescriptionId} song={song} />
             </div>
             <div className="flex min-h-11 min-w-0 items-center px-3.5">
               <div className="truncate text-sm font-semibold tracking-[-0.015em] text-[var(--foreground)]">
@@ -220,6 +229,66 @@ function CardFace({
         <AppIcon name="close" size={14} />
       </button>
     </>
+  );
+}
+
+function CoverCreditsOverlay({ id, song }: { id: string; song: Song }) {
+  const { t } = useLocale();
+  const credits = getConfirmedSongCredits(song);
+
+  return (
+    <div
+      id={id}
+      className="pick-cover-credits absolute inset-0 z-10 flex flex-col justify-center gap-1.5 p-2 text-white opacity-0"
+      data-cover-credits
+      data-credits-confirmed={credits ? "true" : "false"}
+    >
+      {credits ? (
+        <>
+          <CreditRow
+            accent="lyrics"
+            text={t("search.creditLyrics", { name: credits.lyricist.ja })}
+            value={credits.lyricist.ja}
+          />
+          <CreditRow
+            accent="music"
+            text={t("search.creditMusic", { name: credits.composer.ja })}
+            value={credits.composer.ja}
+          />
+          <CreditRow
+            accent="arrange"
+            text={t("search.creditArrange", { name: credits.arranger.ja })}
+            value={credits.arranger.ja}
+          />
+        </>
+      ) : (
+        <span className="pick-cover-credit-row justify-center text-center">
+          {t("credits.unconfirmed")}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function CreditRow({
+  accent,
+  text,
+  value,
+}: {
+  accent: "lyrics" | "music" | "arrange";
+  text: string;
+  value: string;
+}) {
+  return (
+    <span className="pick-cover-credit-row">
+      <span
+        className={`pick-cover-credit-dot pick-cover-credit-dot--${accent}`}
+        aria-hidden="true"
+      />
+      <span className="pick-cover-credit-text min-w-0">
+        <LocalizedTextWithJapaneseValue text={text} value={value} />
+      </span>
+    </span>
   );
 }
 
