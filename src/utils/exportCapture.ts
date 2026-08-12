@@ -3,7 +3,12 @@ import {
   isExportSizePresetId,
   isExportTemplateId,
 } from "../config/exportPresets";
-import type { ExportSizePresetId, ExportTemplateId } from "../schema/export";
+import {
+  isExportCardType,
+  type ExportCardType,
+  type ExportSizePresetId,
+  type ExportTemplateId,
+} from "../schema/export";
 import type { StoredPicks } from "../schema/music";
 
 export const EXPORT_CAPTURE_PROTOCOL_VERSION = 2 as const;
@@ -26,6 +31,7 @@ export interface ExportRenderRequest {
   experienceId: string;
   contextId?: string;
   picks: StoredPicks;
+  cardType: ExportCardType;
   showTitles: boolean;
   transparentBg: boolean;
   templateId: ExportTemplateId;
@@ -82,6 +88,7 @@ export function isExportRenderRequest(
     value.experienceId.length > 0 &&
     (value.contextId === undefined || typeof value.contextId === "string") &&
     isStoredPicks(value.picks) &&
+    isExportCardType(value.cardType) &&
     typeof value.showTitles === "boolean" &&
     typeof value.transparentBg === "boolean" &&
     isExportTemplateId(value.templateId) &&

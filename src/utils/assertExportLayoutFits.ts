@@ -19,6 +19,14 @@ export function assertExportLayoutFits(exportElement: HTMLElement) {
     .forEach((element) => {
       const rect = element.getBoundingClientRect();
       if (
+        element.scrollWidth > element.clientWidth + PIXEL_TOLERANCE ||
+        element.scrollHeight > element.clientHeight + PIXEL_TOLERANCE
+      ) {
+        throw new Error(
+          `Export boundary ${element.dataset.exportBoundary ?? "unknown"} overflows its box: scroll ${element.scrollWidth}x${element.scrollHeight}, client ${element.clientWidth}x${element.clientHeight}`,
+        );
+      }
+      if (
         rect.left < rootRect.left - PIXEL_TOLERANCE ||
         rect.top < rootRect.top - PIXEL_TOLERANCE ||
         rect.right > rootRect.right + PIXEL_TOLERANCE ||

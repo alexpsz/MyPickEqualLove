@@ -256,15 +256,43 @@ test("unknown versions and invalid ids fail closed", () => {
 
 test("default filename is unchanged and non-default presets are explicit", () => {
   assert.equal(
-    buildExportImageFileName("mypick.png", undefined, "classic", "portrait"),
+    buildExportImageFileName(
+      "mypick.png",
+      undefined,
+      "classic",
+      "portrait",
+      "poster",
+    ),
     "mypick.png",
   );
   assert.equal(
-    buildExportImageFileName("mypick.png", "day-1", "classic", "square"),
+    buildExportImageFileName(
+      "mypick.png",
+      "day-1",
+      "classic",
+      "square",
+      "poster",
+    ),
     "mypick_DAY_1_SQUARE.png",
   );
   assert.equal(
-    buildExportImageFileName("mypick.png", "day1", "spotlight", "story"),
+    buildExportImageFileName(
+      "mypick.png",
+      "day1",
+      "spotlight",
+      "story",
+      "poster",
+    ),
     "mypick_DAY1_SPOTLIGHT_STORY.png",
+  );
+  assert.equal(
+    buildExportImageFileName(
+      "mypick.png",
+      "day-1",
+      "classic",
+      "square",
+      "insights",
+    ),
+    "mypick_DAY_1_INSIGHTS_SQUARE.png",
   );
 });

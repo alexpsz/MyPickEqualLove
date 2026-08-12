@@ -12,7 +12,11 @@ import {
   getExportTemplateMessageKey,
 } from "../i18n/content";
 import { useLocale } from "../i18n/LocaleProvider";
-import type { ExportSizePresetId, ExportTemplateId } from "../schema/export";
+import type {
+  ExportCardType,
+  ExportSizePresetId,
+  ExportTemplateId,
+} from "../schema/export";
 import { useDialogA11y } from "../utils/useDialogA11y";
 import AppIcon from "./AppIcon";
 import { APPLE_OPACITY, APPLE_SPRING_GENTLE } from "./AppleMotion";
@@ -29,6 +33,9 @@ interface PreviewModalProps {
   onTemplateChange: (templateId: ExportTemplateId) => void;
   sizePresetId: ExportSizePresetId;
   onSizePresetChange: (sizePresetId: ExportSizePresetId) => void;
+  actualCardType: ExportCardType;
+  requestedCardType: ExportCardType;
+  onCardTypeChange: (cardType: ExportCardType) => void;
   generating: boolean;
   actionsDisabled: boolean;
   pageUrl: string;
@@ -54,6 +61,9 @@ export default function PreviewModal({
   onTemplateChange,
   sizePresetId,
   onSizePresetChange,
+  actualCardType,
+  requestedCardType,
+  onCardTypeChange,
   generating,
   actionsDisabled,
   pageUrl,
@@ -153,17 +163,41 @@ export default function PreviewModal({
             >
               <AppIcon name="close" size={16} />
             </button>
-            <SelectOption
-              id="export-template"
-              label={t("preview.templateLabel")}
-              value={templateId}
-              disabled={generating}
-              onChange={onTemplateChange}
-              options={EXPORT_TEMPLATE_ORDER.map((id) => ({
-                value: id,
-                label: t(getExportTemplateMessageKey(id)),
-              }))}
-            />
+            <div
+              role="group"
+              aria-label={t("preview.cardTypeLabel")}
+              className="inline-flex min-h-11 rounded-[var(--radius-sm)] bg-[var(--background)] p-1"
+            >
+              {(["poster", "insights"] as const).map((cardType) => (
+                <button
+                  key={cardType}
+                  type="button"
+                  aria-pressed={requestedCardType === cardType}
+                  disabled={generating}
+                  onClick={() => onCardTypeChange(cardType)}
+                  className={`min-h-9 rounded-[9px] px-3 text-[13px] font-medium transition-colors disabled:opacity-50 ${
+                    requestedCardType === cardType
+                      ? "bg-white text-[var(--foreground)] shadow-sm"
+                      : "text-[var(--muted)] hover:text-[var(--foreground)]"
+                  }`}
+                >
+                  {t(`preview.cardType.${cardType}`)}
+                </button>
+              ))}
+            </div>
+            {requestedCardType === "poster" ? (
+              <SelectOption
+                id="export-template"
+                label={t("preview.templateLabel")}
+                value={templateId}
+                disabled={generating}
+                onChange={onTemplateChange}
+                options={EXPORT_TEMPLATE_ORDER.map((id) => ({
+                  value: id,
+                  label: t(getExportTemplateMessageKey(id)),
+                }))}
+              />
+            ) : null}
             <SelectOption
               id="export-size"
               label={t("preview.sizeLabel")}
@@ -183,24 +217,29 @@ export default function PreviewModal({
                 };
               })}
             />
-            <ToggleOption
-              checked={showTitles}
-              disabled={generating}
-              onChange={onToggleShowTitles}
-              label={t("preview.showTitles")}
-            />
-            <ToggleOption
-              checked={transparentBg}
-              disabled={generating}
-              onChange={onToggleTransparentBg}
-              label={t("preview.transparentBackground")}
-            />
+            {requestedCardType === "poster" ? (
+              <>
+                <ToggleOption
+                  checked={showTitles}
+                  disabled={generating}
+                  onChange={onToggleShowTitles}
+                  label={t("preview.showTitles")}
+                />
+                <ToggleOption
+                  checked={transparentBg}
+                  disabled={generating}
+                  onChange={onToggleTransparentBg}
+                  label={t("preview.transparentBackground")}
+                />
+              </>
+            ) : null}
           </div>
         </div>
 
         <div className="no-scrollbar relative flex min-h-0 flex-1 justify-center overflow-y-auto bg-[var(--background)] p-4 sm:p-6">
           <img
             src={previewUrl}
+            data-preview-card-type={actualCardType}
             alt={t("preview.imageAlt", { title: shareTitle })}
             className={`block max-h-[58dvh] max-w-full bg-white object-contain shadow-[var(--shadow-panel)] transition-[opacity,filter] duration-150 ${
               generating ? "opacity-50 blur-[2px]" : "opacity-100"

@@ -18,6 +18,7 @@ export const DIALOG_RETURN_KEYS = {
   boardLibrary: "board-library",
   copyBoardLink: "copy-board-link",
   pickAssistant: "pick-assistant",
+  insights: "pick-insights",
 } as const;
 
 export function getPickSlotReturnKey(slotId: string) {

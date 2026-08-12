@@ -28,6 +28,7 @@ import {
 } from "../config/exportPresets";
 import {
   MEMBERS,
+  MEMBERS_BY_ID,
   RELEASE_TYPES,
   RELEASE_YEARS,
   SONGS_BY_ID,
@@ -61,6 +62,7 @@ import { localizeExperienceUi } from "../i18n/content";
 import { useLocale } from "../i18n/LocaleProvider";
 import type { PickExperience } from "../schema/pick-experience";
 import type {
+  ExportCardType,
   ExportOptions,
   ExportSizePresetId,
   ExportTemplateId,
@@ -111,6 +113,7 @@ import {
   type ExportRenderResult,
 } from "../utils/exportCapture";
 import { getMemberColorGradient } from "../utils/memberColors";
+import { derivePickInsights } from "../utils/pickInsights";
 import {
   createPickAssistantSession,
   deriveTournament,
@@ -156,6 +159,7 @@ import BoardShareImportModal, {
 import Controls from "./Controls";
 import ExperienceNavigation from "./ExperienceNavigation";
 import ExportBoard from "./ExportBoard";
+import InsightsExportBoard from "./InsightsExportBoard";
 import Footer from "./Footer";
 import Header from "./Header";
 import JapaneseContent, {
@@ -163,6 +167,7 @@ import JapaneseContent, {
 } from "./JapaneseContent";
 import MotionPresence from "./MotionPresence";
 import PickBoard from "./PickBoard";
+import PickInsightsPanel from "./PickInsightsPanel";
 import PreviewModal from "./PreviewModal";
 import ReplacementModal from "./ReplacementModal";
 import SearchModal, { type SelectedSongPresentation } from "./SearchModal";
@@ -202,22 +207,32 @@ interface AssistantApplyBaseline {
 
 interface PreviewSnapshot {
   dataUrl: string;
+  cardType: ExportCardType;
   optionsKey: string;
   imageFileName: string;
+  opener: "poster" | "insights";
+  pageUrl: string;
+  previewLabel: string;
+  shareText: string;
+  shareHashtags: string[];
+  shareTitle: string;
 }
 
 const getPreviewOptionsKey = (
+  cardType: ExportCardType,
   showTitles: boolean,
   transparentBg: boolean,
   templateId: ExportTemplateId,
   sizePresetId: ExportSizePresetId,
-) =>
-  [
+) => {
+  if (cardType === "insights") return `insights:${sizePresetId}`;
+  return [
     showTitles ? "titles" : "no-titles",
     transparentBg ? "transparent" : "opaque",
     templateId,
     sizePresetId,
   ].join(":");
+};
 
 export default function PickExperienceClient({
   experience,
@@ -283,6 +298,9 @@ export default function PickExperienceClient({
   const [pendingReplacementSong, setPendingReplacementSong] =
     useState<Song | null>(null);
   const [preview, setPreview] = useState<PreviewSnapshot | null>(null);
+  const [requestedCardType, setRequestedCardType] =
+    useState<ExportCardType>("poster");
+  const [showInsights, setShowInsights] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [showTitles, setShowTitles] = useState(
     DEFAULT_EXPORT_OPTIONS.showTitles,
@@ -330,6 +348,7 @@ export default function PickExperienceClient({
   const activeFrameRequestIdRef = useRef<string | null>(null);
   const capturedFrameRequestIdRef = useRef<string | null>(null);
   const previewTriggerRef = useRef<HTMLButtonElement>(null);
+  const insightsTriggerRef = useRef<HTMLButtonElement>(null);
   const pickAssistantTriggerRef = useRef<HTMLButtonElement>(null);
   const pickAssistantSnapshotRef = useRef(pickAssistantSnapshot);
   const pickAssistantStorageKeyRef = useRef(storageKeys.assistant);
@@ -377,6 +396,10 @@ export default function PickExperienceClient({
 
     return Object.fromEntries(entries);
   }, [storedPicks]);
+  const insights = useMemo(
+    () => derivePickInsights(picks, MEMBERS_BY_ID),
+    [picks],
+  );
   const pickedSongIds = useMemo(
     () => new Set(Object.values(storedPicks)),
     [storedPicks],
@@ -551,7 +574,7 @@ export default function PickExperienceClient({
           context: activeUiContextDescription,
         })
       : uiCopy.title;
-  const imageFileName = getExperienceImageFileName(
+  const posterImageFileName = getExperienceImageFileName(
     experience,
     activeContext,
     templateId,
@@ -777,6 +800,7 @@ export default function PickExperienceClient({
     activePreviewCaptureAbortRef.current?.abort();
     activePreviewCaptureAbortRef.current = null;
     setPreview(null);
+    setRequestedCardType("poster");
   }, []);
 
   const activateExperienceContext = useCallback(
@@ -797,6 +821,7 @@ export default function PickExperienceClient({
       setShowModal(false);
       setShowBoardLibrary(false);
       setShowPickAssistant(false);
+      setShowInsights(false);
       setAssistantNeedsReview(false);
       setAssistantReviewNotice(false);
       assistantApplyBaselineRef.current = null;
@@ -2111,12 +2136,19 @@ export default function PickExperienceClient({
           `Export canvas size mismatch: expected ${expectedWidth}x${expectedHeight}, received ${canvas.width}x${canvas.height}`,
         );
       }
-      centerExportYearInk(canvas, exportElement);
+      if (frameCaptureRequest?.cardType === "poster") {
+        centerExportYearInk(canvas, exportElement);
+      }
       return canvas.toDataURL("image/png");
     } finally {
       window.getComputedStyle = originalGetComputedStyle;
     }
-  }, [exportCanvasId, sizePresetId, transparentBg]);
+  }, [
+    exportCanvasId,
+    frameCaptureRequest?.cardType,
+    sizePresetId,
+    transparentBg,
+  ]);
 
   useEffect(() => {
     if (
@@ -2158,92 +2190,136 @@ export default function PickExperienceClient({
     };
   }, [captureExportCanvas, frameCaptureRequest, hydrated, isExportRealm]);
 
-  const handleGenerateImage = useCallback(async () => {
-    if (generatingRef.current) return;
-    if (!boardStorageWritable || !optionsStorageWritable) {
-      setBoardStatusMessage(t("boardLibrary.error.storage"));
-      return;
-    }
-
-    const filteredPicks = filterStoredPicksForExperience({
-      experience,
-      storedPicks,
-      contextId: effectiveContextId,
-    });
-    if (Object.keys(filteredPicks).length === 0) return;
-    if (!sameStoredPicks(filteredPicks, storedPicks)) {
-      if (!resetBoardWithoutHistory(filteredPicks)) {
-        window.alert(t("boardLibrary.error.storage"));
+  const handleGenerateImage = useCallback(
+    async (cardType: ExportCardType, opener: PreviewSnapshot["opener"]) => {
+      if (generatingRef.current) return;
+      const fallbackCardType = preview?.cardType ?? "poster";
+      if (!boardStorageWritable || !optionsStorageWritable) {
+        setRequestedCardType(fallbackCardType);
+        setBoardStatusMessage(t("boardLibrary.error.storage"));
         return;
       }
-    }
 
-    const generationId = ++previewGenerationIdRef.current;
-    const previewOptionsKey = getPreviewOptionsKey(
-      showTitles,
-      transparentBg,
-      templateId,
-      sizePresetId,
-    );
-    const captureController = new AbortController();
-    activePreviewCaptureAbortRef.current = captureController;
-    generatingRef.current = true;
-    setGenerating(true);
-
-    try {
-      const dataUrl = await captureExportImageInFrame(
-        {
-          experienceId: experience.id,
-          contextId: effectiveContextId,
-          picks: filteredPicks,
-          showTitles,
-          transparentBg,
-          templateId,
-          sizePresetId,
-          selectedBy: exportNickname,
-          pageUrl,
-        },
-        { signal: captureController.signal },
-      );
-      if (generationId === previewGenerationIdRef.current) {
-        setPreview({
-          dataUrl,
-          optionsKey: previewOptionsKey,
-          imageFileName,
-        });
+      const filteredPicks = filterStoredPicksForExperience({
+        experience,
+        storedPicks,
+        contextId: effectiveContextId,
+      });
+      if (Object.keys(filteredPicks).length === 0) {
+        setRequestedCardType(fallbackCardType);
+        return;
       }
-    } catch (error) {
-      if (!isAbortError(error)) {
-        console.error("Failed to generate image", error);
-        if (generationId === previewGenerationIdRef.current) {
-          window.alert(t("errors.imageGenerationFailed"));
+      if (!sameStoredPicks(filteredPicks, storedPicks)) {
+        if (!resetBoardWithoutHistory(filteredPicks)) {
+          setRequestedCardType(fallbackCardType);
+          window.alert(t("boardLibrary.error.storage"));
+          return;
         }
       }
-    } finally {
-      if (activePreviewCaptureAbortRef.current === captureController) {
-        activePreviewCaptureAbortRef.current = null;
+
+      const effectiveShowTitles = cardType === "poster" ? showTitles : false;
+      const effectiveTransparentBg =
+        cardType === "poster" ? transparentBg : false;
+      const effectiveTemplateId =
+        cardType === "poster" ? templateId : DEFAULT_EXPORT_OPTIONS.templateId;
+      const generationId = ++previewGenerationIdRef.current;
+      const optionsKey = getPreviewOptionsKey(
+        cardType,
+        effectiveShowTitles,
+        effectiveTransparentBg,
+        effectiveTemplateId,
+        sizePresetId,
+      );
+      const nextImageFileName =
+        cardType === "poster"
+          ? posterImageFileName
+          : getExperienceImageFileName(
+              experience,
+              activeContext,
+              effectiveTemplateId,
+              sizePresetId,
+              cardType,
+            );
+      const captureController = new AbortController();
+      activePreviewCaptureAbortRef.current = captureController;
+      generatingRef.current = true;
+      setRequestedCardType(cardType);
+      setGenerating(true);
+
+      try {
+        const dataUrl = await captureExportImageInFrame(
+          {
+            experienceId: experience.id,
+            contextId: effectiveContextId,
+            picks: filteredPicks,
+            cardType,
+            showTitles: effectiveShowTitles,
+            transparentBg: effectiveTransparentBg,
+            templateId: effectiveTemplateId,
+            sizePresetId,
+            selectedBy: exportNickname,
+            pageUrl,
+          },
+          { signal: captureController.signal },
+        );
+        if (generationId === previewGenerationIdRef.current) {
+          setPreview({
+            dataUrl,
+            cardType,
+            optionsKey,
+            imageFileName: nextImageFileName,
+            opener,
+            pageUrl,
+            previewLabel,
+            shareText: uiCopy.shareText,
+            shareHashtags: experience.share.hashtags.slice(),
+            shareTitle: uiCopy.title,
+          });
+          if (cardType === "insights") {
+            setBoardStatusMessage(t("insights.cardReady"));
+          }
+        }
+      } catch (error) {
+        if (!isAbortError(error)) {
+          console.error("Failed to generate image", error);
+          if (generationId === previewGenerationIdRef.current) {
+            setRequestedCardType(fallbackCardType);
+            window.alert(t("errors.imageGenerationFailed"));
+          }
+        }
+      } finally {
+        if (activePreviewCaptureAbortRef.current === captureController) {
+          activePreviewCaptureAbortRef.current = null;
+        }
+        generatingRef.current = false;
+        setGenerating(false);
       }
-      generatingRef.current = false;
-      setGenerating(false);
-    }
-  }, [
-    boardStorageWritable,
-    effectiveContextId,
-    experience,
-    exportNickname,
-    imageFileName,
-    optionsStorageWritable,
-    pageUrl,
-    resetBoardWithoutHistory,
-    showTitles,
-    sizePresetId,
-    storedPicks,
-    t,
-    templateId,
-    transparentBg,
-  ]);
+    },
+    [
+      activeContext,
+      boardStorageWritable,
+      effectiveContextId,
+      experience,
+      exportNickname,
+      optionsStorageWritable,
+      pageUrl,
+      posterImageFileName,
+      preview,
+      previewLabel,
+      resetBoardWithoutHistory,
+      showTitles,
+      sizePresetId,
+      storedPicks,
+      t,
+      templateId,
+      transparentBg,
+      uiCopy.shareText,
+      uiCopy.title,
+    ],
+  );
 
   const previewOptionsKey = getPreviewOptionsKey(
+    requestedCardType,
     showTitles,
     transparentBg,
     templateId,
@@ -2255,16 +2331,23 @@ export default function PickExperienceClient({
       return;
     }
     const timer = window.setTimeout(() => {
-      void handleGenerateImage();
+      void handleGenerateImage(requestedCardType, preview.opener);
     }, 100);
     return () => window.clearTimeout(timer);
-  }, [handleGenerateImage, preview, previewOptionsKey]);
+  }, [handleGenerateImage, preview, previewOptionsKey, requestedCardType]);
 
   const handleClosePreview = () => {
     previewGenerationIdRef.current += 1;
     activePreviewCaptureAbortRef.current?.abort();
     activePreviewCaptureAbortRef.current = null;
     setPreview(null);
+    setRequestedCardType("poster");
+  };
+
+  const handlePreviewCardTypeChange = (cardType: ExportCardType) => {
+    if (!preview || generating || cardType === requestedCardType) return;
+    setRequestedCardType(cardType);
+    void handleGenerateImage(cardType, preview.opener);
   };
 
   const updateExportOptions = useCallback(
@@ -2447,7 +2530,9 @@ export default function PickExperienceClient({
 
         <Controls
           onClearAll={handleClearAllPicks}
-          onGenerate={handleGenerateImage}
+          onGenerate={() => {
+            void handleGenerateImage("poster", "poster");
+          }}
           onGlobalSearch={handleGlobalSearchClick}
           onOpenPickAssistant={() => {
             if (!hydrated || isExportRealm) return;
@@ -2497,6 +2582,31 @@ export default function PickExperienceClient({
         </Controls>
 
         <main className="app-content-shell flex flex-1 flex-col px-4 sm:px-6 md:px-8">
+          <div className="mb-4">
+            <button
+              type="button"
+              aria-expanded={showInsights}
+              aria-controls={showInsights ? "pick-insights-panel" : undefined}
+              onClick={() => setShowInsights((open) => !open)}
+              className="official-button official-button-quiet"
+            >
+              {showInsights ? t("insights.close") : t("insights.open")}
+            </button>
+            {showInsights ? (
+              <div className="mt-3">
+                <PickInsightsPanel
+                  insights={insights}
+                  membersById={MEMBERS_BY_ID}
+                  slotCount={slots.length}
+                  onGenerateInsights={() => {
+                    void handleGenerateImage("insights", "insights");
+                  }}
+                  generating={generating}
+                  generateButtonRef={insightsTriggerRef}
+                />
+              </div>
+            ) : null}
+          </div>
           <PickBoard
             slots={uiSlots}
             picks={picks}
@@ -2698,19 +2808,30 @@ export default function PickExperienceClient({
               onTemplateChange={handleTemplateChange}
               sizePresetId={sizePresetId}
               onSizePresetChange={handleSizePresetChange}
+              actualCardType={renderedPreview.cardType}
+              requestedCardType={requestedCardType}
+              onCardTypeChange={handlePreviewCardTypeChange}
               generating={generating}
               actionsDisabled={
                 generating || renderedPreview.optionsKey !== previewOptionsKey
               }
-              pageUrl={pageUrl}
-              previewLabel={previewLabel}
+              pageUrl={renderedPreview.pageUrl}
+              previewLabel={renderedPreview.previewLabel}
               imageFileName={renderedPreview.imageFileName}
-              shareText={uiCopy.shareText}
-              shareHashtags={experience.share.hashtags}
-              shareTitle={uiCopy.title}
+              shareText={renderedPreview.shareText}
+              shareHashtags={renderedPreview.shareHashtags}
+              shareTitle={renderedPreview.shareTitle}
               presenceState={presenceState}
-              returnFocusRef={previewTriggerRef}
-              returnFocusKey={DIALOG_RETURN_KEYS.generateImage}
+              returnFocusRef={
+                renderedPreview.opener === "insights"
+                  ? insightsTriggerRef
+                  : previewTriggerRef
+              }
+              returnFocusKey={
+                renderedPreview.opener === "insights"
+                  ? DIALOG_RETURN_KEYS.insights
+                  : DIALOG_RETURN_KEYS.generateImage
+              }
               returnFocusFallbackKey={DIALOG_RETURN_KEYS.globalSearch}
             />
           )}
@@ -2726,19 +2847,29 @@ export default function PickExperienceClient({
           aria-hidden="true"
           inert
         >
-          <ExportBoard
-            experience={experience}
-            context={activeContext}
-            exportCanvasId={exportCanvasId}
-            slots={slots}
-            picks={picks}
-            showTitles={showTitles}
-            transparentBg={transparentBg}
-            templateId={templateId}
-            sizePresetId={sizePresetId}
-            selectedBy={exportNickname}
-            pageUrl={framePageUrl ?? pageUrl}
-          />
+          {frameCaptureRequest?.cardType === "insights" ? (
+            <InsightsExportBoard
+              exportCanvasId={exportCanvasId}
+              picks={picks}
+              selectedBy={exportNickname}
+              pageUrl={framePageUrl ?? pageUrl}
+              sizePresetId={sizePresetId}
+            />
+          ) : (
+            <ExportBoard
+              experience={experience}
+              context={activeContext}
+              exportCanvasId={exportCanvasId}
+              slots={slots}
+              picks={picks}
+              showTitles={showTitles}
+              transparentBg={transparentBg}
+              templateId={templateId}
+              sizePresetId={sizePresetId}
+              selectedBy={exportNickname}
+              pageUrl={framePageUrl ?? pageUrl}
+            />
+          )}
         </div>
       ) : null}
     </div>

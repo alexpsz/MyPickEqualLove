@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "ignoreDeprecations": "6.0",
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "types": ["node"],
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": false,
+    "rootDir": "..",
+    "incremental": false
+  },
+  "include": [
+    "../src/config/pickInsights.ts",
+    "../src/schema/music.ts",
+    "../src/schema/pick-insights.ts",
+    "../src/utils/pickInsights.ts",
+    "../src/utils/insightsExportLayout.ts",
+    "../src/utils/exportCapture.ts",
+    "../src/config/exportPresets.ts",
+    "../src/schema/export.ts",
+    "../src/utils/songCredits.ts",
+    "tests/pick-insights.test.ts"
+  ]
+}
