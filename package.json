@@ -37,6 +37,7 @@
     "test:pick-reordering": "node scripts/test-pick-reordering.mjs",
     "test:share-links": "node scripts/test-board-share-protocol.mjs",
     "test:export-presets": "node scripts/run-export-preset-tests.mjs",
+    "test:pick-assistant": "node scripts/run-pick-assistant-tests.mjs",
     "check:repo-boundary": "node scripts/check-repository-boundary.mjs",
     "hooks:install": "node scripts/install-git-hooks.mjs",
     "validate:data": "node scripts/validate-project-data.mjs",

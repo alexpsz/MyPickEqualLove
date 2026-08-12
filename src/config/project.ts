@@ -21,10 +21,18 @@ export const STORAGE_KEYS = {
   optionsV2: `${PROJECT_CONFIG.storagePrefix}_options_v2`,
   boardLibrary: `${PROJECT_CONFIG.storagePrefix}_board_library_v1`,
   songDiscovery: `${PROJECT_CONFIG.storagePrefix}_song_discovery_v1`,
+  assistant: `${PROJECT_CONFIG.storagePrefix}_standard_pick_assistant_v1`,
 };
 
 export const SONG_DISCOVERY_CONFIG = {
   recentLimit: 20,
+} as const;
+
+export const PICK_ASSISTANT_CONFIG = {
+  schemaVersion: 1,
+  minimumCandidates: 3,
+  maximumCandidates: 24,
+  expiresAfterMs: 30 * 24 * 60 * 60 * 1000,
 } as const;
 
 export interface ExperienceStorageKeys {
@@ -33,6 +41,7 @@ export interface ExperienceStorageKeys {
   picksV2: string;
   optionsV2: string;
   boardLibrary: string;
+  assistant: string;
   context?: string;
 }
 
@@ -59,6 +68,7 @@ export function getExperienceStorageKeys(
     picksV2: `${PROJECT_CONFIG.storagePrefix}_live_${experienceSegment}${contextSegment}_picks_v2`,
     optionsV2: `${PROJECT_CONFIG.storagePrefix}_live_${experienceSegment}_options_v2`,
     boardLibrary: STORAGE_KEYS.boardLibrary,
+    assistant: `${PROJECT_CONFIG.storagePrefix}_live_${experienceSegment}${contextSegment}_pick_assistant_v1`,
     context: `${PROJECT_CONFIG.storagePrefix}_live_${experienceSegment}_context_v1`,
   };
 }

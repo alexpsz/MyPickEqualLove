@@ -22,10 +22,13 @@ interface SongDetailModalProps {
   members: Member[];
   isFavorite: boolean;
   isRecentlyViewed: boolean;
+  isCandidate: boolean;
+  candidateDisabled: boolean;
   presenceState: PresenceState;
   onClose: () => void;
   onSelect: (song: Song) => void;
   onToggleFavorite: (songId: string) => void;
+  onToggleCandidate: (song: Song) => void;
 }
 
 export default function SongDetailModal({
@@ -33,10 +36,13 @@ export default function SongDetailModal({
   members,
   isFavorite,
   isRecentlyViewed,
+  isCandidate,
+  candidateDisabled,
   presenceState,
   onClose,
   onSelect,
   onToggleFavorite,
+  onToggleCandidate,
 }: SongDetailModalProps) {
   const { t } = useLocale();
   const panelRef = useRef<HTMLDivElement>(null);
@@ -133,6 +139,9 @@ export default function SongDetailModal({
               <div className="mt-3 flex flex-wrap gap-2">
                 {isFavorite ? (
                   <StatusBadge>{t("search.candidate")}</StatusBadge>
+                ) : null}
+                {isCandidate ? (
+                  <StatusBadge>{t("assistant.candidate")}</StatusBadge>
                 ) : null}
                 {isRecentlyViewed ? (
                   <StatusBadge muted>{t("search.recentlyViewed")}</StatusBadge>
@@ -270,6 +279,22 @@ export default function SongDetailModal({
             {isFavorite
               ? t("songDetail.removeCandidate")
               : t("songDetail.addCandidate")}
+          </button>
+          <button
+            type="button"
+            onClick={() => onToggleCandidate(song)}
+            disabled={candidateDisabled}
+            aria-pressed={isCandidate}
+            className={`official-button disabled:cursor-not-allowed disabled:opacity-45 ${
+              isCandidate
+                ? "border-[var(--project-primary)] bg-[var(--project-primary-wash)]"
+                : "official-button-quiet"
+            }`}
+          >
+            <AppIcon name={isCandidate ? "check" : "music"} size={16} />
+            {isCandidate
+              ? t("assistant.candidate")
+              : t("assistant.addCandidate")}
           </button>
           <button
             type="button"

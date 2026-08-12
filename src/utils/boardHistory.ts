@@ -7,6 +7,7 @@ export type BoardMutationKind =
   | "clear"
   | "replace"
   | "sort"
+  | "assistant"
   | "restore";
 
 export interface BoardMutation {

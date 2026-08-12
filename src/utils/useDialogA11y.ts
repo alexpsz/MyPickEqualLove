@@ -17,6 +17,7 @@ export const DIALOG_RETURN_KEYS = {
   generateImage: "generate-image",
   boardLibrary: "board-library",
   copyBoardLink: "copy-board-link",
+  pickAssistant: "pick-assistant",
 } as const;
 
 export function getPickSlotReturnKey(slotId: string) {

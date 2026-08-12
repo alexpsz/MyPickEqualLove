@@ -46,6 +46,8 @@ interface SearchModalProps {
   selectedRanksBySongId?: Record<string, number>;
   favoriteSongIds?: string[];
   recentSongIds?: string[];
+  candidateSongIds?: ReadonlySet<string>;
+  candidateLimitReached?: boolean;
   suspended?: boolean;
   resumeFocusRef?: RefObject<HTMLElement | null>;
   presenceState: PresenceState;
@@ -53,6 +55,7 @@ interface SearchModalProps {
   onClose: () => void;
   onSelect: (song: Song) => void;
   onToggleFavorite: (songId: string) => void;
+  onToggleCandidate?: (song: Song) => void;
   onOpenDetail: (song: Song, trigger: HTMLButtonElement) => void;
 }
 
@@ -62,6 +65,7 @@ export interface SelectedSongPresentation {
 }
 
 const PRIMARY_TRACK_TYPES = ["title", "coupling", "album"] as const;
+const EMPTY_SONG_ID_SET: ReadonlySet<string> = new Set();
 
 type Translate = (key: MessageKey, values?: MessageValues) => string;
 
@@ -156,6 +160,8 @@ export default function SearchModal({
   selectedRanksBySongId = {},
   favoriteSongIds = [],
   recentSongIds = [],
+  candidateSongIds = EMPTY_SONG_ID_SET,
+  candidateLimitReached = false,
   suspended = false,
   resumeFocusRef,
   presenceState,
@@ -163,6 +169,7 @@ export default function SearchModal({
   onClose,
   onSelect,
   onToggleFavorite,
+  onToggleCandidate,
   onOpenDetail,
 }: SearchModalProps) {
   const { t } = useLocale();
@@ -575,6 +582,11 @@ export default function SearchModal({
                   const selectedRank = selectedRanksBySongId[song.id];
                   const isFavorite = favoriteSongIdSet.has(song.id);
                   const isRecentlyViewed = recentSongIdSet.has(song.id);
+                  const isCandidate = candidateSongIds.has(song.id);
+                  const candidateDisabled =
+                    Boolean(selected) ||
+                    (!isCandidate && candidateLimitReached) ||
+                    !onToggleCandidate;
 
                   return (
                     <div
@@ -641,6 +653,11 @@ export default function SearchModal({
                             {isFavorite ? (
                               <ResultBadge>{t("search.candidate")}</ResultBadge>
                             ) : null}
+                            {isCandidate ? (
+                              <ResultBadge>
+                                {t("assistant.candidate")}
+                              </ResultBadge>
+                            ) : null}
                             {isRecentlyViewed ? (
                               <ResultBadge muted>
                                 {t("search.recentlyViewed")}
@@ -686,6 +703,40 @@ export default function SearchModal({
                           }`}
                         >
                           <AppIcon name="star" size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onToggleCandidate?.(song)}
+                          disabled={candidateDisabled}
+                          aria-pressed={isCandidate}
+                          aria-label={
+                            selected
+                              ? t("assistant.selected")
+                              : isCandidate
+                                ? t("assistant.removeCandidateAria", {
+                                    title: song.title.ja,
+                                  })
+                                : t("assistant.addCandidateAria", {
+                                    title: song.title.ja,
+                                  })
+                          }
+                          title={
+                            selected
+                              ? t("assistant.selected")
+                              : isCandidate
+                                ? t("assistant.candidate")
+                                : t("assistant.addCandidate")
+                          }
+                          className={`flex h-11 w-11 items-center justify-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-45 ${
+                            isCandidate
+                              ? "bg-[var(--project-primary-wash)] text-[var(--foreground)]"
+                              : "text-[var(--muted)] hover:bg-white hover:text-[var(--foreground)]"
+                          }`}
+                        >
+                          <AppIcon
+                            name={selected || isCandidate ? "check" : "music"}
+                            size={16}
+                          />
                         </button>
                         <button
                           type="button"

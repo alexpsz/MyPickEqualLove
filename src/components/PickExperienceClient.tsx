@@ -11,7 +11,9 @@ import {
   type MouseEvent,
   type ReactNode,
 } from "react";
+import dynamic from "next/dynamic";
 import {
+  PICK_ASSISTANT_CONFIG,
   PROJECT_CONFIG,
   PROJECT_ID,
   PROJECT_THEME_COLOR,
@@ -110,6 +112,27 @@ import {
 } from "../utils/exportCapture";
 import { getMemberColorGradient } from "../utils/memberColors";
 import {
+  createPickAssistantSession,
+  deriveTournament,
+  parsePickAssistantSnapshot,
+  planRankedPicks,
+  recordComparison,
+  samePickAssistantSnapshots,
+  skipComparison,
+  undoComparison,
+  updatePickAssistantSnapshot,
+  type ComparisonOutcome,
+  type PickAssistantSession,
+  type PickAssistantSnapshot,
+} from "../utils/pickAssistant";
+import {
+  createEmptyPickAssistantSnapshot,
+  createMutationId,
+  loadPickAssistantSnapshot,
+  resetPickAssistantStorageSafely,
+  savePickAssistantSnapshotSafely,
+} from "../utils/pickAssistantStorage";
+import {
   createEmptySongDiscoveryState,
   loadSongDiscoveryState,
   recordRecentSongId,
@@ -145,6 +168,13 @@ import ReplacementModal from "./ReplacementModal";
 import SearchModal, { type SelectedSongPresentation } from "./SearchModal";
 import SongDetailModal from "./SongDetailModal";
 
+const PickAssistantModal = dynamic(() => import("./PickAssistantModal"), {
+  ssr: false,
+});
+
+type PickAssistantStorageIssue =
+  import("./PickAssistantModal").PickAssistantStorageIssue;
+
 interface PickExperienceClientProps {
   experience: PickExperience;
 }
@@ -152,10 +182,22 @@ interface PickExperienceClientProps {
 const MAX_NICKNAME_LENGTH = 32;
 const VALID_SONG_IDS = new Set(Object.keys(SONGS_BY_ID));
 const BOARD_LINK_COPIED_DURATION_MS = 2_000;
+const PICK_ASSISTANT_STORAGE_OPTIONS = {
+  ...PICK_ASSISTANT_CONFIG,
+  validSongIds: VALID_SONG_IDS,
+};
 
 interface PendingBoardShareImport {
   payload: BoardSharePayload;
   baselinePicks: StoredPicks;
+}
+
+interface AssistantApplyBaseline {
+  storageKey: string;
+  contextId?: string;
+  boardPicks: StoredPicks;
+  revision: number;
+  mutationId: string;
 }
 
 interface PreviewSnapshot {
@@ -260,6 +302,15 @@ export default function PickExperienceClient({
   const [framePageUrl, setFramePageUrl] = useState<string | null>(null);
   const [isExportRealm, setIsExportRealm] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  const [showPickAssistant, setShowPickAssistant] = useState(false);
+  const [pickAssistantSnapshot, setPickAssistantSnapshot] =
+    useState<PickAssistantSnapshot>(() =>
+      createEmptyPickAssistantSnapshot(PICK_ASSISTANT_CONFIG.schemaVersion),
+    );
+  const [pickAssistantStorageIssue, setPickAssistantStorageIssue] =
+    useState<PickAssistantStorageIssue | null>(null);
+  const [assistantNeedsReview, setAssistantNeedsReview] = useState(false);
+  const [assistantReviewNotice, setAssistantReviewNotice] = useState(false);
   const [boardLibrary, setBoardLibrary] = useState<BoardLibraryDocument>(() =>
     createEmptyBoardLibrary(),
   );
@@ -279,6 +330,12 @@ export default function PickExperienceClient({
   const activeFrameRequestIdRef = useRef<string | null>(null);
   const capturedFrameRequestIdRef = useRef<string | null>(null);
   const previewTriggerRef = useRef<HTMLButtonElement>(null);
+  const pickAssistantTriggerRef = useRef<HTMLButtonElement>(null);
+  const pickAssistantSnapshotRef = useRef(pickAssistantSnapshot);
+  const pickAssistantStorageKeyRef = useRef(storageKeys.assistant);
+  const assistantMutationPendingRef = useRef(false);
+  const assistantApplyBaselineRef = useRef<AssistantApplyBaseline | null>(null);
+  const assistantResultVisibleRef = useRef(false);
   const searchReturnFocusKeyRef = useRef<string>(
     DIALOG_RETURN_KEYS.globalSearch,
   );
@@ -303,6 +360,15 @@ export default function PickExperienceClient({
     uiSlots,
     uiContextOptions,
   };
+  pickAssistantStorageKeyRef.current = storageKeys.assistant;
+
+  const setCurrentPickAssistantSnapshot = useCallback(
+    (snapshot: PickAssistantSnapshot) => {
+      pickAssistantSnapshotRef.current = snapshot;
+      setPickAssistantSnapshot(snapshot);
+    },
+    [],
+  );
 
   const picks = useMemo<Picks>(() => {
     const entries = Object.entries(storedPicks)
@@ -311,6 +377,77 @@ export default function PickExperienceClient({
 
     return Object.fromEntries(entries);
   }, [storedPicks]);
+  const pickedSongIds = useMemo(
+    () => new Set(Object.values(storedPicks)),
+    [storedPicks],
+  );
+  const assistantShortlistIds = useMemo(
+    () =>
+      pickAssistantSnapshot.shortlistIds.filter(
+        (songId) => !pickedSongIds.has(songId),
+      ),
+    [pickAssistantSnapshot.shortlistIds, pickedSongIds],
+  );
+  const candidateSongIds = useMemo(
+    () => new Set(assistantShortlistIds),
+    [assistantShortlistIds],
+  );
+  const shortlistSongs = useMemo(
+    () =>
+      assistantShortlistIds
+        .map((songId) => SONGS_BY_ID[songId])
+        .filter((song): song is Song => Boolean(song)),
+    [assistantShortlistIds],
+  );
+  const assistantSession = useMemo(() => {
+    const session = pickAssistantSnapshot.session;
+    if (
+      !session ||
+      session.candidateIds.length !== assistantShortlistIds.length ||
+      session.candidateIds.some(
+        (songId, index) => songId !== assistantShortlistIds[index],
+      )
+    ) {
+      return null;
+    }
+    return session;
+  }, [assistantShortlistIds, pickAssistantSnapshot.session]);
+  const assistantTournament = useMemo(
+    () => (assistantSession ? deriveTournament(assistantSession) : null),
+    [assistantSession],
+  );
+  assistantResultVisibleRef.current =
+    showPickAssistant && assistantTournament?.status === "complete";
+  const slotsById = useMemo(
+    () => Object.fromEntries(slots.map((slot) => [slot.id, slot])),
+    [slots],
+  );
+  const assistantApplicationPlan = useMemo(
+    () =>
+      assistantTournament?.status === "complete"
+        ? planRankedPicks({
+            orderedSongIds: assistantTournament.orderedIds,
+            slotIds: slots.map((slot) => slot.id),
+            isEligible: (songId, slotId) => {
+              const slot = slotsById[slotId];
+              return Boolean(
+                slot &&
+                isSongEligibleForSlot({
+                  experience,
+                  slot,
+                  songId,
+                  contextId: effectiveContextId,
+                }),
+              );
+            },
+          })
+        : null,
+    [assistantTournament, effectiveContextId, experience, slots, slotsById],
+  );
+  const assistantSlotLabels = useMemo(
+    () => Object.fromEntries(uiSlots.map((slot) => [slot.id, slot.label])),
+    [uiSlots],
+  );
   const selectedRanksBySongId = useMemo(() => {
     const ranks: Record<string, number> = {};
     for (const slot of slots) {
@@ -523,6 +660,103 @@ export default function PickExperienceClient({
   }, [storedPicks]);
 
   useEffect(() => {
+    if (!hydrated || isExportRealm) return;
+
+    assistantApplyBaselineRef.current = null;
+    setAssistantNeedsReview(false);
+    setAssistantReviewNotice(false);
+    const result = loadPickAssistantSnapshot(
+      localStorage,
+      storageKeys.assistant,
+      PICK_ASSISTANT_STORAGE_OPTIONS,
+    );
+    if (result.status === "valid") {
+      setCurrentPickAssistantSnapshot(result.snapshot);
+      setPickAssistantStorageIssue(null);
+      return;
+    }
+
+    setCurrentPickAssistantSnapshot(
+      createEmptyPickAssistantSnapshot(PICK_ASSISTANT_CONFIG.schemaVersion),
+    );
+    setPickAssistantStorageIssue(
+      result.status === "missing" ? null : result.status,
+    );
+  }, [
+    hydrated,
+    isExportRealm,
+    setCurrentPickAssistantSnapshot,
+    storageKeys.assistant,
+  ]);
+
+  useEffect(() => {
+    if (!hydrated || isExportRealm) return;
+
+    const handleAssistantStorage = (event: StorageEvent) => {
+      if (
+        event.storageArea !== localStorage ||
+        (event.key !== storageKeys.assistant && event.key !== null)
+      ) {
+        return;
+      }
+
+      const incoming =
+        event.key === storageKeys.assistant
+          ? parsePickAssistantSnapshot(event.newValue, {
+              ...PICK_ASSISTANT_STORAGE_OPTIONS,
+              now: Date.now(),
+            })
+          : loadPickAssistantSnapshot(
+              localStorage,
+              storageKeys.assistant,
+              PICK_ASSISTANT_STORAGE_OPTIONS,
+            );
+
+      assistantApplyBaselineRef.current = null;
+      if (incoming.status === "missing") {
+        setCurrentPickAssistantSnapshot(
+          createEmptyPickAssistantSnapshot(PICK_ASSISTANT_CONFIG.schemaVersion),
+        );
+        setPickAssistantStorageIssue(null);
+        if (assistantResultVisibleRef.current) {
+          setAssistantNeedsReview(true);
+          setAssistantReviewNotice(true);
+          setBoardStatusMessage(t("assistant.previewRefreshed"));
+        }
+        return;
+      }
+      if (incoming.status !== "valid") {
+        setCurrentPickAssistantSnapshot(
+          createEmptyPickAssistantSnapshot(PICK_ASSISTANT_CONFIG.schemaVersion),
+        );
+        setPickAssistantStorageIssue(incoming.status);
+        return;
+      }
+
+      const current = pickAssistantSnapshotRef.current;
+      if (samePickAssistantSnapshots(incoming.snapshot, current)) return;
+      setCurrentPickAssistantSnapshot(incoming.snapshot);
+      const conflictingRevision =
+        incoming.snapshot.revision <= current.revision;
+      setPickAssistantStorageIssue(conflictingRevision ? "conflict" : null);
+      if (assistantResultVisibleRef.current) {
+        setAssistantNeedsReview(true);
+        setAssistantReviewNotice(true);
+        setBoardStatusMessage(t("assistant.previewRefreshed"));
+      }
+    };
+
+    window.addEventListener("storage", handleAssistantStorage);
+    return () => window.removeEventListener("storage", handleAssistantStorage);
+  }, [
+    hydrated,
+    isExportRealm,
+    setCurrentPickAssistantSnapshot,
+    storageKeys.assistant,
+    t,
+  ]);
+
+  useEffect(() => {
     if (
       hydrated &&
       !isExportRealm &&
@@ -562,6 +796,10 @@ export default function PickExperienceClient({
       setActiveSlotId(null);
       setShowModal(false);
       setShowBoardLibrary(false);
+      setShowPickAssistant(false);
+      setAssistantNeedsReview(false);
+      setAssistantReviewNotice(false);
+      assistantApplyBaselineRef.current = null;
       setDetailSongId(null);
       setDetailLayerActive(false);
       setPendingReplacementSong(null);
@@ -662,6 +900,12 @@ export default function PickExperienceClient({
       cancelStalePreview();
       storedPicksRef.current = result.picks;
       dispatchBoardHistory({ type: "reset", picks: result.picks });
+      if (assistantResultVisibleRef.current) {
+        assistantApplyBaselineRef.current = null;
+        setAssistantNeedsReview(true);
+        setAssistantReviewNotice(true);
+        setBoardStatusMessage(t("assistant.previewRefreshed"));
+      }
     };
     const syncExportOptions = () => {
       const result = loadStoredOptions({
@@ -745,6 +989,10 @@ export default function PickExperienceClient({
     ) => {
       cancelStalePreview();
       setShowBoardLibrary(false);
+      setShowPickAssistant(false);
+      setAssistantNeedsReview(false);
+      setAssistantReviewNotice(false);
+      assistantApplyBaselineRef.current = null;
       setShowModal(false);
       setDetailSongId(null);
       setActiveSlotId(null);
@@ -1083,6 +1331,328 @@ export default function PickExperienceClient({
     [updateSongDiscoveryState],
   );
 
+  const commitPickAssistantUpdate = useCallback(
+    async (shortlistIds: string[], session: PickAssistantSession | null) => {
+      if (pickAssistantStorageIssue || assistantMutationPendingRef.current) {
+        return false;
+      }
+
+      const storageKey = storageKeys.assistant;
+      const expected = pickAssistantSnapshotRef.current;
+      const next = updatePickAssistantSnapshot(
+        expected,
+        { shortlistIds, session },
+        Date.now(),
+        createMutationId(),
+      );
+      assistantMutationPendingRef.current = true;
+      try {
+        const result = await savePickAssistantSnapshotSafely(
+          localStorage,
+          storageKey,
+          expected,
+          next,
+          PICK_ASSISTANT_STORAGE_OPTIONS,
+          navigator.locks,
+        );
+        if (pickAssistantStorageKeyRef.current !== storageKey) return false;
+        if (result.status === "saved") {
+          setCurrentPickAssistantSnapshot(next);
+          setPickAssistantStorageIssue(null);
+          setAssistantReviewNotice(false);
+          return true;
+        }
+        setPickAssistantStorageIssue(
+          result.status === "blocked" ? result.reason : result.status,
+        );
+        return false;
+      } finally {
+        assistantMutationPendingRef.current = false;
+      }
+    },
+    [
+      pickAssistantStorageIssue,
+      setCurrentPickAssistantSnapshot,
+      storageKeys.assistant,
+    ],
+  );
+
+  const handleToggleCandidate = useCallback(
+    (song: Song) => {
+      if (pickedSongIds.has(song.id) || pickAssistantStorageIssue) return;
+      const alreadyCandidate = candidateSongIds.has(song.id);
+      if (
+        !alreadyCandidate &&
+        assistantShortlistIds.length >= PICK_ASSISTANT_CONFIG.maximumCandidates
+      ) {
+        window.alert(
+          t("assistant.maxReached", {
+            count: PICK_ASSISTANT_CONFIG.maximumCandidates,
+          }),
+        );
+        return;
+      }
+      const nextShortlistIds = alreadyCandidate
+        ? assistantShortlistIds.filter((songId) => songId !== song.id)
+        : [...assistantShortlistIds, song.id];
+      void commitPickAssistantUpdate(nextShortlistIds, null);
+    },
+    [
+      assistantShortlistIds,
+      candidateSongIds,
+      commitPickAssistantUpdate,
+      pickedSongIds,
+      pickAssistantStorageIssue,
+      t,
+    ],
+  );
+
+  const removePickedSongFromAssistant = useCallback(
+    (songId: string) => {
+      if (!candidateSongIds.has(songId) || pickAssistantStorageIssue) return;
+      void commitPickAssistantUpdate(
+        assistantShortlistIds.filter((candidateId) => candidateId !== songId),
+        null,
+      );
+    },
+    [
+      assistantShortlistIds,
+      candidateSongIds,
+      commitPickAssistantUpdate,
+      pickAssistantStorageIssue,
+    ],
+  );
+
+  const handleRemoveCandidate = (songId: string) => {
+    void commitPickAssistantUpdate(
+      assistantShortlistIds.filter((candidateId) => candidateId !== songId),
+      null,
+    );
+  };
+
+  const handleClearPickAssistant = () => {
+    void commitPickAssistantUpdate([], null);
+  };
+
+  const handleStartPickAssistant = () => {
+    if (
+      assistantShortlistIds.length < PICK_ASSISTANT_CONFIG.minimumCandidates
+    ) {
+      return;
+    }
+    void commitPickAssistantUpdate(
+      assistantShortlistIds,
+      createPickAssistantSession(assistantShortlistIds),
+    );
+  };
+
+  const commitAssistantSession = (session: PickAssistantSession) => {
+    void commitPickAssistantUpdate(assistantShortlistIds, session);
+  };
+
+  const handleAssistantComparison = (outcome: ComparisonOutcome) => {
+    if (assistantSession) {
+      commitAssistantSession(recordComparison(assistantSession, outcome));
+    }
+  };
+
+  const handleSkipAssistantComparison = () => {
+    if (!assistantSession) return;
+    const next = skipComparison(assistantSession);
+    if (next === assistantSession) {
+      setShowPickAssistant(false);
+      return;
+    }
+    commitAssistantSession(next);
+  };
+
+  const handleUndoAssistantComparison = () => {
+    if (assistantSession) {
+      commitAssistantSession(undoComparison(assistantSession));
+    }
+  };
+
+  const handleRestartPickAssistant = () => {
+    if (assistantShortlistIds.length < 2) return;
+    void commitPickAssistantUpdate(
+      assistantShortlistIds,
+      createPickAssistantSession(assistantShortlistIds),
+    );
+  };
+
+  const handleResetPickAssistantStorage = () => {
+    const storageKey = storageKeys.assistant;
+    void resetPickAssistantStorageSafely(
+      localStorage,
+      storageKey,
+      navigator.locks,
+    ).then((result) => {
+      if (pickAssistantStorageKeyRef.current !== storageKey) return;
+      if (result !== "reset") {
+        setPickAssistantStorageIssue(
+          result === "conflict" ? "conflict" : "unavailable",
+        );
+        return;
+      }
+      setCurrentPickAssistantSnapshot(
+        createEmptyPickAssistantSnapshot(PICK_ASSISTANT_CONFIG.schemaVersion),
+      );
+      setPickAssistantStorageIssue(null);
+      setAssistantNeedsReview(false);
+      setAssistantReviewNotice(false);
+      assistantApplyBaselineRef.current = null;
+    });
+  };
+
+  useEffect(() => {
+    if (!showPickAssistant || assistantTournament?.status !== "complete") {
+      assistantApplyBaselineRef.current = null;
+      setAssistantNeedsReview(false);
+      return;
+    }
+    if (!assistantApplyBaselineRef.current) {
+      assistantApplyBaselineRef.current = {
+        storageKey: storageKeys.assistant,
+        contextId: effectiveContextId,
+        boardPicks: { ...storedPicksRef.current },
+        revision: pickAssistantSnapshot.revision,
+        mutationId: pickAssistantSnapshot.mutationId,
+      };
+    }
+  }, [
+    assistantTournament?.status,
+    effectiveContextId,
+    pickAssistantSnapshot.mutationId,
+    pickAssistantSnapshot.revision,
+    showPickAssistant,
+    storageKeys.assistant,
+  ]);
+
+  const handleApplyAssistantResult = async () => {
+    if (!assistantApplicationPlan || !assistantSession) return;
+    if (assistantNeedsReview) {
+      const currentAssistant = pickAssistantSnapshotRef.current;
+      assistantApplyBaselineRef.current = {
+        storageKey: storageKeys.assistant,
+        contextId: effectiveContextId,
+        boardPicks: { ...storedPicksRef.current },
+        revision: currentAssistant.revision,
+        mutationId: currentAssistant.mutationId,
+      };
+      setAssistantNeedsReview(false);
+      setAssistantReviewNotice(true);
+      setBoardStatusMessage(t("assistant.previewRefreshed"));
+      return;
+    }
+
+    let persistedContextId = effectiveContextId;
+    if (storageKeys.context) {
+      try {
+        persistedContextId =
+          localStorage.getItem(storageKeys.context) ?? defaultContextId;
+      } catch {
+        setBoardStatusMessage(t("boardLibrary.error.storage"));
+        return;
+      }
+    }
+    if (persistedContextId !== effectiveContextId) {
+      activateExperienceContext(persistedContextId, false);
+      setBoardStatusMessage(t("assistant.previewRefreshed"));
+      return;
+    }
+
+    const latestBoard = loadStoredBoard({
+      storage: localStorage,
+      versionedKey: storageKeys.picksV2,
+      legacyKey: storageKeys.picks,
+      sanitize: sanitizeBoardPicks,
+    });
+    const latestAssistant = loadPickAssistantSnapshot(
+      localStorage,
+      storageKeys.assistant,
+      PICK_ASSISTANT_STORAGE_OPTIONS,
+    );
+    if (!isWritableStorageStatus(latestBoard.status)) {
+      setBoardStorageWritable(false);
+      setBoardStatusMessage(t("boardLibrary.error.storage"));
+      return;
+    }
+    if (latestAssistant.status !== "valid") {
+      setCurrentPickAssistantSnapshot(
+        createEmptyPickAssistantSnapshot(PICK_ASSISTANT_CONFIG.schemaVersion),
+      );
+      setPickAssistantStorageIssue(
+        latestAssistant.status === "missing"
+          ? "conflict"
+          : latestAssistant.status,
+      );
+      return;
+    }
+
+    const baseline = assistantApplyBaselineRef.current;
+    const assistantMatches = samePickAssistantSnapshots(
+      latestAssistant.snapshot,
+      pickAssistantSnapshotRef.current,
+    );
+    const boardMatches = sameStoredPicks(
+      latestBoard.picks,
+      storedPicksRef.current,
+    );
+    const baselineMatches = Boolean(
+      baseline &&
+      baseline.storageKey === storageKeys.assistant &&
+      baseline.contextId === effectiveContextId &&
+      baseline.revision === latestAssistant.snapshot.revision &&
+      baseline.mutationId === latestAssistant.snapshot.mutationId &&
+      sameStoredPicks(baseline.boardPicks, latestBoard.picks),
+    );
+    if (!assistantMatches || !boardMatches || !baselineMatches) {
+      setCurrentPickAssistantSnapshot(latestAssistant.snapshot);
+      storedPicksRef.current = latestBoard.picks;
+      dispatchBoardHistory({ type: "reset", picks: latestBoard.picks });
+      assistantApplyBaselineRef.current = {
+        storageKey: storageKeys.assistant,
+        contextId: effectiveContextId,
+        boardPicks: { ...latestBoard.picks },
+        revision: latestAssistant.snapshot.revision,
+        mutationId: latestAssistant.snapshot.mutationId,
+      };
+      setAssistantNeedsReview(false);
+      setAssistantReviewNotice(true);
+      setBoardStatusMessage(t("assistant.previewRefreshed"));
+      return;
+    }
+
+    const currentPickCount = Object.keys(latestBoard.picks).length;
+    if (
+      currentPickCount > 0 &&
+      !window.confirm(
+        t("assistant.confirmReplace", { count: currentPickCount }),
+      )
+    ) {
+      return;
+    }
+    if (!commitUserMutation("assistant", assistantApplicationPlan.nextPicks)) {
+      window.alert(t("assistant.applyFailed"));
+      return;
+    }
+
+    const placedSongIds = new Set(
+      Object.values(assistantApplicationPlan.nextPicks),
+    );
+    const remainingShortlist = assistantShortlistIds.filter(
+      (songId) => !placedSongIds.has(songId),
+    );
+    const cleaned = await commitPickAssistantUpdate(remainingShortlist, null);
+    if (!cleaned) {
+      setBoardStatusMessage(t("assistant.applyCleanupFailed"));
+      return;
+    }
+    setShowPickAssistant(false);
+    setAssistantReviewNotice(false);
+    setBoardStatusMessage(t("assistant.applied"));
+  };
+
   const handleSelectSong = (song: Song) => {
     const currentPicks = storedPicksRef.current;
     const existingSlotId = slots.find(
@@ -1136,6 +1706,7 @@ export default function PickExperienceClient({
       ) {
         return;
       }
+      removePickedSongFromAssistant(song.id);
       setShowModal(false);
       setDetailSongId(null);
       setActiveSlotId(null);
@@ -1157,6 +1728,7 @@ export default function PickExperienceClient({
       ) {
         return;
       }
+      removePickedSongFromAssistant(song.id);
       setShowModal(false);
       setDetailSongId(null);
       return;
@@ -1211,6 +1783,7 @@ export default function PickExperienceClient({
         return;
       }
     }
+    removePickedSongFromAssistant(pendingReplacementSong.id);
     setPendingReplacementSong(null);
   };
 
@@ -1876,6 +2449,14 @@ export default function PickExperienceClient({
           onClearAll={handleClearAllPicks}
           onGenerate={handleGenerateImage}
           onGlobalSearch={handleGlobalSearchClick}
+          onOpenPickAssistant={() => {
+            if (!hydrated || isExportRealm) return;
+            setShowBoardLibrary(false);
+            setShowModal(false);
+            setDetailSongId(null);
+            setPendingReplacementSong(null);
+            setShowPickAssistant(true);
+          }}
           onUndo={() => applyHistoryAction("undo")}
           onRedo={() => applyHistoryAction("redo")}
           onOpenBoardLibrary={() => {
@@ -1892,11 +2473,13 @@ export default function PickExperienceClient({
           savedBoardCount={scopedSnapshots.length}
           totalSongs={eligibleSongsCount}
           selectedCount={Object.keys(picks).length}
+          shortlistCount={assistantShortlistIds.length}
           slotCount={slots.length}
           metricLabel={
             isStandard ? t("controls.songs") : t("controls.eligibleSongs")
           }
           generateButtonRef={previewTriggerRef}
+          pickAssistantButtonRef={pickAssistantTriggerRef}
           boardLinkCopied={boardLinkCopied}
         >
           {contextOptions.length > 0 ? (
@@ -1974,6 +2557,11 @@ export default function PickExperienceClient({
               selectedRanksBySongId={selectedRanksBySongId}
               favoriteSongIds={songDiscoveryState.favoriteSongIds}
               recentSongIds={songDiscoveryState.recentSongIds}
+              candidateSongIds={candidateSongIds}
+              candidateLimitReached={
+                assistantShortlistIds.length >=
+                PICK_ASSISTANT_CONFIG.maximumCandidates
+              }
               suspended={detailLayerActive}
               resumeFocusRef={detailTriggerRef}
               presenceState={presenceState}
@@ -1986,6 +2574,7 @@ export default function PickExperienceClient({
               }}
               onSelect={handleSelectSong}
               onToggleFavorite={handleToggleFavorite}
+              onToggleCandidate={handleToggleCandidate}
               onOpenDetail={handleOpenSongDetail}
             />
           )}
@@ -2003,10 +2592,19 @@ export default function PickExperienceClient({
               isRecentlyViewed={songDiscoveryState.recentSongIds.includes(
                 song.id,
               )}
+              isCandidate={candidateSongIds.has(song.id)}
+              candidateDisabled={
+                pickedSongIds.has(song.id) ||
+                (!candidateSongIds.has(song.id) &&
+                  assistantShortlistIds.length >=
+                    PICK_ASSISTANT_CONFIG.maximumCandidates) ||
+                Boolean(pickAssistantStorageIssue)
+              }
               presenceState={presenceState}
               onClose={() => setDetailSongId(null)}
               onSelect={handleSelectSongFromDetail}
               onToggleFavorite={handleToggleFavorite}
+              onToggleCandidate={handleToggleCandidate}
             />
           )}
         </MotionPresence>
@@ -2042,6 +2640,47 @@ export default function PickExperienceClient({
               presenceState={presenceState}
               onClose={handleCloseBoardShareDialog}
               onConfirm={handleConfirmBoardShareImport}
+            />
+          )}
+        </MotionPresence>
+
+        <MotionPresence
+          value={
+            showPickAssistant
+              ? {
+                  shortlist: shortlistSongs,
+                  session: assistantSession,
+                  applicationPlan: assistantApplicationPlan,
+                  storageIssue: pickAssistantStorageIssue,
+                }
+              : null
+          }
+        >
+          {(assistant, presenceState) => (
+            <PickAssistantModal
+              shortlist={assistant.shortlist}
+              session={assistant.session}
+              applicationPlan={assistant.applicationPlan}
+              slotLabels={assistantSlotLabels}
+              currentPickCount={Object.keys(storedPicks).length}
+              minimumCandidates={PICK_ASSISTANT_CONFIG.minimumCandidates}
+              maximumCandidates={PICK_ASSISTANT_CONFIG.maximumCandidates}
+              storageIssue={assistant.storageIssue}
+              reviewNotice={assistantReviewNotice}
+              presenceState={presenceState}
+              returnFocusKey={DIALOG_RETURN_KEYS.pickAssistant}
+              onClose={() => setShowPickAssistant(false)}
+              onRemoveCandidate={handleRemoveCandidate}
+              onClear={handleClearPickAssistant}
+              onStart={handleStartPickAssistant}
+              onCompare={handleAssistantComparison}
+              onSkip={handleSkipAssistantComparison}
+              onUndo={handleUndoAssistantComparison}
+              onRestart={handleRestartPickAssistant}
+              onApply={() => {
+                void handleApplyAssistantResult();
+              }}
+              onResetStorage={handleResetPickAssistantStorage}
             />
           )}
         </MotionPresence>

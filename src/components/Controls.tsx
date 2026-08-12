@@ -9,6 +9,7 @@ interface ControlsProps {
   onClearAll: () => void;
   onGenerate: () => void;
   onGlobalSearch: () => void;
+  onOpenPickAssistant: () => void;
   onUndo: () => void;
   onRedo: () => void;
   onOpenBoardLibrary: () => void;
@@ -23,9 +24,11 @@ interface ControlsProps {
   savedBoardCount: number;
   totalSongs: number;
   selectedCount: number;
+  shortlistCount: number;
   slotCount: number;
   metricLabel?: string;
   generateButtonRef?: React.Ref<HTMLButtonElement>;
+  pickAssistantButtonRef?: React.Ref<HTMLButtonElement>;
   boardLinkCopied?: boolean;
   children?: React.ReactNode;
 }
@@ -34,6 +37,7 @@ export default function Controls({
   onClearAll,
   onGenerate,
   onGlobalSearch,
+  onOpenPickAssistant,
   onUndo,
   onRedo,
   onOpenBoardLibrary,
@@ -48,9 +52,11 @@ export default function Controls({
   savedBoardCount,
   totalSongs,
   selectedCount,
+  shortlistCount,
   slotCount,
   metricLabel,
   generateButtonRef,
+  pickAssistantButtonRef,
   boardLinkCopied = false,
   children,
 }: ControlsProps) {
@@ -127,6 +133,19 @@ export default function Controls({
             >
               <AppIcon name="search" />
               {t("controls.searchSongs")}
+            </button>
+            <button
+              ref={pickAssistantButtonRef}
+              type="button"
+              onClick={onOpenPickAssistant}
+              data-dialog-return-key={DIALOG_RETURN_KEYS.pickAssistant}
+              className="official-button w-full sm:w-auto"
+            >
+              <AppIcon name="music" />
+              {t("controls.pickAssistant")}
+              <span className="rounded-full bg-[var(--background)] px-1.5 text-xs tabular-nums text-[var(--muted)]">
+                {shortlistCount}
+              </span>
             </button>
             <button
               type="button"
