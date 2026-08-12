@@ -19,9 +19,10 @@ interface PickSlotCardProps {
   song?: Song;
   layout?: InteractivePickLayout;
   showSlotMetadata?: boolean;
-  onClick: () => void;
+  onClick: React.MouseEventHandler<HTMLButtonElement>;
   onClear: (event: React.MouseEvent) => void;
   reorderHandleProps?: ReorderHandleProps;
+  reorderSurfaceProps?: ReorderSurfaceProps;
 }
 
 export interface ReorderHandleProps {
@@ -36,6 +37,15 @@ export interface ReorderHandleProps {
   onLostPointerCapture: React.PointerEventHandler<HTMLButtonElement>;
 }
 
+export interface ReorderSurfaceProps {
+  onPointerDown: React.PointerEventHandler<HTMLButtonElement>;
+  onPointerMove: React.PointerEventHandler<HTMLButtonElement>;
+  onPointerUp: React.PointerEventHandler<HTMLButtonElement>;
+  onPointerCancel: React.PointerEventHandler<HTMLButtonElement>;
+  onLostPointerCapture: React.PointerEventHandler<HTMLButtonElement>;
+  onContextMenu: React.MouseEventHandler<HTMLButtonElement>;
+}
+
 export type InteractivePickLayout = "top10-grid" | "live-memory-grid";
 
 export default function PickSlotCard({
@@ -46,6 +56,7 @@ export default function PickSlotCard({
   onClick,
   onClear,
   reorderHandleProps,
+  reorderSurfaceProps,
 }: PickSlotCardProps) {
   const { t } = useLocale();
   const compact = layout === "live-memory-grid";
@@ -79,6 +90,7 @@ export default function PickSlotCard({
               showSlotMetadata={showSlotMetadata}
               onClick={onClick}
               onClear={handleClear}
+              reorderSurfaceProps={song ? reorderSurfaceProps : undefined}
             />
           </AnimatedCardFace>
         </AnimatePresence>
@@ -151,13 +163,15 @@ function CardFace({
   showSlotMetadata,
   onClick,
   onClear,
+  reorderSurfaceProps,
 }: {
   slot: PickSlot;
   song?: Song;
   compact: boolean;
   showSlotMetadata: boolean;
-  onClick: () => void;
+  onClick: React.MouseEventHandler<HTMLButtonElement>;
   onClear: (event: React.MouseEvent) => void;
+  reorderSurfaceProps?: ReorderSurfaceProps;
 }) {
   const { t } = useLocale();
   const returnKey = getPickSlotReturnKey(slot.id);
@@ -208,6 +222,7 @@ function CardFace({
       <button
         type="button"
         onClick={onClick}
+        data-reorder-surface
         data-dialog-return-key={returnKey}
         className={`pick-card-action grid w-full text-left transition-transform duration-100 active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring)] ${
           compact
@@ -219,6 +234,12 @@ function CardFace({
           slot: slot.label,
           title: song.title.ja,
         })}
+        onPointerDown={reorderSurfaceProps?.onPointerDown}
+        onPointerMove={reorderSurfaceProps?.onPointerMove}
+        onPointerUp={reorderSurfaceProps?.onPointerUp}
+        onPointerCancel={reorderSurfaceProps?.onPointerCancel}
+        onLostPointerCapture={reorderSurfaceProps?.onLostPointerCapture}
+        onContextMenu={reorderSurfaceProps?.onContextMenu}
       >
         <CardHeader label={slot.label} reserveAction />
         {compact ? (
@@ -226,6 +247,7 @@ function CardFace({
             <div className="pick-cover-surface pick-cover-surface-compact relative isolate aspect-square w-[clamp(150px,46%,180px)] shrink-0 self-center overflow-hidden border-r border-[var(--line)] bg-white">
               <img
                 src={song.coverUrl}
+                draggable={false}
                 alt={t("pick.coverAlt", { title: song.title.ja })}
                 className="pick-cover-image block h-full w-full object-contain"
                 loading="lazy"
@@ -248,6 +270,7 @@ function CardFace({
             <div className="pick-cover-surface relative isolate aspect-square w-full overflow-hidden border-y border-[var(--line)] bg-[var(--paper-soft)]">
               <img
                 src={song.coverUrl}
+                draggable={false}
                 alt={t("pick.coverAlt", { title: song.title.ja })}
                 className="pick-cover-image block h-full w-full object-contain"
                 loading="lazy"

@@ -436,6 +436,19 @@ a {
   -webkit-user-select: none;
 }
 
+.pick-card-action[data-reorder-surface] {
+  cursor: grab;
+  touch-action: pan-y pinch-zoom;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.pick-reorder-slot[data-dragging="true"]
+  .pick-card-action[data-reorder-surface] {
+  cursor: grabbing;
+}
+
 .pick-reorder-handle[data-active="true"] {
   color: var(--foreground);
 }

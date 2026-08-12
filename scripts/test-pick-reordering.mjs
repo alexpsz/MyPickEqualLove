@@ -33,6 +33,14 @@ const {
   relocateStoredPick,
 } = require("../src/data/pickExperiences.ts");
 const { SONGS } = require("../src/data/songs.ts");
+const {
+  activateReorderLongPress,
+  advanceReorderPointerGesture,
+  createSurfaceClickSuppression,
+  createReorderPointerGesture,
+  shouldSuppressReorderClick,
+  shouldSuppressSurfaceClick,
+} = require("../src/utils/pickReorderGesture.ts");
 
 function expectSuccessfulRelocation(result, mode) {
   assert.equal(result.ok, true);
@@ -174,4 +182,105 @@ assert.deepEqual(rejectedLiveSwap, {
 assert.equal(JSON.stringify(illegalLivePicks), illegalSnapshot);
 assert.equal("nextPicks" in rejectedLiveSwap, false);
 
-console.log("Pick reordering state tests passed.");
+const mouseSurfacePending = advanceReorderPointerGesture({
+  gesture: createReorderPointerGesture({
+    source: "surface",
+    pointerType: "mouse",
+  }),
+  deltaX: 6,
+  deltaY: 7,
+});
+assert.equal(mouseSurfacePending.phase, "pending");
+assert.equal(shouldSuppressReorderClick(mouseSurfacePending), false);
+
+const mouseSurfaceDragging = advanceReorderPointerGesture({
+  gesture: mouseSurfacePending,
+  deltaX: 12,
+  deltaY: 0,
+});
+assert.equal(mouseSurfaceDragging.phase, "dragging");
+assert.equal(shouldSuppressReorderClick(mouseSurfaceDragging), true);
+
+const penSurfaceDragging = advanceReorderPointerGesture({
+  gesture: createReorderPointerGesture({
+    source: "surface",
+    pointerType: "pen",
+  }),
+  deltaX: 0,
+  deltaY: 11,
+});
+assert.equal(penSurfaceDragging.phase, "dragging");
+
+const touchSurfaceScroll = advanceReorderPointerGesture({
+  gesture: createReorderPointerGesture({
+    source: "surface",
+    pointerType: "touch",
+  }),
+  deltaX: 2,
+  deltaY: 12,
+});
+assert.equal(touchSurfaceScroll.phase, "cancelled");
+assert.equal(shouldSuppressReorderClick(touchSurfaceScroll), true);
+
+const touchSurfaceLongPress = activateReorderLongPress(
+  createReorderPointerGesture({ source: "surface", pointerType: "touch" }),
+);
+assert.equal(touchSurfaceLongPress.phase, "dragging");
+assert.equal(shouldSuppressReorderClick(touchSurfaceLongPress), true);
+
+const touchHandleDragging = advanceReorderPointerGesture({
+  gesture: createReorderPointerGesture({
+    source: "handle",
+    pointerType: "touch",
+  }),
+  deltaX: 0,
+  deltaY: 10,
+});
+assert.equal(touchHandleDragging.phase, "dragging");
+assert.equal(shouldSuppressReorderClick(touchHandleDragging), true);
+
+const handleLongPressDoesNotStart = activateReorderLongPress(
+  createReorderPointerGesture({ source: "handle", pointerType: "touch" }),
+);
+assert.equal(handleLongPressDoesNotStart.phase, "pending");
+
+const surfaceSuppression = createSurfaceClickSuppression("slot-1", 1_000);
+assert.equal(
+  shouldSuppressSurfaceClick({
+    suppression: surfaceSuppression,
+    slotId: "slot-1",
+    now: 1_650,
+  }),
+  true,
+);
+assert.equal(
+  shouldSuppressSurfaceClick({
+    suppression: surfaceSuppression,
+    slotId: "slot-2",
+    now: 1_650,
+  }),
+  false,
+);
+
+const releaseAnchoredSuppression = createSurfaceClickSuppression(
+  "slot-1",
+  10_000,
+);
+assert.equal(
+  shouldSuppressSurfaceClick({
+    suppression: releaseAnchoredSuppression,
+    slotId: "slot-1",
+    now: 10_650,
+  }),
+  true,
+);
+assert.equal(
+  shouldSuppressSurfaceClick({
+    suppression: surfaceSuppression,
+    slotId: "slot-1",
+    now: 1_701,
+  }),
+  false,
+);
+
+console.log("Pick reordering state and gesture tests passed.");

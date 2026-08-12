@@ -11,6 +11,17 @@ import { flushSync } from "react-dom";
 import type { RelocatePickResult } from "../data/pickExperiences";
 import { useLocale } from "../i18n/LocaleProvider";
 import type { PickSlot, PickSlotId, Picks } from "../schema/music";
+import {
+  activateReorderLongPress,
+  advanceReorderPointerGesture,
+  createSurfaceClickSuppression,
+  createReorderPointerGesture,
+  shouldSuppressSurfaceClick,
+  shouldSuppressReorderClick,
+  TOUCH_SURFACE_LONG_PRESS_MS,
+  type ReorderPointerGesture,
+  type ReorderPointerSource,
+} from "../utils/pickReorderGesture";
 import PickSlotCard, { type InteractivePickLayout } from "./PickSlotCard";
 
 interface PickBoardProps {
@@ -41,17 +52,18 @@ interface PointerReorderSession {
   pointerId: number;
   sourceSlotId: PickSlotId;
   targetSlotId: PickSlotId | null;
-  button: HTMLButtonElement;
+  captureTarget: HTMLButtonElement;
   wrapper: HTMLDivElement;
   sourceRect: DOMRect;
   startClientX: number;
   startClientY: number;
   startScrollX: number;
   startScrollY: number;
-  dragging: boolean;
+  gesture: ReorderPointerGesture;
+  longPressTimer: number | null;
+  removeTouchListeners: (() => void) | null;
 }
 
-const POINTER_DRAG_THRESHOLD = 10;
 const EDGE_SCROLL_ZONE = 56;
 const EDGE_SCROLL_STEP = 14;
 
@@ -72,7 +84,11 @@ export default function PickBoard({
   );
   const wrappersRef = useRef(new Map<PickSlotId, HTMLDivElement>());
   const pointerSessionRef = useRef<PointerReorderSession | null>(null);
-  const suppressHandleClickRef = useRef(false);
+  const suppressHandleClickUntilRef = useRef(0);
+  const suppressSurfaceClickRef = useRef<{
+    slotId: PickSlotId;
+    expiresAt: number;
+  } | null>(null);
   const [keyboardSession, setKeyboardSession] =
     useState<KeyboardReorderSession | null>(null);
   const [dragSourceSlotId, setDragSourceSlotId] = useState<PickSlotId | null>(
@@ -101,6 +117,17 @@ export default function PickBoard({
         wrappersRef.current
           .get(slotId)
           ?.querySelector<HTMLButtonElement>("[data-reorder-handle]")
+          ?.focus();
+      });
+    });
+  }, []);
+
+  const focusReorderSurface = useCallback((slotId: PickSlotId) => {
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        wrappersRef.current
+          .get(slotId)
+          ?.querySelector<HTMLButtonElement>("[data-reorder-surface]")
           ?.focus();
       });
     });
@@ -142,10 +169,14 @@ export default function PickBoard({
   );
 
   const commitRelocation = useCallback(
-    (fromSlotId: PickSlotId, toSlotId: PickSlotId) => {
+    (
+      fromSlotId: PickSlotId,
+      toSlotId: PickSlotId,
+      restoreKeyboardFocus = true,
+    ) => {
       const result = onRelocate(fromSlotId, toSlotId);
       announceResult(result);
-      if (result.ok) {
+      if (result.ok && restoreKeyboardFocus) {
         focusReorderHandle(toSlotId);
       }
       return result;
@@ -234,23 +265,105 @@ export default function PickBoard({
     [announceResult, keyboardSession, picks, previewRelocation, sortedSlots, t],
   );
 
-  const resetPointerStyles = useCallback((session: PointerReorderSession) => {
-    session.wrapper.style.removeProperty("transform");
-    session.wrapper.style.removeProperty("z-index");
-    session.wrapper.style.removeProperty("pointer-events");
-    delete session.wrapper.dataset.dragging;
-    delete session.wrapper.dataset.pressed;
-    setDragSourceSlotId(null);
-    setDragTarget(null);
+  const resetPointerDomStyles = useCallback(
+    (session: PointerReorderSession) => {
+      session.wrapper.style.removeProperty("transform");
+      session.wrapper.style.removeProperty("z-index");
+      delete session.wrapper.dataset.dragging;
+      delete session.wrapper.dataset.pressed;
+    },
+    [],
+  );
+
+  const resetPointerStyles = useCallback(
+    (session: PointerReorderSession) => {
+      resetPointerDomStyles(session);
+      setDragSourceSlotId(null);
+      setDragTarget(null);
+    },
+    [resetPointerDomStyles],
+  );
+
+  const clearLongPressTimer = useCallback((session: PointerReorderSession) => {
+    if (session.longPressTimer === null) return;
+    window.clearTimeout(session.longPressTimer);
+    session.longPressTimer = null;
+  }, []);
+
+  const removeTouchListeners = useCallback((session: PointerReorderSession) => {
+    session.removeTouchListeners?.();
+    session.removeTouchListeners = null;
+  }, []);
+
+  const releasePointerCapture = useCallback(
+    (session: PointerReorderSession) => {
+      try {
+        if (session.captureTarget.hasPointerCapture(session.pointerId)) {
+          session.captureTarget.releasePointerCapture(session.pointerId);
+        }
+      } catch {
+        // The browser may already have retired the pointer during cancellation.
+      }
+    },
+    [],
+  );
+
+  const cleanPointerSession = useCallback(
+    (session: PointerReorderSession, updateReactState = true) => {
+      clearLongPressTimer(session);
+      removeTouchListeners(session);
+      releasePointerCapture(session);
+      if (updateReactState) resetPointerStyles(session);
+      else resetPointerDomStyles(session);
+    },
+    [
+      clearLongPressTimer,
+      releasePointerCapture,
+      removeTouchListeners,
+      resetPointerDomStyles,
+      resetPointerStyles,
+    ],
+  );
+
+  const suppressPointerClick = useCallback((session: PointerReorderSession) => {
+    const now = Date.now();
+    if (session.gesture.source === "handle") {
+      suppressHandleClickUntilRef.current = createSurfaceClickSuppression(
+        session.sourceSlotId,
+        now,
+      ).expiresAt;
+    } else {
+      suppressSurfaceClickRef.current = createSurfaceClickSuppression(
+        session.sourceSlotId,
+        now,
+      );
+    }
+  }, []);
+
+  const beginPointerDrag = useCallback((session: PointerReorderSession) => {
+    if (session.gesture.phase !== "dragging") return;
+    session.wrapper.dataset.dragging = "true";
+    session.wrapper.style.zIndex = "40";
+    if (session.gesture.source === "handle") {
+      suppressHandleClickUntilRef.current = 0;
+    } else {
+      suppressSurfaceClickRef.current = createSurfaceClickSuppression(
+        session.sourceSlotId,
+        Date.now(),
+      );
+    }
+    setDragSourceSlotId(session.sourceSlotId);
   }, []);
 
   const cancelPointerReorder = useCallback(() => {
     const session = pointerSessionRef.current;
     if (!session) return;
     pointerSessionRef.current = null;
-    suppressHandleClickRef.current = false;
-    resetPointerStyles(session);
-    if (session.dragging) {
+    if (shouldSuppressReorderClick(session.gesture)) {
+      suppressPointerClick(session);
+    }
+    cleanPointerSession(session);
+    if (session.gesture.phase === "dragging") {
       const sourceSlot = getSlot(session.sourceSlotId);
       const title = picks[session.sourceSlotId]?.title.ja ?? "";
       setAnnouncement(
@@ -260,7 +373,7 @@ export default function PickBoard({
         }),
       );
     }
-  }, [getSlot, picks, resetPointerStyles, t]);
+  }, [cleanPointerSession, getSlot, picks, suppressPointerClick, t]);
 
   const findPointerTarget = useCallback(
     (clientX: number, clientY: number, session: PointerReorderSession) => {
@@ -285,8 +398,81 @@ export default function PickBoard({
     [sortedSlots],
   );
 
+  const updatePointerDrag = useCallback(
+    (session: PointerReorderSession, clientX: number, clientY: number) => {
+      const pointerDeltaX = clientX - session.startClientX;
+      const pointerDeltaY = clientY - session.startClientY;
+
+      if (clientY < EDGE_SCROLL_ZONE) {
+        window.scrollBy({ top: -EDGE_SCROLL_STEP, behavior: "auto" });
+      } else if (clientY > window.innerHeight - EDGE_SCROLL_ZONE) {
+        window.scrollBy({ top: EDGE_SCROLL_STEP, behavior: "auto" });
+      }
+
+      const translateX =
+        pointerDeltaX + (window.scrollX - session.startScrollX);
+      const translateY =
+        pointerDeltaY + (window.scrollY - session.startScrollY);
+      session.wrapper.style.transform = `translate3d(${translateX}px, ${translateY}px, 0)`;
+
+      const targetSlotId = findPointerTarget(clientX, clientY, session);
+      session.targetSlotId = targetSlotId;
+      if (!targetSlotId || targetSlotId === session.sourceSlotId) {
+        setDragTarget(null);
+        return;
+      }
+      const result = previewRelocation(session.sourceSlotId, targetSlotId);
+      setDragTarget({ slotId: targetSlotId, valid: result.ok });
+    },
+    [findPointerTarget, previewRelocation],
+  );
+
+  const finishPointerReorder = useCallback(
+    (session: PointerReorderSession) => {
+      if (pointerSessionRef.current !== session) return;
+      pointerSessionRef.current = null;
+      const restorePointerFocus =
+        document.activeElement === session.captureTarget;
+      cleanPointerSession(session);
+      if (!shouldSuppressReorderClick(session.gesture)) return;
+
+      suppressPointerClick(session);
+      if (
+        session.targetSlotId &&
+        session.targetSlotId !== session.sourceSlotId
+      ) {
+        let result: RelocatePickResult | undefined;
+        flushSync(() => {
+          result = commitRelocation(
+            session.sourceSlotId,
+            session.targetSlotId!,
+            false,
+          );
+        });
+        if (result?.ok && restorePointerFocus) {
+          if (session.gesture.source === "handle") {
+            focusReorderHandle(session.targetSlotId);
+          } else {
+            focusReorderSurface(session.targetSlotId);
+          }
+        }
+      }
+    },
+    [
+      cleanPointerSession,
+      commitRelocation,
+      focusReorderHandle,
+      focusReorderSurface,
+      suppressPointerClick,
+    ],
+  );
+
   const handlePointerDown = useCallback(
-    (slotId: PickSlotId, event: React.PointerEvent<HTMLButtonElement>) => {
+    (
+      slotId: PickSlotId,
+      source: ReorderPointerSource,
+      event: React.PointerEvent<HTMLButtonElement>,
+    ) => {
       if (
         !event.isPrimary ||
         (event.pointerType === "mouse" && event.button !== 0)
@@ -299,116 +485,176 @@ export default function PickBoard({
       const wrapper = wrappersRef.current.get(slotId);
       if (!wrapper || !picks[slotId]) return;
 
-      event.currentTarget.focus();
+      if (source === "handle") event.currentTarget.focus();
       try {
         event.currentTarget.setPointerCapture(event.pointerId);
       } catch {
         return;
       }
       wrapper.dataset.pressed = "true";
-      pointerSessionRef.current = {
+      const session: PointerReorderSession = {
         pointerId: event.pointerId,
         sourceSlotId: slotId,
         targetSlotId: slotId,
-        button: event.currentTarget,
+        captureTarget: event.currentTarget,
         wrapper,
         sourceRect: wrapper.getBoundingClientRect(),
         startClientX: event.clientX,
         startClientY: event.clientY,
         startScrollX: window.scrollX,
         startScrollY: window.scrollY,
-        dragging: false,
+        gesture: createReorderPointerGesture({
+          source,
+          pointerType: event.pointerType,
+        }),
+        longPressTimer: null,
+        removeTouchListeners: null,
       };
+      pointerSessionRef.current = session;
+
+      if (source === "surface" && event.pointerType === "touch") {
+        const touchTarget = event.currentTarget;
+        const handleTouchMove = (touchEvent: TouchEvent) => {
+          if (pointerSessionRef.current !== session) return;
+          if (touchEvent.touches.length !== 1) {
+            cancelPointerReorder();
+            return;
+          }
+          const touch = touchEvent.touches[0];
+          const previousPhase = session.gesture.phase;
+          session.gesture = advanceReorderPointerGesture({
+            gesture: session.gesture,
+            deltaX: touch.clientX - session.startClientX,
+            deltaY: touch.clientY - session.startClientY,
+          });
+          if (session.gesture.phase === "cancelled") {
+            cancelPointerReorder();
+            return;
+          }
+          if (session.gesture.phase !== "dragging") return;
+
+          touchEvent.preventDefault();
+          if (previousPhase !== "dragging") {
+            clearLongPressTimer(session);
+            beginPointerDrag(session);
+          }
+          updatePointerDrag(session, touch.clientX, touch.clientY);
+        };
+        touchTarget.addEventListener("touchmove", handleTouchMove, {
+          passive: false,
+        });
+        session.removeTouchListeners = () => {
+          touchTarget.removeEventListener("touchmove", handleTouchMove);
+        };
+        session.longPressTimer = window.setTimeout(() => {
+          if (pointerSessionRef.current !== session) return;
+          session.longPressTimer = null;
+          session.gesture = activateReorderLongPress(session.gesture);
+          beginPointerDrag(session);
+        }, TOUCH_SURFACE_LONG_PRESS_MS);
+      }
     },
-    [cancelPointerReorder, picks],
+    [
+      beginPointerDrag,
+      cancelPointerReorder,
+      clearLongPressTimer,
+      picks,
+      updatePointerDrag,
+    ],
   );
 
   const handlePointerMove = useCallback(
     (event: React.PointerEvent<HTMLButtonElement>) => {
       const session = pointerSessionRef.current;
       if (!session || session.pointerId !== event.pointerId) return;
-
-      const pointerDeltaX = event.clientX - session.startClientX;
-      const pointerDeltaY = event.clientY - session.startClientY;
       if (
-        !session.dragging &&
-        Math.hypot(pointerDeltaX, pointerDeltaY) < POINTER_DRAG_THRESHOLD
+        session.gesture.source === "surface" &&
+        session.gesture.pointerType === "touch"
       ) {
         return;
       }
 
-      event.preventDefault();
-      if (!session.dragging) {
-        session.dragging = true;
-        suppressHandleClickRef.current = true;
-        session.wrapper.dataset.dragging = "true";
-        session.wrapper.style.pointerEvents = "none";
-        session.wrapper.style.zIndex = "40";
-        setDragSourceSlotId(session.sourceSlotId);
-      }
-
-      if (event.clientY < EDGE_SCROLL_ZONE) {
-        window.scrollBy({ top: -EDGE_SCROLL_STEP, behavior: "auto" });
-      } else if (event.clientY > window.innerHeight - EDGE_SCROLL_ZONE) {
-        window.scrollBy({ top: EDGE_SCROLL_STEP, behavior: "auto" });
-      }
-
-      const translateX =
-        pointerDeltaX + (window.scrollX - session.startScrollX);
-      const translateY =
-        pointerDeltaY + (window.scrollY - session.startScrollY);
-      session.wrapper.style.transform = `translate3d(${translateX}px, ${translateY}px, 0)`;
-
-      const targetSlotId = findPointerTarget(
-        event.clientX,
-        event.clientY,
-        session,
-      );
-      session.targetSlotId = targetSlotId;
-      if (!targetSlotId || targetSlotId === session.sourceSlotId) {
-        setDragTarget(null);
+      const pointerDeltaX = event.clientX - session.startClientX;
+      const pointerDeltaY = event.clientY - session.startClientY;
+      const previousPhase = session.gesture.phase;
+      session.gesture = advanceReorderPointerGesture({
+        gesture: session.gesture,
+        deltaX: pointerDeltaX,
+        deltaY: pointerDeltaY,
+      });
+      if (session.gesture.phase === "cancelled") {
+        cancelPointerReorder();
         return;
       }
-      const result = previewRelocation(session.sourceSlotId, targetSlotId);
-      setDragTarget({ slotId: targetSlotId, valid: result.ok });
+      if (session.gesture.phase === "pending") {
+        return;
+      }
+
+      event.preventDefault();
+      if (previousPhase !== "dragging") {
+        clearLongPressTimer(session);
+        beginPointerDrag(session);
+      }
+
+      updatePointerDrag(session, event.clientX, event.clientY);
     },
-    [findPointerTarget, previewRelocation],
+    [
+      beginPointerDrag,
+      cancelPointerReorder,
+      clearLongPressTimer,
+      updatePointerDrag,
+    ],
   );
 
   const handlePointerUp = useCallback(
     (event: React.PointerEvent<HTMLButtonElement>) => {
       const session = pointerSessionRef.current;
       if (!session || session.pointerId !== event.pointerId) return;
-      pointerSessionRef.current = null;
-      if (session.button.hasPointerCapture(event.pointerId)) {
-        session.button.releasePointerCapture(event.pointerId);
-      }
-      resetPointerStyles(session);
-      if (!session.dragging) return;
-
-      event.preventDefault();
-      window.setTimeout(() => {
-        suppressHandleClickRef.current = false;
-      }, 0);
-      if (
-        session.targetSlotId &&
-        session.targetSlotId !== session.sourceSlotId
-      ) {
-        flushSync(() => {
-          commitRelocation(session.sourceSlotId, session.targetSlotId!);
-        });
-      }
+      if (shouldSuppressReorderClick(session.gesture)) event.preventDefault();
+      finishPointerReorder(session);
     },
-    [commitRelocation, resetPointerStyles],
+    [finishPointerReorder],
+  );
+
+  const handlePointerCancellation = useCallback(
+    (event: React.PointerEvent<HTMLButtonElement>) => {
+      const session = pointerSessionRef.current;
+      if (!session || session.pointerId !== event.pointerId) return;
+      cancelPointerReorder();
+    },
+    [cancelPointerReorder],
+  );
+
+  const handleSlotClick = useCallback(
+    (slotId: PickSlotId, event: React.MouseEvent<HTMLButtonElement>) => {
+      const suppression = suppressSurfaceClickRef.current;
+      if (
+        shouldSuppressSurfaceClick({
+          suppression,
+          slotId,
+          now: Date.now(),
+        })
+      ) {
+        event.preventDefault();
+        event.stopPropagation();
+        suppressSurfaceClickRef.current = null;
+        return;
+      }
+      suppressSurfaceClickRef.current = null;
+      onSlotClick(slotId);
+    },
+    [onSlotClick],
   );
 
   const handleReorderClick = useCallback(
     (slotId: PickSlotId, event: React.MouseEvent<HTMLButtonElement>) => {
       event.stopPropagation();
-      if (suppressHandleClickRef.current) {
-        suppressHandleClickRef.current = false;
+      if (suppressHandleClickUntilRef.current >= Date.now()) {
+        event.preventDefault();
+        suppressHandleClickUntilRef.current = 0;
         return;
       }
+      suppressHandleClickUntilRef.current = 0;
       if (keyboardSession?.sourceSlotId === slotId) {
         finishKeyboardReorder();
       } else {
@@ -444,8 +690,12 @@ export default function PickBoard({
 
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && pointerSessionRef.current?.dragging) {
+      if (event.key === "Escape" && pointerSessionRef.current) {
         event.preventDefault();
+        pointerSessionRef.current.gesture = {
+          ...pointerSessionRef.current.gesture,
+          phase: "cancelled",
+        };
         cancelPointerReorder();
       }
     };
@@ -463,6 +713,20 @@ export default function PickBoard({
       document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, [cancelPointerReorder]);
+
+  useEffect(
+    () => () => {
+      const session = pointerSessionRef.current;
+      if (!session) return;
+      pointerSessionRef.current = null;
+      cleanPointerSession(session, false);
+    },
+    [cleanPointerSession],
+  );
+
+  useEffect(() => {
+    if (pointerSessionRef.current) cancelPointerReorder();
+  }, [cancelPointerReorder, onRelocate, picks, previewRelocation]);
 
   useEffect(() => {
     if (
@@ -580,7 +844,7 @@ export default function PickBoard({
               song={picks[slot.id]}
               layout={layout}
               showSlotMetadata={showSlotMetadata}
-              onClick={() => onSlotClick(slot.id)}
+              onClick={(event) => handleSlotClick(slot.id, event)}
               onClear={(event) => onClearSlot(slot.id, event)}
               reorderHandleProps={
                 picks[slot.id]
@@ -594,11 +858,36 @@ export default function PickBoard({
                       onKeyDown: (event) =>
                         handleReorderKeyDown(slot.id, event),
                       onPointerDown: (event) =>
-                        handlePointerDown(slot.id, event),
+                        handlePointerDown(slot.id, "handle", event),
                       onPointerMove: handlePointerMove,
                       onPointerUp: handlePointerUp,
-                      onPointerCancel: cancelPointerReorder,
-                      onLostPointerCapture: cancelPointerReorder,
+                      onPointerCancel: handlePointerCancellation,
+                      onLostPointerCapture: handlePointerCancellation,
+                    }
+                  : undefined
+              }
+              reorderSurfaceProps={
+                picks[slot.id]
+                  ? {
+                      onPointerDown: (event) =>
+                        handlePointerDown(slot.id, "surface", event),
+                      onPointerMove: handlePointerMove,
+                      onPointerUp: handlePointerUp,
+                      onPointerCancel: handlePointerCancellation,
+                      onLostPointerCapture: handlePointerCancellation,
+                      onContextMenu: (event) => {
+                        const activeSession = pointerSessionRef.current;
+                        if (
+                          activeSession?.sourceSlotId === slot.id ||
+                          shouldSuppressSurfaceClick({
+                            suppression: suppressSurfaceClickRef.current,
+                            slotId: slot.id,
+                            now: Date.now(),
+                          })
+                        ) {
+                          event.preventDefault();
+                        }
+                      },
                     }
                   : undefined
               }

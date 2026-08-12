@@ -144,7 +144,7 @@ const en = {
   "pick.coverAlt": "Cover art for {title}",
   "reorder.handleAria": "Reorder {title}, currently {position}",
   "reorder.instructions":
-    "Press Space or Enter to start. Use the arrow keys or move buttons, then press Space or Enter to finish. Press Escape to cancel.",
+    "Drag a selected card with a mouse or pen. On touch, long-press the card before dragging, or drag its handle. For keyboard sorting, press Space or Enter to start, use the arrow keys or move buttons, then confirm; press Escape to cancel.",
   "reorder.toolbarLabel": "Reorder {title}",
   "reorder.started": "Reordering {title} from {position}.",
   "reorder.moved": "{title} moved from {from} to {to}.",
@@ -664,7 +664,7 @@ const ja: MessageCatalog = {
   "pick.coverAlt": "{title}のジャケット画像",
   "reorder.handleAria": "{title}の並べ替え。現在の位置：{position}",
   "reorder.instructions":
-    "スペースキーまたはEnterキーで開始します。方向キーまたは移動ボタンで位置を変え、スペースキーまたはEnterキーで確定します。Escapeキーでキャンセルします。",
+    "選択済みカードはマウスやペンでドラッグできます。タッチ操作ではカードを長押ししてからドラッグするか、ハンドルをドラッグします。キーボードではスペースキーまたはEnterキーで開始し、方向キーまたは移動ボタンで位置を変えて確定します。Escapeキーでキャンセルします。",
   "reorder.toolbarLabel": "{title}を並べ替え",
   "reorder.started": "{position}の{title}を並べ替え中です。",
   "reorder.moved": "{title}を{from}から{to}へ移動しました。",
@@ -1156,7 +1156,7 @@ const zhCN: MessageCatalog = {
   "pick.coverAlt": "{title}的封面",
   "reorder.handleAria": "重新排序“{title}”，当前位置：{position}",
   "reorder.instructions":
-    "按空格键或 Enter 开始排序。使用方向键或移动按钮调整位置，再按空格键或 Enter 确认；按 Esc 取消。",
+    "使用鼠标或触控笔可直接拖动已选歌曲卡片；触屏时请长按卡片后拖动，也可直接拖动把手。键盘排序请按空格键或 Enter 开始，使用方向键或移动按钮调整后确认；按 Esc 取消。",
   "reorder.toolbarLabel": "重新排序“{title}”",
   "reorder.started": "正在从{position}移动“{title}”。",
   "reorder.moved": "已将“{title}”从{from}移到{to}。",
@@ -1651,7 +1651,7 @@ const ko: MessageCatalog = {
   "pick.coverAlt": "{title} 재킷 이미지",
   "reorder.handleAria": "{title} 순서 변경, 현재 위치: {position}",
   "reorder.instructions":
-    "Space 또는 Enter 키로 시작합니다. 방향키나 이동 버튼으로 위치를 바꾼 뒤 Space 또는 Enter 키로 확정하고 Escape 키로 취소합니다.",
+    "선택한 카드는 마우스나 펜으로 드래그할 수 있습니다. 터치에서는 카드를 길게 누른 뒤 드래그하거나 핸들을 드래그하세요. 키보드는 Space 또는 Enter 키로 시작하고 방향키나 이동 버튼으로 위치를 바꾼 뒤 확정하며 Escape 키로 취소합니다.",
   "reorder.toolbarLabel": "{title} 순서 변경",
   "reorder.started": "순서 변경을 시작했습니다. {title}: {position}.",
   "reorder.moved": "{title} 이동 완료: {from} → {to}.",
