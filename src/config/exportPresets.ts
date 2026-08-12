@@ -241,16 +241,26 @@ const CONTENT_METRICS: Record<
 };
 
 export function isExportTemplateId(value: unknown): value is ExportTemplateId {
-  return typeof value === "string" && value in EXPORT_TEMPLATES;
+  return (
+    typeof value === "string" &&
+    Object.prototype.hasOwnProperty.call(EXPORT_TEMPLATES, value)
+  );
 }
 
 export function isExportSizePresetId(
   value: unknown,
 ): value is ExportSizePresetId {
-  return typeof value === "string" && value in EXPORT_SIZE_PRESETS;
+  return (
+    typeof value === "string" &&
+    Object.prototype.hasOwnProperty.call(EXPORT_SIZE_PRESETS, value)
+  );
 }
 
 export function getExportSizePreset(id: ExportSizePresetId) {
+  if (!isExportSizePresetId(id)) {
+    throw new Error(`Unknown export size preset: ${String(id)}`);
+  }
+
   return EXPORT_SIZE_PRESETS[id];
 }
 

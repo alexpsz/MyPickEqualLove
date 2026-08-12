@@ -6,6 +6,9 @@ import {
   EXPORT_SIZE_PRESET_ORDER,
   EXPORT_SIZE_PRESETS,
   EXPORT_TEMPLATE_ORDER,
+  getExportSizePreset,
+  isExportSizePresetId,
+  isExportTemplateId,
   resolveExportComposition,
 } from "../src/config/exportPresets";
 import { buildExportImageFileName } from "../src/utils/exportFileName";
@@ -151,6 +154,59 @@ test("v2 options round trip only lightweight values", () => {
     "transparentBg",
     "version",
   ]);
+});
+
+test("preset id guards reject inherited object properties", () => {
+  for (const inheritedProperty of ["toString", "__proto__"]) {
+    assert.equal(isExportTemplateId(inheritedProperty), false);
+    assert.equal(isExportSizePresetId(inheritedProperty), false);
+    assert.throws(
+      () => getExportSizePreset(inheritedProperty as "portrait"),
+      /Unknown export size preset/,
+    );
+  }
+});
+
+test("published schemaVersion 2 options migrate onto Classic portrait", () => {
+  assert.deepEqual(
+    parseStoredExportOptions(
+      JSON.stringify({
+        schemaVersion: 2,
+        showTitles: false,
+        transparentBg: true,
+      }),
+      null,
+    ),
+    {
+      showTitles: false,
+      transparentBg: true,
+      templateId: "classic",
+      sizePresetId: "portrait",
+    },
+  );
+});
+
+test("invalid schemaVersion options fail closed without legacy fallback", () => {
+  const legacy = JSON.stringify({ showTitles: false, transparentBg: true });
+  const invalidIntermediateOptions = [
+    { schemaVersion: 3, showTitles: false, transparentBg: true },
+    { showTitles: false, transparentBg: true },
+    { schemaVersion: 2, transparentBg: true },
+    { schemaVersion: 2, showTitles: false, transparentBg: "yes" },
+    {
+      version: 99,
+      schemaVersion: 2,
+      showTitles: false,
+      transparentBg: true,
+    },
+  ];
+
+  for (const options of invalidIntermediateOptions) {
+    assert.deepEqual(
+      parseStoredExportOptions(JSON.stringify(options), legacy),
+      DEFAULT_EXPORT_OPTIONS,
+    );
+  }
 });
 
 test("legacy booleans migrate onto Classic portrait", () => {
