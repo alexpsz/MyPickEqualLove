@@ -35,6 +35,7 @@
     "test:board-state": "node scripts/run-board-tests.mjs",
     "test:song-search": "node --test scripts/test-song-search.mjs",
     "test:pick-reordering": "node scripts/test-pick-reordering.mjs",
+    "test:share-links": "node scripts/test-board-share-protocol.mjs",
     "check:repo-boundary": "node scripts/check-repository-boundary.mjs",
     "hooks:install": "node scripts/install-git-hooks.mjs",
     "validate:data": "node scripts/validate-project-data.mjs",

@@ -129,17 +129,18 @@ export function saveStoredBoard(
   picks: StoredPicks,
 ) {
   try {
-    storage.setItem(
-      versionedKey,
-      JSON.stringify({
-        schemaVersion: CURRENT_BOARD_SCHEMA_VERSION,
-        picks,
-      }),
-    );
+    storage.setItem(versionedKey, serializeStoredBoard(picks));
     return true;
   } catch {
     return false;
   }
+}
+
+export function serializeStoredBoard(picks: StoredPicks) {
+  return JSON.stringify({
+    schemaVersion: CURRENT_BOARD_SCHEMA_VERSION,
+    picks,
+  });
 }
 
 export function loadStoredOptions({

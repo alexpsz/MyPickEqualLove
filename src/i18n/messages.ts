@@ -13,6 +13,8 @@ const en = {
   "controls.exportNamePlaceholder": "Export name (optional)",
   "controls.exportNameHint": "This name appears in the exported image.",
   "controls.searchSongs": "Search songs",
+  "controls.copyBoardLink": "Copy board link",
+  "controls.boardLinkCopied": "Link copied",
   "controls.clear": "Clear",
   "controls.generating": "Generating...",
   "controls.generateImage": "Generate image",
@@ -191,6 +193,33 @@ const en = {
   "preview.close": "Close",
   "preview.downloadImage": "Download image",
   "preview.shareToX": "Share to X",
+
+  "boardShare.closeAria": "Close board link preview",
+  "boardShare.previewTitle": "Review shared board",
+  "boardShare.previewBody":
+    "Review every change below. Your board will change only after you confirm.",
+  "boardShare.contextChange": "This will switch to {context}.",
+  "boardShare.changesHeading": "Changes",
+  "boardShare.noChanges": "This shared board already matches the saved board.",
+  "boardShare.current": "Current",
+  "boardShare.imported": "Shared",
+  "boardShare.empty": "Empty",
+  "boardShare.confirm": "Replace board",
+  "boardShare.cancel": "Cancel",
+  "boardShare.invalidTitle": "This board link cannot be opened",
+  "boardShare.invalidBody":
+    "The link is damaged, outdated, or contains unavailable selections. Your board was not changed.",
+  "boardShare.unsupportedVersionBody":
+    "This board link uses an unsupported version. Update the app or ask for a new link. Your board was not changed.",
+  "boardShare.wrongTargetTitle": "This link belongs elsewhere",
+  "boardShare.wrongTargetBody":
+    "This board belongs to {target}. Nothing was imported here.",
+  "boardShare.openCorrectPage": "Open the correct page",
+  "boardShare.dismiss": "Dismiss",
+  "boardShare.copyFailed":
+    "The board link could not be copied. Check browser clipboard access and try again.",
+  "boardShare.importFailed":
+    "The board could not be imported. Your current board was kept.",
 
   "menu.openTitle": "Open other MyPick sites",
   "menu.openAria": "Open other MyPick sites",
@@ -380,6 +409,8 @@ const ja: MessageCatalog = {
   "controls.exportNamePlaceholder": "書き出し名（任意）",
   "controls.exportNameHint": "この名前が書き出し画像に表示されます。",
   "controls.searchSongs": "楽曲を検索",
+  "controls.copyBoardLink": "ボードのリンクをコピー",
+  "controls.boardLinkCopied": "リンクをコピーしました",
   "controls.clear": "クリア",
   "controls.generating": "生成中...",
   "controls.generateImage": "画像を生成",
@@ -562,6 +593,33 @@ const ja: MessageCatalog = {
   "preview.downloadImage": "画像をダウンロード",
   "preview.shareToX": "Xでシェア",
 
+  "boardShare.closeAria": "ボードリンクのプレビューを閉じる",
+  "boardShare.previewTitle": "共有ボードを確認",
+  "boardShare.previewBody":
+    "以下の変更内容を確認してください。確定するまで現在のボードは変更されません。",
+  "boardShare.contextChange": "{context}に切り替わります。",
+  "boardShare.changesHeading": "変更内容",
+  "boardShare.noChanges": "共有ボードは保存済みのボードと同じ内容です。",
+  "boardShare.current": "現在",
+  "boardShare.imported": "共有リンク",
+  "boardShare.empty": "未選択",
+  "boardShare.confirm": "ボードを置き換える",
+  "boardShare.cancel": "キャンセル",
+  "boardShare.invalidTitle": "このボードリンクは開けません",
+  "boardShare.invalidBody":
+    "リンクが壊れているか古い、または利用できない選択が含まれています。現在のボードは変更されていません。",
+  "boardShare.unsupportedVersionBody":
+    "このボードリンクは未対応のバージョンです。アプリを更新するか、新しいリンクを依頼してください。現在のボードは変更されていません。",
+  "boardShare.wrongTargetTitle": "別のページ用のリンクです",
+  "boardShare.wrongTargetBody":
+    "このボードは{target}用です。このページには取り込まれていません。",
+  "boardShare.openCorrectPage": "正しいページを開く",
+  "boardShare.dismiss": "閉じる",
+  "boardShare.copyFailed":
+    "ボードリンクをコピーできませんでした。ブラウザのクリップボード権限を確認して、もう一度お試しください。",
+  "boardShare.importFailed":
+    "ボードを取り込めませんでした。現在のボードは保持されています。",
+
   "menu.openTitle": "他のMyPickサイトを開く",
   "menu.openAria": "他のMyPickサイトを開く",
   "menu.dismissAria": "他のMyPickサイト一覧を閉じる",
@@ -734,6 +792,8 @@ const zhCN: MessageCatalog = {
   "controls.exportNamePlaceholder": "导出署名（可选）",
   "controls.exportNameHint": "该名字会显示在导出的图片中。",
   "controls.searchSongs": "搜索歌曲",
+  "controls.copyBoardLink": "复制榜单链接",
+  "controls.boardLinkCopied": "链接已复制",
   "controls.clear": "清空",
   "controls.generating": "生成中...",
   "controls.generateImage": "生成图片",
@@ -906,6 +966,30 @@ const zhCN: MessageCatalog = {
   "preview.downloadImage": "下载图片",
   "preview.shareToX": "分享到 X",
 
+  "boardShare.closeAria": "关闭榜单链接预览",
+  "boardShare.previewTitle": "检查共享榜单",
+  "boardShare.previewBody":
+    "请检查下方每一项变化。只有明确确认后，当前榜单才会被替换。",
+  "boardShare.contextChange": "将切换至{context}。",
+  "boardShare.changesHeading": "变化内容",
+  "boardShare.noChanges": "共享榜单与已保存的榜单完全相同。",
+  "boardShare.current": "当前",
+  "boardShare.imported": "共享榜单",
+  "boardShare.empty": "空槽位",
+  "boardShare.confirm": "替换榜单",
+  "boardShare.cancel": "取消",
+  "boardShare.invalidTitle": "无法打开此榜单链接",
+  "boardShare.invalidBody":
+    "链接已损坏、过期或包含当前不可用的选择。你的榜单没有被更改。",
+  "boardShare.unsupportedVersionBody":
+    "此榜单链接使用了不支持的版本。请更新应用或让对方重新生成链接。你的榜单没有被更改。",
+  "boardShare.wrongTargetTitle": "此链接属于其他页面",
+  "boardShare.wrongTargetBody": "此榜单属于{target}。当前页面未导入任何内容。",
+  "boardShare.openCorrectPage": "打开正确页面",
+  "boardShare.dismiss": "关闭",
+  "boardShare.copyFailed": "无法复制榜单链接。请检查浏览器的剪贴板权限后重试。",
+  "boardShare.importFailed": "无法导入榜单，当前榜单已保持不变。",
+
   "menu.openTitle": "打开其他 MyPick 站点",
   "menu.openAria": "打开其他 MyPick 站点",
   "menu.dismissAria": "关闭其他 MyPick 站点列表",
@@ -1077,6 +1161,8 @@ const ko: MessageCatalog = {
   "controls.exportNamePlaceholder": "이름 입력 (선택)",
   "controls.exportNameHint": "이 이름이 내보낸 이미지에 표시됩니다.",
   "controls.searchSongs": "곡 검색",
+  "controls.copyBoardLink": "보드 링크 복사",
+  "controls.boardLinkCopied": "링크 복사됨",
   "controls.clear": "비우기",
   "controls.generating": "생성 중...",
   "controls.generateImage": "이미지 만들기",
@@ -1257,6 +1343,33 @@ const ko: MessageCatalog = {
   "preview.close": "닫기",
   "preview.downloadImage": "이미지 다운로드",
   "preview.shareToX": "X에 공유",
+
+  "boardShare.closeAria": "보드 링크 미리보기 닫기",
+  "boardShare.previewTitle": "공유 보드 확인",
+  "boardShare.previewBody":
+    "아래의 모든 변경 사항을 확인해 주세요. 명확히 확인하기 전에는 현재 보드가 바뀌지 않습니다.",
+  "boardShare.contextChange": "{context}(으)로 전환됩니다.",
+  "boardShare.changesHeading": "변경 사항",
+  "boardShare.noChanges": "공유 보드가 저장된 보드와 이미 같습니다.",
+  "boardShare.current": "현재",
+  "boardShare.imported": "공유 보드",
+  "boardShare.empty": "빈 슬롯",
+  "boardShare.confirm": "보드 교체",
+  "boardShare.cancel": "취소",
+  "boardShare.invalidTitle": "이 보드 링크를 열 수 없습니다",
+  "boardShare.invalidBody":
+    "링크가 손상되었거나 오래되었거나 사용할 수 없는 선택을 포함합니다. 현재 보드는 변경되지 않았습니다.",
+  "boardShare.unsupportedVersionBody":
+    "지원하지 않는 버전의 보드 링크입니다. 앱을 업데이트하거나 새 링크를 요청해 주세요. 현재 보드는 변경되지 않았습니다.",
+  "boardShare.wrongTargetTitle": "다른 페이지용 링크입니다",
+  "boardShare.wrongTargetBody":
+    "이 보드는 {target}용입니다. 현재 페이지에는 아무것도 가져오지 않았습니다.",
+  "boardShare.openCorrectPage": "올바른 페이지 열기",
+  "boardShare.dismiss": "닫기",
+  "boardShare.copyFailed":
+    "보드 링크를 복사하지 못했습니다. 브라우저의 클립보드 권한을 확인한 뒤 다시 시도해 주세요.",
+  "boardShare.importFailed":
+    "보드를 가져오지 못했습니다. 현재 보드는 그대로 유지됩니다.",
 
   "menu.openTitle": "다른 MyPick 사이트 열기",
   "menu.openAria": "다른 MyPick 사이트 열기",

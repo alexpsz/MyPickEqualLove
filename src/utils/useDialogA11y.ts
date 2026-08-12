@@ -16,6 +16,7 @@ export const DIALOG_RETURN_KEYS = {
   globalSearch: "global-search",
   generateImage: "generate-image",
   boardLibrary: "board-library",
+  copyBoardLink: "copy-board-link",
 } as const;
 
 export function getPickSlotReturnKey(slotId: string) {

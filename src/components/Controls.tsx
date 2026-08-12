@@ -12,6 +12,7 @@ interface ControlsProps {
   onUndo: () => void;
   onRedo: () => void;
   onOpenBoardLibrary: () => void;
+  onCopyBoardLink: () => void;
   nickname: string;
   nicknameMaxLength: number;
   onNicknameChange: (nickname: string) => void;
@@ -25,6 +26,7 @@ interface ControlsProps {
   slotCount: number;
   metricLabel?: string;
   generateButtonRef?: React.Ref<HTMLButtonElement>;
+  boardLinkCopied?: boolean;
   children?: React.ReactNode;
 }
 
@@ -35,6 +37,7 @@ export default function Controls({
   onUndo,
   onRedo,
   onOpenBoardLibrary,
+  onCopyBoardLink,
   nickname,
   nicknameMaxLength,
   onNicknameChange,
@@ -48,6 +51,7 @@ export default function Controls({
   slotCount,
   metricLabel,
   generateButtonRef,
+  boardLinkCopied = false,
   children,
 }: ControlsProps) {
   const { t } = useLocale();
@@ -126,6 +130,22 @@ export default function Controls({
             </button>
             <button
               type="button"
+              onClick={onCopyBoardLink}
+              disabled={!hasPicks}
+              data-dialog-return-key={DIALOG_RETURN_KEYS.copyBoardLink}
+              className="official-button w-full leading-tight sm:w-auto"
+            >
+              {boardLinkCopied ? (
+                <AppIcon name="check" />
+              ) : (
+                <AppIcon name="external" />
+              )}
+              {boardLinkCopied
+                ? t("controls.boardLinkCopied")
+                : t("controls.copyBoardLink")}
+            </button>
+            <button
+              type="button"
               onClick={onGenerate}
               disabled={generating || !hasPicks}
               ref={generateButtonRef}
@@ -181,7 +201,11 @@ export default function Controls({
             </button>
           </div>
           <span className="sr-only" aria-live="polite">
-            {generating ? t("controls.generatingPreview") : ""}
+            {generating
+              ? t("controls.generatingPreview")
+              : boardLinkCopied
+                ? t("controls.boardLinkCopied")
+                : ""}
           </span>
         </div>
       </section>

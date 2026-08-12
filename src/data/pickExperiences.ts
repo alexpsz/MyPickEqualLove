@@ -4,6 +4,7 @@ import {
   getExperienceStorageKeys,
   PROJECT_CONFIG,
   PROJECT_ID,
+  STANDARD_EXPERIENCE_ID,
 } from "../config/project";
 import { CURRENT_PROJECT } from "../projects/registry";
 import type {
@@ -51,8 +52,7 @@ export type RelocatePickResult =
       toSlotId: PickSlotId;
     };
 
-const STANDARD_EXPERIENCE_ID = "standard";
-const COMBINED_CONTEXT_ID = "both";
+export const COMBINED_CONTEXT_ID = "both";
 export const EMPTY_LIVE_EXPERIENCE_SLUG = "__empty-live__";
 
 export const STANDARD_PICK_EXPERIENCE: PickExperience = {

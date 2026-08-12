@@ -1,0 +1,242 @@
+"use client";
+
+import { useRef } from "react";
+import * as m from "motion/react-m";
+import { useLocale } from "../i18n/LocaleProvider";
+import { DIALOG_RETURN_KEYS, useDialogA11y } from "../utils/useDialogA11y";
+import AppIcon from "./AppIcon";
+import { APPLE_OPACITY, APPLE_SPRING_GENTLE } from "./AppleMotion";
+import JapaneseContent from "./JapaneseContent";
+import type { PresenceState } from "./MotionPresence";
+
+export interface BoardShareChange {
+  slotId: string;
+  slotLabel: string;
+  currentTitle?: string;
+  importedTitle?: string;
+}
+
+export type BoardShareDialogState =
+  | {
+      kind: "import";
+      changes: BoardShareChange[];
+      contextLabel?: string;
+    }
+  | {
+      kind: "mismatch";
+      targetName: string;
+      targetUrl: string;
+    }
+  | {
+      kind: "invalid";
+      unsupportedVersion: boolean;
+    };
+
+interface BoardShareImportModalProps {
+  state: BoardShareDialogState;
+  presenceState: PresenceState;
+  onClose: () => void;
+  onConfirm: () => void;
+}
+
+export default function BoardShareImportModal({
+  state,
+  presenceState,
+  onClose,
+  onConfirm,
+}: BoardShareImportModalProps) {
+  const { t } = useLocale();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const cancelButtonRef = useRef<HTMLButtonElement>(null);
+  const isImport = state.kind === "import";
+
+  useDialogA11y({
+    dialogRef: panelRef,
+    onClose,
+    active: presenceState !== "exiting",
+    initialFocusRef: cancelButtonRef,
+    returnFocusKey: DIALOG_RETURN_KEYS.copyBoardLink,
+    returnFocusFallbackKey: DIALOG_RETURN_KEYS.globalSearch,
+  });
+
+  const title =
+    state.kind === "import"
+      ? t("boardShare.previewTitle")
+      : state.kind === "mismatch"
+        ? t("boardShare.wrongTargetTitle")
+        : t("boardShare.invalidTitle");
+
+  return (
+    <div
+      className="motion-overlay fixed inset-0 z-[70] flex items-end justify-center sm:items-center sm:p-4"
+      data-presence={presenceState}
+    >
+      <m.button
+        type="button"
+        onClick={onClose}
+        disabled={presenceState === "exiting"}
+        tabIndex={-1}
+        aria-hidden={presenceState === "exiting"}
+        className="overlay-scrim absolute inset-0 cursor-default bg-black/25 backdrop-blur-[2px]"
+        aria-label={t("boardShare.closeAria")}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={APPLE_OPACITY}
+      />
+
+      <m.div
+        ref={panelRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-hidden={presenceState === "exiting"}
+        inert={presenceState === "exiting"}
+        aria-labelledby="board-share-dialog-title"
+        className="apple-sheet relative z-10 flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-b-none border-x-0 border-b-0 focus:outline-none sm:rounded-[var(--radius-lg)] sm:border"
+        initial={{ opacity: 0, y: 18, scale: 0.985 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 18, scale: 0.985 }}
+        transition={{
+          opacity: APPLE_OPACITY,
+          y: APPLE_SPRING_GENTLE,
+          scale: APPLE_SPRING_GENTLE,
+        }}
+      >
+        <header className="flex items-start gap-3 border-b border-[var(--line)] bg-white px-4 py-4 sm:px-6">
+          <div className="min-w-0 flex-1">
+            <h2
+              id="board-share-dialog-title"
+              className="text-[20px] font-semibold tracking-[-0.03em] text-[var(--foreground)]"
+            >
+              {title}
+            </h2>
+            <p className="mt-1 text-[13px] leading-relaxed text-[var(--muted)]">
+              {state.kind === "import"
+                ? t("boardShare.previewBody")
+                : state.kind === "mismatch"
+                  ? t("boardShare.wrongTargetBody", {
+                      target: state.targetName,
+                    })
+                  : state.unsupportedVersion
+                    ? t("boardShare.unsupportedVersionBody")
+                    : t("boardShare.invalidBody")}
+            </p>
+            {state.kind === "import" && state.contextLabel ? (
+              <p className="mt-2 text-[13px] font-semibold text-[var(--foreground)]">
+                {t("boardShare.contextChange", {
+                  context: state.contextLabel,
+                })}
+              </p>
+            ) : null}
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="icon-button icon-button-compact shrink-0"
+            aria-label={t("boardShare.closeAria")}
+          >
+            <AppIcon name="close" size={16} />
+          </button>
+        </header>
+
+        {state.kind === "import" ? (
+          <div className="min-h-0 flex-1 overflow-y-auto bg-[var(--background)] p-4 sm:p-5">
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-[0.08em] text-[var(--muted)]">
+              {t("boardShare.changesHeading")}
+            </h3>
+            {state.changes.length === 0 ? (
+              <p className="rounded-[var(--radius-md)] border border-[var(--line)] bg-white px-4 py-5 text-[13px] leading-relaxed text-[var(--muted)]">
+                {t("boardShare.noChanges")}
+              </p>
+            ) : (
+              <div className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--line)] bg-white">
+                {state.changes.map((change, index) => (
+                  <div
+                    key={change.slotId}
+                    className={`grid gap-2 px-3 py-3 sm:grid-cols-[minmax(120px,0.65fr)_minmax(0,1fr)] sm:items-center sm:px-4 ${
+                      index > 0 ? "border-t border-[var(--line)]" : ""
+                    }`}
+                  >
+                    <p className="text-[13px] font-semibold text-[var(--foreground)]">
+                      {change.slotLabel}
+                    </p>
+                    <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 text-[12px]">
+                      <BoardValue
+                        label={t("boardShare.current")}
+                        title={change.currentTitle}
+                        emptyLabel={t("boardShare.empty")}
+                      />
+                      <AppIcon
+                        name="chevron-right"
+                        size={14}
+                        className="text-[var(--muted-soft)]"
+                      />
+                      <BoardValue
+                        label={t("boardShare.imported")}
+                        title={change.importedTitle}
+                        emptyLabel={t("boardShare.empty")}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : null}
+
+        <footer className="flex flex-wrap items-center justify-end gap-2 border-t border-[var(--line)] bg-white p-3 pb-[max(.75rem,env(safe-area-inset-bottom))] sm:px-5">
+          {state.kind === "mismatch" ? (
+            <a
+              href={state.targetUrl}
+              className="official-button official-button-primary"
+            >
+              {t("boardShare.openCorrectPage")}
+              <AppIcon name="external" size={16} />
+            </a>
+          ) : null}
+          <button
+            ref={cancelButtonRef}
+            type="button"
+            onClick={onClose}
+            className={
+              isImport
+                ? "official-button official-button-quiet"
+                : "official-button"
+            }
+          >
+            {isImport ? t("boardShare.cancel") : t("boardShare.dismiss")}
+          </button>
+          {isImport ? (
+            <button
+              type="button"
+              onClick={onConfirm}
+              className="official-button official-button-primary"
+            >
+              {t("boardShare.confirm")}
+            </button>
+          ) : null}
+        </footer>
+      </m.div>
+    </div>
+  );
+}
+
+function BoardValue({
+  label,
+  title,
+  emptyLabel,
+}: {
+  label: string;
+  title?: string;
+  emptyLabel: string;
+}) {
+  return (
+    <div className="min-w-0">
+      <p className="font-medium text-[var(--muted)]">{label}</p>
+      <p className="mt-0.5 break-words text-[13px] font-semibold leading-snug text-[var(--foreground)]">
+        {title ? <JapaneseContent>{title}</JapaneseContent> : emptyLabel}
+      </p>
+    </div>
+  );
+}

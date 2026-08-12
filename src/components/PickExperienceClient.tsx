@@ -27,6 +27,10 @@ import {
   TRACK_TYPES,
 } from "../data/songs";
 import {
+  createBoardSharePayload,
+  resolveBoardSharePayload,
+} from "../data/boardShare";
+import {
   filterStoredPicksForExperience,
   findFirstEligibleEmptySlot,
   getDefaultExperienceContextId,
@@ -68,6 +72,7 @@ import {
   renameBoardSnapshot,
   saveStoredBoard,
   saveStoredOptions,
+  serializeStoredBoard,
   type BoardLibraryDocument,
   type BoardScope,
   type BoardSnapshot,
@@ -75,6 +80,12 @@ import {
 } from "../utils/boardStorage";
 import { centerExportYearInk } from "../utils/centerExportYearInk";
 import { convertColorString } from "../utils/colors";
+import {
+  buildBoardShareUrl,
+  isBoardShareHash,
+  parseBoardShareUrl,
+  type BoardSharePayload,
+} from "../utils/boardShareProtocol.mjs";
 import {
   EXPORT_CAPTURE_PROTOCOL_VERSION,
   EXPORT_REALM_READY_TYPE,
@@ -104,6 +115,9 @@ import AppleMotion from "./AppleMotion";
 import BoardLibraryModal, {
   type BoardLibraryActionResult,
 } from "./BoardLibraryModal";
+import BoardShareImportModal, {
+  type BoardShareDialogState,
+} from "./BoardShareImportModal";
 import Controls from "./Controls";
 import ExperienceNavigation from "./ExperienceNavigation";
 import ExportBoard from "./ExportBoard";
@@ -125,6 +139,11 @@ interface PickExperienceClientProps {
 
 const MAX_NICKNAME_LENGTH = 32;
 const VALID_SONG_IDS = new Set(Object.keys(SONGS_BY_ID));
+const BOARD_LINK_COPIED_DURATION_MS = 2_000;
+
+interface PendingBoardShareImport {
+  payload: BoardSharePayload;
+}
 
 const getPreviewOptionsKey = (showTitles: boolean, transparentBg: boolean) =>
   `${showTitles ? "titles" : "no-titles"}:${transparentBg ? "transparent" : "opaque"}`;
@@ -210,6 +229,11 @@ export default function PickExperienceClient({
   const [boardLibraryLoaded, setBoardLibraryLoaded] = useState(false);
   const [boardStatusMessage, setBoardStatusMessage] = useState("");
   const storedPicksRef = useRef<StoredPicks>({});
+  const [boardLinkCopied, setBoardLinkCopied] = useState(false);
+  const [boardShareDialog, setBoardShareDialog] =
+    useState<BoardShareDialogState | null>(null);
+  const [pendingBoardShareImport, setPendingBoardShareImport] =
+    useState<PendingBoardShareImport | null>(null);
   const generatingRef = useRef(false);
   const activeFrameRequestIdRef = useRef<string | null>(null);
   const capturedFrameRequestIdRef = useRef<string | null>(null);
@@ -221,6 +245,8 @@ export default function PickExperienceClient({
   const previewGenerationIdRef = useRef(0);
   const activePreviewCaptureAbortRef = useRef<AbortController | null>(null);
   const lastGeneratedPreviewOptionsRef = useRef<string | null>(null);
+  const boardShareConsumedRef = useRef(false);
+  const boardLinkCopiedTimerRef = useRef<number | null>(null);
 
   const picks = useMemo<Picks>(() => {
     const entries = Object.entries(storedPicks)
@@ -481,6 +507,9 @@ export default function PickExperienceClient({
     () => () => {
       activePreviewCaptureAbortRef.current?.abort();
       activePreviewCaptureAbortRef.current = null;
+      if (boardLinkCopiedTimerRef.current !== null) {
+        window.clearTimeout(boardLinkCopiedTimerRef.current);
+      }
     },
     [],
   );
@@ -557,6 +586,125 @@ export default function PickExperienceClient({
       t,
     ],
   );
+
+  useEffect(() => {
+    if (
+      !hydrated ||
+      isExportRealm ||
+      boardShareConsumedRef.current ||
+      !isBoardShareHash(window.location.hash)
+    ) {
+      return;
+    }
+
+    boardShareConsumedRef.current = true;
+    const originalUrl = window.location.href;
+    const originalHash = window.location.hash;
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${window.location.pathname}${window.location.search}`,
+    );
+    let cancelled = false;
+
+    const prepareImport = async () => {
+      const parsed = await parseBoardShareUrl(originalUrl);
+      if (cancelled || parsed.status === "not-share") return;
+
+      if (parsed.status === "invalid") {
+        setBoardShareDialog({
+          kind: "invalid",
+          unsupportedVersion: parsed.reason === "unsupported-version",
+        });
+        return;
+      }
+
+      const resolved = resolveBoardSharePayload({
+        payload: parsed.payload,
+        currentExperience: experience,
+      });
+      if (resolved.status === "invalid") {
+        setBoardShareDialog({
+          kind: "invalid",
+          unsupportedVersion: resolved.reason === "unsupported-version",
+        });
+        return;
+      }
+
+      if (resolved.status === "mismatch") {
+        const targetUrl = new URL(resolved.canonicalUrl);
+        targetUrl.hash = originalHash.slice(1);
+        setBoardShareDialog({
+          kind: "mismatch",
+          targetName: resolved.displayName,
+          targetUrl: targetUrl.toString(),
+        });
+        return;
+      }
+
+      const targetStorageKeys = getStorageKeysForExperience(
+        experience,
+        resolved.contextId,
+      );
+      const currentTargetPicks =
+        resolved.contextId === effectiveContextId
+          ? storedPicks
+          : loadStoredBoard({
+              storage: localStorage,
+              versionedKey: targetStorageKeys.picksV2,
+              legacyKey: targetStorageKeys.picks,
+              sanitize: (candidatePicks) =>
+                filterStoredPicksForExperience({
+                  experience,
+                  storedPicks: candidatePicks,
+                  contextId: resolved.contextId,
+                }),
+            }).picks;
+      const changes = slots.flatMap((slot) => {
+        const currentSongId = currentTargetPicks[slot.id];
+        const importedSongId = resolved.picks[slot.id];
+        if (currentSongId === importedSongId) return [];
+        const uiSlot = uiSlots.find((candidate) => candidate.id === slot.id);
+        return [
+          {
+            slotId: slot.id,
+            slotLabel: uiSlot?.label ?? slot.label,
+            currentTitle: currentSongId
+              ? SONGS_BY_ID[currentSongId]?.title.ja
+              : undefined,
+            importedTitle: importedSongId
+              ? SONGS_BY_ID[importedSongId]?.title.ja
+              : undefined,
+          },
+        ];
+      });
+      const contextLabel =
+        resolved.contextId && resolved.contextId !== effectiveContextId
+          ? uiContextOptions.find(
+              (context) => context.id === resolved.contextId,
+            )?.label
+          : undefined;
+
+      setPendingBoardShareImport({
+        payload: parsed.payload,
+      });
+      setBoardShareDialog({ kind: "import", changes, contextLabel });
+    };
+
+    void prepareImport();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    effectiveContextId,
+    experience,
+    hydrated,
+    isExportRealm,
+    slots,
+    storedPicks,
+    uiContextOptions,
+    uiSlots,
+  ]);
 
   const handleContextChange = (nextContextId: string) => {
     previewGenerationIdRef.current += 1;
@@ -830,6 +978,85 @@ export default function PickExperienceClient({
     },
     [commitUserMutation, previewRelocation],
   );
+
+  const handleCopyBoardLink = async () => {
+    const filteredPicks = filterStoredPicksForExperience({
+      experience,
+      storedPicks: storedPicksRef.current,
+      contextId: effectiveContextId,
+    });
+    if (Object.keys(filteredPicks).length === 0) return;
+
+    try {
+      const payload = createBoardSharePayload({
+        experience,
+        contextId: effectiveContextId,
+        storedPicks: filteredPicks,
+      });
+      const shareUrl = await buildBoardShareUrl(pageUrl, payload);
+      await copyTextToClipboard(shareUrl);
+      if (boardLinkCopiedTimerRef.current !== null) {
+        window.clearTimeout(boardLinkCopiedTimerRef.current);
+      }
+      setBoardLinkCopied(true);
+      boardLinkCopiedTimerRef.current = window.setTimeout(() => {
+        boardLinkCopiedTimerRef.current = null;
+        setBoardLinkCopied(false);
+      }, BOARD_LINK_COPIED_DURATION_MS);
+    } catch (error) {
+      console.error("Failed to copy board link", error);
+      window.alert(t("boardShare.copyFailed"));
+    }
+  };
+
+  const handleConfirmBoardShareImport = () => {
+    if (!pendingBoardShareImport) return;
+    const resolved = resolveBoardSharePayload({
+      payload: pendingBoardShareImport.payload,
+      currentExperience: experience,
+    });
+    if (resolved.status !== "import") {
+      setPendingBoardShareImport(null);
+      setBoardShareDialog({
+        kind: "invalid",
+        unsupportedVersion: false,
+      });
+      return;
+    }
+
+    const targetStorageKeys = getStorageKeysForExperience(
+      experience,
+      resolved.contextId,
+    );
+    try {
+      persistImportedBoard({
+        storageKeys: targetStorageKeys,
+        picks: resolved.picks,
+        contextId: resolved.contextId,
+      });
+    } catch (error) {
+      console.error("Failed to import shared board", error);
+      window.alert(t("boardShare.importFailed"));
+      return;
+    }
+
+    cancelStalePreview();
+    setContextId(resolved.contextId);
+    storedPicksRef.current = resolved.picks;
+    dispatchBoardHistory({ type: "reset", picks: resolved.picks });
+    setActiveSlotId(null);
+    setShowModal(false);
+    setShowBoardLibrary(false);
+    setDetailSongId(null);
+    setPendingReplacementSong(null);
+    setPendingBoardShareImport(null);
+    setBoardShareDialog(null);
+  };
+
+  const handleCloseBoardShareDialog = () => {
+    setPendingBoardShareImport(null);
+    setBoardShareDialog(null);
+  };
 
   useEffect(() => {
     if (!hydrated || !isExportRealm) return;
@@ -1251,6 +1478,7 @@ export default function PickExperienceClient({
           onOpenBoardLibrary={() => {
             if (hydrated && !isExportRealm) setShowBoardLibrary(true);
           }}
+          onCopyBoardLink={handleCopyBoardLink}
           nickname={nicknameDraft}
           nicknameMaxLength={MAX_NICKNAME_LENGTH}
           onNicknameChange={handleNicknameChange}
@@ -1266,6 +1494,7 @@ export default function PickExperienceClient({
             isStandard ? t("controls.songs") : t("controls.eligibleSongs")
           }
           generateButtonRef={previewTriggerRef}
+          boardLinkCopied={boardLinkCopied}
         >
           {contextOptions.length > 0 ? (
             <ContextSelector
@@ -1403,6 +1632,17 @@ export default function PickExperienceClient({
           )}
         </MotionPresence>
 
+        <MotionPresence value={boardShareDialog}>
+          {(dialogState, presenceState) => (
+            <BoardShareImportModal
+              state={dialogState}
+              presenceState={presenceState}
+              onClose={handleCloseBoardShareDialog}
+              onConfirm={handleConfirmBoardShareImport}
+            />
+          )}
+        </MotionPresence>
+
         <MotionPresence value={previewUrl}>
           {(renderedPreviewUrl, presenceState) => (
             <PreviewModal
@@ -1533,6 +1773,72 @@ const MEMBER_COLOR_BAR_BACKGROUND = getMemberColorGradient(
   PROJECT_THEME_COLOR,
 );
 
+function persistImportedBoard({
+  storageKeys,
+  picks,
+  contextId,
+}: {
+  storageKeys: { picksV2: string; context?: string };
+  picks: StoredPicks;
+  contextId?: string;
+}) {
+  const writes = [
+    { key: storageKeys.picksV2, value: serializeStoredBoard(picks) },
+    ...(storageKeys.context && contextId
+      ? [{ key: storageKeys.context, value: contextId }]
+      : []),
+  ];
+  const previousValues = writes.map(({ key }) => ({
+    key,
+    value: localStorage.getItem(key),
+  }));
+
+  try {
+    for (const write of writes) {
+      localStorage.setItem(write.key, write.value);
+    }
+  } catch (error) {
+    for (const previous of previousValues) {
+      try {
+        if (previous.value === null) {
+          localStorage.removeItem(previous.key);
+        } else {
+          localStorage.setItem(previous.key, previous.value);
+        }
+      } catch {
+        // Best-effort rollback when browser storage becomes unavailable.
+      }
+    }
+    throw error;
+  }
+}
+
+async function copyTextToClipboard(value: string) {
+  if (typeof navigator.clipboard?.writeText === "function") {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+
+  const previousFocus = document.activeElement as HTMLElement | null;
+  const textarea = document.createElement("textarea");
+  textarea.value = value;
+  textarea.readOnly = true;
+  textarea.setAttribute("aria-hidden", "true");
+  Object.assign(textarea.style, {
+    position: "fixed",
+    left: "-9999px",
+    top: "0",
+    opacity: "0",
+  });
+  document.body.appendChild(textarea);
+  textarea.select();
+  const copied = document.execCommand("copy");
+  textarea.remove();
+  previousFocus?.focus();
+  if (!copied) {
+    throw new Error("Clipboard API is unavailable");
+  }
+}
 function normalizeNickname(nickname: string) {
   return nickname.trim().replace(/\s+/g, " ").slice(0, MAX_NICKNAME_LENGTH);
 }

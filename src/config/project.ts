@@ -31,7 +31,7 @@ export interface ExperienceStorageKeys {
   context?: string;
 }
 
-const STANDARD_EXPERIENCE_ID = "standard";
+export const STANDARD_EXPERIENCE_ID = "standard";
 
 function toStorageSegment(value: string) {
   return value.replace(/-/g, "_");
