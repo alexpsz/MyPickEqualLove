@@ -65,6 +65,13 @@ const excludedEntryReasons = new Set([
   "non-song",
   "not-in-project-catalog",
 ]);
+const excludedEntryFields = new Set([
+  "sourceUrl",
+  "sourceOrder",
+  "beforeSourceOrder",
+  "label",
+  "reason",
+]);
 const unknownAnnouncementMarkers = ["タイトル未定", "後日発表", "TBD"];
 const catalogDate = currentJapanDate();
 
@@ -883,9 +890,12 @@ function validatePerformanceProvenance(
           `${entryPrefix}: sourceUrl must reference a declared source`,
         );
       }
-      if (Object.prototype.hasOwnProperty.call(entry, "sourcePosition")) {
+      for (const field of Object.getOwnPropertyNames(entry)) {
+        if (excludedEntryFields.has(field)) continue;
         errors.push(
-          `${entryPrefix}: sourcePosition is not supported; use sourceOrder or beforeSourceOrder`,
+          field === "sourcePosition"
+            ? `${entryPrefix}: sourcePosition is not supported; use sourceOrder or beforeSourceOrder`
+            : `${entryPrefix}: unknown field ${field}`,
         );
       }
       const hasOrder = entry.sourceOrder !== undefined;
@@ -1267,6 +1277,15 @@ function runLiveExperienceValidatorSelfTests() {
         "before M1";
     },
     /sourcePosition is not supported/,
+  );
+  expectRejected(
+    "excluded-entry-with-unknown-field",
+    "nearly-equal-joy",
+    (experience) => {
+      experience.performances[0].provenance.excludedEntries[0].unexpectedNote =
+        "ignored by older validators";
+    },
+    /unknown field unexpectedNote/,
   );
   expectRejected(
     "documented-difference-without-exclusion",
