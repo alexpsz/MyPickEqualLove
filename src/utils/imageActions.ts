@@ -24,22 +24,30 @@ export interface ImageActionResult {
   error?: unknown;
 }
 
+export type PageShareOutcome = ImageActionOutcome | "copied";
+
+export interface PageShareResult {
+  outcome: PageShareOutcome;
+  error?: unknown;
+}
+
+export interface PreviewPageShareSnapshot {
+  pageUrl: string;
+  shareTitle: string;
+  shareText: string;
+  shareHashtags: readonly string[];
+}
+
 interface ShareNavigator {
   canShare?: (data: ShareData) => boolean;
   share?: (data: ShareData) => Promise<void>;
   clipboard?: {
-    write: (items: ClipboardItem[]) => Promise<void>;
     writeText?: (text: string) => Promise<void>;
   };
 }
 
-interface ClipboardItemConstructor {
-  new (items: Record<string, Blob>): ClipboardItem;
-}
-
 export interface ImageActionCapabilities {
   navigator?: ShareNavigator;
-  ClipboardItem?: ClipboardItemConstructor;
   isSecureContext?: boolean;
 }
 
@@ -100,50 +108,51 @@ export async function sharePreviewImage(
   }
 }
 
-export async function copyPreviewImage(
-  artifact: PreviewImageArtifact,
+export function sharePreviewPage(
+  snapshot: PreviewPageShareSnapshot,
   capabilities: ImageActionCapabilities = getImageActionCapabilities(),
-): Promise<ImageActionResult> {
+): Promise<PageShareResult> {
   const browser = capabilities.navigator;
   if (
-    !isSecureImageActionContext(capabilities) ||
-    !browser?.clipboard ||
-    typeof browser.clipboard.write !== "function" ||
-    !capabilities.ClipboardItem
+    isSecureImageActionContext(capabilities) &&
+    typeof browser?.share === "function"
   ) {
-    return { outcome: "unavailable" };
+    try {
+      const sharePromise = browser.share({
+        title: snapshot.shareTitle,
+        text: buildPageShareText(snapshot),
+        url: snapshot.pageUrl,
+      });
+      return sharePromise.then(
+        (): PageShareResult => ({ outcome: "success" }),
+        (error: unknown) => toImageActionFailure(error),
+      );
+    } catch (error) {
+      return Promise.resolve(toImageActionFailure(error));
+    }
+  }
+
+  const clipboard = browser?.clipboard;
+  const writeText = clipboard?.writeText;
+  if (typeof writeText !== "function") {
+    return Promise.resolve({ outcome: "unavailable" });
   }
 
   try {
-    const item = new capabilities.ClipboardItem({
-      [PNG_MIME_TYPE]: artifact.blob,
-    });
-    await browser.clipboard.write([item]);
-    return { outcome: "success" };
+    const copyPromise = writeText.call(clipboard, snapshot.pageUrl);
+    return copyPromise.then(
+      (): PageShareResult => ({ outcome: "copied" }),
+      (error: unknown) => toImageActionFailure(error),
+    );
   } catch (error) {
-    return toImageActionFailure(error);
+    return Promise.resolve(toImageActionFailure(error));
   }
 }
 
-export async function copyPreviewPageLink(
-  pageUrl: string,
-  capabilities: ImageActionCapabilities = getImageActionCapabilities(),
-): Promise<ImageActionResult> {
-  const clipboard = capabilities.navigator?.clipboard;
-  if (
-    !isSecureImageActionContext(capabilities) ||
-    !clipboard ||
-    typeof clipboard.writeText !== "function"
-  ) {
-    return { outcome: "unavailable" };
-  }
-
-  try {
-    await clipboard.writeText(pageUrl);
-    return { outcome: "success" };
-  } catch (error) {
-    return toImageActionFailure(error);
-  }
+function buildPageShareText(snapshot: PreviewPageShareSnapshot) {
+  return [snapshot.shareText, snapshot.shareHashtags.join(" ")]
+    .filter(Boolean)
+    .join("\n");
 }
 
 function toImageActionFailure(error: unknown): ImageActionResult {
@@ -173,8 +182,6 @@ function isSecureImageActionContext(capabilities: ImageActionCapabilities) {
 function getImageActionCapabilities(): ImageActionCapabilities {
   return {
     navigator: typeof navigator === "undefined" ? undefined : navigator,
-    ClipboardItem:
-      typeof ClipboardItem === "undefined" ? undefined : ClipboardItem,
     isSecureContext:
       typeof window !== "undefined" && window.isSecureContext === true,
   };

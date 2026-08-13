@@ -6,7 +6,6 @@ export type AppIconName =
   | "chevron-down"
   | "chevron-right"
   | "close"
-  | "copy"
   | "download"
   | "external"
   | "filter"
@@ -72,13 +71,6 @@ function getIconPaths(name: AppIconName) {
       return <path d="m9.25 6.5 5.5 5.5-5.5 5.5" />;
     case "close":
       return <path d="m6.75 6.75 10.5 10.5m0-10.5-10.5 10.5" />;
-    case "copy":
-      return (
-        <>
-          <rect x="8.25" y="8.25" width="10.25" height="11.25" rx="1.75" />
-          <path d="M15.75 8.25V6.5A2 2 0 0 0 13.75 4.5h-7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h1.5" />
-        </>
-      );
     case "download":
       return (
         <>

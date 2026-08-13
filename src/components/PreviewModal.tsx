@@ -16,13 +16,13 @@ import type { MessageKey } from "../i18n/messages";
 import type { ExportSizePresetId, ExportTemplateId } from "../schema/export";
 import { useDialogA11y } from "../utils/useDialogA11y";
 import {
-  copyPreviewImage,
-  copyPreviewPageLink,
   preparePreviewImageArtifact,
   sharePreviewImage,
+  sharePreviewPage,
   type ImageActionOutcome,
-  type ImageActionResult,
+  type PageShareOutcome,
   type PreviewImageArtifact,
+  type PreviewPageShareSnapshot,
 } from "../utils/imageActions";
 import AppIcon from "./AppIcon";
 import AnchoredOptionMenu from "./AnchoredOptionMenu";
@@ -86,16 +86,29 @@ export default function PreviewModal({
   const panelRef = useRef<HTMLDivElement>(null);
   const footerCloseButtonRef = useRef<HTMLButtonElement>(null);
   const actionRunIdRef = useRef(0);
-  const [imageActionStatus, setImageActionStatus] = useState<{
-    action: "share" | "copy" | "link";
-    outcome: ImageActionOutcome;
-  } | null>(null);
+  const [imageActionStatus, setImageActionStatus] = useState<
+    | {
+        action: "image";
+        outcome: ImageActionOutcome;
+      }
+    | {
+        action: "page";
+        outcome: PageShareOutcome;
+      }
+    | null
+  >(null);
   const [imageActionPending, setImageActionPending] = useState(false);
   const [imagePreparationFailed, setImagePreparationFailed] = useState(false);
   const [previewArtifact, setPreviewArtifact] =
     useState<PreviewImageArtifact | null>(null);
   const shareConfig = {
     pageUrl,
+    shareText,
+    shareHashtags,
+  };
+  const pageShareSnapshot: PreviewPageShareSnapshot = {
+    pageUrl,
+    shareTitle,
     shareText,
     shareHashtags,
   };
@@ -150,6 +163,16 @@ export default function PreviewModal({
     [],
   );
 
+  useEffect(() => {
+    if (!imageActionStatus && !imagePreparationFailed) return;
+
+    const timer = window.setTimeout(() => {
+      setImageActionStatus(null);
+      setImagePreparationFailed(false);
+    }, 4_000);
+    return () => window.clearTimeout(timer);
+  }, [imageActionStatus, imagePreparationFailed]);
+
   const actionInert = imageActionPending || presenceState === "exiting";
   const currentPreviewArtifact =
     previewArtifact?.dataUrl === previewUrl &&
@@ -158,7 +181,7 @@ export default function PreviewModal({
       : null;
   const imageActionsDisabled =
     actionsDisabled || actionInert || !currentPreviewArtifact;
-  const linkActionsDisabled = actionInert;
+  const pageActionDisabled = actionsDisabled || actionInert;
   const imageActionMessage = imagePreparationFailed
     ? t("preview.imageUnavailable")
     : imageActionStatus
@@ -169,28 +192,34 @@ export default function PreviewModal({
         )
       : null;
 
-  const runImageAction = async (action: "share" | "copy" | "link") => {
+  const runShareAction = async (action: "image" | "page") => {
     if (actionInert) return;
 
     const runId = ++actionRunIdRef.current;
     setImageActionPending(true);
     setImageActionStatus(null);
-    let result: ImageActionResult;
-    if (action === "link") {
-      result = await copyPreviewPageLink(pageUrl);
+    setImagePreparationFailed(false);
+    let nextStatus:
+      | { action: "image"; outcome: ImageActionOutcome }
+      | { action: "page"; outcome: PageShareOutcome };
+    if (action === "page") {
+      if (actionsDisabled) {
+        setImageActionPending(false);
+        return;
+      }
+      const result = await sharePreviewPage(pageShareSnapshot);
+      nextStatus = { action: "page", outcome: result.outcome };
     } else {
       const artifact = currentPreviewArtifact;
       if (actionsDisabled || !artifact) {
         setImageActionPending(false);
         return;
       }
-      result =
-        action === "share"
-          ? await sharePreviewImage(artifact, shareTitle)
-          : await copyPreviewImage(artifact);
+      const result = await sharePreviewImage(artifact, shareTitle);
+      nextStatus = { action: "image", outcome: result.outcome };
     }
     if (runId !== actionRunIdRef.current) return;
-    setImageActionStatus({ action, outcome: result.outcome });
+    setImageActionStatus(nextStatus);
     setImageActionPending(false);
   };
 
@@ -317,12 +346,13 @@ export default function PreviewModal({
           )}
         </div>
 
-        <div className="flex flex-wrap items-center justify-end gap-2 border-t border-[var(--line)] bg-white p-3 pb-[max(.75rem,env(safe-area-inset-bottom))] sm:px-5">
+        <div className="relative grid grid-cols-5 items-stretch gap-1 border-t border-[var(--line)] bg-white px-2 pt-2 pb-[max(.5rem,env(safe-area-inset-bottom))] sm:flex sm:flex-wrap sm:items-center sm:justify-end sm:gap-2 sm:p-3 sm:pb-[max(.75rem,env(safe-area-inset-bottom))] sm:px-5">
           {imageActionMessage ? (
             <p
               role="status"
               aria-live="polite"
-              className="basis-full text-right text-[12px] text-[var(--muted)]"
+              aria-atomic="true"
+              className="pointer-events-none absolute inset-x-3 bottom-[calc(100%+0.5rem)] z-20 mx-auto w-fit max-w-[calc(100%-1.5rem)] rounded-full bg-black/85 px-3 py-2 text-center text-[12px] leading-4 font-medium text-white shadow-lg backdrop-blur-md"
             >
               {imageActionMessage}
             </p>
@@ -330,39 +360,37 @@ export default function PreviewModal({
           <button
             type="button"
             onClick={() => {
-              void runImageAction("share");
+              void runShareAction("image");
             }}
             disabled={imageActionsDisabled}
-            className="official-button official-button-primary disabled:opacity-50"
+            aria-label={t("preview.shareImage")}
+            className="official-button official-button-primary min-w-0 flex-col gap-0.5 px-1 py-1 text-[10px] leading-none disabled:opacity-50 sm:flex-row sm:gap-2 sm:px-4 sm:py-0 sm:text-[13px]"
           >
-            <AppIcon name="share" />
-            {t("preview.shareImage")}
+            <AppIcon name="image" size={16} />
+            <span className="max-w-full truncate sm:hidden">
+              {t("preview.shareImage.short")}
+            </span>
+            <span className="hidden sm:inline">{t("preview.shareImage")}</span>
           </button>
           <button
             type="button"
             onClick={() => {
-              void runImageAction("copy");
+              void runShareAction("page");
             }}
-            disabled={imageActionsDisabled}
-            className="official-button border border-[var(--line-strong)] bg-white disabled:opacity-50"
+            disabled={pageActionDisabled}
+            aria-label={t("preview.sharePage")}
+            className="official-button min-w-0 flex-col gap-0.5 border-transparent bg-transparent px-1 py-1 text-[10px] leading-none shadow-none disabled:opacity-50 sm:flex-row sm:gap-2 sm:border-[var(--line-strong)] sm:bg-white sm:px-4 sm:py-0 sm:text-[13px]"
           >
-            <AppIcon name="copy" />
-            {t("preview.copyImage")}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              void runImageAction("link");
-            }}
-            disabled={linkActionsDisabled}
-            className="official-button border border-[var(--line-strong)] bg-white disabled:opacity-50"
-          >
-            <AppIcon name="copy" />
-            {t("preview.copyLink")}
+            <AppIcon name="share" size={16} />
+            <span className="max-w-full truncate sm:hidden">
+              {t("preview.sharePage.short")}
+            </span>
+            <span className="hidden sm:inline">{t("preview.sharePage")}</span>
           </button>
           <button
             type="button"
             disabled={imageActionsDisabled}
+            aria-label={t("preview.downloadImage")}
             onClick={() => {
               if (!currentPreviewArtifact) return;
               void downloadImage(currentPreviewArtifact, {
@@ -370,35 +398,47 @@ export default function PreviewModal({
                 blocked: t("errors.downloadBlocked"),
               });
             }}
-            className="official-button border border-[var(--line-strong)] bg-white disabled:opacity-50"
+            className="official-button min-w-0 flex-col gap-0.5 border-transparent bg-transparent px-1 py-1 text-[10px] leading-none shadow-none disabled:opacity-50 sm:flex-row sm:gap-2 sm:border-[var(--line-strong)] sm:bg-white sm:px-4 sm:py-0 sm:text-[13px]"
           >
-            <AppIcon name="download" />
-            {t("preview.downloadImage")}
+            <AppIcon name="download" size={16} />
+            <span className="max-w-full truncate sm:hidden">
+              {t("preview.downloadImage.short")}
+            </span>
+            <span className="hidden sm:inline">
+              {t("preview.downloadImage")}
+            </span>
           </button>
           <button
             type="button"
             disabled={actionsDisabled || actionInert}
+            aria-label={t("preview.shareToX")}
             onClick={() => {
               shareToX(shareConfig);
             }}
-            className="official-button border-slate-950 bg-slate-950 text-white disabled:opacity-50"
+            className="official-button min-w-0 flex-col gap-0.5 border-transparent bg-transparent px-1 py-1 text-[10px] leading-none text-slate-950 shadow-none disabled:opacity-50 sm:flex-row sm:gap-2 sm:border-slate-950 sm:bg-slate-950 sm:px-4 sm:py-0 sm:text-[13px] sm:text-white"
           >
             <svg
-              className="h-3.5 w-3.5 fill-current"
+              className="h-4 w-4 shrink-0 fill-current"
               viewBox="0 0 24 24"
               aria-hidden="true"
             >
               <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
             </svg>
-            {t("preview.shareToX")}
+            <span className="sm:hidden">{t("preview.shareToX.short")}</span>
+            <span className="hidden sm:inline">{t("preview.shareToX")}</span>
           </button>
           <button
             ref={footerCloseButtonRef}
             type="button"
             onClick={onClose}
-            className="official-button official-button-quiet"
+            aria-label={t("preview.close")}
+            className="official-button official-button-quiet min-w-0 flex-col gap-0.5 px-1 py-1 text-[10px] leading-none sm:flex-row sm:gap-2 sm:px-4 sm:py-0 sm:text-[13px]"
           >
-            {t("preview.close")}
+            <AppIcon name="close" size={16} />
+            <span className="max-w-full truncate sm:hidden">
+              {t("preview.close.short")}
+            </span>
+            <span className="hidden sm:inline">{t("preview.close")}</span>
           </button>
         </div>
       </m.div>
@@ -529,36 +569,31 @@ function ToggleOption({
 
 function getImageActionMessage(
   t: (key: MessageKey) => string,
-  action: "share" | "copy" | "link",
-  outcome: ImageActionOutcome,
+  action: "image" | "page",
+  outcome: ImageActionOutcome | PageShareOutcome,
 ) {
   const keys: Record<
-    "share" | "copy" | "link",
-    Record<ImageActionOutcome, MessageKey>
+    "image" | "page",
+    Partial<Record<ImageActionOutcome | PageShareOutcome, MessageKey>>
   > = {
-    share: {
+    image: {
       success: "preview.shareImage.success",
       unavailable: "preview.shareImage.unavailable",
       cancelled: "preview.shareImage.cancelled",
       denied: "preview.shareImage.denied",
       failed: "preview.shareImage.failed",
     },
-    copy: {
-      success: "preview.copyImage.success",
-      unavailable: "preview.copyImage.unavailable",
-      cancelled: "preview.copyImage.cancelled",
-      denied: "preview.copyImage.denied",
-      failed: "preview.copyImage.failed",
-    },
-    link: {
-      success: "preview.copyLink.success",
-      unavailable: "preview.copyLink.unavailable",
-      cancelled: "preview.copyLink.cancelled",
-      denied: "preview.copyLink.denied",
-      failed: "preview.copyLink.failed",
+    page: {
+      success: "preview.sharePage.success",
+      copied: "preview.sharePage.copied",
+      unavailable: "preview.sharePage.unavailable",
+      cancelled: "preview.sharePage.cancelled",
+      denied: "preview.sharePage.denied",
+      failed: "preview.sharePage.failed",
     },
   };
-  return t(keys[action][outcome]);
+  const key = keys[action][outcome];
+  return key ? t(key) : null;
 }
 
 function downloadImage(

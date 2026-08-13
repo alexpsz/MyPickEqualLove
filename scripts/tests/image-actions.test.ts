@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
-  copyPreviewImage,
-  copyPreviewPageLink,
   preparePreviewImageArtifact,
   sharePreviewImage,
+  sharePreviewPage,
   type ImageActionCapabilities,
   type PreviewImageArtifact,
+  type PreviewPageShareSnapshot,
 } from "../../src/utils/imageActions";
 
 const pngDataUrl = "data:image/png;base64,iVBORw0KGgo=";
@@ -33,10 +33,16 @@ function makeArtifact(fileName = "my-pick.png"): PreviewImageArtifact {
 
 function secureCapabilities(
   navigator: ImageActionCapabilities["navigator"],
-  ClipboardItem?: ImageActionCapabilities["ClipboardItem"],
 ): ImageActionCapabilities {
-  return { navigator, ClipboardItem, isSecureContext: true };
+  return { navigator, isSecureContext: true };
 }
+
+const pageShareSnapshot: PreviewPageShareSnapshot = {
+  pageUrl: "https://example.test/live/",
+  shareTitle: "My Pick",
+  shareText: "Here are my picks.",
+  shareHashtags: ["#MyPick", "#EqualLove"],
+};
 
 test("prepares a non-empty PNG artifact from the generated data URL", async () => {
   const artifact = await preparePreviewImageArtifact({
@@ -124,67 +130,103 @@ test("distinguishes cancelled, denied, and failed shares", async () => {
   );
 });
 
-test("copies PNG bytes only with ClipboardItem and clipboard.write", async () => {
-  const artifact = makeArtifact();
-  let copied: ClipboardItem[] | undefined;
-  const FakeClipboardItem = class {
-    constructor(readonly items: Record<string, Blob>) {}
-  } as unknown as ImageActionCapabilities["ClipboardItem"];
-  const success = await copyPreviewImage(
-    artifact,
-    secureCapabilities(
-      {
-        clipboard: {
-          write: async (items) => {
-            copied = items;
-          },
-        },
-      },
-      FakeClipboardItem,
-    ),
-  );
-  const unavailable = await copyPreviewImage(
-    artifact,
-    secureCapabilities({ clipboard: { write: async () => {} } }),
-  );
-
-  assert.equal(success.outcome, "success");
-  assert.equal(copied?.length, 1);
-  assert.equal(unavailable.outcome, "unavailable");
-});
-
-test("reports clipboard permission rejection without false success", async () => {
-  const denied = await copyPreviewImage(
-    makeArtifact(),
-    secureCapabilities(
-      {
-        clipboard: {
-          write: async () => {
-            throw new DOMException("", "NotAllowedError");
-          },
-        },
-      },
-      class {} as unknown as ImageActionCapabilities["ClipboardItem"],
-    ),
-  );
-
-  assert.equal(denied.outcome, "denied");
-});
-
-test("copies the page link as a separate fallback", async () => {
-  let copiedLink = "";
-  const result = await copyPreviewPageLink(
-    "https://example.test/live/",
+test("calls native page share synchronously with the immutable payload", async () => {
+  let shared: ShareData | undefined;
+  let resolveShare: (() => void) | undefined;
+  const resultPromise = sharePreviewPage(
+    pageShareSnapshot,
     secureCapabilities({
-      clipboard: {
-        write: async () => {},
-        writeText: async (value) => {
-          copiedLink = value;
-        },
+      share: (data) => {
+        shared = data;
+        return new Promise<void>((resolve) => {
+          resolveShare = resolve;
+        });
       },
     }),
   );
 
-  assert.equal(result.outcome, "success");
-  assert.equal(copiedLink, "https://example.test/live/");
+  assert.deepEqual(shared, {
+    title: "My Pick",
+    text: "Here are my picks.\n#MyPick #EqualLove",
+    url: "https://example.test/live/",
+  });
+  resolveShare?.();
+  assert.equal((await resultPromise).outcome, "success");
+});
+
+test("copies the page URL only when native share is unavailable", async () => {
+  const copiedLinks: string[] = [];
+  let shareCalls = 0;
+  const missingShareResult = await sharePreviewPage(
+    pageShareSnapshot,
+    secureCapabilities({
+      clipboard: {
+        writeText: async (value) => {
+          copiedLinks.push(value);
+        },
+      },
+    }),
+  );
+  const nonSecureResult = await sharePreviewPage(pageShareSnapshot, {
+    isSecureContext: false,
+    navigator: {
+      share: async () => {
+        shareCalls += 1;
+      },
+      clipboard: {
+        writeText: async (value) => {
+          copiedLinks.push(value);
+        },
+      },
+    },
+  });
+
+  assert.equal(missingShareResult.outcome, "copied");
+  assert.equal(nonSecureResult.outcome, "copied");
+  assert.equal(shareCalls, 0);
+  assert.deepEqual(copiedLinks, [
+    "https://example.test/live/",
+    "https://example.test/live/",
+  ]);
+});
+
+test("does not copy after cancelled, denied, or failed native page sharing", async () => {
+  let copyCalls = 0;
+  const withFailure = (error: DOMException) =>
+    sharePreviewPage(
+      pageShareSnapshot,
+      secureCapabilities({
+        share: async () => {
+          throw error;
+        },
+        clipboard: {
+          writeText: async () => {
+            copyCalls += 1;
+          },
+        },
+      }),
+    );
+
+  assert.equal(
+    (await withFailure(new DOMException("", "AbortError"))).outcome,
+    "cancelled",
+  );
+  assert.equal(
+    (await withFailure(new DOMException("", "NotAllowedError"))).outcome,
+    "denied",
+  );
+  assert.equal(
+    (await withFailure(new DOMException("", "NetworkError"))).outcome,
+    "failed",
+  );
+  assert.equal(copyCalls, 0);
+});
+
+test("reports page sharing unavailable when neither native share nor copy exists", async () => {
+  const result = await sharePreviewPage(pageShareSnapshot, {
+    isSecureContext: true,
+    navigator: {},
+  });
+
+  assert.equal(result.outcome, "unavailable");
 });
