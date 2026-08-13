@@ -13,6 +13,11 @@ import {
 } from "../src/config/exportPresets";
 import { buildExportImageFileName } from "../src/utils/exportFileName";
 import {
+  EXPORT_CAPTURE_PROTOCOL_VERSION,
+  EXPORT_REALM_RENDER_TYPE,
+  isExportRenderRequest,
+} from "../src/utils/exportCapture";
+import {
   parseStoredExportOptions,
   serializeExportOptions,
 } from "../src/utils/exportOptions";
@@ -366,43 +371,64 @@ test("QR targets accept only canonical HTTP or HTTPS page URLs", () => {
 
 test("default filename is unchanged and non-default presets are explicit", () => {
   assert.equal(
-    buildExportImageFileName(
-      "mypick.png",
-      undefined,
-      "classic",
-      "portrait",
-      "poster",
-    ),
+    buildExportImageFileName("mypick.png", undefined, "classic", "portrait"),
     "mypick.png",
   );
   assert.equal(
-    buildExportImageFileName(
-      "mypick.png",
-      "day-1",
-      "classic",
-      "square",
-      "poster",
-    ),
+    buildExportImageFileName("mypick.png", "day-1", "classic", "square"),
     "mypick_DAY_1_SQUARE.png",
   );
   assert.equal(
-    buildExportImageFileName(
-      "mypick.png",
-      "day1",
-      "spotlight",
-      "story",
-      "poster",
-    ),
+    buildExportImageFileName("mypick.png", "day1", "spotlight", "story"),
     "mypick_DAY1_SPOTLIGHT_STORY.png",
   );
+});
+
+test("poster export request strictly validates its ephemeral payload", () => {
+  const pageUrl = "https://mypick.kozueginko.com/";
+  const request = {
+    type: EXPORT_REALM_RENDER_TYPE,
+    version: EXPORT_CAPTURE_PROTOCOL_VERSION,
+    requestId: "request-1",
+    experienceId: "standard",
+    picks: { "pick-1": "song-1" },
+    showTitles: true,
+    transparentBg: false,
+    showQrCode: true,
+    templateId: "classic",
+    sizePresetId: "portrait",
+    selectedBy: "Fan",
+    pageUrl,
+  };
+
+  assert.equal(isExportRenderRequest(request, pageUrl), true);
   assert.equal(
-    buildExportImageFileName(
-      "mypick.png",
-      "day-1",
-      "classic",
-      "square",
-      "insights",
-    ),
-    "mypick_DAY_1_INSIGHTS_SQUARE.png",
+    isExportRenderRequest({ ...request, showQrCode: "yes" }, pageUrl),
+    false,
   );
+  assert.equal(
+    isExportRenderRequest({ ...request, pageUrl: `${pageUrl}?qr=1` }, pageUrl),
+    false,
+  );
+  assert.equal(
+    isExportRenderRequest(request, "https://mypick.kozueginko.com/live/"),
+    false,
+  );
+
+  for (const requiredField of [
+    "requestId",
+    "experienceId",
+    "picks",
+    "showTitles",
+    "transparentBg",
+    "showQrCode",
+    "templateId",
+    "sizePresetId",
+    "selectedBy",
+    "pageUrl",
+  ] as const) {
+    const malformedRequest = { ...request } as Record<string, unknown>;
+    delete malformedRequest[requiredField];
+    assert.equal(isExportRenderRequest(malformedRequest, pageUrl), false);
+  }
 });

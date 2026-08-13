@@ -17,11 +17,7 @@ import type {
   PickExperience,
   SongEligibilityScope,
 } from "../schema/pick-experience";
-import type {
-  ExportCardType,
-  ExportSizePresetId,
-  ExportTemplateId,
-} from "../schema/export";
+import type { ExportSizePresetId, ExportTemplateId } from "../schema/export";
 import type { PickSlotId, Song, StoredPicks } from "../schema/music";
 import { buildExportImageFileName } from "../utils/exportFileName";
 import { SONGS, SONGS_BY_ID } from "./songs";
@@ -475,14 +471,12 @@ export function getExperienceImageFileName(
   context?: ExperienceContext,
   templateId: ExportTemplateId = DEFAULT_EXPORT_TEMPLATE_ID,
   sizePresetId: ExportSizePresetId = DEFAULT_EXPORT_SIZE_PRESET_ID,
-  cardType: ExportCardType = "poster",
 ) {
   return buildExportImageFileName(
     experience.export.imageFileName,
     context?.id,
     templateId,
     sizePresetId,
-    cardType,
   );
 }
 

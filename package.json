@@ -39,7 +39,6 @@
     "test:export-presets": "node scripts/run-export-preset-tests.mjs",
     "test:export-board": "node scripts/run-export-board-tests.mjs",
     "test:pick-assistant": "node scripts/run-pick-assistant-tests.mjs",
-    "test:pick-insights": "node scripts/run-pick-insights-tests.mjs",
     "test:image-actions": "node scripts/run-image-action-tests.mjs",
     "check:repo-boundary": "node scripts/check-repository-boundary.mjs",
     "hooks:install": "node scripts/install-git-hooks.mjs",
