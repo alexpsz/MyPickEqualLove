@@ -2,18 +2,11 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import * as m from "motion/react-m";
-import {
-  EXPORT_SIZE_PRESET_ORDER,
-  EXPORT_SIZE_PRESETS,
-  EXPORT_TEMPLATE_ORDER,
-} from "../config/exportPresets";
-import {
-  getExportSizeMessageKey,
-  getExportTemplateMessageKey,
-} from "../i18n/content";
+import { EXPORT_TEMPLATE_ORDER } from "../config/exportPresets";
+import { getExportTemplateMessageKey } from "../i18n/content";
 import { useLocale } from "../i18n/LocaleProvider";
 import type { MessageKey } from "../i18n/messages";
-import type { ExportSizePresetId, ExportTemplateId } from "../schema/export";
+import type { ExportTemplateId } from "../schema/export";
 import { useDialogA11y } from "../utils/useDialogA11y";
 import {
   preparePreviewImageArtifact,
@@ -40,8 +33,6 @@ interface PreviewModalProps {
   onToggleShowQrCode: (show: boolean) => void;
   templateId: ExportTemplateId;
   onTemplateChange: (templateId: ExportTemplateId) => void;
-  sizePresetId: ExportSizePresetId;
-  onSizePresetChange: (sizePresetId: ExportSizePresetId) => void;
   generating: boolean;
   actionsDisabled: boolean;
   pageUrl: string;
@@ -67,8 +58,6 @@ export default function PreviewModal({
   onToggleShowQrCode,
   templateId,
   onTemplateChange,
-  sizePresetId,
-  onSizePresetChange,
   generating,
   actionsDisabled,
   pageUrl,
@@ -261,7 +250,7 @@ export default function PreviewModal({
           scale: APPLE_SPRING_GENTLE,
         }}
       >
-        <div className="flex flex-col justify-between gap-3 border-b border-[var(--line)] bg-white p-4 sm:flex-row sm:items-center sm:px-6">
+        <div className="flex flex-col gap-4 border-b border-[var(--line)] bg-white px-4 py-4 sm:px-6">
           <div>
             <h3
               id="preview-modal-title"
@@ -274,53 +263,40 @@ export default function PreviewModal({
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <AnchoredOptionMenu
-              label={t("preview.templateLabel")}
-              value={templateId}
-              disabled={generating}
-              onValueChange={onTemplateChange}
-              options={EXPORT_TEMPLATE_ORDER.map((id) => ({
-                value: id,
-                label: t(getExportTemplateMessageKey(id)),
-              }))}
-            />
-            <ToggleOption
-              checked={showQrCode}
-              disabled={generating}
-              onChange={onToggleShowQrCode}
-              label={t("preview.showQrCode")}
-            />
-            <AnchoredOptionMenu
-              label={t("preview.sizeLabel")}
-              value={sizePresetId}
-              disabled={generating}
-              onValueChange={onSizePresetChange}
-              options={EXPORT_SIZE_PRESET_ORDER.map((id) => {
-                const size = EXPORT_SIZE_PRESETS[id];
-                return {
+          <div className="rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--background)] p-3">
+            <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-5">
+              <AnchoredOptionMenu
+                compact
+                label={t("preview.templateLabel")}
+                value={templateId}
+                disabled={generating}
+                onValueChange={onTemplateChange}
+                options={EXPORT_TEMPLATE_ORDER.map((id) => ({
                   value: id,
-                  label: t("preview.sizeOption", {
-                    name: t(getExportSizeMessageKey(id)),
-                    ratio: size.ratioLabel,
-                    width: size.width,
-                    height: size.height,
-                  }),
-                };
-              })}
-            />
-            <ToggleOption
-              checked={showTitles}
-              disabled={generating}
-              onChange={onToggleShowTitles}
-              label={t("preview.showTitles")}
-            />
-            <ToggleOption
-              checked={transparentBg}
-              disabled={generating}
-              onChange={onToggleTransparentBg}
-              label={t("preview.transparentBackground")}
-            />
+                  label: t(getExportTemplateMessageKey(id)),
+                }))}
+              />
+              <div className="grid min-w-0 flex-1 grid-cols-1 gap-1 sm:flex sm:flex-wrap sm:items-center sm:justify-end sm:gap-x-2">
+                <ToggleOption
+                  checked={showQrCode}
+                  disabled={generating}
+                  onChange={onToggleShowQrCode}
+                  label={t("preview.showQrCode")}
+                />
+                <ToggleOption
+                  checked={showTitles}
+                  disabled={generating}
+                  onChange={onToggleShowTitles}
+                  label={t("preview.showTitles")}
+                />
+                <ToggleOption
+                  checked={transparentBg}
+                  disabled={generating}
+                  onChange={onToggleTransparentBg}
+                  label={t("preview.transparentBackground")}
+                />
+              </div>
+            </div>
           </div>
         </div>
 

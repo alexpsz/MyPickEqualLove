@@ -316,6 +316,30 @@ function ExportPickCard({
   const { content, visual } = composition;
   const cardSize = content.fixedCardSize;
   const isCoverPriority = Boolean(song) && !showTitles && !showSlotTitle;
+  const coverImage = song ? (
+    <img
+      src={song.coverUrl}
+      alt={`${song.title.ja} cover`}
+      style={
+        isCoverPriority
+          ? {
+              width: "100%",
+              height: "100%",
+              objectFit: "contain",
+              objectPosition: "center",
+              display: "block",
+            }
+          : {
+              width: content.fillHeight ? "auto" : `${cardSize}px`,
+              height: content.fillHeight ? "100%" : `${cardSize}px`,
+              aspectRatio: content.fillHeight ? "1 / 1" : undefined,
+              objectFit: "cover",
+              flexShrink: 0,
+              display: "block",
+            }
+      }
+    />
+  ) : null;
 
   return (
     <div
@@ -331,28 +355,22 @@ function ExportPickCard({
     >
       {song ? (
         <>
-          <img
-            src={song.coverUrl}
-            alt={`${song.title.ja} cover`}
-            style={{
-              width: isCoverPriority
-                ? "100%"
-                : content.fillHeight
-                  ? "auto"
-                  : `${cardSize}px`,
-              height: isCoverPriority
-                ? "100%"
-                : content.fillHeight
-                  ? "100%"
-                  : `${cardSize}px`,
-              aspectRatio:
-                !isCoverPriority && content.fillHeight ? "1 / 1" : undefined,
-              objectFit: isCoverPriority ? "contain" : "cover",
-              objectPosition: isCoverPriority ? "center" : undefined,
-              flexShrink: 0,
-              display: "block",
-            }}
-          />
+          {isCoverPriority ? (
+            <div
+              data-export-cover-box="square"
+              style={{
+                height: "100%",
+                aspectRatio: "1 / 1",
+                margin: "0 auto",
+                overflow: "hidden",
+                flexShrink: 0,
+              }}
+            >
+              {coverImage}
+            </div>
+          ) : (
+            coverImage
+          )}
           {!isCoverPriority ? (
             <div
               style={{

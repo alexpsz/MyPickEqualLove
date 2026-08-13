@@ -104,6 +104,10 @@ test("titleless standard cards become cover-priority while Live keeps slot seman
 
   assert.match(
     standardMarkup,
+    /data-export-cover-box="square"[^>]*height:100%;aspect-ratio:1 \/ 1;margin:0 auto;overflow:hidden/,
+  );
+  assert.match(
+    standardMarkup,
     /width:100%;height:100%;object-fit:contain;object-position:center/,
   );
   assert.doesNotMatch(standardMarkup, /border-left/);

@@ -22,6 +22,7 @@ import {
 } from "../config/project";
 import {
   DEFAULT_EXPORT_OPTIONS,
+  DEFAULT_EXPORT_SIZE_PRESET_ID,
   EXPORT_BACKGROUND,
   EXPORT_SCALE,
   getExportSizePreset,
@@ -217,14 +218,13 @@ const getPreviewOptionsKey = (
   transparentBg: boolean,
   showQrCode: boolean,
   templateId: ExportTemplateId,
-  sizePresetId: ExportSizePresetId,
 ) =>
   [
     showTitles ? "titles" : "no-titles",
     transparentBg ? "transparent" : "opaque",
     showQrCode ? "qr" : "no-qr",
     templateId,
-    sizePresetId,
+    DEFAULT_EXPORT_SIZE_PRESET_ID,
   ].join(":");
 
 export default function PickExperienceClient({
@@ -304,9 +304,8 @@ export default function PickExperienceClient({
   const [templateId, setTemplateId] = useState<ExportTemplateId>(
     DEFAULT_EXPORT_OPTIONS.templateId,
   );
-  const [sizePresetId, setSizePresetId] = useState<ExportSizePresetId>(
-    DEFAULT_EXPORT_OPTIONS.sizePresetId,
-  );
+  const [frameSizePresetId, setFrameSizePresetId] =
+    useState<ExportSizePresetId>(DEFAULT_EXPORT_SIZE_PRESET_ID);
   const [nicknameDraft, setNicknameDraft] = useState("");
   const [frameCaptureRequest, setFrameCaptureRequest] =
     useState<ExportRenderRequest | null>(null);
@@ -566,7 +565,7 @@ export default function PickExperienceClient({
     experience,
     activeContext,
     templateId,
-    sizePresetId,
+    DEFAULT_EXPORT_SIZE_PRESET_ID,
   );
   const boardScope = useMemo<BoardScope>(
     () => ({
@@ -657,7 +656,6 @@ export default function PickExperienceClient({
         setTransparentBg(optionsResult.options.transparentBg);
         setShowQrCode(optionsResult.options.showQrCode);
         setTemplateId(optionsResult.options.templateId);
-        setSizePresetId(optionsResult.options.sizePresetId);
       }
       setOptionsStorageWritable(isWritableStorageStatus(optionsResult.status));
 
@@ -935,7 +933,6 @@ export default function PickExperienceClient({
       setTransparentBg(options.transparentBg);
       setShowQrCode(options.showQrCode);
       setTemplateId(options.templateId);
-      setSizePresetId(options.sizePresetId);
     };
     const syncStoredContext = () => {
       if (!storageKeys.context) return false;
@@ -2140,7 +2137,7 @@ export default function PickExperienceClient({
       setTransparentBg(request.transparentBg);
       setShowQrCode(request.showQrCode);
       setTemplateId(request.templateId);
-      setSizePresetId(request.sizePresetId);
+      setFrameSizePresetId(request.sizePresetId);
       setFramePageUrl(request.pageUrl);
       setFrameCaptureRequest(request);
     };
@@ -2203,7 +2200,7 @@ export default function PickExperienceClient({
       ]);
       await new Promise((resolve) => window.setTimeout(resolve, 150));
       assertExportLayoutFits(exportElement);
-      const sizePreset = getExportSizePreset(sizePresetId);
+      const sizePreset = getExportSizePreset(frameSizePresetId);
       const canvas = await html2canvas(exportElement, {
         useCORS: true,
         backgroundColor: transparentBg ? null : EXPORT_BACKGROUND,
@@ -2222,7 +2219,7 @@ export default function PickExperienceClient({
     } finally {
       window.getComputedStyle = originalGetComputedStyle;
     }
-  }, [exportCanvasId, sizePresetId, transparentBg]);
+  }, [exportCanvasId, frameSizePresetId, transparentBg]);
 
   useEffect(() => {
     if (
@@ -2292,7 +2289,6 @@ export default function PickExperienceClient({
       transparentBg,
       showQrCode,
       templateId,
-      sizePresetId,
     );
     const captureController = new AbortController();
     activePreviewCaptureAbortRef.current = captureController;
@@ -2309,7 +2305,7 @@ export default function PickExperienceClient({
           transparentBg,
           showQrCode,
           templateId,
-          sizePresetId,
+          sizePresetId: DEFAULT_EXPORT_SIZE_PRESET_ID,
           selectedBy: exportNickname,
           pageUrl,
         },
@@ -2353,7 +2349,6 @@ export default function PickExperienceClient({
     resetBoardWithoutHistory,
     showTitles,
     showQrCode,
-    sizePresetId,
     storedPicks,
     t,
     templateId,
@@ -2367,7 +2362,6 @@ export default function PickExperienceClient({
     transparentBg,
     showQrCode,
     templateId,
-    sizePresetId,
   );
 
   useEffect(() => {
@@ -2420,7 +2414,6 @@ export default function PickExperienceClient({
         setTransparentBg(result.options.transparentBg);
         setShowQrCode(result.options.showQrCode);
         setTemplateId(result.options.templateId);
-        setSizePresetId(result.options.sizePresetId);
         setBoardStatusMessage("");
       } catch {
         setOptionsStorageWritable(false);
@@ -2455,13 +2448,6 @@ export default function PickExperienceClient({
     void updateExportOptions((current) => ({
       ...current,
       templateId: value,
-    }));
-  };
-
-  const handleSizePresetChange = (value: ExportSizePresetId) => {
-    void updateExportOptions((current) => ({
-      ...current,
-      sizePresetId: value,
     }));
   };
 
@@ -2828,8 +2814,6 @@ export default function PickExperienceClient({
               onToggleShowQrCode={handleShowQrCodeChange}
               templateId={templateId}
               onTemplateChange={handleTemplateChange}
-              sizePresetId={sizePresetId}
-              onSizePresetChange={handleSizePresetChange}
               generating={generating}
               actionsDisabled={
                 generating || renderedPreview.optionsKey !== previewOptionsKey
@@ -2868,7 +2852,7 @@ export default function PickExperienceClient({
             transparentBg={transparentBg}
             showQrCode={showQrCode}
             templateId={templateId}
-            sizePresetId={sizePresetId}
+            sizePresetId={frameSizePresetId}
             selectedBy={exportNickname}
             pageUrl={framePageUrl ?? pageUrl}
           />

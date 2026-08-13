@@ -24,6 +24,7 @@ interface AnchoredOptionMenuProps<T extends string> {
   onValueChange: (value: T) => void;
   options: readonly AnchoredOption<T>[];
   disabled: boolean;
+  compact?: boolean;
 }
 
 export default function AnchoredOptionMenu<T extends string>({
@@ -32,6 +33,7 @@ export default function AnchoredOptionMenu<T extends string>({
   onValueChange,
   options,
   disabled,
+  compact = false,
 }: AnchoredOptionMenuProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
   const menuId = useId();
@@ -162,7 +164,9 @@ export default function AnchoredOptionMenu<T extends string>({
   return (
     <div
       ref={rootRef}
-      className="relative grid w-full min-w-0 gap-1 sm:w-[190px]"
+      className={`relative grid min-w-0 gap-1 ${
+        compact ? "w-36" : "w-full sm:w-[190px]"
+      }`}
       onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
           setIsOpen(false);
@@ -217,7 +221,9 @@ export default function AnchoredOptionMenu<T extends string>({
             aria-hidden={presenceState === "exiting"}
             inert={presenceState === "exiting"}
             onKeyDown={handleMenuKeyDown}
-            className="apple-material absolute left-0 top-[calc(100%+6px)] z-50 w-full min-w-[190px] max-w-[calc(100vw-2rem)] origin-top-left rounded-[14px] border-[var(--line)] bg-[rgba(255,255,255,0.97)] p-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.14),0_2px_8px_rgba(0,0,0,0.06)] outline-none"
+            className={`apple-material absolute left-0 top-[calc(100%+6px)] z-50 w-full max-w-[calc(100vw-2rem)] origin-top-left rounded-[14px] border-[var(--line)] bg-[rgba(255,255,255,0.97)] p-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.14),0_2px_8px_rgba(0,0,0,0.06)] outline-none ${
+              compact ? "min-w-36" : "min-w-[190px]"
+            }`}
             initial={{ opacity: 0, scale: 0.985, y: -4 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.985, y: -4 }}
