@@ -6,6 +6,27 @@ export interface SongDiscoveryState {
 
 export const SONG_DISCOVERY_STORAGE_VERSION = 1 as const;
 
+export type SongDiscoveryStorageReadResult =
+  | { kind: "absent"; state: SongDiscoveryState }
+  | { kind: "valid"; state: SongDiscoveryState }
+  | { kind: "unsupported-version"; version: number }
+  | { kind: "corrupt" }
+  | { kind: "invalid" }
+  | { kind: "read-failed" };
+
+export type SongDiscoveryStorageUpdateResult =
+  | { ok: true; state: SongDiscoveryState }
+  | {
+      ok: false;
+      reason:
+        | "unsupported-version"
+        | "corrupt"
+        | "invalid"
+        | "read-failed"
+        | "write-failed";
+      version?: number;
+    };
+
 export function createEmptySongDiscoveryState(): SongDiscoveryState {
   return {
     version: SONG_DISCOVERY_STORAGE_VERSION,
@@ -18,49 +39,92 @@ export function loadSongDiscoveryState(
   storageKey: string,
   validSongIds: ReadonlySet<string>,
 ): SongDiscoveryState {
+  const result = readSongDiscoveryStorage(storageKey, validSongIds);
+  return result.kind === "absent" || result.kind === "valid"
+    ? result.state
+    : createEmptySongDiscoveryState();
+}
+
+export function readSongDiscoveryStorage(
+  storageKey: string,
+  validSongIds: ReadonlySet<string>,
+): SongDiscoveryStorageReadResult {
+  let serialized: string | null;
   try {
-    const serialized = window.localStorage.getItem(storageKey);
-    if (!serialized) return createEmptySongDiscoveryState();
-
-    const value: unknown = JSON.parse(serialized);
-    if (!isRecord(value) || value.version !== SONG_DISCOVERY_STORAGE_VERSION) {
-      return createEmptySongDiscoveryState();
-    }
-
-    return {
-      version: SONG_DISCOVERY_STORAGE_VERSION,
-      favoriteSongIds: readSongIds(value.favoriteSongIds, validSongIds),
-      recentSongIds: readSongIds(value.recentSongIds, validSongIds),
-    };
+    serialized = window.localStorage.getItem(storageKey);
   } catch {
-    return createEmptySongDiscoveryState();
+    return { kind: "read-failed" };
   }
+
+  if (serialized === null) {
+    return { kind: "absent", state: createEmptySongDiscoveryState() };
+  }
+
+  let value: unknown;
+  try {
+    value = JSON.parse(serialized);
+  } catch {
+    return { kind: "corrupt" };
+  }
+
+  if (!isRecord(value)) return { kind: "invalid" };
+  if (value.version !== SONG_DISCOVERY_STORAGE_VERSION) {
+    return typeof value.version === "number" && Number.isFinite(value.version)
+      ? { kind: "unsupported-version", version: value.version }
+      : { kind: "invalid" };
+  }
+  if (
+    !isStringArray(value.favoriteSongIds) ||
+    !isStringArray(value.recentSongIds)
+  ) {
+    return { kind: "invalid" };
+  }
+
+  return {
+    kind: "valid",
+    state: {
+      version: SONG_DISCOVERY_STORAGE_VERSION,
+      favoriteSongIds: filterSongIds(value.favoriteSongIds, validSongIds),
+      recentSongIds: filterSongIds(value.recentSongIds, validSongIds),
+    },
+  };
 }
 
 export function saveSongDiscoveryState(
   storageKey: string,
   state: SongDiscoveryState,
 ) {
-  try {
-    const existing = window.localStorage.getItem(storageKey);
-    if (existing && hasUnsupportedStoredVersion(existing)) return false;
-    window.localStorage.setItem(storageKey, JSON.stringify(state));
-    return true;
-  } catch {
-    // Browsing modes and storage quotas can make localStorage unavailable.
+  const validSongIds = new Set([
+    ...state.favoriteSongIds,
+    ...state.recentSongIds,
+  ]);
+  const current = readSongDiscoveryStorage(storageKey, validSongIds);
+  if (current.kind !== "absent" && current.kind !== "valid") {
     return false;
   }
+  return writeSongDiscoveryState(storageKey, state);
 }
 
 export function updateStoredSongDiscoveryState(
   storageKey: string,
   validSongIds: ReadonlySet<string>,
   update: (current: SongDiscoveryState) => SongDiscoveryState,
-) {
-  const next = update(loadSongDiscoveryState(storageKey, validSongIds));
-  return saveSongDiscoveryState(storageKey, next)
-    ? ({ ok: true, state: next } as const)
-    : ({ ok: false } as const);
+): SongDiscoveryStorageUpdateResult {
+  const current = readSongDiscoveryStorage(storageKey, validSongIds);
+  if (current.kind !== "absent" && current.kind !== "valid") {
+    return current.kind === "unsupported-version"
+      ? {
+          ok: false,
+          reason: current.kind,
+          version: current.version,
+        }
+      : { ok: false, reason: current.kind };
+  }
+
+  const next = update(current.state);
+  return writeSongDiscoveryState(storageKey, next)
+    ? { ok: true, state: next }
+    : { ok: false, reason: "write-failed" };
 }
 
 export function recordRecentSongId(
@@ -77,11 +141,23 @@ export function recordRecentSongId(
   };
 }
 
-function hasUnsupportedStoredVersion(serialized: string) {
+function writeSongDiscoveryState(
+  storageKey: string,
+  state: SongDiscoveryState,
+) {
+  if (
+    state.version !== SONG_DISCOVERY_STORAGE_VERSION ||
+    !isStringArray(state.favoriteSongIds) ||
+    !isStringArray(state.recentSongIds)
+  ) {
+    return false;
+  }
+
   try {
-    const value: unknown = JSON.parse(serialized);
-    return isRecord(value) && value.version !== SONG_DISCOVERY_STORAGE_VERSION;
+    window.localStorage.setItem(storageKey, JSON.stringify(state));
+    return true;
   } catch {
+    // Browsing modes and storage quotas can make localStorage unavailable.
     return false;
   }
 }
@@ -90,14 +166,17 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function readSongIds(value: unknown, validSongIds: ReadonlySet<string>) {
-  if (!Array.isArray(value)) return [];
+function isStringArray(value: unknown): value is string[] {
+  return (
+    Array.isArray(value) && value.every((item) => typeof item === "string")
+  );
+}
+
+function filterSongIds(
+  value: readonly string[],
+  validSongIds: ReadonlySet<string>,
+) {
   return Array.from(
-    new Set(
-      value.filter(
-        (songId): songId is string =>
-          typeof songId === "string" && validSongIds.has(songId),
-      ),
-    ),
+    new Set(value.filter((songId) => validSongIds.has(songId))),
   );
 }

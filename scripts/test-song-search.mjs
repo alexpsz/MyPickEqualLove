@@ -60,8 +60,7 @@ const storageCompiled = ts.transpileModule(storageSource, {
 }).outputText;
 const storageModuleUrl = `data:text/javascript;base64,${Buffer.from(storageCompiled).toString("base64")}`;
 const {
-  createEmptySongDiscoveryState,
-  loadSongDiscoveryState,
+  readSongDiscoveryStorage,
   recordRecentSongId,
   saveSongDiscoveryState,
   updateStoredSongDiscoveryState,
@@ -225,76 +224,152 @@ test("Enter selects the first ranked result but not during IME or modifiers", ()
   );
 });
 
-test("loads only the current v1 discovery schema and filters song IDs", () => {
-  withLocalStorage(
-    JSON.stringify({
-      version: 1,
-      favoriteSongIds: ["song-a", "missing", "song-a", 17],
-      recentSongIds: ["song-b", "song-a", "song-b", null],
-    }),
-    ({ storage }) => {
-      assert.deepEqual(
-        loadSongDiscoveryState("discovery", new Set(["song-a", "song-b"])),
-        {
-          version: 1,
-          favoriteSongIds: ["song-a"],
-          recentSongIds: ["song-b", "song-a"],
-        },
-      );
-      assert.equal(storage.setCalls, 0);
-      saveSongDiscoveryState("discovery", {
-        version: 1,
-        favoriteSongIds: ["song-b"],
-        recentSongIds: ["song-a"],
-      });
-      assert.deepEqual(JSON.parse(storage.getItem("discovery")), {
-        version: 1,
-        favoriteSongIds: ["song-b"],
-        recentSongIds: ["song-a"],
-      });
-      assert.equal(storage.setCalls, 1);
+test("classifies and preserves every blocked discovery document", async (t) => {
+  const fixtures = [
+    {
+      name: "old",
+      serialized: JSON.stringify({
+        version: 0,
+        favoriteSongIds: ["song-a"],
+        recentSongIds: [],
+      }),
+      kind: "unsupported-version",
+      version: 0,
     },
-  );
+    {
+      name: "future",
+      serialized: JSON.stringify({
+        version: 2,
+        favoriteSongIds: ["song-a"],
+        recentSongIds: [],
+      }),
+      kind: "unsupported-version",
+      version: 2,
+    },
+    {
+      name: "missingVersion",
+      serialized: JSON.stringify({
+        favoriteSongIds: ["song-a"],
+        recentSongIds: [],
+      }),
+      kind: "invalid",
+    },
+    { name: "badJson", serialized: "{", kind: "corrupt" },
+    { name: "nullRoot", serialized: "null", kind: "invalid" },
+    { name: "arrayRoot", serialized: "[]", kind: "invalid" },
+    { name: "stringRoot", serialized: '"text"', kind: "invalid" },
+    {
+      name: "badV1",
+      serialized: JSON.stringify({
+        version: 1,
+        favoriteSongIds: ["song-a", 7],
+        recentSongIds: [],
+      }),
+      kind: "invalid",
+    },
+    {
+      name: "badV1Field",
+      serialized: JSON.stringify({
+        version: 1,
+        favoriteSongIds: ["song-a"],
+        recentSongIds: "song-b",
+      }),
+      kind: "invalid",
+    },
+  ];
+
+  for (const fixture of fixtures) {
+    await t.test(fixture.name, () => {
+      withLocalStorage(fixture.serialized, ({ storage }) => {
+        const readResult = readSongDiscoveryStorage(
+          "discovery",
+          new Set(["song-a", "song-b"]),
+        );
+        assert.equal(readResult.kind, fixture.kind);
+        if (readResult.kind === "unsupported-version") {
+          assert.equal(readResult.version, fixture.version);
+        }
+
+        const updateResult = updateStoredSongDiscoveryState(
+          "discovery",
+          new Set(["song-a", "song-b"]),
+          (current) => recordRecentSongId(current, "song-b", 4),
+        );
+        assert.equal(updateResult.ok, false);
+        if (!updateResult.ok) {
+          assert.equal(updateResult.reason, fixture.kind);
+          if (updateResult.reason === "unsupported-version") {
+            assert.equal(updateResult.version, fixture.version);
+          }
+        }
+        assert.equal(
+          saveSongDiscoveryState("discovery", {
+            version: 1,
+            favoriteSongIds: ["song-a"],
+            recentSongIds: ["song-b"],
+          }),
+          false,
+        );
+        assert.equal(storage.setCalls, 0);
+        assert.equal(storage.peekItem("discovery"), fixture.serialized);
+      });
+    });
+  }
 });
 
-test("fails closed for unknown versions without overwriting their payload", () => {
+test("allows an absent discovery key to be written for the first time", () => {
+  withLocalStorage(undefined, ({ storage }) => {
+    assert.deepEqual(
+      readSongDiscoveryStorage("discovery", new Set(["song-a"])),
+      {
+        kind: "absent",
+        state: { version: 1, favoriteSongIds: [], recentSongIds: [] },
+      },
+    );
+
+    const result = updateStoredSongDiscoveryState(
+      "discovery",
+      new Set(["song-a"]),
+      (current) => recordRecentSongId(current, "song-a", 4),
+    );
+    assert.deepEqual(result, {
+      ok: true,
+      state: {
+        version: 1,
+        favoriteSongIds: [],
+        recentSongIds: ["song-a"],
+      },
+    });
+    assert.equal(storage.setCalls, 1);
+    assert.deepEqual(JSON.parse(storage.peekItem("discovery")), result.state);
+  });
+});
+
+test("updates valid v1 from one read while preserving legacy favorites", () => {
   const original = JSON.stringify({
-    version: 999,
-    favoriteSongIds: ["future-song"],
-    futureField: true,
+    version: 1,
+    favoriteSongIds: ["song-a", "missing", "song-a"],
+    recentSongIds: ["missing", "song-b", "song-b"],
   });
 
   withLocalStorage(original, ({ storage }) => {
-    assert.deepEqual(
-      loadSongDiscoveryState("discovery", new Set(["future-song"])),
-      createEmptySongDiscoveryState(),
+    const result = updateStoredSongDiscoveryState(
+      "discovery",
+      new Set(["song-a", "song-b", "song-c"]),
+      (current) => recordRecentSongId(current, "song-c", 3),
     );
-    saveSongDiscoveryState("discovery", {
-      version: 1,
-      favoriteSongIds: ["song-a"],
-      recentSongIds: [],
+    assert.deepEqual(result, {
+      ok: true,
+      state: {
+        version: 1,
+        favoriteSongIds: ["song-a"],
+        recentSongIds: ["song-c", "song-b"],
+      },
     });
-    assert.equal(storage.getItem("discovery"), original);
-    assert.equal(storage.setCalls, 0);
+    assert.equal(storage.getCalls, 1);
+    assert.equal(storage.setCalls, 1);
+    assert.deepEqual(JSON.parse(storage.peekItem("discovery")), result.state);
   });
-});
-
-test("fails closed for bad JSON, non-object roots, and missing versions", () => {
-  for (const serialized of [
-    "{",
-    "null",
-    "[]",
-    '"text"',
-    "42",
-    JSON.stringify({ favoriteSongIds: ["song-a"] }),
-  ]) {
-    withLocalStorage(serialized, () => {
-      assert.deepEqual(
-        loadSongDiscoveryState("discovery", new Set(["song-a"])),
-        createEmptySongDiscoveryState(),
-      );
-    });
-  }
 });
 
 test("keeps recent song IDs newest-first, unique, and within the limit", () => {
@@ -315,82 +390,40 @@ test("keeps recent song IDs newest-first, unique, and within the limit", () => {
   ]);
 });
 
-test("storage access failures fall back without throwing", () => {
-  const originalWindow = globalThis.window;
-  globalThis.window = {
-    localStorage: {
-      getItem() {
-        throw new Error("storage unavailable");
-      },
-      setItem() {
-        throw new Error("storage unavailable");
-      },
-    },
-  };
-
-  try {
-    assert.deepEqual(
-      loadSongDiscoveryState("discovery", new Set(["song-a"])),
-      createEmptySongDiscoveryState(),
-    );
-    assert.equal(
-      saveSongDiscoveryState("discovery", createEmptySongDiscoveryState()),
-      false,
-    );
-  } finally {
-    restoreWindow(originalWindow);
-  }
-});
-
-test("discovery updates re-read storage and report persistence failures", () => {
+test("reports storage read and write failures without optimistic success", () => {
   withLocalStorage(
-    JSON.stringify({
-      version: 1,
-      favoriteSongIds: ["song-a"],
-      recentSongIds: [],
-    }),
+    undefined,
     ({ storage }) => {
-      const result = updateStoredSongDiscoveryState(
-        "discovery",
-        new Set(["song-a", "song-b"]),
-        (current) => recordRecentSongId(current, "song-b", 4),
+      assert.deepEqual(
+        updateStoredSongDiscoveryState(
+          "discovery",
+          new Set(["song-a"]),
+          (current) => recordRecentSongId(current, "song-a", 4),
+        ),
+        { ok: false, reason: "read-failed" },
       );
-      assert.equal(result.ok, true);
-      if (result.ok) {
-        assert.deepEqual(result.state.favoriteSongIds, ["song-a"]);
-        assert.deepEqual(result.state.recentSongIds, ["song-b"]);
-      }
-      assert.deepEqual(JSON.parse(storage.getItem("discovery")), {
-        version: 1,
-        favoriteSongIds: ["song-a"],
-        recentSongIds: ["song-b"],
-      });
+      assert.equal(storage.setCalls, 0);
     },
+    { throwOnGet: true },
   );
 
-  const originalWindow = globalThis.window;
-  globalThis.window = {
-    localStorage: {
-      getItem() {
-        return null;
-      },
-      setItem() {
-        throw new Error("quota exceeded");
-      },
+  withLocalStorage(
+    undefined,
+    ({ storage }) => {
+      assert.deepEqual(
+        updateStoredSongDiscoveryState(
+          "discovery",
+          new Set(["song-a"]),
+          (current) => recordRecentSongId(current, "song-a", 4),
+        ),
+        { ok: false, reason: "write-failed" },
+      );
+      assert.equal(storage.getCalls, 1);
+      assert.equal(storage.setCalls, 1);
+      assert.equal(storage.peekItem("discovery"), null);
     },
-  };
-  try {
-    assert.deepEqual(
-      updateStoredSongDiscoveryState(
-        "discovery",
-        new Set(["song-a"]),
-        (current) => recordRecentSongId(current, "song-a", 4),
-      ),
-      { ok: false },
-    );
-  } finally {
-    restoreWindow(originalWindow);
-  }
+    { throwOnSet: true },
+  );
 });
 
 function createSong(id, ja, romaji, overrides = {}) {
@@ -408,18 +441,25 @@ function createSong(id, ja, romaji, overrides = {}) {
   };
 }
 
-function withLocalStorage(serialized, callback) {
+function withLocalStorage(serialized, callback, options = {}) {
   const originalWindow = globalThis.window;
   const values = new Map();
   if (serialized !== undefined) values.set("discovery", serialized);
   const storage = {
+    getCalls: 0,
     setCalls: 0,
     getItem(key) {
+      this.getCalls += 1;
+      if (options.throwOnGet) throw new Error("storage unavailable");
       return values.get(key) ?? null;
     },
     setItem(key, value) {
       this.setCalls += 1;
+      if (options.throwOnSet) throw new Error("quota exceeded");
       values.set(key, value);
+    },
+    peekItem(key) {
+      return values.get(key) ?? null;
     },
   };
   globalThis.window = { localStorage: storage };
