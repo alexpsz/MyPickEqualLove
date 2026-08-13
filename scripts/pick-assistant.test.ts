@@ -5,11 +5,13 @@ import {
   createPickAssistantSession,
   createPickAssistantSnapshot,
   deriveTournament,
+  getBoardCandidateIds,
   parsePickAssistantSnapshot,
   planRankedPicks,
   recordComparison,
   samePickAssistantApplicationInputs,
   skipComparison,
+  togglePickAssistantShortlistSong,
   undoComparison,
   updatePickAssistantSnapshot,
   type PickAssistantSession,
@@ -261,6 +263,50 @@ test("assistant application is one undoable and redoable board step", () => {
   assert.deepEqual(history.present, after);
 });
 
+test("current board songs become assistant candidates in slot order without duplicates", () => {
+  const boardPicks = {
+    "slot-1": "song-1",
+    "slot-2": "song-2",
+    "slot-3": "song-1",
+  };
+  const candidateIds = getBoardCandidateIds(boardPicks, [
+    "slot-1",
+    "slot-2",
+    "slot-3",
+  ]);
+  assert.deepEqual(candidateIds, ["song-1", "song-2"]);
+
+  const snapshot = updatePickAssistantSnapshot(
+    createPickAssistantSnapshot(1, 9_000, "initial"),
+    { shortlistIds: candidateIds, session: null },
+    9_100,
+    "board-import",
+  );
+  assert.deepEqual(snapshot.shortlistIds, ["song-1", "song-2"]);
+});
+
+test("assistant shortlist action adds board songs, updates the count, removes, and enforces the limit", () => {
+  const boardPicks = { "slot-1": "song-1" };
+  let shortlistIds: string[] = [];
+
+  for (const songId of ["song-1", "song-2", "song-3"]) {
+    const update = togglePickAssistantShortlistSong(shortlistIds, songId, 3);
+    assert.equal(update.status, "updated");
+    shortlistIds = update.shortlistIds;
+  }
+  assert.equal(shortlistIds.length, 3);
+  assert.deepEqual(shortlistIds, ["song-1", "song-2", "song-3"]);
+  assert.deepEqual(boardPicks, { "slot-1": "song-1" });
+
+  const limited = togglePickAssistantShortlistSong(shortlistIds, "song-4", 3);
+  assert.equal(limited.status, "limit");
+  assert.deepEqual(limited.shortlistIds, shortlistIds);
+
+  const removed = togglePickAssistantShortlistSong(shortlistIds, "song-1", 3);
+  assert.equal(removed.status, "updated");
+  assert.deepEqual(removed.shortlistIds, ["song-2", "song-3"]);
+});
+
 test("assistant keys are isolated by experience and context", () => {
   const keys = [
     getExperienceStorageKeys("standard").assistant,
@@ -302,6 +348,35 @@ test("future and corrupt storage fail closed instead of being overwritten", () =
     assert.equal(result.status, "blocked");
     assert.equal(stored, existing);
   }
+});
+
+test("a failed shortlist write never reports success or changes persisted state", async () => {
+  const expected = createPickAssistantSnapshot(1, 9_000, "expected");
+  const next = updatePickAssistantSnapshot(
+    expected,
+    { shortlistIds: ["song-1"], session: null },
+    9_500,
+    "next",
+  );
+  const stored: string | null = null;
+  const result = await savePickAssistantSnapshotSafely(
+    {
+      getItem: () => stored,
+      setItem: () => {
+        throw new Error("storage unavailable");
+      },
+    },
+    "assistant",
+    expected,
+    next,
+    parseOptions,
+    {
+      request: async <T>(_name: string, callback: () => T | PromiseLike<T>) =>
+        callback(),
+    },
+  );
+  assert.equal(result.status, "unavailable");
+  assert.equal(stored, null);
 });
 
 test("a stale tab cannot overwrite a newer complete snapshot", () => {

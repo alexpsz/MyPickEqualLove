@@ -115,12 +115,14 @@ import { getMemberColorGradient } from "../utils/memberColors";
 import {
   createPickAssistantSession,
   deriveTournament,
+  getBoardCandidateIds,
   parsePickAssistantSnapshot,
   planRankedPicks,
   recordComparison,
   samePickAssistantApplicationInputs,
   samePickAssistantSnapshots,
   skipComparison,
+  togglePickAssistantShortlistSong,
   undoComparison,
   updatePickAssistantSnapshot,
   type ComparisonOutcome,
@@ -138,7 +140,6 @@ import {
   createEmptySongDiscoveryState,
   loadSongDiscoveryState,
   recordRecentSongId,
-  toggleFavoriteSongId,
   updateStoredSongDiscoveryState,
   type SongDiscoveryState,
 } from "../utils/songDiscoveryStorage";
@@ -167,7 +168,10 @@ import MotionPresence from "./MotionPresence";
 import PickBoard from "./PickBoard";
 import PreviewModal from "./PreviewModal";
 import ReplacementModal from "./ReplacementModal";
-import SearchModal, { type SelectedSongPresentation } from "./SearchModal";
+import SearchModal, {
+  type SearchSelectionMode,
+  type SelectedSongPresentation,
+} from "./SearchModal";
 import SongDetailModal from "./SongDetailModal";
 
 const PickAssistantModal = dynamic(() => import("./PickAssistantModal"), {
@@ -283,6 +287,8 @@ export default function PickExperienceClient({
   const storedPicks = boardHistory.present;
   const [activeSlotId, setActiveSlotId] = useState<PickSlotId | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [searchSelectionMode, setSearchSelectionMode] =
+    useState<SearchSelectionMode>("board");
   const [showBoardLibrary, setShowBoardLibrary] = useState(false);
   const [detailSongId, setDetailSongId] = useState<string | null>(null);
   const [detailLayerActive, setDetailLayerActive] = useState(false);
@@ -321,6 +327,8 @@ export default function PickExperienceClient({
     useState<PickAssistantStorageIssue | null>(null);
   const [assistantNeedsReview, setAssistantNeedsReview] = useState(false);
   const [assistantReviewNotice, setAssistantReviewNotice] = useState(false);
+  const [assistantMutationPending, setAssistantMutationPending] =
+    useState(false);
   const [boardLibrary, setBoardLibrary] = useState<BoardLibraryDocument>(() =>
     createEmptyBoardLibrary(),
   );
@@ -387,17 +395,7 @@ export default function PickExperienceClient({
 
     return Object.fromEntries(entries);
   }, [storedPicks]);
-  const pickedSongIds = useMemo(
-    () => new Set(Object.values(storedPicks)),
-    [storedPicks],
-  );
-  const assistantShortlistIds = useMemo(
-    () =>
-      pickAssistantSnapshot.shortlistIds.filter(
-        (songId) => !pickedSongIds.has(songId),
-      ),
-    [pickAssistantSnapshot.shortlistIds, pickedSongIds],
-  );
+  const assistantShortlistIds = pickAssistantSnapshot.shortlistIds;
   const candidateSongIds = useMemo(
     () => new Set(assistantShortlistIds),
     [assistantShortlistIds],
@@ -457,6 +455,14 @@ export default function PickExperienceClient({
   const assistantSlotLabels = useMemo(
     () => Object.fromEntries(uiSlots.map((slot) => [slot.id, slot.label])),
     [uiSlots],
+  );
+  const currentBoardCandidateIds = useMemo(
+    () =>
+      getBoardCandidateIds(
+        storedPicks,
+        slots.map((slot) => slot.id),
+      ),
+    [slots, storedPicks],
   );
   const selectedRanksBySongId = useMemo(() => {
     const ranks: Record<string, number> = {};
@@ -805,6 +811,7 @@ export default function PickExperienceClient({
       setContextId(nextContextId);
       setActiveSlotId(null);
       setShowModal(false);
+      setSearchSelectionMode("board");
       setShowBoardLibrary(false);
       setShowPickAssistant(false);
       setAssistantNeedsReview(false);
@@ -1283,6 +1290,7 @@ export default function PickExperienceClient({
 
   const handleSlotClick = (slotId: PickSlotId) => {
     searchReturnFocusKeyRef.current = getPickSlotReturnKey(slotId);
+    setSearchSelectionMode("board");
     detailTriggerRef.current = null;
     setDetailSongId(null);
     setActiveSlotId(slotId);
@@ -1291,6 +1299,7 @@ export default function PickExperienceClient({
 
   const handleGlobalSearchClick = () => {
     searchReturnFocusKeyRef.current = DIALOG_RETURN_KEYS.globalSearch;
+    setSearchSelectionMode("board");
     detailTriggerRef.current = null;
     setDetailSongId(null);
     setActiveSlotId(null);
@@ -1320,15 +1329,6 @@ export default function PickExperienceClient({
     [t],
   );
 
-  const handleToggleFavorite = useCallback(
-    (songId: string) => {
-      updateSongDiscoveryState((current) =>
-        toggleFavoriteSongId(current, songId),
-      );
-    },
-    [updateSongDiscoveryState],
-  );
-
   const handleOpenSongDetail = useCallback(
     (song: Song, trigger: HTMLButtonElement) => {
       detailTriggerRef.current = trigger;
@@ -1356,6 +1356,7 @@ export default function PickExperienceClient({
         createMutationId(),
       );
       assistantMutationPendingRef.current = true;
+      setAssistantMutationPending(true);
       try {
         const result = await savePickAssistantSnapshotSafely(
           localStorage,
@@ -1378,6 +1379,7 @@ export default function PickExperienceClient({
         return false;
       } finally {
         assistantMutationPendingRef.current = false;
+        setAssistantMutationPending(false);
       }
     },
     [
@@ -1389,12 +1391,13 @@ export default function PickExperienceClient({
 
   const handleToggleCandidate = useCallback(
     (song: Song) => {
-      if (pickedSongIds.has(song.id) || pickAssistantStorageIssue) return;
-      const alreadyCandidate = candidateSongIds.has(song.id);
-      if (
-        !alreadyCandidate &&
-        assistantShortlistIds.length >= PICK_ASSISTANT_CONFIG.maximumCandidates
-      ) {
+      if (pickAssistantStorageIssue) return;
+      const update = togglePickAssistantShortlistSong(
+        assistantShortlistIds,
+        song.id,
+        PICK_ASSISTANT_CONFIG.maximumCandidates,
+      );
+      if (update.status === "limit") {
         window.alert(
           t("assistant.maxReached", {
             count: PICK_ASSISTANT_CONFIG.maximumCandidates,
@@ -1402,34 +1405,13 @@ export default function PickExperienceClient({
         );
         return;
       }
-      const nextShortlistIds = alreadyCandidate
-        ? assistantShortlistIds.filter((songId) => songId !== song.id)
-        : [...assistantShortlistIds, song.id];
-      void commitPickAssistantUpdate(nextShortlistIds, null);
+      void commitPickAssistantUpdate(update.shortlistIds, null);
     },
     [
       assistantShortlistIds,
-      candidateSongIds,
       commitPickAssistantUpdate,
-      pickedSongIds,
       pickAssistantStorageIssue,
       t,
-    ],
-  );
-
-  const removePickedSongFromAssistant = useCallback(
-    (songId: string) => {
-      if (!candidateSongIds.has(songId) || pickAssistantStorageIssue) return;
-      void commitPickAssistantUpdate(
-        assistantShortlistIds.filter((candidateId) => candidateId !== songId),
-        null,
-      );
-    },
-    [
-      assistantShortlistIds,
-      candidateSongIds,
-      commitPickAssistantUpdate,
-      pickAssistantStorageIssue,
     ],
   );
 
@@ -1442,6 +1424,36 @@ export default function PickExperienceClient({
 
   const handleClearPickAssistant = () => {
     void commitPickAssistantUpdate([], null);
+  };
+
+  const handleBrowseAssistantCandidates = () => {
+    searchReturnFocusKeyRef.current = DIALOG_RETURN_KEYS.pickAssistant;
+    setShowPickAssistant(false);
+    setSearchSelectionMode("assistant-shortlist");
+    setActiveSlotId(null);
+    setDetailSongId(null);
+    detailTriggerRef.current = null;
+    setShowModal(true);
+  };
+
+  const handleReturnToPickAssistant = () => {
+    setShowModal(false);
+    setSearchSelectionMode("board");
+    setDetailSongId(null);
+    detailTriggerRef.current = null;
+    setActiveSlotId(null);
+    setShowPickAssistant(true);
+  };
+
+  const handleUseCurrentBoardForAssistant = () => {
+    if (
+      currentBoardCandidateIds.length <
+        PICK_ASSISTANT_CONFIG.minimumCandidates ||
+      currentBoardCandidateIds.length > PICK_ASSISTANT_CONFIG.maximumCandidates
+    ) {
+      return;
+    }
+    void commitPickAssistantUpdate(currentBoardCandidateIds, null);
   };
 
   const handleStartPickAssistant = () => {
@@ -1790,7 +1802,6 @@ export default function PickExperienceClient({
       ) {
         return;
       }
-      removePickedSongFromAssistant(song.id);
       setShowModal(false);
       setDetailSongId(null);
       setActiveSlotId(null);
@@ -1812,7 +1823,6 @@ export default function PickExperienceClient({
       ) {
         return;
       }
-      removePickedSongFromAssistant(song.id);
       setShowModal(false);
       setDetailSongId(null);
       return;
@@ -1867,7 +1877,6 @@ export default function PickExperienceClient({
         return;
       }
     }
-    removePickedSongFromAssistant(pendingReplacementSong.id);
     setPendingReplacementSong(null);
   };
 
@@ -2569,6 +2578,7 @@ export default function PickExperienceClient({
             if (!hydrated || isExportRealm) return;
             setShowBoardLibrary(false);
             setShowModal(false);
+            setSearchSelectionMode("board");
             setDetailSongId(null);
             setPendingReplacementSong(null);
             setShowPickAssistant(true);
@@ -2649,6 +2659,7 @@ export default function PickExperienceClient({
             showModal
               ? {
                   songs: searchSongs,
+                  selectionMode: searchSelectionMode,
                   autoFocusSearch: activeSlotId === null,
                   returnFocusKey: searchReturnFocusKeyRef.current,
                   contextLabel: selectedUiSlot
@@ -2671,26 +2682,30 @@ export default function PickExperienceClient({
               selectedSongsById={selectedSongsById}
               emptyMessage={t("search.noEligibleMatches")}
               selectedRanksBySongId={selectedRanksBySongId}
-              favoriteSongIds={songDiscoveryState.favoriteSongIds}
               recentSongIds={songDiscoveryState.recentSongIds}
               candidateSongIds={candidateSongIds}
+              selectionMode={searchPresentation.selectionMode}
               candidateLimitReached={
                 assistantShortlistIds.length >=
                 PICK_ASSISTANT_CONFIG.maximumCandidates
               }
+              candidateChangesBlocked={Boolean(pickAssistantStorageIssue)}
+              candidateMutationPending={assistantMutationPending}
+              maximumCandidates={PICK_ASSISTANT_CONFIG.maximumCandidates}
               suspended={detailLayerActive}
               resumeFocusRef={detailTriggerRef}
               presenceState={presenceState}
               returnFocusKey={searchPresentation.returnFocusKey}
               onClose={() => {
                 setShowModal(false);
+                setSearchSelectionMode("board");
                 setDetailSongId(null);
                 detailTriggerRef.current = null;
                 setActiveSlotId(null);
               }}
               onSelect={handleSelectSong}
-              onToggleFavorite={handleToggleFavorite}
               onToggleCandidate={handleToggleCandidate}
+              onReturnToAssistant={handleReturnToPickAssistant}
               onOpenDetail={handleOpenSongDetail}
             />
           )}
@@ -2704,22 +2719,21 @@ export default function PickExperienceClient({
             <SongDetailModal
               song={song}
               members={MEMBERS}
-              isFavorite={songDiscoveryState.favoriteSongIds.includes(song.id)}
               isRecentlyViewed={songDiscoveryState.recentSongIds.includes(
                 song.id,
               )}
+              selectionMode={searchSelectionMode}
               isCandidate={candidateSongIds.has(song.id)}
               candidateDisabled={
-                pickedSongIds.has(song.id) ||
                 (!candidateSongIds.has(song.id) &&
                   assistantShortlistIds.length >=
                     PICK_ASSISTANT_CONFIG.maximumCandidates) ||
+                assistantMutationPending ||
                 Boolean(pickAssistantStorageIssue)
               }
               presenceState={presenceState}
               onClose={() => setDetailSongId(null)}
               onSelect={handleSelectSongFromDetail}
-              onToggleFavorite={handleToggleFavorite}
               onToggleCandidate={handleToggleCandidate}
             />
           )}
@@ -2779,13 +2793,17 @@ export default function PickExperienceClient({
               applicationPlan={assistant.applicationPlan}
               slotLabels={assistantSlotLabels}
               currentPickCount={Object.keys(storedPicks).length}
+              currentBoardCandidateCount={currentBoardCandidateIds.length}
               minimumCandidates={PICK_ASSISTANT_CONFIG.minimumCandidates}
               maximumCandidates={PICK_ASSISTANT_CONFIG.maximumCandidates}
               storageIssue={assistant.storageIssue}
+              mutationsBlocked={assistantMutationPending}
               reviewNotice={assistantReviewNotice}
               presenceState={presenceState}
               returnFocusKey={DIALOG_RETURN_KEYS.pickAssistant}
               onClose={() => setShowPickAssistant(false)}
+              onBrowseCandidates={handleBrowseAssistantCandidates}
+              onUseCurrentBoard={handleUseCurrentBoardForAssistant}
               onRemoveCandidate={handleRemoveCandidate}
               onClear={handleClearPickAssistant}
               onStart={handleStartPickAssistant}

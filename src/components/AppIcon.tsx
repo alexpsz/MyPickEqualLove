@@ -20,7 +20,6 @@ export type AppIconName =
   | "redo"
   | "search"
   | "share"
-  | "star"
   | "undo";
 
 interface AppIconProps {
@@ -177,10 +176,6 @@ function getIconPaths(name: AppIconName) {
           <path d="M8.25 8.25H4.5v-3.5" />
           <path d="M4.85 8a8 8 0 1 1-.2 7.7" />
         </>
-      );
-    case "star":
-      return (
-        <path d="m12 3.75 2.55 5.17 5.7.83-4.12 4.02.97 5.68L12 16.77l-5.1 2.68.97-5.68-4.12-4.02 5.7-.83L12 3.75Z" />
       );
   }
 }

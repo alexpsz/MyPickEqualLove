@@ -32,6 +32,8 @@ import type { PresenceState } from "./MotionPresence";
 type ReleaseFilter = "all" | ReleaseType;
 type TrackFilter = "all" | TrackType;
 
+export type SearchSelectionMode = "board" | "assistant-shortlist";
+
 interface SearchModalProps {
   songs: Song[];
   members: Member[];
@@ -44,18 +46,21 @@ interface SearchModalProps {
   selectedSongsById?: Record<string, SelectedSongPresentation>;
   emptyMessage?: string;
   selectedRanksBySongId?: Record<string, number>;
-  favoriteSongIds?: string[];
   recentSongIds?: string[];
+  selectionMode?: SearchSelectionMode;
   candidateSongIds?: ReadonlySet<string>;
   candidateLimitReached?: boolean;
+  candidateChangesBlocked?: boolean;
+  candidateMutationPending?: boolean;
+  maximumCandidates?: number;
   suspended?: boolean;
   resumeFocusRef?: RefObject<HTMLElement | null>;
   presenceState: PresenceState;
   returnFocusKey: string;
   onClose: () => void;
   onSelect: (song: Song) => void;
-  onToggleFavorite: (songId: string) => void;
   onToggleCandidate?: (song: Song) => void;
+  onReturnToAssistant?: () => void;
   onOpenDetail: (song: Song, trigger: HTMLButtonElement) => void;
 }
 
@@ -158,18 +163,21 @@ export default function SearchModal({
   selectedSongsById = {},
   emptyMessage,
   selectedRanksBySongId = {},
-  favoriteSongIds = [],
   recentSongIds = [],
+  selectionMode = "board",
   candidateSongIds = EMPTY_SONG_ID_SET,
   candidateLimitReached = false,
+  candidateChangesBlocked = false,
+  candidateMutationPending = false,
+  maximumCandidates = 0,
   suspended = false,
   resumeFocusRef,
   presenceState,
   returnFocusKey,
   onClose,
   onSelect,
-  onToggleFavorite,
   onToggleCandidate,
+  onReturnToAssistant,
   onOpenDetail,
 }: SearchModalProps) {
   const { t } = useLocale();
@@ -188,14 +196,11 @@ export default function SearchModal({
     () => normalizeSongSearchText(searchQuery),
     [searchQuery],
   );
-  const favoriteSongIdSet = useMemo(
-    () => new Set(favoriteSongIds),
-    [favoriteSongIds],
-  );
   const recentSongIdSet = useMemo(
     () => new Set(recentSongIds),
     [recentSongIds],
   );
+  const isAssistantShortlistMode = selectionMode === "assistant-shortlist";
 
   useDialogA11y({
     dialogRef: panelRef,
@@ -357,6 +362,18 @@ export default function SearchModal({
     });
     if (!firstResult) return;
     event.preventDefault();
+    if (isAssistantShortlistMode) {
+      const isCandidate = candidateSongIds.has(firstResult.id);
+      if (
+        candidateChangesBlocked ||
+        candidateMutationPending ||
+        (!isCandidate && candidateLimitReached)
+      ) {
+        return;
+      }
+      onToggleCandidate?.(firstResult);
+      return;
+    }
     onSelect(firstResult);
   };
 
@@ -411,14 +428,24 @@ export default function SearchModal({
               id="search-modal-title"
               className="truncate text-[22px] font-semibold tracking-[-0.035em] text-[var(--foreground)]"
             >
-              {t("search.title")}
+              {t(
+                isAssistantShortlistMode
+                  ? "assistant.searchTitle"
+                  : "search.title",
+              )}
             </h2>
             <p
-              className="mt-0.5 truncate text-[13px] text-[var(--muted)]"
+              className="mt-0.5 text-[13px] leading-snug text-[var(--muted)]"
               aria-live="polite"
             >
-              {contextLabel ? `${contextLabel} · ` : ""}
-              {t("search.matchingSongs", { count: filteredSongs.length })}
+              {isAssistantShortlistMode ? (
+                t("assistant.searchHint")
+              ) : (
+                <>
+                  {contextLabel ? `${contextLabel} · ` : ""}
+                  {t("search.matchingSongs", { count: filteredSongs.length })}
+                </>
+              )}
             </p>
           </div>
           <button
@@ -580,11 +607,11 @@ export default function SearchModal({
                 {filteredSongs.map((song, index) => {
                   const selected = selectedSongsById[song.id];
                   const selectedRank = selectedRanksBySongId[song.id];
-                  const isFavorite = favoriteSongIdSet.has(song.id);
                   const isRecentlyViewed = recentSongIdSet.has(song.id);
                   const isCandidate = candidateSongIds.has(song.id);
                   const candidateDisabled =
-                    Boolean(selected) ||
+                    candidateChangesBlocked ||
+                    candidateMutationPending ||
                     (!isCandidate && candidateLimitReached) ||
                     !onToggleCandidate;
 
@@ -597,7 +624,26 @@ export default function SearchModal({
                     >
                       <button
                         type="button"
-                        onClick={() => onSelect(song)}
+                        onClick={() =>
+                          isAssistantShortlistMode
+                            ? onToggleCandidate?.(song)
+                            : onSelect(song)
+                        }
+                        disabled={isAssistantShortlistMode && candidateDisabled}
+                        aria-pressed={
+                          isAssistantShortlistMode ? isCandidate : undefined
+                        }
+                        aria-label={
+                          isAssistantShortlistMode
+                            ? isCandidate
+                              ? t("assistant.removeCandidateAria", {
+                                  title: song.title.ja,
+                                })
+                              : t("assistant.addCandidateAria", {
+                                  title: song.title.ja,
+                                })
+                            : undefined
+                        }
                         className="group flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-left focus:outline-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring)] active:bg-[var(--project-primary-wash)]"
                       >
                         <div className="h-14 w-14 shrink-0 overflow-hidden rounded-[10px] border border-[var(--line)] bg-[var(--background)]">
@@ -650,10 +696,7 @@ export default function SearchModal({
                                 })}
                               </ResultBadge>
                             ) : null}
-                            {isFavorite ? (
-                              <ResultBadge>{t("search.candidate")}</ResultBadge>
-                            ) : null}
-                            {isCandidate ? (
+                            {isAssistantShortlistMode && isCandidate ? (
                               <ResultBadge>
                                 {t("assistant.candidate")}
                               </ResultBadge>
@@ -671,73 +714,21 @@ export default function SearchModal({
                         </div>
                         <span className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--background)] text-[var(--muted)] transition-[background-color,color,transform] duration-150 group-hover:bg-[var(--project-primary)] group-hover:text-black group-active:scale-95 sm:flex">
                           <AppIcon
-                            name={selected ? "check" : "plus"}
+                            name={
+                              isAssistantShortlistMode
+                                ? isCandidate
+                                  ? "check"
+                                  : "music"
+                                : selected
+                                  ? "check"
+                                  : "plus"
+                            }
                             size={16}
                           />
                         </span>
                       </button>
 
                       <div className="flex shrink-0 items-center border-l border-[var(--line)] px-1">
-                        <button
-                          type="button"
-                          onClick={() => onToggleFavorite(song.id)}
-                          aria-pressed={isFavorite}
-                          aria-label={
-                            isFavorite
-                              ? t("search.removeCandidateAria", {
-                                  title: song.title.ja,
-                                })
-                              : t("search.addCandidateAria", {
-                                  title: song.title.ja,
-                                })
-                          }
-                          title={
-                            isFavorite
-                              ? t("songDetail.removeCandidate")
-                              : t("songDetail.addCandidate")
-                          }
-                          className={`flex h-11 w-11 items-center justify-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] ${
-                            isFavorite
-                              ? "bg-[var(--project-primary-wash)] text-[var(--foreground)]"
-                              : "text-[var(--muted)] hover:bg-white hover:text-[var(--foreground)]"
-                          }`}
-                        >
-                          <AppIcon name="star" size={16} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => onToggleCandidate?.(song)}
-                          disabled={candidateDisabled}
-                          aria-pressed={isCandidate}
-                          aria-label={
-                            selected
-                              ? t("assistant.selected")
-                              : isCandidate
-                                ? t("assistant.removeCandidateAria", {
-                                    title: song.title.ja,
-                                  })
-                                : t("assistant.addCandidateAria", {
-                                    title: song.title.ja,
-                                  })
-                          }
-                          title={
-                            selected
-                              ? t("assistant.selected")
-                              : isCandidate
-                                ? t("assistant.candidate")
-                                : t("assistant.addCandidate")
-                          }
-                          className={`flex h-11 w-11 items-center justify-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-45 ${
-                            isCandidate
-                              ? "bg-[var(--project-primary-wash)] text-[var(--foreground)]"
-                              : "text-[var(--muted)] hover:bg-white hover:text-[var(--foreground)]"
-                          }`}
-                        >
-                          <AppIcon
-                            name={selected || isCandidate ? "check" : "music"}
-                            size={16}
-                          />
-                        </button>
                         <button
                           type="button"
                           aria-haspopup="dialog"
@@ -765,11 +756,33 @@ export default function SearchModal({
           </div>
         </div>
 
-        <div className="border-t border-[var(--line)] bg-white px-4 py-3 pb-[max(.75rem,env(safe-area-inset-bottom))] text-center text-xs text-[var(--muted)] sm:px-6">
-          {t("search.showingCount", {
-            shown: filteredSongs.length,
-            total: songs.length,
-          })}
+        <div className="flex min-h-14 items-center justify-between gap-3 border-t border-[var(--line)] bg-white px-4 py-3 pb-[max(.75rem,env(safe-area-inset-bottom))] text-xs text-[var(--muted)] sm:px-6">
+          <span
+            aria-live={isAssistantShortlistMode ? "polite" : undefined}
+            aria-busy={
+              isAssistantShortlistMode ? candidateMutationPending : undefined
+            }
+          >
+            {isAssistantShortlistMode
+              ? t("assistant.selectionCount", {
+                  count: candidateSongIds.size,
+                  max: maximumCandidates,
+                })
+              : t("search.showingCount", {
+                  shown: filteredSongs.length,
+                  total: songs.length,
+                })}
+          </span>
+          {isAssistantShortlistMode ? (
+            <button
+              type="button"
+              onClick={onReturnToAssistant}
+              disabled={candidateMutationPending}
+              className="official-button official-button-primary shrink-0"
+            >
+              {t("assistant.returnToAssistant")}
+            </button>
+          ) : null}
         </div>
       </m.div>
     </div>

@@ -29,13 +29,17 @@ interface PickAssistantModalProps {
   applicationPlan: RankedPickPlan | null;
   slotLabels: Readonly<Record<string, string>>;
   currentPickCount: number;
+  currentBoardCandidateCount: number;
   minimumCandidates: number;
   maximumCandidates: number;
   storageIssue: PickAssistantStorageIssue | null;
+  mutationsBlocked: boolean;
   reviewNotice: boolean;
   presenceState: PresenceState;
   returnFocusKey: string;
   onClose: () => void;
+  onBrowseCandidates: () => void;
+  onUseCurrentBoard: () => void;
   onRemoveCandidate: (songId: string) => void;
   onClear: () => void;
   onStart: () => void;
@@ -53,13 +57,17 @@ export default function PickAssistantModal({
   applicationPlan,
   slotLabels,
   currentPickCount,
+  currentBoardCandidateCount,
   minimumCandidates,
   maximumCandidates,
   storageIssue,
+  mutationsBlocked,
   reviewNotice,
   presenceState,
   returnFocusKey,
   onClose,
+  onBrowseCandidates,
+  onUseCurrentBoard,
   onRemoveCandidate,
   onClear,
   onStart,
@@ -74,6 +82,7 @@ export default function PickAssistantModal({
   const panelRef = useRef<HTMLDivElement>(null);
   const leftChoiceRef = useRef<HTMLButtonElement>(null);
   const applyRef = useRef<HTMLButtonElement>(null);
+  const browseCandidatesRef = useRef<HTMLButtonElement>(null);
   const songsById = useMemo(
     () => Object.fromEntries(shortlist.map((song) => [song.id, song])),
     [shortlist],
@@ -102,12 +111,20 @@ export default function PickAssistantModal({
         leftChoiceRef.current?.focus();
       } else if (tournament?.status === "complete") {
         applyRef.current?.focus();
+      } else if (shortlist.length < minimumCandidates) {
+        browseCandidatesRef.current?.focus();
       } else {
         panelRef.current?.focus();
       }
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [currentPairKey, presenceState, tournament?.status]);
+  }, [
+    currentPairKey,
+    minimumCandidates,
+    presenceState,
+    shortlist.length,
+    tournament?.status,
+  ]);
 
   const handleClear = () => {
     if (window.confirm(t("assistant.clearConfirm"))) onClear();
@@ -121,8 +138,10 @@ export default function PickAssistantModal({
 
   return (
     <div
-      className="motion-overlay fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4"
+      className={`motion-overlay fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4 ${presenceState === "exiting" ? "pointer-events-none" : ""}`}
       data-presence={presenceState}
+      aria-hidden={presenceState === "exiting"}
+      inert={presenceState === "exiting"}
     >
       <m.button
         type="button"
@@ -146,6 +165,7 @@ export default function PickAssistantModal({
         aria-hidden={presenceState === "exiting"}
         inert={presenceState === "exiting"}
         aria-labelledby="pick-assistant-title"
+        aria-busy={mutationsBlocked}
         className="apple-sheet relative z-10 flex max-h-[92dvh] w-full max-w-3xl flex-col overflow-hidden rounded-t-[var(--radius-lg)] border-x-0 border-b-0 focus:outline-none sm:rounded-[var(--radius-lg)] sm:border"
         initial={{ opacity: 0, y: 18, scale: 0.985 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -205,6 +225,7 @@ export default function PickAssistantModal({
               onSkip={onSkip}
               onUndo={onUndo}
               onRestart={handleRestart}
+              mutationsBlocked={mutationsBlocked}
             />
           ) : tournament?.status === "complete" && applicationPlan ? (
             <ResultView
@@ -217,14 +238,21 @@ export default function PickAssistantModal({
               onApply={onApply}
               onUndo={onUndo}
               onRestart={handleRestart}
+              mutationsBlocked={mutationsBlocked}
             />
           ) : (
             <ShortlistView
               shortlist={shortlist}
               minimumCandidates={minimumCandidates}
+              maximumCandidates={maximumCandidates}
+              currentBoardCandidateCount={currentBoardCandidateCount}
+              browseCandidatesRef={browseCandidatesRef}
+              onBrowseCandidates={onBrowseCandidates}
+              onUseCurrentBoard={onUseCurrentBoard}
               onRemoveCandidate={onRemoveCandidate}
               onClear={handleClear}
               onStart={onStart}
+              mutationsBlocked={mutationsBlocked}
             />
           )}
         </div>
@@ -236,17 +264,32 @@ export default function PickAssistantModal({
 function ShortlistView({
   shortlist,
   minimumCandidates,
+  maximumCandidates,
+  currentBoardCandidateCount,
+  browseCandidatesRef,
+  onBrowseCandidates,
+  onUseCurrentBoard,
   onRemoveCandidate,
   onClear,
   onStart,
+  mutationsBlocked,
 }: {
   shortlist: Song[];
   minimumCandidates: number;
+  maximumCandidates: number;
+  currentBoardCandidateCount: number;
+  browseCandidatesRef: React.RefObject<HTMLButtonElement | null>;
+  onBrowseCandidates: () => void;
+  onUseCurrentBoard: () => void;
   onRemoveCandidate: (songId: string) => void;
   onClear: () => void;
   onStart: () => void;
+  mutationsBlocked: boolean;
 }) {
   const { t } = useLocale();
+  const canImportCurrentBoard =
+    currentBoardCandidateCount >= minimumCandidates &&
+    currentBoardCandidateCount <= maximumCandidates;
   if (shortlist.length === 0) {
     return (
       <div className="rounded-[var(--radius-md)] border border-[var(--line)] bg-white px-6 py-14 text-center">
@@ -254,8 +297,32 @@ function ShortlistView({
           {t("assistant.emptyTitle")}
         </h3>
         <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-[var(--muted)]">
-          {t("assistant.emptyHint")}
+          {t("assistant.emptyHint", { count: minimumCandidates })}
         </p>
+        <div className="mx-auto mt-6 grid max-w-sm gap-2 sm:grid-cols-2">
+          <button
+            ref={browseCandidatesRef}
+            type="button"
+            onClick={onBrowseCandidates}
+            disabled={mutationsBlocked}
+            className="official-button official-button-primary w-full"
+          >
+            <AppIcon name="search" size={16} />
+            {t("assistant.browseCandidates")}
+          </button>
+          {canImportCurrentBoard ? (
+            <button
+              type="button"
+              onClick={onUseCurrentBoard}
+              disabled={mutationsBlocked}
+              className="official-button w-full"
+            >
+              {t("assistant.useCurrentBoard", {
+                count: currentBoardCandidateCount,
+              })}
+            </button>
+          ) : null}
+        </div>
       </div>
     );
   }
@@ -269,6 +336,7 @@ function ShortlistView({
         <button
           type="button"
           onClick={onClear}
+          disabled={mutationsBlocked}
           className="official-button official-button-quiet !px-3"
         >
           {t("assistant.clear")}
@@ -292,6 +360,7 @@ function ShortlistView({
             <button
               type="button"
               onClick={() => onRemoveCandidate(song.id)}
+              disabled={mutationsBlocked}
               className="icon-button icon-button-compact shrink-0"
               aria-label={t("assistant.removeCandidateAria", {
                 title: song.title.ja,
@@ -307,15 +376,39 @@ function ShortlistView({
           {t("assistant.minimumHint", { count: minimumCandidates })}
         </p>
       ) : null}
-      <button
-        type="button"
-        onClick={onStart}
-        disabled={shortlist.length < minimumCandidates}
-        className="official-button official-button-primary w-full sm:justify-self-end sm:w-auto"
-      >
-        <AppIcon name="check" size={16} />
-        {t("assistant.start")}
-      </button>
+      <div className="grid gap-2 sm:flex sm:justify-end">
+        <button
+          ref={browseCandidatesRef}
+          type="button"
+          onClick={onBrowseCandidates}
+          disabled={mutationsBlocked}
+          className="official-button w-full sm:w-auto"
+        >
+          <AppIcon name="search" size={16} />
+          {t("assistant.browseCandidates")}
+        </button>
+        <button
+          type="button"
+          onClick={onStart}
+          disabled={mutationsBlocked || shortlist.length < minimumCandidates}
+          className="official-button official-button-primary w-full sm:w-auto"
+        >
+          <AppIcon name="check" size={16} />
+          {t("assistant.start")}
+        </button>
+        {canImportCurrentBoard ? (
+          <button
+            type="button"
+            onClick={onUseCurrentBoard}
+            disabled={mutationsBlocked}
+            className="official-button official-button-quiet w-full sm:w-auto"
+          >
+            {t("assistant.useCurrentBoard", {
+              count: currentBoardCandidateCount,
+            })}
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -331,6 +424,7 @@ function ComparisonView({
   onSkip,
   onUndo,
   onRestart,
+  mutationsBlocked,
 }: {
   leftSong?: Song;
   rightSong?: Song;
@@ -342,6 +436,7 @@ function ComparisonView({
   onSkip: () => void;
   onUndo: () => void;
   onRestart: () => void;
+  mutationsBlocked: boolean;
 }) {
   const { t } = useLocale();
   if (!leftSong || !rightSong) return null;
@@ -370,24 +465,35 @@ function ComparisonView({
           song={leftSong}
           buttonRef={leftChoiceRef}
           onClick={() => onCompare("left")}
+          disabled={mutationsBlocked}
         />
-        <ComparisonCard song={rightSong} onClick={() => onCompare("right")} />
+        <ComparisonCard
+          song={rightSong}
+          onClick={() => onCompare("right")}
+          disabled={mutationsBlocked}
+        />
       </div>
       <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-center">
         <button
           type="button"
           onClick={() => onCompare("tie")}
+          disabled={mutationsBlocked}
           className="official-button"
         >
           {t("assistant.tie")}
         </button>
-        <button type="button" onClick={onSkip} className="official-button">
+        <button
+          type="button"
+          onClick={onSkip}
+          disabled={mutationsBlocked}
+          className="official-button"
+        >
           {t("assistant.skip")}
         </button>
         <button
           type="button"
           onClick={onUndo}
-          disabled={!canUndo}
+          disabled={mutationsBlocked || !canUndo}
           className="official-button official-button-quiet"
         >
           {t("assistant.undo")}
@@ -395,6 +501,7 @@ function ComparisonView({
         <button
           type="button"
           onClick={onRestart}
+          disabled={mutationsBlocked}
           className="official-button official-button-quiet"
         >
           {t("assistant.restart")}
@@ -408,10 +515,12 @@ function ComparisonCard({
   song,
   buttonRef,
   onClick,
+  disabled,
 }: {
   song: Song;
   buttonRef?: React.RefObject<HTMLButtonElement | null>;
   onClick: () => void;
+  disabled: boolean;
 }) {
   const { t } = useLocale();
   return (
@@ -419,6 +528,7 @@ function ComparisonCard({
       ref={buttonRef}
       type="button"
       onClick={onClick}
+      disabled={disabled}
       aria-label={t("assistant.chooseAria", { title: song.title.ja })}
       className="group overflow-hidden rounded-[var(--radius-md)] border border-[var(--line-strong)] bg-white text-left transition-[border-color,box-shadow,transform] duration-150 hover:border-[var(--project-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:scale-[0.985]"
     >
@@ -449,6 +559,7 @@ function ResultView({
   onApply,
   onUndo,
   onRestart,
+  mutationsBlocked,
 }: {
   orderedIds: string[];
   songsById: Record<string, Song>;
@@ -459,6 +570,7 @@ function ResultView({
   onApply: () => void;
   onUndo: () => void;
   onRestart: () => void;
+  mutationsBlocked: boolean;
 }) {
   const { t } = useLocale();
   const placementsBySongId = new Map(
@@ -522,6 +634,7 @@ function ResultView({
         <button
           type="button"
           onClick={onUndo}
+          disabled={mutationsBlocked}
           className="official-button official-button-quiet"
         >
           {t("assistant.undo")}
@@ -529,6 +642,7 @@ function ResultView({
         <button
           type="button"
           onClick={onRestart}
+          disabled={mutationsBlocked}
           className="official-button official-button-quiet"
         >
           {t("assistant.restart")}
@@ -537,7 +651,7 @@ function ResultView({
           ref={applyRef}
           type="button"
           onClick={onApply}
-          disabled={plan.placements.length === 0}
+          disabled={mutationsBlocked || plan.placements.length === 0}
           className="official-button official-button-primary col-span-2 sm:col-span-1"
         >
           <AppIcon name="check" size={16} />

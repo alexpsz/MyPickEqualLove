@@ -270,6 +270,44 @@ export function createPickAssistantSession(
   };
 }
 
+export function getBoardCandidateIds(
+  boardPicks: StoredPicks,
+  slotIds: readonly string[],
+) {
+  const seen = new Set<string>();
+  return slotIds.flatMap((slotId) => {
+    const songId = boardPicks[slotId];
+    if (!songId || seen.has(songId)) return [];
+    seen.add(songId);
+    return [songId];
+  });
+}
+
+export function togglePickAssistantShortlistSong(
+  shortlistIds: readonly string[],
+  songId: string,
+  maximumCandidates: number,
+) {
+  if (shortlistIds.includes(songId)) {
+    return {
+      status: "updated" as const,
+      shortlistIds: shortlistIds.filter(
+        (candidateId) => candidateId !== songId,
+      ),
+    };
+  }
+  if (shortlistIds.length >= maximumCandidates) {
+    return {
+      status: "limit" as const,
+      shortlistIds: shortlistIds.slice(),
+    };
+  }
+  return {
+    status: "updated" as const,
+    shortlistIds: [...shortlistIds, songId],
+  };
+}
+
 export function deriveTournament(
   session: PickAssistantSession,
 ): TournamentState {

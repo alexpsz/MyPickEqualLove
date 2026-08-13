@@ -15,6 +15,19 @@ const creditsSourceUrl = new URL(
   "../src/utils/songCredits.ts",
   import.meta.url,
 );
+const searchModalSourceUrl = new URL(
+  "../src/components/SearchModal.tsx",
+  import.meta.url,
+);
+const songDetailModalSourceUrl = new URL(
+  "../src/components/SongDetailModal.tsx",
+  import.meta.url,
+);
+const pickExperienceClientSourceUrl = new URL(
+  "../src/components/PickExperienceClient.tsx",
+  import.meta.url,
+);
+const messagesSourceUrl = new URL("../src/i18n/messages.ts", import.meta.url);
 const source = await readFile(sourceUrl, "utf8");
 const compilerOptions = {
   module: ts.ModuleKind.ESNext,
@@ -51,9 +64,19 @@ const {
   loadSongDiscoveryState,
   recordRecentSongId,
   saveSongDiscoveryState,
-  toggleFavoriteSongId,
   updateStoredSongDiscoveryState,
 } = await import(storageModuleUrl);
+const [
+  searchModalSource,
+  songDetailModalSource,
+  pickExperienceClientSource,
+  messagesSource,
+] = await Promise.all([
+  readFile(searchModalSourceUrl, "utf8"),
+  readFile(songDetailModalSourceUrl, "utf8"),
+  readFile(pickExperienceClientSourceUrl, "utf8"),
+  readFile(messagesSourceUrl, "utf8"),
+]);
 
 const membersById = {
   member: {
@@ -94,6 +117,35 @@ test("orders title relevance before secondary matches and preserves source order
     ),
     ["stable-a", "stable-b"],
   );
+});
+
+test("ordinary search and song details omit orphan favorites while preserving board selection", () => {
+  assert.doesNotMatch(
+    searchModalSource,
+    /favoriteSongIds|onToggleFavorite|name="star"/,
+  );
+  assert.doesNotMatch(
+    songDetailModalSource,
+    /isFavorite|onToggleFavorite|name="star"/,
+  );
+  assert.doesNotMatch(
+    pickExperienceClientSource,
+    /handleToggleFavorite|toggleFavoriteSongId|onToggleFavorite=/,
+  );
+  assert.doesNotMatch(
+    messagesSource,
+    /"search\.candidate"|"songDetail\.(?:add|remove)Candidate"/,
+  );
+  assert.match(
+    searchModalSource,
+    /isAssistantShortlistMode\s*\?\s*onToggleCandidate\?\.\(song\)\s*:\s*onSelect\(song\)/s,
+  );
+  assert.match(
+    pickExperienceClientSource,
+    /selectionMode=\{searchPresentation\.selectionMode\}/,
+  );
+  assert.match(messagesSource, /"assistant\.addCandidate": "加入选曲助手"/);
+  assert.match(messagesSource, /"assistant\.candidate": "已加入选曲助手"/);
 });
 
 test("adds only conservative one-edit Latin title tolerance", () => {
@@ -271,16 +323,17 @@ test("discovery updates re-read storage and report persistence failures", () => 
       const result = updateStoredSongDiscoveryState(
         "discovery",
         new Set(["song-a", "song-b"]),
-        (current) => toggleFavoriteSongId(current, "song-b"),
+        (current) => recordRecentSongId(current, "song-b", 4),
       );
       assert.equal(result.ok, true);
       if (result.ok) {
-        assert.deepEqual(result.state.favoriteSongIds, ["song-b", "song-a"]);
+        assert.deepEqual(result.state.favoriteSongIds, ["song-a"]);
+        assert.deepEqual(result.state.recentSongIds, ["song-b"]);
       }
       assert.deepEqual(JSON.parse(storage.getItem("discovery")), {
         version: 1,
-        favoriteSongIds: ["song-b", "song-a"],
-        recentSongIds: [],
+        favoriteSongIds: ["song-a"],
+        recentSongIds: ["song-b"],
       });
     },
   );
@@ -301,7 +354,7 @@ test("discovery updates re-read storage and report persistence failures", () => 
       updateStoredSongDiscoveryState(
         "discovery",
         new Set(["song-a"]),
-        (current) => toggleFavoriteSongId(current, "song-a"),
+        (current) => recordRecentSongId(current, "song-a", 4),
       ),
       { ok: false },
     );

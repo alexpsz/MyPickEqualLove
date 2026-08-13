@@ -16,32 +16,31 @@ import AppIcon from "./AppIcon";
 import { APPLE_OPACITY, APPLE_SPRING_GENTLE } from "./AppleMotion";
 import JapaneseContent from "./JapaneseContent";
 import type { PresenceState } from "./MotionPresence";
+import type { SearchSelectionMode } from "./SearchModal";
 
 interface SongDetailModalProps {
   song: Song;
   members: Member[];
-  isFavorite: boolean;
   isRecentlyViewed: boolean;
-  isCandidate: boolean;
-  candidateDisabled: boolean;
+  selectionMode: SearchSelectionMode;
+  isCandidate?: boolean;
+  candidateDisabled?: boolean;
   presenceState: PresenceState;
   onClose: () => void;
   onSelect: (song: Song) => void;
-  onToggleFavorite: (songId: string) => void;
-  onToggleCandidate: (song: Song) => void;
+  onToggleCandidate?: (song: Song) => void;
 }
 
 export default function SongDetailModal({
   song,
   members,
-  isFavorite,
   isRecentlyViewed,
-  isCandidate,
-  candidateDisabled,
+  selectionMode,
+  isCandidate = false,
+  candidateDisabled = false,
   presenceState,
   onClose,
   onSelect,
-  onToggleFavorite,
   onToggleCandidate,
 }: SongDetailModalProps) {
   const { t } = useLocale();
@@ -56,6 +55,7 @@ export default function SongDetailModal({
   const credits = getConfirmedSongCredits(song);
   const titleId = `song-detail-${song.id}-title`;
   const isExiting = presenceState === "exiting";
+  const isAssistantShortlistMode = selectionMode === "assistant-shortlist";
 
   useDialogA11y({
     dialogRef: panelRef,
@@ -137,10 +137,7 @@ export default function SongDetailModal({
                 />
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
-                {isFavorite ? (
-                  <StatusBadge>{t("search.candidate")}</StatusBadge>
-                ) : null}
-                {isCandidate ? (
+                {isAssistantShortlistMode && isCandidate ? (
                   <StatusBadge>{t("assistant.candidate")}</StatusBadge>
                 ) : null}
                 {isRecentlyViewed ? (
@@ -267,42 +264,41 @@ export default function SongDetailModal({
         <div className="flex flex-wrap items-center justify-end gap-2 border-t border-[var(--line)] bg-white px-4 py-3 pb-[max(.75rem,env(safe-area-inset-bottom))] sm:px-6">
           <button
             type="button"
-            onClick={() => onToggleFavorite(song.id)}
-            aria-pressed={isFavorite}
-            className={`official-button ${
-              isFavorite
-                ? "border-[var(--project-primary)] bg-[var(--project-primary-wash)]"
-                : "official-button-quiet"
-            }`}
-          >
-            <AppIcon name="star" size={16} />
-            {isFavorite
-              ? t("songDetail.removeCandidate")
-              : t("songDetail.addCandidate")}
-          </button>
-          <button
-            type="button"
-            onClick={() => onToggleCandidate(song)}
-            disabled={candidateDisabled}
-            aria-pressed={isCandidate}
-            className={`official-button disabled:cursor-not-allowed disabled:opacity-45 ${
-              isCandidate
-                ? "border-[var(--project-primary)] bg-[var(--project-primary-wash)]"
-                : "official-button-quiet"
-            }`}
-          >
-            <AppIcon name={isCandidate ? "check" : "music"} size={16} />
-            {isCandidate
-              ? t("assistant.candidate")
-              : t("assistant.addCandidate")}
-          </button>
-          <button
-            type="button"
-            onClick={() => onSelect(song)}
+            onClick={() =>
+              isAssistantShortlistMode
+                ? onToggleCandidate?.(song)
+                : onSelect(song)
+            }
+            disabled={isAssistantShortlistMode && candidateDisabled}
+            aria-pressed={isAssistantShortlistMode ? isCandidate : undefined}
+            aria-label={
+              isAssistantShortlistMode
+                ? isCandidate
+                  ? t("assistant.removeCandidateAria", {
+                      title: song.title.ja,
+                    })
+                  : t("assistant.addCandidateAria", {
+                      title: song.title.ja,
+                    })
+                : undefined
+            }
             className="official-button official-button-primary"
           >
-            <AppIcon name="plus" size={16} />
-            {t("songDetail.selectSong")}
+            <AppIcon
+              name={
+                isAssistantShortlistMode
+                  ? isCandidate
+                    ? "check"
+                    : "music"
+                  : "plus"
+              }
+              size={16}
+            />
+            {isAssistantShortlistMode
+              ? isCandidate
+                ? t("assistant.candidate")
+                : t("assistant.addCandidate")
+              : t("songDetail.selectSong")}
           </button>
         </div>
       </m.div>

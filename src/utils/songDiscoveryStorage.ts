@@ -63,19 +63,6 @@ export function updateStoredSongDiscoveryState(
     : ({ ok: false } as const);
 }
 
-export function toggleFavoriteSongId(
-  state: SongDiscoveryState,
-  songId: string,
-): SongDiscoveryState {
-  const isFavorite = state.favoriteSongIds.includes(songId);
-  return {
-    ...state,
-    favoriteSongIds: isFavorite
-      ? state.favoriteSongIds.filter((candidate) => candidate !== songId)
-      : [songId, ...state.favoriteSongIds],
-  };
-}
-
 export function recordRecentSongId(
   state: SongDiscoveryState,
   songId: string,
