@@ -315,6 +315,7 @@ function ExportPickCard({
 }) {
   const { content, visual } = composition;
   const cardSize = content.fixedCardSize;
+  const isCoverPriority = Boolean(song) && !showTitles && !showSlotTitle;
 
   return (
     <div
@@ -334,68 +335,83 @@ function ExportPickCard({
             src={song.coverUrl}
             alt={`${song.title.ja} cover`}
             style={{
-              width: content.fillHeight ? "auto" : `${cardSize}px`,
-              height: content.fillHeight ? "100%" : `${cardSize}px`,
-              aspectRatio: content.fillHeight ? "1 / 1" : undefined,
+              width: isCoverPriority
+                ? "100%"
+                : content.fillHeight
+                  ? "auto"
+                  : `${cardSize}px`,
+              height: isCoverPriority
+                ? "100%"
+                : content.fillHeight
+                  ? "100%"
+                  : `${cardSize}px`,
+              aspectRatio:
+                !isCoverPriority && content.fillHeight ? "1 / 1" : undefined,
               objectFit: "cover",
               flexShrink: 0,
               display: "block",
             }}
           />
-          <div
-            style={{
-              flex: 1,
-              minWidth: 0,
-              padding: content.cardPadding,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: showSlotTitle ? "stretch" : "center",
-              justifyContent: showSlotTitle ? "space-between" : "center",
-              textAlign: showSlotTitle ? "left" : "center",
-              background: visual.cardBackground,
-              borderLeft: visual.cardDivider,
-            }}
-          >
-            {showSlotTitle ? (
-              <div>
-                <div style={exportSlotLabelStyle}>{slot.label}</div>
-                {slot.subtitle ? (
-                  <div style={exportSlotSubtitleStyle}>{slot.subtitle}</div>
-                ) : null}
-              </div>
-            ) : null}
-            <div>
-              {showTitles && (
-                <div
-                  style={{
-                    fontSize: `${content.titleFontSize}px`,
-                    lineHeight: 1.16,
-                    fontWeight: 900,
-                    fontFamily: EXPORT_TITLE_FONT_FAMILY,
-                    color: "#000",
-                    wordBreak: "break-word",
-                  }}
-                >
-                  {song.title.ja}
+          {!isCoverPriority ? (
+            <div
+              style={{
+                flex: 1,
+                minWidth: 0,
+                padding: content.cardPadding,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: showSlotTitle ? "stretch" : "center",
+                justifyContent: showSlotTitle
+                  ? !showTitles
+                    ? "center"
+                    : "space-between"
+                  : "center",
+                textAlign: showSlotTitle ? "left" : "center",
+                background: visual.cardBackground,
+                borderLeft: visual.cardDivider,
+              }}
+            >
+              {showSlotTitle ? (
+                <div>
+                  <div style={exportSlotLabelStyle}>{slot.label}</div>
+                  {slot.subtitle ? (
+                    <div style={exportSlotSubtitleStyle}>{slot.subtitle}</div>
+                  ) : null}
                 </div>
-              )}
-              <div
-                style={{
-                  marginTop: showTitles ? `${content.tagMarginTop}px` : 0,
-                  display: "flex",
-                  flexWrap: "wrap",
-                  justifyContent: showSlotTitle ? "flex-start" : "center",
-                  gap: "8px",
-                }}
-              >
-                <span data-export-year-tag style={exportTagStyle}>
-                  <span style={exportTagTextStyle}>
-                    {song.releaseDate?.slice(0, 4) ?? "TBD"}
-                  </span>
-                </span>
-              </div>
+              ) : null}
+              {showTitles ? (
+                <div data-export-song-metadata="true">
+                  <div
+                    style={{
+                      fontSize: `${content.titleFontSize}px`,
+                      lineHeight: 1.16,
+                      fontWeight: 900,
+                      fontFamily: EXPORT_TITLE_FONT_FAMILY,
+                      color: "#000",
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {song.title.ja}
+                  </div>
+                  <div
+                    style={{
+                      marginTop: `${content.tagMarginTop}px`,
+                      display: "flex",
+                      flexWrap: "wrap",
+                      justifyContent: showSlotTitle ? "flex-start" : "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <span data-export-year-tag style={exportTagStyle}>
+                      <span style={exportTagTextStyle}>
+                        {song.releaseDate?.slice(0, 4) ?? "TBD"}
+                      </span>
+                    </span>
+                  </div>
+                </div>
+              ) : null}
             </div>
-          </div>
+          ) : null}
         </>
       ) : (
         <div

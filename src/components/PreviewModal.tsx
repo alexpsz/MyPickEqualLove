@@ -29,6 +29,7 @@ import {
   type PreviewImageArtifact,
 } from "../utils/imageActions";
 import AppIcon from "./AppIcon";
+import AnchoredOptionMenu from "./AnchoredOptionMenu";
 import { APPLE_OPACITY, APPLE_SPRING_GENTLE } from "./AppleMotion";
 import type { PresenceState } from "./MotionPresence";
 
@@ -93,7 +94,7 @@ export default function PreviewModal({
 }: PreviewModalProps) {
   const { t } = useLocale();
   const panelRef = useRef<HTMLDivElement>(null);
-  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const footerCloseButtonRef = useRef<HTMLButtonElement>(null);
   const actionRunIdRef = useRef(0);
   const [imageActionStatus, setImageActionStatus] = useState<{
     action: "share" | "copy" | "link";
@@ -113,7 +114,7 @@ export default function PreviewModal({
     dialogRef: panelRef,
     onClose,
     active: presenceState !== "exiting",
-    initialFocusRef: closeButtonRef,
+    initialFocusRef: footerCloseButtonRef,
     returnFocusRef,
     returnFocusKey,
     returnFocusFallbackKey,
@@ -121,7 +122,7 @@ export default function PreviewModal({
 
   useEffect(() => {
     if (generating && presenceState !== "exiting") {
-      closeButtonRef.current?.focus();
+      footerCloseButtonRef.current?.focus({ preventScroll: true });
     }
   }, [generating, presenceState]);
 
@@ -255,15 +256,6 @@ export default function PreviewModal({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <button
-              ref={closeButtonRef}
-              type="button"
-              onClick={onClose}
-              className="icon-button icon-button-compact order-last"
-              aria-label={t("preview.closeAria")}
-            >
-              <AppIcon name="close" size={16} />
-            </button>
             <div
               role="group"
               aria-label={t("preview.cardTypeLabel")}
@@ -287,12 +279,11 @@ export default function PreviewModal({
               ))}
             </div>
             {requestedCardType === "poster" ? (
-              <SelectOption
-                id="export-template"
+              <AnchoredOptionMenu
                 label={t("preview.templateLabel")}
                 value={templateId}
                 disabled={generating}
-                onChange={onTemplateChange}
+                onValueChange={onTemplateChange}
                 options={EXPORT_TEMPLATE_ORDER.map((id) => ({
                   value: id,
                   label: t(getExportTemplateMessageKey(id)),
@@ -305,12 +296,11 @@ export default function PreviewModal({
               onChange={onToggleShowQrCode}
               label={t("preview.showQrCode")}
             />
-            <SelectOption
-              id="export-size"
+            <AnchoredOptionMenu
               label={t("preview.sizeLabel")}
               value={sizePresetId}
               disabled={generating}
-              onChange={onSizePresetChange}
+              onValueChange={onSizePresetChange}
               options={EXPORT_SIZE_PRESET_ORDER.map((id) => {
                 const size = EXPORT_SIZE_PRESETS[id];
                 return {
@@ -442,6 +432,7 @@ export default function PreviewModal({
             {t("preview.shareToX")}
           </button>
           <button
+            ref={footerCloseButtonRef}
             type="button"
             onClick={onClose}
             className="official-button official-button-quiet"
@@ -544,44 +535,6 @@ function isIOSDevice() {
 
 function isAndroidDevice() {
   return /Android/i.test(navigator.userAgent);
-}
-
-function SelectOption<T extends string>({
-  id,
-  label,
-  value,
-  disabled,
-  onChange,
-  options,
-}: {
-  id: string;
-  label: string;
-  value: T;
-  disabled: boolean;
-  onChange: (value: T) => void;
-  options: ReadonlyArray<{ value: T; label: string }>;
-}) {
-  return (
-    <label
-      htmlFor={id}
-      className="grid min-w-[154px] gap-1 text-[11px] font-semibold text-[var(--muted)]"
-    >
-      <span>{label}</span>
-      <select
-        id={id}
-        value={value}
-        disabled={disabled}
-        onChange={(event) => onChange(event.target.value as T)}
-        className="min-h-11 rounded-[var(--radius-sm)] border border-[var(--line-strong)] bg-white px-3 text-[13px] font-medium text-[var(--foreground)] outline-none focus:border-[var(--focus-ring)] focus:ring-2 focus:ring-[var(--focus-ring)] disabled:opacity-50"
-      >
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
 }
 
 function ToggleOption({
