@@ -88,6 +88,12 @@ test("poster metadata is all-or-nothing across templates, sizes, and layouts", (
 });
 
 test("titleless standard cards become cover-priority while Live keeps slot semantics", () => {
+  const titledStandardMarkup = renderPoster(
+    STANDARD_PICK_EXPERIENCE,
+    true,
+    "classic",
+    "portrait",
+  );
   const standardMarkup = renderPoster(
     STANDARD_PICK_EXPERIENCE,
     false,
@@ -96,8 +102,16 @@ test("titleless standard cards become cover-priority while Live keeps slot seman
   );
   const liveMarkup = renderPoster(liveExperience, false, "spotlight", "story");
 
-  assert.match(standardMarkup, /width:100%;height:100%;object-fit:cover/);
+  assert.match(
+    standardMarkup,
+    /width:100%;height:100%;object-fit:contain;object-position:center/,
+  );
   assert.doesNotMatch(standardMarkup, /border-left/);
+  assert.match(
+    titledStandardMarkup,
+    /width:auto;height:100%;aspect-ratio:1 \/ 1;object-fit:cover/,
+  );
+  assert.match(titledStandardMarkup, /border-left/);
   assert.ok(liveMarkup.includes(liveExperience.slots[0].label));
   assert.doesNotMatch(liveMarkup, /data-export-year-tag/);
 });

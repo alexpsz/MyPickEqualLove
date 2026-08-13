@@ -347,7 +347,8 @@ function ExportPickCard({
                   : `${cardSize}px`,
               aspectRatio:
                 !isCoverPriority && content.fillHeight ? "1 / 1" : undefined,
-              objectFit: "cover",
+              objectFit: isCoverPriority ? "contain" : "cover",
+              objectPosition: isCoverPriority ? "center" : undefined,
               flexShrink: 0,
               display: "block",
             }}
