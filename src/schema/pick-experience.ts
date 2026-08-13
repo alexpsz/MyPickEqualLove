@@ -27,6 +27,47 @@ export interface LiveSetlistEntry {
   versionNote?: string;
 }
 
+export type LiveEvidenceGrade = "A" | "B" | "C" | "D" | "E";
+
+export interface LiveSetlistSource {
+  url: string;
+  publisher: string;
+  publishedAt: string;
+  evidenceGrade: LiveEvidenceGrade;
+}
+
+export interface LiveSupportingSource {
+  url: string;
+  publisher: string;
+  publishedAt?: string;
+  verifiedAt?: string;
+  evidenceGrade: "B" | "C" | "D";
+  role: "official-playlist" | "cross-check-report";
+}
+
+export interface LiveExcludedSetlistEntry {
+  sourceUrl: string;
+  sourceOrder?: number;
+  sourcePosition?: string;
+  label: string;
+  reason: "non-catalog-intro" | "non-song" | "not-in-project-catalog";
+}
+
+export interface LivePerformanceProvenance {
+  schemaVersion: 1;
+  primarySource: LiveSetlistSource;
+  supportingSources: LiveSupportingSource[];
+  reviewedAt: string;
+  confirmedAt: string;
+  excludedEntries: LiveExcludedSetlistEntry[];
+  repeatedSongIds: string[];
+  crossCheck: {
+    status: "matched" | "matched-with-documented-differences";
+    sourceUrls: string[];
+    note: string;
+  };
+}
+
 export interface LivePerformance {
   id: string;
   label: string;
@@ -35,6 +76,7 @@ export interface LivePerformance {
   sourceUrls: string[];
   sourceNote?: string;
   verificationStatus: "unverified" | "partial" | "verified";
+  provenance?: LivePerformanceProvenance;
 }
 
 export interface LiveEventEvidence {
@@ -71,7 +113,9 @@ export interface PickExperience {
   officialUrl?: string;
   eventEvidence?: LiveEventEvidence;
   performances?: LivePerformance[];
+  provenanceSchemaVersion?: 1;
   includeCombinedPerformance?: boolean;
+  combinedPerformanceLabel?: string;
   defaultContextId?: string;
   slots: ExperiencePickSlot[];
   export: PickExperienceExportConfig;

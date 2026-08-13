@@ -149,12 +149,13 @@ export function getExperienceContexts(
   }));
 
   if (experience.includeCombinedPerformance && performances.length > 1) {
+    const combinedLabel = experience.combinedPerformanceLabel ?? "2 DAYS";
     contexts.push({
       id: COMBINED_CONTEXT_ID,
-      label: "2 DAYS",
+      label: combinedLabel,
       dateLabel: formatCombinedDateLabel(performances),
       shortDateLabel: formatCombinedShortDateLabel(performances),
-      exportLabel: `2 DAYS · ${formatCombinedDateLabel(performances)}`,
+      exportLabel: `${combinedLabel} · ${formatCombinedDateLabel(performances)}`,
       performanceIds: performances.map((performance) => performance.id),
     });
   }
@@ -565,6 +566,10 @@ function formatCombinedDateLabel(performances: LivePerformance[]) {
     return "";
   }
 
+  if (first === last) {
+    return formatFullDate(first);
+  }
+
   const [firstYear, firstMonth, firstDay] = first.split("-");
   const [lastYear, lastMonth, lastDay] = last.split("-");
 
@@ -584,6 +589,10 @@ function formatCombinedShortDateLabel(performances: LivePerformance[]) {
   const last = sortedDates[sortedDates.length - 1];
   if (!first || !last) {
     return undefined;
+  }
+
+  if (first === last) {
+    return formatShortDate(first);
   }
 
   const [, firstMonth, firstDay] = first.split("-");

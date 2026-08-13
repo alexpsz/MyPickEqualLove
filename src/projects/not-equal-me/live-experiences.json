@@ -1,13 +1,13 @@
 [
   {
-    "id": "not_equal_me_7th_anniversary_2026",
+    "id": "not_equal_me_7th_anniversary_2026_afterglow",
     "projectId": "not-equal-me",
     "slug": "not-equal-me-7th-anniversary-2026",
-    "kind": "live-wishlist",
+    "kind": "live-afterglow",
     "status": "published",
-    "title": "7周年記念 ファン・ウィッシュリスト My Pick",
-    "subtitle": "≠ME 7th ANNIVERSARY PREMIUM CONCERTを記念して、全楽曲から6つのテーマで選ぼう。",
-    "description": "夢の開幕、7年間の歩み、Ｋアリーナ横浜で高まりたい曲、推しの見せ場、感謝、8年目への一歩。ファンが考えた6つのテーマごとに≠MEの楽曲を1曲ずつ選ぶ企画です。すべて全楽曲から選べ、実際のセットリストを示すものではありません。",
+    "title": "7周年の余韻 My Pick",
+    "subtitle": "≠ME 7th ANNIVERSARY PREMIUM CONCERTの余韻を、6つの記憶で残そう。",
+    "description": "Ｋアリーナ横浜で開催された≠ME 7th ANNIVERSARY PREMIUM CONCERTを、忘れられない曲・高まった曲・涙が出た曲・推しが輝いていた曲・余韻に残った曲・FREE PICKの6つで振り返るMy Pickです。昼公演・夜公演・両公演の公式セットリストから選べます。",
     "canonicalPath": "/live/not-equal-me-7th-anniversary-2026/",
     "eventName": "≠ME 7th ANNIVERSARY PREMIUM CONCERT",
     "venue": "Ｋアリーナ横浜",
@@ -20,61 +20,266 @@
         "https://not-equal-me.jp/news/detail/6885",
         "https://not-equal-me.jp/schedule/detail/6886"
       ],
-      "sourceNote": "Official pages verify the event name, date, venue, and day/night performances. No public track list is encoded; this full-catalog fan wishlist does not represent the concert setlist."
+      "sourceNote": "Official event pages verify the event name, date, venue, and day/night performances. King Records published the ordered day and night setlists separately; performance provenance binds each context to those sources."
     },
+    "provenanceSchemaVersion": 1,
+    "includeCombinedPerformance": true,
+    "combinedPerformanceLabel": "昼・夜",
+    "defaultContextId": "both",
     "slots": [
       {
         "id": "dream-opening",
-        "label": "夢の開幕曲",
-        "subtitle": "7周年の幕開けを想像して選ぶ一曲",
+        "label": "忘れられない曲",
+        "subtitle": "7周年公演でいちばん心に残った一曲",
         "sortOrder": 1,
-        "eligibility": "catalog"
+        "eligibility": "selected-performance"
       },
       {
         "id": "journey",
-        "label": "7年間の歩みを感じる曲",
-        "subtitle": "≠MEのこれまでを重ねて選ぶ一曲",
+        "label": "会場で高まった曲",
+        "subtitle": "コール・演出・空気ごと熱くなった一曲",
         "sortOrder": 2,
-        "eligibility": "catalog"
+        "eligibility": "selected-performance"
       },
       {
         "id": "venue-energy",
-        "label": "Ｋアリーナ横浜で高まりたい曲",
-        "subtitle": "会場いっぱいの熱を想像して選ぶ一曲",
+        "label": "涙が出た曲",
+        "subtitle": "Ｋアリーナ横浜で思わず涙がこぼれた一曲",
         "sortOrder": 3,
-        "eligibility": "catalog"
+        "eligibility": "selected-performance"
       },
       {
         "id": "oshi-spotlight",
-        "label": "推しの見せ場に選びたい曲",
-        "subtitle": "推しがいちばん輝く瞬間を想像する一曲",
+        "label": "推しが輝いていた曲",
+        "subtitle": "7周年公演の推しを忘れたくない一曲",
         "sortOrder": 4,
-        "eligibility": "catalog"
+        "eligibility": "selected-performance"
       },
       {
         "id": "gratitude",
-        "label": "7周年に贈りたい感謝の曲",
-        "subtitle": "ここまでのありがとうを込めて選ぶ一曲",
+        "label": "余韻に残った曲",
+        "subtitle": "終演後も心の中で鳴り続けた一曲",
         "sortOrder": 5,
-        "eligibility": "catalog"
+        "eligibility": "selected-performance"
       },
       {
         "id": "next-chapter",
-        "label": "8年目へつなぎたい曲",
-        "subtitle": "7周年の先へ進む景色を思い描く一曲",
+        "label": "FREE PICK",
+        "subtitle": "7周年公演で披露された曲から、もう一曲自由に選ぶなら",
         "sortOrder": 6,
-        "eligibility": "catalog"
+        "eligibility": "selected-performance"
       }
     ],
     "export": {
-      "title": "7周年記念 ファン・ウィッシュリスト My Pick",
+      "title": "7周年の余韻 My Pick",
       "subtitle": "≠ME 7th ANNIVERSARY PREMIUM CONCERT",
-      "imageFileName": "NotEqualMe_7thAnniversary2026_FanWishlist.png",
+      "imageFileName": "NotEqualMe_7thAnniversary2026_Afterglow.png",
       "layout": "five-memory-list"
     },
     "share": {
-      "text": "≠ME 7th ANNIVERSARY PREMIUM CONCERTを記念して、全楽曲から選ぶファン・ウィッシュリスト My Pickを作りました！\n（実際のセットリストではありません。ダウンロードした画像を添付してください）",
-      "hashtags": ["#MyPickノイミー", "#ノイミー"]
-    }
+      "text": "≠ME 7th ANNIVERSARY PREMIUM CONCERT 7周年の余韻 My Pickを作成しました！\n（ダウンロードした画像を添付してください）",
+      "hashtags": ["#MyPickノイミー", "#ノイミー", "#ノイミー7周年"]
+    },
+    "performances": [
+      {
+        "id": "day",
+        "label": "昼公演",
+        "date": "2026-02-23",
+        "verificationStatus": "verified",
+        "sourceUrls": [
+          "https://news.kingrecords.co.jp/2026/02/51176/",
+          "https://playlist.kingrecords.co.jp/?p=2804&post_type=playlist",
+          "https://ototoy.jp/news/128770"
+        ],
+        "sourceNote": "King Records published the complete day-show order. Source order 1 Overture is excluded because it is not a selectable catalog song. All remaining source titles were manually matched to canonical project song IDs.",
+        "provenance": {
+          "schemaVersion": 1,
+          "primarySource": {
+            "url": "https://news.kingrecords.co.jp/2026/02/51176/",
+            "publisher": "KING RECORDS Editorial Department",
+            "publishedAt": "2026-02-23T21:30:00+09:00",
+            "evidenceGrade": "A"
+          },
+          "supportingSources": [
+            {
+              "url": "https://playlist.kingrecords.co.jp/?p=2804&post_type=playlist",
+              "publisher": "KING RECORDS",
+              "verifiedAt": "2026-08-14",
+              "evidenceGrade": "B",
+              "role": "official-playlist"
+            },
+            {
+              "url": "https://ototoy.jp/news/128770",
+              "publisher": "OTOTOY",
+              "publishedAt": "2026-02-23T23:30:00+09:00",
+              "evidenceGrade": "C",
+              "role": "cross-check-report"
+            }
+          ],
+          "reviewedAt": "2026-08-14",
+          "confirmedAt": "2026-08-14",
+          "excludedEntries": [
+            {
+              "sourceUrl": "https://news.kingrecords.co.jp/2026/02/51176/",
+              "sourceOrder": 1,
+              "label": "Overture",
+              "reason": "non-catalog-intro"
+            }
+          ],
+          "repeatedSongIds": [],
+          "crossCheck": {
+            "status": "matched",
+            "sourceUrls": [
+              "https://playlist.kingrecords.co.jp/?p=2804&post_type=playlist",
+              "https://ototoy.jp/news/128770"
+            ],
+            "note": "The King Records ordered setlist, official day playlist, and OTOTOY report identify the same day-show repertoire and order."
+          }
+        },
+        "setlist": [
+          { "order": 2, "songId": "haitateki-faitaa", "section": "main" },
+          { "order": 3, "songId": "tenshi-ha-doko-he", "section": "main" },
+          { "order": 4, "songId": "saikyou-no-rabusongu", "section": "main" },
+          { "order": 5, "songId": "hiroin-to-ookami", "section": "main" },
+          { "order": 6, "songId": "su-suki-janai", "section": "main" },
+          { "order": 7, "songId": "samaachokoreeto", "section": "main" },
+          { "order": 8, "songId": "marcato", "section": "main" },
+          { "order": 9, "songId": "deeto-zenya-rekuiemu", "section": "main" },
+          { "order": 10, "songId": "kafe-rakuen", "section": "main" },
+          { "order": 11, "songId": "urutorareakissu", "section": "main" },
+          {
+            "order": 12,
+            "songId": "kochira-happii-tankentai",
+            "section": "main"
+          },
+          { "order": 13, "songId": "mashumarofurooto", "section": "main" },
+          { "order": 14, "songId": "konomamade-moomentari", "section": "main" },
+          { "order": 15, "songId": "hatsukoi-kamubakku", "section": "main" },
+          { "order": 16, "songId": "momoiro-deibureiku", "section": "main" },
+          { "order": 17, "songId": "hanbunko-kurisumasu", "section": "main" },
+          { "order": 18, "songId": "mobunoderera", "section": "main" },
+          { "order": 19, "songId": "kamisama-no-iu-toori", "section": "main" },
+          { "order": 20, "songId": "kyunkawa-jinsei", "section": "main" },
+          { "order": 21, "songId": "hanikami-shooto", "section": "main" },
+          { "order": 22, "songId": "mahoroba-asutarisuku", "section": "main" },
+          {
+            "order": 23,
+            "songId": "rasutochansu-rasutodansu",
+            "section": "main"
+          },
+          { "order": 24, "songId": "not-equal-me", "section": "main" },
+          { "order": 25, "songId": "himitsu-inshidento", "section": "encore" },
+          { "order": 26, "songId": "kun-no-oto-dattanda", "section": "encore" },
+          {
+            "order": 27,
+            "songId": "niji-ga-kaka-ru-shunkan",
+            "section": "encore"
+          },
+          { "order": 28, "songId": "kun-to-boku-no-uta", "section": "encore" }
+        ]
+      },
+      {
+        "id": "night",
+        "label": "夜公演",
+        "date": "2026-02-23",
+        "verificationStatus": "verified",
+        "sourceUrls": [
+          "https://news.kingrecords.co.jp/2026/02/51176/",
+          "https://playlist.kingrecords.co.jp/?p=2808&post_type=playlist",
+          "https://ototoy.jp/news/128770"
+        ],
+        "sourceNote": "King Records published the complete night-show order. Source order 1 Overture is excluded; the repeated ≠ME at source order 29 remains in the ordered setlist but is deduplicated only for eligibility.",
+        "provenance": {
+          "schemaVersion": 1,
+          "primarySource": {
+            "url": "https://news.kingrecords.co.jp/2026/02/51176/",
+            "publisher": "KING RECORDS Editorial Department",
+            "publishedAt": "2026-02-23T21:30:00+09:00",
+            "evidenceGrade": "A"
+          },
+          "supportingSources": [
+            {
+              "url": "https://playlist.kingrecords.co.jp/?p=2808&post_type=playlist",
+              "publisher": "KING RECORDS",
+              "verifiedAt": "2026-08-14",
+              "evidenceGrade": "B",
+              "role": "official-playlist"
+            },
+            {
+              "url": "https://ototoy.jp/news/128770",
+              "publisher": "OTOTOY",
+              "publishedAt": "2026-02-23T23:30:00+09:00",
+              "evidenceGrade": "C",
+              "role": "cross-check-report"
+            }
+          ],
+          "reviewedAt": "2026-08-14",
+          "confirmedAt": "2026-08-14",
+          "excludedEntries": [
+            {
+              "sourceUrl": "https://news.kingrecords.co.jp/2026/02/51176/",
+              "sourceOrder": 1,
+              "label": "Overture",
+              "reason": "non-catalog-intro"
+            }
+          ],
+          "repeatedSongIds": ["not-equal-me"],
+          "crossCheck": {
+            "status": "matched",
+            "sourceUrls": [
+              "https://playlist.kingrecords.co.jp/?p=2808&post_type=playlist",
+              "https://ototoy.jp/news/128770"
+            ],
+            "note": "The King Records ordered setlist, official night playlist, and OTOTOY report identify the same night-show repertoire, including the final repeated ≠ME."
+          }
+        },
+        "setlist": [
+          { "order": 2, "songId": "haitateki-faitaa", "section": "main" },
+          { "order": 3, "songId": "tenshi-ha-doko-he", "section": "main" },
+          { "order": 4, "songId": "saikyou-no-rabusongu", "section": "main" },
+          { "order": 5, "songId": "hiroin-to-ookami", "section": "main" },
+          { "order": 6, "songId": "su-suki-janai", "section": "main" },
+          { "order": 7, "songId": "hakumei-kousen", "section": "main" },
+          { "order": 8, "songId": "ofushorunitto", "section": "main" },
+          { "order": 9, "songId": "2-jihan-rokenroo", "section": "main" },
+          {
+            "order": 10,
+            "songId": "daremo-inai-mori-no-oku-de-ippon-no-ki-ga-taore-tara-oto-hasuruka",
+            "section": "main"
+          },
+          { "order": 11, "songId": "sou-waseburikko", "section": "main" },
+          {
+            "order": 12,
+            "songId": "teyuuka-mirutentte-nani",
+            "section": "main"
+          },
+          { "order": 13, "songId": "watashiakusento", "section": "main" },
+          { "order": 14, "songId": "furoakiraa", "section": "main" },
+          { "order": 15, "songId": "kun-ha-supaakuru", "section": "main" },
+          { "order": 16, "songId": "kuuhaku-no-hana", "section": "main" },
+          { "order": 17, "songId": "hanbunko-kurisumasu", "section": "main" },
+          { "order": 18, "songId": "mobunoderera", "section": "main" },
+          { "order": 19, "songId": "kamisama-no-iu-toori", "section": "main" },
+          { "order": 20, "songId": "kyunkawa-jinsei", "section": "main" },
+          { "order": 21, "songId": "hanikami-shooto", "section": "main" },
+          { "order": 22, "songId": "mahoroba-asutarisuku", "section": "main" },
+          {
+            "order": 23,
+            "songId": "rasutochansu-rasutodansu",
+            "section": "main"
+          },
+          { "order": 24, "songId": "not-equal-me", "section": "main" },
+          { "order": 25, "songId": "himitsu-inshidento", "section": "encore" },
+          { "order": 26, "songId": "kun-no-oto-dattanda", "section": "encore" },
+          {
+            "order": 27,
+            "songId": "niji-ga-kaka-ru-shunkan",
+            "section": "encore"
+          },
+          { "order": 28, "songId": "kun-to-boku-no-uta", "section": "encore" },
+          { "order": 29, "songId": "not-equal-me", "section": "double-encore" }
+        ]
+      }
+    ]
   }
 ]

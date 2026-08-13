@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import test from "node:test";
 import { getExperienceStorageKeys } from "../src/config/project";
+import { getExperienceContexts } from "../src/data/pickExperiences";
 import type { PickExperience } from "../src/schema/pick-experience";
 import {
   createPickAssistantSession,
@@ -337,6 +338,138 @@ test("every published Experience Pack derives Assistant candidates from the same
         }
       }
     }
+  }
+});
+
+test("verified anniversary contexts preserve exact unique eligibility counts and unions", () => {
+  const cases = [
+    {
+      projectId: "equal-love" as const,
+      experienceId: "kokuritsu_2026",
+      counts: { day1: 29, day2: 30, both: 31 },
+    },
+    {
+      projectId: "nearly-equal-joy" as const,
+      experienceId: "joy_4th_anniversary_2026_afterglow",
+      counts: { day: 27, night: 27, both: 27 },
+    },
+    {
+      projectId: "not-equal-me" as const,
+      experienceId: "not_equal_me_7th_anniversary_2026_afterglow",
+      counts: { day: 27, night: 27, both: 37 },
+    },
+  ];
+
+  for (const fixture of cases) {
+    const experience = loadProjectExperiences(fixture.projectId).find(
+      (candidate) => candidate.id === fixture.experienceId,
+    );
+    assert.ok(experience);
+    const catalogSongIds = loadProjectSongIds(fixture.projectId);
+    for (const [contextId, expectedCount] of Object.entries(fixture.counts)) {
+      const actual = getAssistantEligibleSongIds({
+        experience,
+        catalogSongIds,
+        contextId,
+      });
+      assert.equal(actual.length, expectedCount);
+      assert.deepEqual(
+        actual,
+        getExpectedContextSongIds(
+          experience,
+          contextId,
+          new Set(catalogSongIds),
+        ),
+      );
+    }
+  }
+});
+
+test("ordered anniversary setlists retain real repeats while eligibility stays unique", () => {
+  const joy = loadProjectExperiences("nearly-equal-joy").find(
+    (experience) => experience.id === "joy_4th_anniversary_2026_afterglow",
+  );
+  const notEqualMe = loadProjectExperiences("not-equal-me").find(
+    (experience) =>
+      experience.id === "not_equal_me_7th_anniversary_2026_afterglow",
+  );
+  assert.ok(joy?.performances);
+  assert.ok(notEqualMe?.performances);
+
+  const joyDay = joy.performances.find(
+    (performance) => performance.id === "day",
+  );
+  const joyNight = joy.performances.find(
+    (performance) => performance.id === "night",
+  );
+  const notEqualMeDay = notEqualMe.performances.find(
+    (performance) => performance.id === "day",
+  );
+  const notEqualMeNight = notEqualMe.performances.find(
+    (performance) => performance.id === "night",
+  );
+  assert.equal(joyDay?.setlist.length, 28);
+  assert.equal(joyNight?.setlist.length, 29);
+  assert.equal(notEqualMeDay?.setlist.length, 27);
+  assert.equal(notEqualMeNight?.setlist.length, 28);
+  assert.deepEqual(joyDay?.provenance?.repeatedSongIds, [
+    "denwabangou-oshie-te",
+  ]);
+  assert.deepEqual(
+    new Set(joyNight?.provenance?.repeatedSongIds),
+    new Set(["denwabangou-oshie-te", "nearly-equal-joy"]),
+  );
+  assert.deepEqual(notEqualMeDay?.provenance?.repeatedSongIds, []);
+  assert.deepEqual(notEqualMeNight?.provenance?.repeatedSongIds, [
+    "not-equal-me",
+  ]);
+});
+
+test("same-date day and night contexts render one date instead of a fake range", () => {
+  for (const [projectId, experienceId, fullDate, shortDate] of [
+    [
+      "nearly-equal-joy",
+      "joy_4th_anniversary_2026_afterglow",
+      "2026.03.13",
+      "3/13",
+    ],
+    [
+      "not-equal-me",
+      "not_equal_me_7th_anniversary_2026_afterglow",
+      "2026.02.23",
+      "2/23",
+    ],
+  ] as const) {
+    const experience = loadProjectExperiences(projectId).find(
+      (candidate) => candidate.id === experienceId,
+    );
+    assert.ok(experience);
+    const combined = getExperienceContexts(experience).find(
+      (context) => context.id === COMBINED_EXPERIENCE_CONTEXT_ID,
+    );
+    assert.ok(combined);
+    assert.equal(combined.dateLabel, fullDate);
+    assert.equal(combined.shortDateLabel, shortDate);
+    assert.equal(combined.exportLabel, `昼・夜 · ${fullDate}`);
+  }
+});
+
+test("exact anniversary experiences use fresh storage identities without migrating wishlist keys", () => {
+  for (const [previousId, nextId] of [
+    ["joy_4th_anniversary_2026", "joy_4th_anniversary_2026_afterglow"],
+    [
+      "not_equal_me_7th_anniversary_2026",
+      "not_equal_me_7th_anniversary_2026_afterglow",
+    ],
+  ] as const) {
+    assert.notEqual(
+      getExperienceStorageKeys(previousId, "both").picks,
+      getExperienceStorageKeys(nextId, "both").picks,
+    );
+    assert.notEqual(
+      getExperienceStorageKeys(previousId, "both").assistant,
+      getExperienceStorageKeys(nextId, "both").assistant,
+    );
   }
 });
 

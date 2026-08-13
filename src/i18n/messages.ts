@@ -349,6 +349,9 @@ const en = {
   "context.day1": "DAY 1",
   "context.day2": "DAY 2",
   "context.both": "2 DAYS",
+  "context.dayShow": "DAY SHOW",
+  "context.nightShow": "NIGHT SHOW",
+  "context.bothShows": "BOTH SHOWS",
 
   "project.equalLove.subtitle": "Choose your favorite ＝LOVE songs!",
   "project.equalLove.description":
@@ -425,61 +428,59 @@ const en = {
   "live.tokyoDome2027.shareText":
     "I made my ＝LOVE in TOKYO DOME Wishlist My Pick!\n(Please attach the image you downloaded.)",
 
-  "live.joy4th2026.title": "4th Anniversary Fan Wishlist My Pick",
+  "live.joy4th2026.title": "4th Anniversary Afterglow My Pick",
   "live.joy4th2026.subtitle":
-    "Build a six-theme, full-catalog fan wishlist to commemorate ≒JOY 4th ANNIVERSARY PREMIUM CONCERT.",
+    "Keep the afterglow of ≒JOY 4th ANNIVERSARY PREMIUM CONCERT in six memories.",
   "live.joy4th2026.description":
-    "Choose one ≒JOY song for each fan-created theme: dream opening, four-year journey, 日本武道館 energy, oshi spotlight, gratitude, and the next chapter. Every slot uses the full catalog; this is a fan wishlist, not the concert setlist.",
-  "live.joy4th2026.slot.dreamOpening.label": "My dream anniversary opener",
+    "Revisit the 日本武道館 concert through six picks: the unforgettable song, the song that raised the roof, the song that brought tears, the song where your oshi shone, the song that stayed with you, and a FREE PICK. Choose from the verified day show, night show, or both.",
+  "live.joy4th2026.slot.dreamOpening.label": "The unforgettable song",
   "live.joy4th2026.slot.dreamOpening.subtitle":
-    "The ≒JOY song I would choose to open an imagined anniversary stage",
-  "live.joy4th2026.slot.journey.label": "Their four-year journey song",
+    "The 4th-anniversary song that stayed with you most",
+  "live.joy4th2026.slot.journey.label": "The song that raised the roof",
   "live.joy4th2026.slot.journey.subtitle":
-    "The song I would choose to represent ≒JOY’s journey so far",
-  "live.joy4th2026.slot.venueEnergy.label": "My 日本武道館 energy pick",
+    "The song that set the calls, staging, and whole venue alight",
+  "live.joy4th2026.slot.venueEnergy.label": "The song that brought tears",
   "live.joy4th2026.slot.venueEnergy.subtitle":
-    "A song I would choose to fill 日本武道館 with energy",
-  "live.joy4th2026.slot.oshiSpotlight.label": "My oshi spotlight pick",
+    "The song that made the tears come at 日本武道館",
+  "live.joy4th2026.slot.oshiSpotlight.label": "The song where my oshi shone",
   "live.joy4th2026.slot.oshiSpotlight.subtitle":
-    "The song I would choose to see my oshi shine",
-  "live.joy4th2026.slot.gratitude.label": "My anniversary thank-you song",
+    "The song that captured an oshi moment you never want to forget",
+  "live.joy4th2026.slot.gratitude.label": "The song that stayed with me",
   "live.joy4th2026.slot.gratitude.subtitle":
-    "A song I would dedicate with gratitude at the four-year milestone",
-  "live.joy4th2026.slot.nextChapter.label": "The song for the next chapter",
+    "The song that kept playing in your heart after the show",
+  "live.joy4th2026.slot.nextChapter.label": "FREE PICK",
   "live.joy4th2026.slot.nextChapter.subtitle":
-    "My pick for the road beyond the fourth anniversary",
+    "One more song from the 4th-anniversary setlists, freely chosen",
   "live.joy4th2026.shareText":
-    "I made a full-catalog fan wishlist to commemorate ≒JOY 4th ANNIVERSARY PREMIUM CONCERT!\n(This is not the concert setlist. Please attach the downloaded image.)",
+    "I made my ≒JOY 4th ANNIVERSARY PREMIUM CONCERT Afterglow My Pick!\n(Please attach the image you downloaded.)",
 
-  "live.notEqualMe7th2026.title": "7th Anniversary Fan Wishlist My Pick",
+  "live.notEqualMe7th2026.title": "7th Anniversary Afterglow My Pick",
   "live.notEqualMe7th2026.subtitle":
-    "Build a six-theme, full-catalog fan wishlist to commemorate ≠ME 7th ANNIVERSARY PREMIUM CONCERT.",
+    "Keep the afterglow of ≠ME 7th ANNIVERSARY PREMIUM CONCERT in six memories.",
   "live.notEqualMe7th2026.description":
-    "Choose one ≠ME song for each fan-created theme: dream opening, seven-year journey, Ｋアリーナ横浜 energy, oshi spotlight, gratitude, and the road into year eight. Every slot uses the full catalog; this is a fan wishlist, not the concert setlist.",
-  "live.notEqualMe7th2026.slot.dreamOpening.label":
-    "My dream 7th-anniversary opener",
+    "Revisit the Ｋアリーナ横浜 concert through six picks: the unforgettable song, the song that raised the roof, the song that brought tears, the song where your oshi shone, the song that stayed with you, and a FREE PICK. Choose from the verified day show, night show, or both.",
+  "live.notEqualMe7th2026.slot.dreamOpening.label": "The unforgettable song",
   "live.notEqualMe7th2026.slot.dreamOpening.subtitle":
-    "The ≠ME song I would choose to open an imagined anniversary stage",
-  "live.notEqualMe7th2026.slot.journey.label": "Their seven-year journey song",
+    "The 7th-anniversary song that stayed with you most",
+  "live.notEqualMe7th2026.slot.journey.label": "The song that raised the roof",
   "live.notEqualMe7th2026.slot.journey.subtitle":
-    "The song I would choose to represent ≠ME’s journey so far",
+    "The song that set the calls, staging, and whole venue alight",
   "live.notEqualMe7th2026.slot.venueEnergy.label":
-    "My Ｋアリーナ横浜 energy pick",
+    "The song that brought tears",
   "live.notEqualMe7th2026.slot.venueEnergy.subtitle":
-    "A song I would choose to fill Ｋアリーナ横浜 with energy",
-  "live.notEqualMe7th2026.slot.oshiSpotlight.label": "My oshi spotlight pick",
+    "The song that made the tears come at Ｋアリーナ横浜",
+  "live.notEqualMe7th2026.slot.oshiSpotlight.label":
+    "The song where my oshi shone",
   "live.notEqualMe7th2026.slot.oshiSpotlight.subtitle":
-    "The song I would choose to see my oshi shine",
-  "live.notEqualMe7th2026.slot.gratitude.label":
-    "My 7th-anniversary thank-you song",
+    "The song that captured an oshi moment you never want to forget",
+  "live.notEqualMe7th2026.slot.gratitude.label": "The song that stayed with me",
   "live.notEqualMe7th2026.slot.gratitude.subtitle":
-    "A song I would dedicate with gratitude at the seven-year milestone",
-  "live.notEqualMe7th2026.slot.nextChapter.label":
-    "The song for the road into year eight",
+    "The song that kept playing in your heart after the show",
+  "live.notEqualMe7th2026.slot.nextChapter.label": "FREE PICK",
   "live.notEqualMe7th2026.slot.nextChapter.subtitle":
-    "My pick for carrying ≠ME beyond the seventh anniversary",
+    "One more song from the 7th-anniversary setlists, freely chosen",
   "live.notEqualMe7th2026.shareText":
-    "I made a full-catalog fan wishlist to commemorate ≠ME 7th ANNIVERSARY PREMIUM CONCERT!\n(This is not the concert setlist. Please attach the downloaded image.)",
+    "I made my ≠ME 7th ANNIVERSARY PREMIUM CONCERT Afterglow My Pick!\n(Please attach the image you downloaded.)",
 } as const;
 
 export type MessageKey = keyof typeof en;
@@ -840,6 +841,9 @@ const ja: MessageCatalog = {
   "context.day1": "1日目",
   "context.day2": "2日目",
   "context.both": "2日間",
+  "context.dayShow": "昼公演",
+  "context.nightShow": "夜公演",
+  "context.bothShows": "昼・夜",
 
   "project.equalLove.subtitle": "＝LOVEのお気に入り楽曲を選ぼう！",
   "project.equalLove.description":
@@ -908,57 +912,56 @@ const ja: MessageCatalog = {
   "live.tokyoDome2027.shareText":
     "＝LOVE in TOKYO DOMEで聴きたい My Pickを作成しました！\n（※ダウンロードした画像を添付してください）",
 
-  "live.joy4th2026.title": "4周年記念 ファン・ウィッシュリスト My Pick",
+  "live.joy4th2026.title": "4周年の余韻 My Pick",
   "live.joy4th2026.subtitle":
-    "≒JOY 4th ANNIVERSARY PREMIUM CONCERTを記念して、全楽曲から6つのテーマで選ぼう。",
+    "≒JOY 4th ANNIVERSARY PREMIUM CONCERTの余韻を、6つの記憶で残そう。",
   "live.joy4th2026.description":
-    "夢の開幕、4年間の歩み、日本武道館で高まりたい曲、推しの見せ場、感謝、次の一歩。ファンが考えた6つのテーマごとに≒JOYの楽曲を1曲ずつ選ぶ企画です。すべて全楽曲から選べ、実際のセットリストを示すものではありません。",
-  "live.joy4th2026.slot.dreamOpening.label": "夢の開幕曲",
+    "日本武道館で開催された4周年公演を、忘れられない曲・高まった曲・涙が出た曲・推しが輝いていた曲・余韻に残った曲・FREE PICKの6つで振り返るMy Pickです。昼公演・夜公演・両公演の確認済みセットリストから選べます。",
+  "live.joy4th2026.slot.dreamOpening.label": "忘れられない曲",
   "live.joy4th2026.slot.dreamOpening.subtitle":
-    "4周年の幕開けを想像して選ぶ一曲",
-  "live.joy4th2026.slot.journey.label": "4年間の歩みを感じる曲",
-  "live.joy4th2026.slot.journey.subtitle": "≒JOYのこれまでを重ねて選ぶ一曲",
-  "live.joy4th2026.slot.venueEnergy.label": "日本武道館で高まりたい曲",
+    "4周年公演でいちばん心に残った一曲",
+  "live.joy4th2026.slot.journey.label": "会場で高まった曲",
+  "live.joy4th2026.slot.journey.subtitle":
+    "コール・演出・空気ごと熱くなった一曲",
+  "live.joy4th2026.slot.venueEnergy.label": "涙が出た曲",
   "live.joy4th2026.slot.venueEnergy.subtitle":
-    "会場いっぱいの熱を想像して選ぶ一曲",
-  "live.joy4th2026.slot.oshiSpotlight.label": "推しの見せ場に選びたい曲",
+    "日本武道館で思わず涙がこぼれた一曲",
+  "live.joy4th2026.slot.oshiSpotlight.label": "推しが輝いていた曲",
   "live.joy4th2026.slot.oshiSpotlight.subtitle":
-    "推しがいちばん輝く瞬間を想像する一曲",
-  "live.joy4th2026.slot.gratitude.label": "4周年に贈りたい感謝の曲",
-  "live.joy4th2026.slot.gratitude.subtitle":
-    "ここまでのありがとうを込めて選ぶ一曲",
-  "live.joy4th2026.slot.nextChapter.label": "次の一歩に選びたい曲",
+    "4周年公演の推しを忘れたくない一曲",
+  "live.joy4th2026.slot.gratitude.label": "余韻に残った曲",
+  "live.joy4th2026.slot.gratitude.subtitle": "終演後も心の中で鳴り続けた一曲",
+  "live.joy4th2026.slot.nextChapter.label": "FREE PICK",
   "live.joy4th2026.slot.nextChapter.subtitle":
-    "4周年の先へ進む景色を思い描く一曲",
+    "4周年公演で披露された曲から、もう一曲自由に選ぶなら",
   "live.joy4th2026.shareText":
-    "≒JOY 4th ANNIVERSARY PREMIUM CONCERTを記念して、全楽曲から選ぶファン・ウィッシュリスト My Pickを作りました！\n（実際のセットリストではありません。ダウンロードした画像を添付してください）",
+    "≒JOY 4th ANNIVERSARY PREMIUM CONCERT 4周年の余韻 My Pickを作成しました！\n（※ダウンロードした画像を添付してください）",
 
-  "live.notEqualMe7th2026.title": "7周年記念 ファン・ウィッシュリスト My Pick",
+  "live.notEqualMe7th2026.title": "7周年の余韻 My Pick",
   "live.notEqualMe7th2026.subtitle":
-    "≠ME 7th ANNIVERSARY PREMIUM CONCERTを記念して、全楽曲から6つのテーマで選ぼう。",
+    "≠ME 7th ANNIVERSARY PREMIUM CONCERTの余韻を、6つの記憶で残そう。",
   "live.notEqualMe7th2026.description":
-    "夢の開幕、7年間の歩み、Ｋアリーナ横浜で高まりたい曲、推しの見せ場、感謝、8年目への一歩。ファンが考えた6つのテーマごとに≠MEの楽曲を1曲ずつ選ぶ企画です。すべて全楽曲から選べ、実際のセットリストを示すものではありません。",
-  "live.notEqualMe7th2026.slot.dreamOpening.label": "夢の開幕曲",
+    "Ｋアリーナ横浜で開催された7周年公演を、忘れられない曲・高まった曲・涙が出た曲・推しが輝いていた曲・余韻に残った曲・FREE PICKの6つで振り返るMy Pickです。昼公演・夜公演・両公演の確認済みセットリストから選べます。",
+  "live.notEqualMe7th2026.slot.dreamOpening.label": "忘れられない曲",
   "live.notEqualMe7th2026.slot.dreamOpening.subtitle":
-    "7周年の幕開けを想像して選ぶ一曲",
-  "live.notEqualMe7th2026.slot.journey.label": "7年間の歩みを感じる曲",
+    "7周年公演でいちばん心に残った一曲",
+  "live.notEqualMe7th2026.slot.journey.label": "会場で高まった曲",
   "live.notEqualMe7th2026.slot.journey.subtitle":
-    "≠MEのこれまでを重ねて選ぶ一曲",
-  "live.notEqualMe7th2026.slot.venueEnergy.label":
-    "Ｋアリーナ横浜で高まりたい曲",
+    "コール・演出・空気ごと熱くなった一曲",
+  "live.notEqualMe7th2026.slot.venueEnergy.label": "涙が出た曲",
   "live.notEqualMe7th2026.slot.venueEnergy.subtitle":
-    "会場いっぱいの熱を想像して選ぶ一曲",
-  "live.notEqualMe7th2026.slot.oshiSpotlight.label": "推しの見せ場に選びたい曲",
+    "Ｋアリーナ横浜で思わず涙がこぼれた一曲",
+  "live.notEqualMe7th2026.slot.oshiSpotlight.label": "推しが輝いていた曲",
   "live.notEqualMe7th2026.slot.oshiSpotlight.subtitle":
-    "推しがいちばん輝く瞬間を想像する一曲",
-  "live.notEqualMe7th2026.slot.gratitude.label": "7周年に贈りたい感謝の曲",
+    "7周年公演の推しを忘れたくない一曲",
+  "live.notEqualMe7th2026.slot.gratitude.label": "余韻に残った曲",
   "live.notEqualMe7th2026.slot.gratitude.subtitle":
-    "ここまでのありがとうを込めて選ぶ一曲",
-  "live.notEqualMe7th2026.slot.nextChapter.label": "8年目へつなぎたい曲",
+    "終演後も心の中で鳴り続けた一曲",
+  "live.notEqualMe7th2026.slot.nextChapter.label": "FREE PICK",
   "live.notEqualMe7th2026.slot.nextChapter.subtitle":
-    "7周年の先へ進む景色を思い描く一曲",
+    "7周年公演で披露された曲から、もう一曲自由に選ぶなら",
   "live.notEqualMe7th2026.shareText":
-    "≠ME 7th ANNIVERSARY PREMIUM CONCERTを記念して、全楽曲から選ぶファン・ウィッシュリスト My Pickを作りました！\n（実際のセットリストではありません。ダウンロードした画像を添付してください）",
+    "≠ME 7th ANNIVERSARY PREMIUM CONCERT 7周年の余韻 My Pickを作成しました！\n（※ダウンロードした画像を添付してください）",
 };
 
 const zhCN: MessageCatalog = {
@@ -1284,6 +1287,9 @@ const zhCN: MessageCatalog = {
   "context.day1": "第 1 天",
   "context.day2": "第 2 天",
   "context.both": "两日",
+  "context.dayShow": "午场",
+  "context.nightShow": "夜场",
+  "context.bothShows": "两场",
 
   "project.equalLove.subtitle": "选出你最喜欢的＝LOVE歌曲吧！",
   "project.equalLove.description":
@@ -1354,56 +1360,56 @@ const zhCN: MessageCatalog = {
   "live.tokyoDome2027.shareText":
     "我制作了＝LOVE in TOKYO DOME心愿 My Pick！\n（请附上已下载的图片）",
 
-  "live.joy4th2026.title": "四周年纪念粉丝心愿 My Pick",
+  "live.joy4th2026.title": "四周年余韵 My Pick",
   "live.joy4th2026.subtitle":
-    "纪念≒JOY 4th ANNIVERSARY PREMIUM CONCERT，从完整曲库按六个主题制作你的粉丝心愿歌单。",
+    "用六段记忆，留下≒JOY 4th ANNIVERSARY PREMIUM CONCERT的余韵。",
   "live.joy4th2026.description":
-    "从理想开场、四年历程、日本武道館的热烈时刻、我推高光、感谢与下一篇章六个粉丝主题中，各选一首≒JOY歌曲。所有槽位均可使用完整曲库；这是个人粉丝心愿企划，并非演唱会实际歌单。",
-  "live.joy4th2026.slot.dreamOpening.label": "理想开场曲",
+    "从最难忘、最沸腾、最催泪、我推最闪耀、余韵最深与FREE PICK六个角度，回顾日本武道館的四周年公演。可按已确认的午场、夜场或两场歌单选择。",
+  "live.joy4th2026.slot.dreamOpening.label": "最难忘的歌",
   "live.joy4th2026.slot.dreamOpening.subtitle":
-    "想象四周年舞台揭幕时，最想让它第一个响起",
-  "live.joy4th2026.slot.journey.label": "见证四年历程的歌",
-  "live.joy4th2026.slot.journey.subtitle": "最能让你联想到≒JOY一路走来的一首歌",
-  "live.joy4th2026.slot.venueEnergy.label": "想让日本武道館沸腾的歌",
+    "四周年公演中最留在心里的一首歌",
+  "live.joy4th2026.slot.journey.label": "现场最沸腾的歌",
+  "live.joy4th2026.slot.journey.subtitle":
+    "连应援、舞台与全场气氛都一起点燃的一首歌",
+  "live.joy4th2026.slot.venueEnergy.label": "让我落泪的歌",
   "live.joy4th2026.slot.venueEnergy.subtitle":
-    "想象全场热烈回应时会选择的一首歌",
-  "live.joy4th2026.slot.oshiSpotlight.label": "我推高光曲",
+    "在日本武道館让眼泪不由自主落下的一首歌",
+  "live.joy4th2026.slot.oshiSpotlight.label": "我推闪耀的歌",
   "live.joy4th2026.slot.oshiSpotlight.subtitle":
-    "想象我推最闪耀的瞬间时会选择的一首歌",
-  "live.joy4th2026.slot.gratitude.label": "四周年感谢曲",
-  "live.joy4th2026.slot.gratitude.subtitle":
-    "想在这个四周年节点带着感谢送出的一首歌",
-  "live.joy4th2026.slot.nextChapter.label": "写给下一篇章的歌",
+    "想一直记住四周年公演中我推的这一瞬间",
+  "live.joy4th2026.slot.gratitude.label": "余韵最深的歌",
+  "live.joy4th2026.slot.gratitude.subtitle": "散场后仍在心里不断响起的一首歌",
+  "live.joy4th2026.slot.nextChapter.label": "FREE PICK",
   "live.joy4th2026.slot.nextChapter.subtitle":
-    "想象四周年之后继续前行时会选择的一首歌",
+    "从四周年公演曲目中再自由选择一首",
   "live.joy4th2026.shareText":
-    "我制作了纪念≒JOY 4th ANNIVERSARY PREMIUM CONCERT的全曲库粉丝心愿 My Pick！\n（这不是演唱会实际歌单，请附上已下载的图片）",
+    "我制作了≒JOY 4th ANNIVERSARY PREMIUM CONCERT四周年余韵 My Pick！\n（请附上已下载的图片）",
 
-  "live.notEqualMe7th2026.title": "七周年纪念粉丝心愿 My Pick",
+  "live.notEqualMe7th2026.title": "七周年余韵 My Pick",
   "live.notEqualMe7th2026.subtitle":
-    "纪念≠ME 7th ANNIVERSARY PREMIUM CONCERT，从完整曲库按六个主题制作你的粉丝心愿歌单。",
+    "用六段记忆，留下≠ME 7th ANNIVERSARY PREMIUM CONCERT的余韵。",
   "live.notEqualMe7th2026.description":
-    "从理想开场、七年历程、Ｋアリーナ横浜的热烈时刻、我推高光、感谢与迈向第八年六个粉丝主题中，各选一首≠ME歌曲。所有槽位均可使用完整曲库；这是个人粉丝心愿企划，并非演唱会实际歌单。",
-  "live.notEqualMe7th2026.slot.dreamOpening.label": "理想开场曲",
+    "从最难忘、最沸腾、最催泪、我推最闪耀、余韵最深与FREE PICK六个角度，回顾Ｋアリーナ横浜的七周年公演。可按已确认的午场、夜场或两场歌单选择。",
+  "live.notEqualMe7th2026.slot.dreamOpening.label": "最难忘的歌",
   "live.notEqualMe7th2026.slot.dreamOpening.subtitle":
-    "想象七周年舞台揭幕时，最想让它第一个响起",
-  "live.notEqualMe7th2026.slot.journey.label": "见证七年历程的歌",
+    "七周年公演中最留在心里的一首歌",
+  "live.notEqualMe7th2026.slot.journey.label": "现场最沸腾的歌",
   "live.notEqualMe7th2026.slot.journey.subtitle":
-    "最能让你联想到≠ME一路走来的一首歌",
-  "live.notEqualMe7th2026.slot.venueEnergy.label": "想让Ｋアリーナ横浜沸腾的歌",
+    "连应援、舞台与全场气氛都一起点燃的一首歌",
+  "live.notEqualMe7th2026.slot.venueEnergy.label": "让我落泪的歌",
   "live.notEqualMe7th2026.slot.venueEnergy.subtitle":
-    "想象全场热烈回应时会选择的一首歌",
-  "live.notEqualMe7th2026.slot.oshiSpotlight.label": "我推高光曲",
+    "在Ｋアリーナ横浜让眼泪不由自主落下的一首歌",
+  "live.notEqualMe7th2026.slot.oshiSpotlight.label": "我推闪耀的歌",
   "live.notEqualMe7th2026.slot.oshiSpotlight.subtitle":
-    "想象我推最闪耀的瞬间时会选择的一首歌",
-  "live.notEqualMe7th2026.slot.gratitude.label": "七周年感谢曲",
+    "想一直记住七周年公演中我推的这一瞬间",
+  "live.notEqualMe7th2026.slot.gratitude.label": "余韵最深的歌",
   "live.notEqualMe7th2026.slot.gratitude.subtitle":
-    "想在这个七周年节点带着感谢送出的一首歌",
-  "live.notEqualMe7th2026.slot.nextChapter.label": "迈向第八年的歌",
+    "散场后仍在心里不断响起的一首歌",
+  "live.notEqualMe7th2026.slot.nextChapter.label": "FREE PICK",
   "live.notEqualMe7th2026.slot.nextChapter.subtitle":
-    "想象七周年之后继续前行时会选择的一首歌",
+    "从七周年公演曲目中再自由选择一首",
   "live.notEqualMe7th2026.shareText":
-    "我制作了纪念≠ME 7th ANNIVERSARY PREMIUM CONCERT的全曲库粉丝心愿 My Pick！\n（这不是演唱会实际歌单，请附上已下载的图片）",
+    "我制作了≠ME 7th ANNIVERSARY PREMIUM CONCERT七周年余韵 My Pick！\n（请附上已下载的图片）",
 };
 
 const ko: MessageCatalog = {
@@ -1758,6 +1764,9 @@ const ko: MessageCatalog = {
   "context.day1": "1일차",
   "context.day2": "2일차",
   "context.both": "2일",
+  "context.dayShow": "낮 공연",
+  "context.nightShow": "밤 공연",
+  "context.bothShows": "두 공연",
 
   "project.equalLove.subtitle": "좋아하는 ＝LOVE 곡을 골라 보세요!",
   "project.equalLove.description":
@@ -1830,60 +1839,57 @@ const ko: MessageCatalog = {
   "live.tokyoDome2027.shareText":
     "＝LOVE in TOKYO DOME에서 듣고 싶은 My Pick을 만들었습니다!\n(다운로드한 이미지를 첨부해 주세요.)",
 
-  "live.joy4th2026.title": "4주년 기념 팬 위시리스트 My Pick",
+  "live.joy4th2026.title": "4주년의 여운 My Pick",
   "live.joy4th2026.subtitle":
-    "≒JOY 4th ANNIVERSARY PREMIUM CONCERT를 기념해 전체 곡 목록에서 여섯 테마의 팬 위시리스트를 만들어 보세요.",
+    "≒JOY 4th ANNIVERSARY PREMIUM CONCERT의 여운을 여섯 가지 기억으로 남겨 보세요.",
   "live.joy4th2026.description":
-    "꿈의 오프닝, 4년의 여정, 日本武道館의 뜨거운 순간, 최애의 하이라이트, 감사, 다음 장까지 팬이 만든 여섯 테마마다 ≒JOY 곡 한 곡을 고릅니다. 모든 슬롯은 전체 곡 목록에서 선택하며 실제 공연 세트리스트를 뜻하지 않습니다.",
-  "live.joy4th2026.slot.dreamOpening.label": "꿈의 오프닝 곡",
+    "日本武道館에서 열린 4주년 공연을 잊을 수 없는 곡, 가장 뜨거웠던 곡, 눈물 난 곡, 최애가 빛났던 곡, 여운에 남은 곡, FREE PICK의 여섯 가지로 돌아봅니다. 확인된 낮 공연, 밤 공연 또는 두 공연의 세트리스트에서 선택할 수 있습니다.",
+  "live.joy4th2026.slot.dreamOpening.label": "잊을 수 없는 곡",
   "live.joy4th2026.slot.dreamOpening.subtitle":
-    "4주년 무대의 막이 오르는 순간을 상상하며 고르는 곡",
-  "live.joy4th2026.slot.journey.label": "4년의 여정이 느껴지는 곡",
+    "4주년 공연에서 가장 마음에 남은 한 곡",
+  "live.joy4th2026.slot.journey.label": "현장에서 가장 뜨거웠던 곡",
   "live.joy4th2026.slot.journey.subtitle":
-    "지금까지의 ≒JOY를 떠올리며 고르는 곡",
-  "live.joy4th2026.slot.venueEnergy.label":
-    "日本武道館을 뜨겁게 만들고 싶은 곡",
+    "콜과 연출, 현장의 공기까지 뜨겁게 만든 한 곡",
+  "live.joy4th2026.slot.venueEnergy.label": "눈물 난 곡",
   "live.joy4th2026.slot.venueEnergy.subtitle":
-    "공연장 가득 뜨거운 열기를 상상하며 고르는 곡",
-  "live.joy4th2026.slot.oshiSpotlight.label": "최애의 하이라이트 곡",
+    "日本武道館에서 나도 모르게 눈물이 흐른 한 곡",
+  "live.joy4th2026.slot.oshiSpotlight.label": "최애가 빛났던 곡",
   "live.joy4th2026.slot.oshiSpotlight.subtitle":
-    "최애가 가장 빛나는 순간을 상상하며 고르는 곡",
-  "live.joy4th2026.slot.gratitude.label": "4주년에 전하고 싶은 감사의 곡",
+    "4주년 공연의 최애를 오래 기억하고 싶은 한 곡",
+  "live.joy4th2026.slot.gratitude.label": "여운에 남은 곡",
   "live.joy4th2026.slot.gratitude.subtitle":
-    "지금까지의 고마움을 담아 고르는 곡",
-  "live.joy4th2026.slot.nextChapter.label": "다음 장을 위한 곡",
+    "공연이 끝난 뒤에도 마음속에서 계속 울린 한 곡",
+  "live.joy4th2026.slot.nextChapter.label": "FREE PICK",
   "live.joy4th2026.slot.nextChapter.subtitle":
-    "4주년 이후로 나아갈 모습을 그리며 고르는 곡",
+    "4주년 공연에서 선보인 곡 중 한 곡을 더 고른다면",
   "live.joy4th2026.shareText":
-    "≒JOY 4th ANNIVERSARY PREMIUM CONCERT를 기념하는 전체 곡 팬 위시리스트 My Pick을 만들었습니다!\n(실제 공연 세트리스트가 아닙니다. 다운로드한 이미지를 첨부해 주세요.)",
+    "≒JOY 4th ANNIVERSARY PREMIUM CONCERT 4주년의 여운 My Pick을 만들었습니다!\n(다운로드한 이미지를 첨부해 주세요.)",
 
-  "live.notEqualMe7th2026.title": "7주년 기념 팬 위시리스트 My Pick",
+  "live.notEqualMe7th2026.title": "7주년의 여운 My Pick",
   "live.notEqualMe7th2026.subtitle":
-    "≠ME 7th ANNIVERSARY PREMIUM CONCERT를 기념해 전체 곡 목록에서 여섯 테마의 팬 위시리스트를 만들어 보세요.",
+    "≠ME 7th ANNIVERSARY PREMIUM CONCERT의 여운을 여섯 가지 기억으로 남겨 보세요.",
   "live.notEqualMe7th2026.description":
-    "꿈의 오프닝, 7년의 여정, Ｋアリーナ横浜의 뜨거운 순간, 최애의 하이라이트, 감사, 8년째를 향한 한 걸음까지 팬이 만든 여섯 테마마다 ≠ME 곡 한 곡을 고릅니다. 모든 슬롯은 전체 곡 목록에서 선택하며 실제 공연 세트리스트를 뜻하지 않습니다.",
-  "live.notEqualMe7th2026.slot.dreamOpening.label": "꿈의 오프닝 곡",
+    "Ｋアリーナ横浜에서 열린 7주년 공연을 잊을 수 없는 곡, 가장 뜨거웠던 곡, 눈물 난 곡, 최애가 빛났던 곡, 여운에 남은 곡, FREE PICK의 여섯 가지로 돌아봅니다. 확인된 낮 공연, 밤 공연 또는 두 공연의 세트리스트에서 선택할 수 있습니다.",
+  "live.notEqualMe7th2026.slot.dreamOpening.label": "잊을 수 없는 곡",
   "live.notEqualMe7th2026.slot.dreamOpening.subtitle":
-    "7주년 무대의 막이 오르는 순간을 상상하며 고르는 곡",
-  "live.notEqualMe7th2026.slot.journey.label": "7년의 여정이 느껴지는 곡",
+    "7주년 공연에서 가장 마음에 남은 한 곡",
+  "live.notEqualMe7th2026.slot.journey.label": "현장에서 가장 뜨거웠던 곡",
   "live.notEqualMe7th2026.slot.journey.subtitle":
-    "지금까지의 ≠ME를 떠올리며 고르는 곡",
-  "live.notEqualMe7th2026.slot.venueEnergy.label":
-    "Ｋアリーナ横浜을 뜨겁게 만들고 싶은 곡",
+    "콜과 연출, 현장의 공기까지 뜨겁게 만든 한 곡",
+  "live.notEqualMe7th2026.slot.venueEnergy.label": "눈물 난 곡",
   "live.notEqualMe7th2026.slot.venueEnergy.subtitle":
-    "공연장 가득 뜨거운 열기를 상상하며 고르는 곡",
-  "live.notEqualMe7th2026.slot.oshiSpotlight.label": "최애의 하이라이트 곡",
+    "Ｋアリーナ横浜에서 나도 모르게 눈물이 흐른 한 곡",
+  "live.notEqualMe7th2026.slot.oshiSpotlight.label": "최애가 빛났던 곡",
   "live.notEqualMe7th2026.slot.oshiSpotlight.subtitle":
-    "최애가 가장 빛나는 순간을 상상하며 고르는 곡",
-  "live.notEqualMe7th2026.slot.gratitude.label":
-    "7주년에 전하고 싶은 감사의 곡",
+    "7주년 공연의 최애를 오래 기억하고 싶은 한 곡",
+  "live.notEqualMe7th2026.slot.gratitude.label": "여운에 남은 곡",
   "live.notEqualMe7th2026.slot.gratitude.subtitle":
-    "지금까지의 고마움을 담아 고르는 곡",
-  "live.notEqualMe7th2026.slot.nextChapter.label": "8년째로 이어 갈 곡",
+    "공연이 끝난 뒤에도 마음속에서 계속 울린 한 곡",
+  "live.notEqualMe7th2026.slot.nextChapter.label": "FREE PICK",
   "live.notEqualMe7th2026.slot.nextChapter.subtitle":
-    "7주년 이후로 나아갈 모습을 그리며 고르는 곡",
+    "7주년 공연에서 선보인 곡 중 한 곡을 더 고른다면",
   "live.notEqualMe7th2026.shareText":
-    "≠ME 7th ANNIVERSARY PREMIUM CONCERT를 기념하는 전체 곡 팬 위시리스트 My Pick을 만들었습니다!\n(실제 공연 세트리스트가 아닙니다. 다운로드한 이미지를 첨부해 주세요.)",
+    "≠ME 7th ANNIVERSARY PREMIUM CONCERT 7주년의 여운 My Pick을 만들었습니다!\n(다운로드한 이미지를 첨부해 주세요.)",
 };
 
 export const messages = {

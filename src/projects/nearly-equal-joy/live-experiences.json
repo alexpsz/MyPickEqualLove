@@ -1,13 +1,13 @@
 [
   {
-    "id": "joy_4th_anniversary_2026",
+    "id": "joy_4th_anniversary_2026_afterglow",
     "projectId": "nearly-equal-joy",
     "slug": "joy-4th-anniversary-2026",
-    "kind": "live-wishlist",
+    "kind": "live-afterglow",
     "status": "published",
-    "title": "4周年記念 ファン・ウィッシュリスト My Pick",
-    "subtitle": "≒JOY 4th ANNIVERSARY PREMIUM CONCERTを記念して、全楽曲から6つのテーマで選ぼう。",
-    "description": "夢の開幕、4年間の歩み、日本武道館で高まりたい曲、推しの見せ場、感謝、次の一歩。ファンが考えた6つのテーマごとに≒JOYの楽曲を1曲ずつ選ぶ企画です。すべて全楽曲から選べ、実際のセットリストを示すものではありません。",
+    "title": "4周年の余韻 My Pick",
+    "subtitle": "≒JOY 4th ANNIVERSARY PREMIUM CONCERTの余韻を、6つの記憶で残そう。",
+    "description": "日本武道館で開催された≒JOY 4th ANNIVERSARY PREMIUM CONCERTを、忘れられない曲・高まった曲・涙が出た曲・推しが輝いていた曲・余韻に残った曲・FREE PICKの6つで振り返るMy Pickです。昼公演・夜公演・両公演の公式セットリストから選べます。",
     "canonicalPath": "/live/joy-4th-anniversary-2026/",
     "eventName": "≒JOY 4th ANNIVERSARY PREMIUM CONCERT",
     "venue": "日本武道館",
@@ -20,61 +20,314 @@
         "https://nearly-equal-joy.jp/news/detail/3157",
         "https://nearly-equal-joy.jp/news/detail/3182"
       ],
-      "sourceNote": "Official pages verify the event name, date, venue, and day/night performances. No public track list is encoded; this full-catalog fan wishlist does not represent the concert setlist."
+      "sourceNote": "Official event pages verify the event name, date, venue, and day/night performances. Sony Music Labels published the ordered setlist separately; performance provenance binds each context to that source."
     },
+    "provenanceSchemaVersion": 1,
+    "includeCombinedPerformance": true,
+    "combinedPerformanceLabel": "昼・夜",
+    "defaultContextId": "both",
     "slots": [
       {
         "id": "dream-opening",
-        "label": "夢の開幕曲",
-        "subtitle": "4周年の幕開けを想像して選ぶ一曲",
+        "label": "忘れられない曲",
+        "subtitle": "4周年公演でいちばん心に残った一曲",
         "sortOrder": 1,
-        "eligibility": "catalog"
+        "eligibility": "selected-performance"
       },
       {
         "id": "journey",
-        "label": "4年間の歩みを感じる曲",
-        "subtitle": "≒JOYのこれまでを重ねて選ぶ一曲",
+        "label": "会場で高まった曲",
+        "subtitle": "コール・演出・空気ごと熱くなった一曲",
         "sortOrder": 2,
-        "eligibility": "catalog"
+        "eligibility": "selected-performance"
       },
       {
         "id": "venue-energy",
-        "label": "日本武道館で高まりたい曲",
-        "subtitle": "会場いっぱいの熱を想像して選ぶ一曲",
+        "label": "涙が出た曲",
+        "subtitle": "日本武道館で思わず涙がこぼれた一曲",
         "sortOrder": 3,
-        "eligibility": "catalog"
+        "eligibility": "selected-performance"
       },
       {
         "id": "oshi-spotlight",
-        "label": "推しの見せ場に選びたい曲",
-        "subtitle": "推しがいちばん輝く瞬間を想像する一曲",
+        "label": "推しが輝いていた曲",
+        "subtitle": "4周年公演の推しを忘れたくない一曲",
         "sortOrder": 4,
-        "eligibility": "catalog"
+        "eligibility": "selected-performance"
       },
       {
         "id": "gratitude",
-        "label": "4周年に贈りたい感謝の曲",
-        "subtitle": "ここまでのありがとうを込めて選ぶ一曲",
+        "label": "余韻に残った曲",
+        "subtitle": "終演後も心の中で鳴り続けた一曲",
         "sortOrder": 5,
-        "eligibility": "catalog"
+        "eligibility": "selected-performance"
       },
       {
         "id": "next-chapter",
-        "label": "次の一歩に選びたい曲",
-        "subtitle": "4周年の先へ進む景色を思い描く一曲",
+        "label": "FREE PICK",
+        "subtitle": "4周年公演で披露された曲から、もう一曲自由に選ぶなら",
         "sortOrder": 6,
-        "eligibility": "catalog"
+        "eligibility": "selected-performance"
       }
     ],
     "export": {
-      "title": "4周年記念 ファン・ウィッシュリスト My Pick",
+      "title": "4周年の余韻 My Pick",
       "subtitle": "≒JOY 4th ANNIVERSARY PREMIUM CONCERT",
-      "imageFileName": "NearlyEqualJoy_4thAnniversary2026_FanWishlist.png",
+      "imageFileName": "NearlyEqualJoy_4thAnniversary2026_Afterglow.png",
       "layout": "five-memory-list"
     },
     "share": {
-      "text": "≒JOY 4th ANNIVERSARY PREMIUM CONCERTを記念して、全楽曲から選ぶファン・ウィッシュリスト My Pickを作りました！\n（実際のセットリストではありません。ダウンロードした画像を添付してください）",
-      "hashtags": ["#MyPickニアジョイ", "#ニアジョイ"]
-    }
+      "text": "≒JOY 4th ANNIVERSARY PREMIUM CONCERT 4周年の余韻 My Pickを作成しました！\n（ダウンロードした画像を添付してください）",
+      "hashtags": ["#MyPickニアジョイ", "#ニアジョイ", "#ニアジョイ4周年"]
+    },
+    "performances": [
+      {
+        "id": "day",
+        "label": "昼公演",
+        "date": "2026-03-13",
+        "verificationStatus": "verified",
+        "sourceUrls": [
+          "https://prtimes.jp/main/html/rd/p/000004808.000013546.html",
+          "https://filtrjapan.lnk.to/nearly-equal-joy-budokanTA",
+          "https://ototoy.jp/news/129065"
+        ],
+        "sourceNote": "Sony Music Labels lists M1-M23 and EN1-EN5 as common to both shows. The unnumbered Overture described by the cross-check report is excluded because it is not a selectable catalog song. Catalog punctuation variants were manually mapped to canonical IDs.",
+        "provenance": {
+          "schemaVersion": 1,
+          "primarySource": {
+            "url": "https://prtimes.jp/main/html/rd/p/000004808.000013546.html",
+            "publisher": "Sony Music Labels Inc.",
+            "publishedAt": "2026-03-13T23:00:00+09:00",
+            "evidenceGrade": "A"
+          },
+          "supportingSources": [
+            {
+              "url": "https://filtrjapan.lnk.to/nearly-equal-joy-budokanTA",
+              "publisher": "Filtr Japan / Sony Music Labels",
+              "verifiedAt": "2026-08-14",
+              "evidenceGrade": "B",
+              "role": "official-playlist"
+            },
+            {
+              "url": "https://ototoy.jp/news/129065",
+              "publisher": "OTOTOY",
+              "publishedAt": "2026-03-14T12:00:00+09:00",
+              "evidenceGrade": "C",
+              "role": "cross-check-report"
+            }
+          ],
+          "reviewedAt": "2026-08-14",
+          "confirmedAt": "2026-08-14",
+          "excludedEntries": [
+            {
+              "sourceUrl": "https://ototoy.jp/news/129065",
+              "sourcePosition": "before M1",
+              "label": "Overture",
+              "reason": "non-catalog-intro"
+            }
+          ],
+          "repeatedSongIds": ["denwabangou-oshie-te"],
+          "crossCheck": {
+            "status": "matched-with-documented-differences",
+            "sourceUrls": [
+              "https://filtrjapan.lnk.to/nearly-equal-joy-budokanTA",
+              "https://ototoy.jp/news/129065"
+            ],
+            "note": "The Sony Music Labels ordered list and OTOTOY report agree. OTOTOY additionally describes the unnumbered Overture, which is excluded from selectable songs."
+          }
+        },
+        "setlist": [
+          { "order": 1, "songId": "nearly-equal-joy", "section": "main" },
+          {
+            "order": 2,
+            "songId": "kyou-mo-kun-no-yume-wo-mita-nda",
+            "section": "main"
+          },
+          { "order": 3, "songId": "suiitoshikkusuteiin", "section": "main" },
+          {
+            "order": 4,
+            "songId": "3-ke-gatsu",
+            "section": "main",
+            "versionNote": "Official source title: ♡3か月♡; canonical catalog title: ♡3ヶ月♡."
+          },
+          { "order": 5, "songId": "taiikukan-disuko", "section": "main" },
+          { "order": 6, "songId": "dadada-datte", "section": "main" },
+          { "order": 7, "songId": "0120-o-tasuke-ya-san", "section": "main" },
+          { "order": 8, "songId": "nonfikushon", "section": "main" },
+          { "order": 9, "songId": "the-rock-is-you", "section": "main" },
+          {
+            "order": 10,
+            "songId": "sono-saki-ha-iguzaruto",
+            "section": "main"
+          },
+          { "order": 11, "songId": "ai-ga-itaka-tta", "section": "main" },
+          {
+            "order": 12,
+            "songId": "amagamigaaru-feat-dj-alice",
+            "section": "main"
+          },
+          {
+            "order": 13,
+            "songId": "yumemi-ru-aidoru",
+            "section": "main",
+            "versionNote": "Official source title: 夢見る♡アイドル; canonical catalog title: 夢見るアイドル."
+          },
+          { "order": 14, "songId": "waratsu-te-furajiiru", "section": "main" },
+          { "order": 15, "songId": "mubou-nin", "section": "main" },
+          { "order": 16, "songId": "chou-kodoku-raion", "section": "main" },
+          { "order": 17, "songId": "niajoi-ondo", "section": "main" },
+          {
+            "order": 18,
+            "songId": "piichiteii-to-piichipai",
+            "section": "main"
+          },
+          { "order": 19, "songId": "buruuhawairemon", "section": "main" },
+          { "order": 20, "songId": "hatsukoi-shinderera", "section": "main" },
+          { "order": 21, "songId": "ima-gatsu-ha-michi-ru", "section": "main" },
+          { "order": 22, "songId": "denwabangou-oshie-te", "section": "main" },
+          {
+            "order": 23,
+            "songId": "boku-tachino-uta",
+            "section": "main",
+            "versionNote": "Official source title uses Japanese corner brackets; canonical catalog title omits them."
+          },
+          { "order": 24, "songId": "ima-koi-woshiteiru", "section": "encore" },
+          { "order": 25, "songId": "oozora-byun-to", "section": "encore" },
+          { "order": 26, "songId": "nebagiba-iki-ro", "section": "encore" },
+          {
+            "order": 27,
+            "songId": "denwabangou-oshie-te",
+            "section": "encore"
+          },
+          { "order": 28, "songId": "kitto-aoi", "section": "encore" }
+        ]
+      },
+      {
+        "id": "night",
+        "label": "夜公演",
+        "date": "2026-03-13",
+        "verificationStatus": "verified",
+        "sourceUrls": [
+          "https://prtimes.jp/main/html/rd/p/000004808.000013546.html",
+          "https://filtrjapan.lnk.to/nearly-equal-joy-budokanTA",
+          "https://ototoy.jp/news/129065"
+        ],
+        "sourceNote": "Sony Music Labels lists M1-M23 and EN1-EN5 as common to both shows, with ≒JOY as the night-only double encore. The unnumbered Overture is excluded. Catalog punctuation variants were manually mapped to canonical IDs.",
+        "provenance": {
+          "schemaVersion": 1,
+          "primarySource": {
+            "url": "https://prtimes.jp/main/html/rd/p/000004808.000013546.html",
+            "publisher": "Sony Music Labels Inc.",
+            "publishedAt": "2026-03-13T23:00:00+09:00",
+            "evidenceGrade": "A"
+          },
+          "supportingSources": [
+            {
+              "url": "https://filtrjapan.lnk.to/nearly-equal-joy-budokanTA",
+              "publisher": "Filtr Japan / Sony Music Labels",
+              "verifiedAt": "2026-08-14",
+              "evidenceGrade": "B",
+              "role": "official-playlist"
+            },
+            {
+              "url": "https://ototoy.jp/news/129065",
+              "publisher": "OTOTOY",
+              "publishedAt": "2026-03-14T12:00:00+09:00",
+              "evidenceGrade": "C",
+              "role": "cross-check-report"
+            }
+          ],
+          "reviewedAt": "2026-08-14",
+          "confirmedAt": "2026-08-14",
+          "excludedEntries": [
+            {
+              "sourceUrl": "https://ototoy.jp/news/129065",
+              "sourcePosition": "before M1",
+              "label": "Overture",
+              "reason": "non-catalog-intro"
+            }
+          ],
+          "repeatedSongIds": ["denwabangou-oshie-te", "nearly-equal-joy"],
+          "crossCheck": {
+            "status": "matched-with-documented-differences",
+            "sourceUrls": [
+              "https://filtrjapan.lnk.to/nearly-equal-joy-budokanTA",
+              "https://ototoy.jp/news/129065"
+            ],
+            "note": "The ordered sources agree on the common set and night-only double encore. The unnumbered Overture is excluded from selectable songs."
+          }
+        },
+        "setlist": [
+          { "order": 1, "songId": "nearly-equal-joy", "section": "main" },
+          {
+            "order": 2,
+            "songId": "kyou-mo-kun-no-yume-wo-mita-nda",
+            "section": "main"
+          },
+          { "order": 3, "songId": "suiitoshikkusuteiin", "section": "main" },
+          {
+            "order": 4,
+            "songId": "3-ke-gatsu",
+            "section": "main",
+            "versionNote": "Official source title: ♡3か月♡; canonical catalog title: ♡3ヶ月♡."
+          },
+          { "order": 5, "songId": "taiikukan-disuko", "section": "main" },
+          { "order": 6, "songId": "dadada-datte", "section": "main" },
+          { "order": 7, "songId": "0120-o-tasuke-ya-san", "section": "main" },
+          { "order": 8, "songId": "nonfikushon", "section": "main" },
+          { "order": 9, "songId": "the-rock-is-you", "section": "main" },
+          {
+            "order": 10,
+            "songId": "sono-saki-ha-iguzaruto",
+            "section": "main"
+          },
+          { "order": 11, "songId": "ai-ga-itaka-tta", "section": "main" },
+          {
+            "order": 12,
+            "songId": "amagamigaaru-feat-dj-alice",
+            "section": "main"
+          },
+          {
+            "order": 13,
+            "songId": "yumemi-ru-aidoru",
+            "section": "main",
+            "versionNote": "Official source title: 夢見る♡アイドル; canonical catalog title: 夢見るアイドル."
+          },
+          { "order": 14, "songId": "waratsu-te-furajiiru", "section": "main" },
+          { "order": 15, "songId": "mubou-nin", "section": "main" },
+          { "order": 16, "songId": "chou-kodoku-raion", "section": "main" },
+          { "order": 17, "songId": "niajoi-ondo", "section": "main" },
+          {
+            "order": 18,
+            "songId": "piichiteii-to-piichipai",
+            "section": "main"
+          },
+          { "order": 19, "songId": "buruuhawairemon", "section": "main" },
+          { "order": 20, "songId": "hatsukoi-shinderera", "section": "main" },
+          { "order": 21, "songId": "ima-gatsu-ha-michi-ru", "section": "main" },
+          { "order": 22, "songId": "denwabangou-oshie-te", "section": "main" },
+          {
+            "order": 23,
+            "songId": "boku-tachino-uta",
+            "section": "main",
+            "versionNote": "Official source title uses Japanese corner brackets; canonical catalog title omits them."
+          },
+          { "order": 24, "songId": "ima-koi-woshiteiru", "section": "encore" },
+          { "order": 25, "songId": "oozora-byun-to", "section": "encore" },
+          { "order": 26, "songId": "nebagiba-iki-ro", "section": "encore" },
+          {
+            "order": 27,
+            "songId": "denwabangou-oshie-te",
+            "section": "encore"
+          },
+          { "order": 28, "songId": "kitto-aoi", "section": "encore" },
+          {
+            "order": 29,
+            "songId": "nearly-equal-joy",
+            "section": "double-encore"
+          }
+        ]
+      }
+    ]
   }
 ]

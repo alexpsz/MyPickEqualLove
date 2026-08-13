@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import assert from "node:assert/strict";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
@@ -49,6 +50,21 @@ const eligibilityScopes = new Set([
 const experienceLayouts = new Set(["top10-grid", "five-memory-list"]);
 const verificationStatuses = new Set(["unverified", "partial", "verified"]);
 const setlistSections = new Set(["main", "encore", "double-encore"]);
+const provenanceSchemaVersions = new Set([1]);
+const evidenceGrades = new Set(["A", "B", "C", "D", "E"]);
+const supportingSourceRoles = new Set([
+  "official-playlist",
+  "cross-check-report",
+]);
+const crossCheckStatuses = new Set([
+  "matched",
+  "matched-with-documented-differences",
+]);
+const excludedEntryReasons = new Set([
+  "non-catalog-intro",
+  "non-song",
+  "not-in-project-catalog",
+]);
 const unknownAnnouncementMarkers = ["タイトル未定", "後日発表", "TBD"];
 const catalogDate = currentJapanDate();
 
@@ -85,6 +101,10 @@ const expectedNotEqualMeBoundarySongs = new Map([
 ]);
 
 const targetProjectId = readProjectArg();
+if (process.argv.includes("--self-test-live-experiences")) {
+  runLiveExperienceValidatorSelfTests();
+  process.exit(0);
+}
 const projectIds = targetProjectId ? [targetProjectId] : listProjectIds();
 const errors = [];
 const summaries = [];
@@ -579,7 +599,31 @@ function validateExperienceSlots(prefix, experience, errors) {
 }
 
 function validateExperiencePerformances(prefix, experience, songIds, errors) {
+  const provenanceVersion = experience.provenanceSchemaVersion;
+  if (
+    provenanceVersion !== undefined &&
+    !provenanceSchemaVersions.has(provenanceVersion)
+  ) {
+    errors.push(
+      `${prefix}: unsupported provenanceSchemaVersion ${provenanceVersion}`,
+    );
+  }
+
+  if (
+    experience.combinedPerformanceLabel !== undefined &&
+    (!experience.includeCombinedPerformance ||
+      typeof experience.combinedPerformanceLabel !== "string" ||
+      !experience.combinedPerformanceLabel.trim())
+  ) {
+    errors.push(
+      `${prefix}: combinedPerformanceLabel requires includeCombinedPerformance and a non-empty label`,
+    );
+  }
+
   if (experience.performances === undefined) {
+    if (provenanceVersion !== undefined) {
+      errors.push(`${prefix}: provenanceSchemaVersion requires performances`);
+    }
     return;
   }
   if (!Array.isArray(experience.performances)) {
@@ -660,17 +704,541 @@ function validateExperiencePerformances(prefix, experience, songIds, errors) {
       songIds,
       errors,
     );
+    validatePerformanceProvenance(
+      performancePrefix,
+      performance,
+      provenanceVersion,
+      experience.status,
+      errors,
+    );
   }
 
   if (
-    experience.defaultContextId &&
-    experience.defaultContextId !== "both" &&
-    !performanceIds.has(experience.defaultContextId)
+    experience.includeCombinedPerformance &&
+    experience.performances.length < 2
   ) {
     errors.push(
-      `${prefix}: defaultContextId must match a performance id or both`,
+      `${prefix}: includeCombinedPerformance requires at least two performances`,
     );
   }
+  if (
+    experience.performances.length > 0 &&
+    (typeof experience.defaultContextId !== "string" ||
+      !experience.defaultContextId)
+  ) {
+    errors.push(`${prefix}: performances require defaultContextId`);
+  }
+  if (
+    experience.defaultContextId &&
+    ((experience.defaultContextId === "both" &&
+      !experience.includeCombinedPerformance) ||
+      (experience.defaultContextId !== "both" &&
+        !performanceIds.has(experience.defaultContextId)))
+  ) {
+    errors.push(
+      `${prefix}: defaultContextId must match a performance id or an enabled combined context`,
+    );
+  }
+}
+
+function validatePerformanceProvenance(
+  prefix,
+  performance,
+  experienceProvenanceVersion,
+  experienceStatus,
+  errors,
+) {
+  const provenance = performance.provenance;
+  if (experienceProvenanceVersion === undefined) {
+    if (provenance !== undefined) {
+      errors.push(
+        `${prefix}: provenance requires experience provenanceSchemaVersion`,
+      );
+    }
+    return;
+  }
+  if (
+    !provenance ||
+    typeof provenance !== "object" ||
+    Array.isArray(provenance)
+  ) {
+    errors.push(`${prefix}: provenance is required by provenanceSchemaVersion`);
+    return;
+  }
+  if (provenance.schemaVersion !== experienceProvenanceVersion) {
+    errors.push(
+      `${prefix}: provenance.schemaVersion must match the experience`,
+    );
+  }
+
+  const primary = provenance.primarySource;
+  if (!primary || typeof primary !== "object" || Array.isArray(primary)) {
+    errors.push(`${prefix}: provenance.primarySource is required`);
+    return;
+  }
+  validateProvenanceSource(`${prefix} primarySource`, primary, true, errors);
+  if (
+    experienceStatus === "published" &&
+    !["A", "B"].includes(primary.evidenceGrade) &&
+    !(primary.evidenceGrade === "C" && isValidIsoDate(provenance.confirmedAt))
+  ) {
+    errors.push(
+      `${prefix}: published ordered setlists require A/B evidence or a confirmed C source`,
+    );
+  }
+
+  if (
+    !Array.isArray(provenance.supportingSources) ||
+    provenance.supportingSources.length === 0
+  ) {
+    errors.push(`${prefix}: provenance.supportingSources must be non-empty`);
+  }
+  const supportingSources = Array.isArray(provenance.supportingSources)
+    ? provenance.supportingSources
+    : [];
+  for (const [index, source] of supportingSources.entries()) {
+    validateProvenanceSource(
+      `${prefix} supportingSources[${index}]`,
+      source,
+      false,
+      errors,
+    );
+    if (!supportingSourceRoles.has(source?.role)) {
+      errors.push(
+        `${prefix} supportingSources[${index}]: invalid role ${source?.role}`,
+      );
+    }
+    if (source?.role === "official-playlist" && source.evidenceGrade !== "B") {
+      errors.push(
+        `${prefix} supportingSources[${index}]: official-playlist evidenceGrade must be B`,
+      );
+    }
+    if (
+      source?.role === "cross-check-report" &&
+      !["C", "D"].includes(source.evidenceGrade)
+    ) {
+      errors.push(
+        `${prefix} supportingSources[${index}]: cross-check-report evidenceGrade must be C or D`,
+      );
+    }
+  }
+
+  const derivedSourceUrls = [
+    primary.url,
+    ...supportingSources.map((source) => source?.url),
+  ];
+  if (
+    new Set(derivedSourceUrls).size !== derivedSourceUrls.length ||
+    !arraysEqual(performance.sourceUrls, derivedSourceUrls)
+  ) {
+    errors.push(
+      `${prefix}: sourceUrls must exactly equal primarySource.url followed by unique supportingSources URLs`,
+    );
+  }
+
+  if (!isValidIsoDate(provenance.reviewedAt)) {
+    errors.push(`${prefix}: provenance.reviewedAt must be YYYY-MM-DD`);
+  }
+  if (!isValidIsoDate(provenance.confirmedAt)) {
+    errors.push(`${prefix}: provenance.confirmedAt must be YYYY-MM-DD`);
+  }
+
+  const sourceUrlSet = new Set(derivedSourceUrls);
+  const supportingUrlSet = new Set(
+    supportingSources.map((source) => source?.url),
+  );
+  const officialPlaylistUrlSet = new Set(
+    supportingSources
+      .filter((source) => source?.role === "official-playlist")
+      .map((source) => source.url),
+  );
+  const reportUrlSet = new Set(
+    supportingSources
+      .filter((source) => source?.role === "cross-check-report")
+      .map((source) => source.url),
+  );
+  if (!Array.isArray(provenance.excludedEntries)) {
+    errors.push(`${prefix}: provenance.excludedEntries must be an array`);
+  } else {
+    const excludedOrders = new Set();
+    for (const [index, entry] of provenance.excludedEntries.entries()) {
+      const entryPrefix = `${prefix} excludedEntries[${index}]`;
+      if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+        errors.push(`${entryPrefix}: entry must be an object`);
+        continue;
+      }
+      if (!sourceUrlSet.has(entry.sourceUrl)) {
+        errors.push(
+          `${entryPrefix}: sourceUrl must reference a declared source`,
+        );
+      }
+      const hasOrder = entry.sourceOrder !== undefined;
+      const hasPosition = entry.sourcePosition !== undefined;
+      if (hasOrder === hasPosition) {
+        errors.push(
+          `${entryPrefix}: define exactly one of sourceOrder or sourcePosition`,
+        );
+      }
+      if (hasOrder) {
+        if (!Number.isInteger(entry.sourceOrder) || entry.sourceOrder <= 0) {
+          errors.push(`${entryPrefix}: sourceOrder must be a positive integer`);
+        } else if (excludedOrders.has(entry.sourceOrder)) {
+          errors.push(`${entryPrefix}: duplicate excluded sourceOrder`);
+        } else {
+          excludedOrders.add(entry.sourceOrder);
+        }
+      }
+      if (
+        hasPosition &&
+        (typeof entry.sourcePosition !== "string" ||
+          !entry.sourcePosition.trim())
+      ) {
+        errors.push(`${entryPrefix}: sourcePosition must be non-empty`);
+      }
+      if (typeof entry.label !== "string" || !entry.label.trim()) {
+        errors.push(`${entryPrefix}: label is required`);
+      }
+      if (!excludedEntryReasons.has(entry.reason)) {
+        errors.push(`${entryPrefix}: invalid reason ${entry.reason}`);
+      }
+    }
+    validateNumericSourceOrderCoverage(
+      prefix,
+      performance.setlist,
+      provenance.excludedEntries,
+      errors,
+    );
+  }
+
+  const repeatedSongIds = getRepeatedSongIds(performance.setlist);
+  if (
+    !Array.isArray(provenance.repeatedSongIds) ||
+    new Set(provenance.repeatedSongIds).size !==
+      provenance.repeatedSongIds.length ||
+    !setsEqual(new Set(provenance.repeatedSongIds), new Set(repeatedSongIds))
+  ) {
+    errors.push(
+      `${prefix}: repeatedSongIds must exactly describe repeated ordered setlist songs`,
+    );
+  }
+
+  const crossCheck = provenance.crossCheck;
+  if (
+    !crossCheck ||
+    typeof crossCheck !== "object" ||
+    Array.isArray(crossCheck)
+  ) {
+    errors.push(`${prefix}: provenance.crossCheck is required`);
+  } else {
+    if (!crossCheckStatuses.has(crossCheck.status)) {
+      errors.push(`${prefix}: invalid crossCheck.status ${crossCheck.status}`);
+    }
+    if (
+      !Array.isArray(crossCheck.sourceUrls) ||
+      crossCheck.sourceUrls.length === 0 ||
+      new Set(crossCheck.sourceUrls).size !== crossCheck.sourceUrls.length ||
+      crossCheck.sourceUrls.some(
+        (sourceUrl) => !supportingUrlSet.has(sourceUrl),
+      )
+    ) {
+      errors.push(
+        `${prefix}: crossCheck.sourceUrls must be unique supporting source URLs`,
+      );
+    } else if (
+      !crossCheck.sourceUrls.some((sourceUrl) =>
+        officialPlaylistUrlSet.has(sourceUrl),
+      ) ||
+      !crossCheck.sourceUrls.some((sourceUrl) => reportUrlSet.has(sourceUrl))
+    ) {
+      errors.push(
+        `${prefix}: crossCheck must combine an official playlist and a separate report`,
+      );
+    }
+    if (typeof crossCheck.note !== "string" || !crossCheck.note.trim()) {
+      errors.push(`${prefix}: crossCheck.note is required`);
+    }
+  }
+}
+
+function validateProvenanceSource(prefix, source, isPrimary, errors) {
+  if (!source || typeof source !== "object" || Array.isArray(source)) {
+    errors.push(`${prefix}: source must be an object`);
+    return;
+  }
+  if (typeof source.url !== "string" || !source.url.startsWith("https://")) {
+    errors.push(`${prefix}: url must use https`);
+  }
+  if (typeof source.publisher !== "string" || !source.publisher.trim()) {
+    errors.push(`${prefix}: publisher is required`);
+  }
+  if (isPrimary && !isValidSourceDate(source.publishedAt)) {
+    errors.push(`${prefix}: publishedAt must be an ISO date or datetime`);
+  }
+  if (!isPrimary) {
+    if (
+      source.publishedAt !== undefined &&
+      !isValidSourceDate(source.publishedAt)
+    ) {
+      errors.push(`${prefix}: publishedAt must be an ISO date or datetime`);
+    }
+    if (source.verifiedAt !== undefined && !isValidIsoDate(source.verifiedAt)) {
+      errors.push(`${prefix}: verifiedAt must be YYYY-MM-DD`);
+    }
+    if (
+      !isValidSourceDate(source.publishedAt) &&
+      !isValidIsoDate(source.verifiedAt)
+    ) {
+      errors.push(
+        `${prefix}: supporting sources require a publishedAt or verifiedAt`,
+      );
+    }
+  }
+  if (isPrimary && !evidenceGrades.has(source.evidenceGrade)) {
+    errors.push(`${prefix}: invalid evidenceGrade ${source.evidenceGrade}`);
+  }
+  if (!isPrimary && !["B", "C", "D"].includes(source.evidenceGrade)) {
+    errors.push(
+      `${prefix}: invalid supporting evidenceGrade ${source.evidenceGrade}`,
+    );
+  }
+}
+
+function validateNumericSourceOrderCoverage(
+  prefix,
+  setlist,
+  excludedEntries,
+  errors,
+) {
+  const numericOrders = [
+    ...setlist.map((entry) => entry.order),
+    ...excludedEntries
+      .filter((entry) => Number.isInteger(entry?.sourceOrder))
+      .map((entry) => entry.sourceOrder),
+  ].sort((left, right) => left - right);
+  if (new Set(numericOrders).size !== numericOrders.length) {
+    errors.push(
+      `${prefix}: setlist and excluded entries must not share source orders`,
+    );
+    return;
+  }
+  numericOrders.forEach((order, index) => {
+    if (order !== index + 1) {
+      errors.push(`${prefix}: numeric source orders must be continuous from 1`);
+    }
+  });
+}
+
+function getRepeatedSongIds(setlist) {
+  const counts = new Map();
+  for (const entry of setlist) {
+    counts.set(entry.songId, (counts.get(entry.songId) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .filter(([, count]) => count > 1)
+    .map(([songId]) => songId);
+}
+
+function arraysEqual(left, right) {
+  return (
+    Array.isArray(left) &&
+    left.length === right.length &&
+    left.every((value, index) => value === right[index])
+  );
+}
+
+function setsEqual(left, right) {
+  return (
+    left.size === right.size && [...left].every((value) => right.has(value))
+  );
+}
+
+function isValidSourceDate(value) {
+  return (
+    isValidIsoDate(value) ||
+    (typeof value === "string" &&
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(
+        value,
+      ) &&
+      !Number.isNaN(Date.parse(value)))
+  );
+}
+
+function runLiveExperienceValidatorSelfTests() {
+  const fixtures = new Map();
+  for (const projectId of ["nearly-equal-joy", "not-equal-me"]) {
+    const projectDir = path.join(projectsDir, projectId);
+    const experiences = JSON.parse(
+      fs.readFileSync(path.join(projectDir, "live-experiences.json"), "utf8"),
+    );
+    const songs = JSON.parse(
+      fs.readFileSync(path.join(projectDir, "songs.json"), "utf8"),
+    );
+    fixtures.set(projectId, {
+      experience: experiences[0],
+      songIds: new Set(songs.map((song) => song.id)),
+    });
+    const baselineErrors = [];
+    validateLiveExperiences(
+      `[self-test:${projectId}]`,
+      projectId,
+      experiences,
+      new Set(songs.map((song) => song.id)),
+      baselineErrors,
+    );
+    assert.deepEqual(baselineErrors, []);
+  }
+
+  const expectRejected = (label, projectId, mutate, pattern) => {
+    const fixture = fixtures.get(projectId);
+    assert.ok(fixture);
+    const experience = structuredClone(fixture.experience);
+    mutate(experience);
+    const errors = [];
+    validateLiveExperiences(
+      `[self-test:${label}]`,
+      projectId,
+      [experience],
+      fixture.songIds,
+      errors,
+    );
+    assert.ok(
+      errors.some((error) => pattern.test(error)),
+      `${label} should be rejected by ${pattern}; got ${errors.join(" | ")}`,
+    );
+  };
+
+  expectRejected(
+    "future-schema",
+    "nearly-equal-joy",
+    (experience) => {
+      experience.provenanceSchemaVersion = 2;
+    },
+    /unsupported provenanceSchemaVersion/,
+  );
+  expectRejected(
+    "missing-provenance",
+    "nearly-equal-joy",
+    (experience) => {
+      delete experience.performances[0].provenance;
+    },
+    /provenance is required/,
+  );
+  expectRejected(
+    "insufficient-source-grade",
+    "nearly-equal-joy",
+    (experience) => {
+      experience.performances[0].provenance.primarySource.evidenceGrade = "D";
+    },
+    /published ordered setlists require A\/B evidence/,
+  );
+  expectRejected(
+    "compatibility-source-drift",
+    "nearly-equal-joy",
+    (experience) => {
+      experience.performances[0].sourceUrls.pop();
+    },
+    /sourceUrls must exactly equal/,
+  );
+  expectRejected(
+    "missing-supporting-source-date",
+    "nearly-equal-joy",
+    (experience) => {
+      delete experience.performances[0].provenance.supportingSources[0]
+        .publishedAt;
+      delete experience.performances[0].provenance.supportingSources[0]
+        .verifiedAt;
+    },
+    /supporting sources require a publishedAt or verifiedAt/,
+  );
+  expectRejected(
+    "supporting-source-grade-role-mismatch",
+    "nearly-equal-joy",
+    (experience) => {
+      experience.performances[0].provenance.supportingSources[0].evidenceGrade =
+        "C";
+    },
+    /official-playlist evidenceGrade must be B/,
+  );
+  expectRejected(
+    "cross-check-without-separate-report",
+    "nearly-equal-joy",
+    (experience) => {
+      experience.performances[0].provenance.crossCheck.sourceUrls = [
+        experience.performances[0].provenance.supportingSources[0].url,
+      ];
+    },
+    /crossCheck must combine an official playlist and a separate report/,
+  );
+  expectRejected(
+    "unbound-excluded-entry",
+    "nearly-equal-joy",
+    (experience) => {
+      experience.performances[0].provenance.excludedEntries[0].sourceUrl =
+        "https://example.com/unbound";
+    },
+    /sourceUrl must reference a declared source/,
+  );
+  expectRejected(
+    "incorrect-repeat-declaration",
+    "nearly-equal-joy",
+    (experience) => {
+      experience.performances[0].provenance.repeatedSongIds = [];
+    },
+    /repeatedSongIds must exactly describe/,
+  );
+  expectRejected(
+    "unknown-cross-project-song",
+    "nearly-equal-joy",
+    (experience) => {
+      experience.performances[0].setlist[0].songId = "not-equal-me";
+    },
+    /unknown setlist songId/,
+  );
+  expectRejected(
+    "missing-context",
+    "nearly-equal-joy",
+    (experience) => {
+      delete experience.defaultContextId;
+    },
+    /performances require defaultContextId/,
+  );
+  expectRejected(
+    "invalid-context",
+    "nearly-equal-joy",
+    (experience) => {
+      experience.defaultContextId = "unknown";
+    },
+    /defaultContextId must match/,
+  );
+  expectRejected(
+    "wrong-project",
+    "nearly-equal-joy",
+    (experience) => {
+      experience.projectId = "not-equal-me";
+    },
+    /projectId must be nearly-equal-joy/,
+  );
+
+  const joyFixture = fixtures.get("nearly-equal-joy");
+  assert.ok(joyFixture);
+  const duplicateErrors = [];
+  validateLiveExperiences(
+    "[self-test:duplicate-route-and-id]",
+    "nearly-equal-joy",
+    [joyFixture.experience, structuredClone(joyFixture.experience)],
+    joyFixture.songIds,
+    duplicateErrors,
+  );
+  assert.ok(
+    duplicateErrors.some((error) => /duplicate live experience id/.test(error)),
+  );
+  assert.ok(
+    duplicateErrors.some((error) =>
+      /duplicate live experience slug/.test(error),
+    ),
+  );
+
+  console.log("Live experience validator self-tests passed.");
 }
 
 function validateSetlistEntries(prefix, setlist, songIds, errors) {

@@ -138,7 +138,7 @@ const LIVE_EXPERIENCE_MESSAGE_KEYS: Readonly<
     },
     shareText: "live.tokyoDome2027.shareText",
   },
-  joy_4th_anniversary_2026: {
+  joy_4th_anniversary_2026_afterglow: {
     title: "live.joy4th2026.title",
     subtitle: "live.joy4th2026.subtitle",
     description: "live.joy4th2026.description",
@@ -168,9 +168,14 @@ const LIVE_EXPERIENCE_MESSAGE_KEYS: Readonly<
         subtitle: "live.joy4th2026.slot.nextChapter.subtitle",
       },
     },
+    contexts: {
+      day: "context.dayShow",
+      night: "context.nightShow",
+      both: "context.bothShows",
+    },
     shareText: "live.joy4th2026.shareText",
   },
-  not_equal_me_7th_anniversary_2026: {
+  not_equal_me_7th_anniversary_2026_afterglow: {
     title: "live.notEqualMe7th2026.title",
     subtitle: "live.notEqualMe7th2026.subtitle",
     description: "live.notEqualMe7th2026.description",
@@ -199,6 +204,11 @@ const LIVE_EXPERIENCE_MESSAGE_KEYS: Readonly<
         label: "live.notEqualMe7th2026.slot.nextChapter.label",
         subtitle: "live.notEqualMe7th2026.slot.nextChapter.subtitle",
       },
+    },
+    contexts: {
+      day: "context.dayShow",
+      night: "context.nightShow",
+      both: "context.bothShows",
     },
     shareText: "live.notEqualMe7th2026.shareText",
   },
