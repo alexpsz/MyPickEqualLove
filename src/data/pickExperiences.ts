@@ -20,6 +20,7 @@ import type {
 import type { ExportSizePresetId, ExportTemplateId } from "../schema/export";
 import type { PickSlotId, Song, StoredPicks } from "../schema/music";
 import { buildExportImageFileName } from "../utils/exportFileName";
+import { getAssistantEligibleSongIds } from "../utils/experienceEligibility";
 import { SONGS, SONGS_BY_ID } from "./songs";
 
 export interface ExperienceContext {
@@ -233,6 +234,19 @@ export function getEligibleSongsForExperience(
   }
 
   return songs;
+}
+
+export function getAssistantEligibleSongsForExperience(
+  experience: PickExperience,
+  contextId?: string,
+) {
+  return getAssistantEligibleSongIds({
+    experience,
+    catalogSongIds: SONGS.map((song) => song.id),
+    contextId,
+  })
+    .map((songId) => SONGS_BY_ID[songId])
+    .filter((song): song is Song => Boolean(song));
 }
 
 export function isSongEligibleForSlot({

@@ -12,7 +12,9 @@
   },
   "include": [
     "../src/config/project.ts",
+    "../src/schema/pick-experience.ts",
     "../src/utils/boardHistory.ts",
+    "../src/utils/experienceEligibility.ts",
     "../src/utils/pickAssistant.ts",
     "../src/utils/pickAssistantStorage.ts",
     "./pick-assistant.test.ts"

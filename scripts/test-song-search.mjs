@@ -52,6 +52,7 @@ const {
   getFirstSearchResultForEnter,
   normalizeSongSearchText,
   rankSongsByQuery,
+  shouldShowGraduatedMemberFeaturesByDefault,
 } = await import(moduleUrl);
 const storageSource = await readFile(storageSourceUrl, "utf8");
 const storageCompiled = ts.transpileModule(storageSource, {
@@ -175,6 +176,24 @@ test("ordinary search and song details omit orphan favorites but keep real Assis
   );
   assert.match(messagesSource, /"assistant\.addCandidate": "加入选曲助手"/);
   assert.match(messagesSource, /"assistant\.candidate": "已加入选曲助手"/);
+});
+
+test("only the dedicated Assistant search shows the complete graduated-member feature set by default", () => {
+  assert.equal(shouldShowGraduatedMemberFeaturesByDefault("board"), false);
+  assert.equal(
+    shouldShowGraduatedMemberFeaturesByDefault("assistant-shortlist"),
+    true,
+  );
+  assert.match(
+    searchModalSource,
+    /useState\(\(\) =>\s*shouldShowGraduatedMemberFeaturesByDefault\(selectionMode\)/,
+    "the first Assistant render must use the complete eligible set without a one-frame omission",
+  );
+  assert.match(
+    searchModalSource,
+    /setShowGraduatedMembers\(\s*shouldShowGraduatedMemberFeaturesByDefault\(selectionMode\)/,
+    "retained Assistant and board searches must reset to their own default semantics",
+  );
 });
 
 test("adds only conservative one-edit Latin title tolerance", () => {

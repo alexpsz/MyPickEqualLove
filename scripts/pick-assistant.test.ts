@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import test from "node:test";
 import { getExperienceStorageKeys } from "../src/config/project";
+import type { PickExperience } from "../src/schema/pick-experience";
 import {
   createPickAssistantSession,
   createPickAssistantSnapshot,
@@ -25,6 +28,10 @@ import {
   boardHistoryReducer,
   createBoardHistoryState,
 } from "../src/utils/boardHistory";
+import {
+  COMBINED_EXPERIENCE_CONTEXT_ID,
+  getAssistantEligibleSongIds,
+} from "../src/utils/experienceEligibility";
 
 const validSongIds = new Set(
   Array.from({ length: 30 }, (_, index) => `song-${index + 1}`),
@@ -261,6 +268,123 @@ test("assistant application is one undoable and redoable board step", () => {
   assert.deepEqual(history.present, before);
   history = boardHistoryReducer(history, { type: "redo" });
   assert.deepEqual(history.present, after);
+});
+
+test("standard experiences keep the full project catalog available to the Assistant", () => {
+  for (const projectId of PROJECT_IDS) {
+    const catalogSongIds = loadProjectSongIds(projectId);
+    const standardExperience = createStandardExperience(projectId);
+    assert.deepEqual(
+      getAssistantEligibleSongIds({
+        experience: standardExperience,
+        catalogSongIds,
+      }),
+      catalogSongIds,
+    );
+    assert.deepEqual(
+      getAssistantEligibleSongIds({
+        experience: standardExperience,
+        catalogSongIds,
+        contextId: "unknown",
+      }),
+      [],
+    );
+  }
+});
+
+test("every published Experience Pack derives Assistant candidates from the same configured eligibility set", () => {
+  for (const projectId of PROJECT_IDS) {
+    const catalogSongIds = loadProjectSongIds(projectId);
+    const experiences = loadProjectExperiences(projectId).filter(
+      (experience) => experience.status === "published",
+    );
+
+    for (const experience of experiences) {
+      const contexts = getConfiguredContextIds(experience);
+      for (const contextId of contexts) {
+        const assistantSongIds = getAssistantEligibleSongIds({
+          experience,
+          catalogSongIds,
+          contextId,
+        });
+        const strictSlots = experience.slots.filter(
+          (slot) => slot.eligibility !== "catalog",
+        );
+
+        if (strictSlots.length === 0) {
+          assert.deepEqual(assistantSongIds, catalogSongIds);
+          assert.ok(
+            experience.slots.every((slot) => slot.eligibility === "catalog"),
+          );
+          continue;
+        }
+
+        const expectedContextSongIds = getExpectedContextSongIds(
+          experience,
+          contextId,
+          new Set(catalogSongIds),
+        );
+        assert.deepEqual(assistantSongIds, expectedContextSongIds);
+        for (const slot of strictSlots) {
+          const directSlotSongIds =
+            slot.eligibility === "event-union"
+              ? getExpectedEventUnionSongIds(
+                  experience,
+                  new Set(catalogSongIds),
+                )
+              : expectedContextSongIds;
+          assert.deepEqual(directSlotSongIds, assistantSongIds);
+        }
+      }
+    }
+  }
+});
+
+test("context-bound Assistant eligibility fails closed for empty or unknown contexts", () => {
+  const catalogSongIds = loadProjectSongIds("equal-love");
+  const kokuritsu = loadProjectExperiences("equal-love").find(
+    (experience) => experience.id === "kokuritsu_2026",
+  );
+  assert.ok(kokuritsu);
+  for (const contextId of [undefined, "", "day3", "all"] as const) {
+    assert.deepEqual(
+      getAssistantEligibleSongIds({
+        experience: kokuritsu,
+        catalogSongIds,
+        contextId,
+      }),
+      [],
+    );
+  }
+});
+
+test("Assistant Search and the visible available count share one derived collection", () => {
+  const source = readFileSync(
+    resolve(process.cwd(), "src/components/PickExperienceClient.tsx"),
+    "utf8",
+  );
+  assert.match(
+    source,
+    /searchSelectionMode === "assistant-shortlist"\s*\? assistantEligibleSongs/,
+  );
+  assert.match(
+    source,
+    /const eligibleSongsCount = assistantEligibleSongs\.length;/,
+  );
+  assert.match(source, /candidateEligibleSongIds=\{assistantEligibleSongIds\}/);
+  assert.doesNotMatch(
+    source,
+    /searchSelectionMode === "assistant-shortlist"[\s\S]{0,160}\bSONGS\b/,
+  );
+
+  const searchSource = readFileSync(
+    resolve(process.cwd(), "src/components/SearchModal.tsx"),
+    "utf8",
+  );
+  assert.match(
+    searchSource,
+    /shouldShowGraduatedMemberFeaturesByDefault\(selectionMode\)/,
+  );
 });
 
 test("current board songs become assistant candidates in slot order without duplicates", () => {
@@ -647,4 +771,117 @@ function getMaximumMonotonePlacementCount(
     return Math.max(skipSong, skipSlot, place);
   };
   return visit(0, 0);
+}
+
+const PROJECT_IDS = ["equal-love", "nearly-equal-joy", "not-equal-me"] as const;
+
+type ProjectId = (typeof PROJECT_IDS)[number];
+
+function loadProjectSongIds(projectId: ProjectId) {
+  return loadJson<Array<{ id: string }>>(
+    `src/projects/${projectId}/songs.json`,
+  ).map((song) => song.id);
+}
+
+function loadProjectExperiences(projectId: ProjectId) {
+  return loadJson<PickExperience[]>(
+    `src/projects/${projectId}/live-experiences.json`,
+  );
+}
+
+function loadJson<T>(relativePath: string): T {
+  return JSON.parse(
+    readFileSync(resolve(process.cwd(), relativePath), "utf8"),
+  ) as T;
+}
+
+function createStandardExperience(projectId: ProjectId): PickExperience {
+  return {
+    id: `${projectId}-standard-test`,
+    projectId,
+    slug: "",
+    kind: "standard",
+    status: "published",
+    title: "Standard",
+    subtitle: "Standard",
+    description: "Standard",
+    canonicalPath: "/",
+    slots: [
+      {
+        id: "slot-1",
+        label: "1",
+        sortOrder: 1,
+        eligibility: "catalog",
+      },
+    ],
+    export: {
+      title: "Standard",
+      subtitle: "Standard",
+      imageFileName: "standard.png",
+      layout: "top10-grid",
+    },
+    share: { text: "Standard", hashtags: [] },
+  };
+}
+
+function getConfiguredContextIds(experience: PickExperience) {
+  const performances = experience.performances ?? [];
+  if (performances.length === 0) return [undefined];
+  const contextIds: Array<string | undefined> = performances.map(
+    (performance) => performance.id,
+  );
+  if (experience.includeCombinedPerformance && performances.length > 1) {
+    contextIds.push(COMBINED_EXPERIENCE_CONTEXT_ID);
+  }
+  return contextIds;
+}
+
+function getExpectedContextSongIds(
+  experience: PickExperience,
+  contextId: string | undefined,
+  catalogSongIds: ReadonlySet<string>,
+) {
+  const performanceIds =
+    contextId === COMBINED_EXPERIENCE_CONTEXT_ID
+      ? (experience.performances ?? []).map((performance) => performance.id)
+      : contextId
+        ? [contextId]
+        : [];
+  return getExpectedSongIds(experience, performanceIds, catalogSongIds);
+}
+
+function getExpectedEventUnionSongIds(
+  experience: PickExperience,
+  catalogSongIds: ReadonlySet<string>,
+) {
+  return getExpectedSongIds(
+    experience,
+    (experience.performances ?? []).map((performance) => performance.id),
+    catalogSongIds,
+  );
+}
+
+function getExpectedSongIds(
+  experience: PickExperience,
+  performanceIds: readonly string[],
+  catalogSongIds: ReadonlySet<string>,
+) {
+  const seenSongIds = new Set<string>();
+  const songIds: string[] = [];
+  for (const performanceId of performanceIds) {
+    const performance = experience.performances?.find(
+      (candidate) => candidate.id === performanceId,
+    );
+    assert.ok(performance);
+    for (const entry of performance.setlist
+      .slice()
+      .sort((left, right) => left.order - right.order)) {
+      if (!catalogSongIds.has(entry.songId) || seenSongIds.has(entry.songId)) {
+        continue;
+      }
+      seenSongIds.add(entry.songId);
+      songIds.push(entry.songId);
+    }
+  }
+  return songIds;
 }

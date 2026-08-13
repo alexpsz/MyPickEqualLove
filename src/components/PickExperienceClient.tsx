@@ -41,6 +41,7 @@ import {
 import {
   filterStoredPicksForExperience,
   findFirstEligibleEmptySlot,
+  getAssistantEligibleSongsForExperience,
   getDefaultExperienceContextId,
   getEligibleSongsForExperience,
   getEligibleSongsForSlot,
@@ -188,11 +189,6 @@ interface PickExperienceClientProps {
 const MAX_NICKNAME_LENGTH = 32;
 const VALID_SONG_IDS = new Set(Object.keys(SONGS_BY_ID));
 const BOARD_LINK_COPIED_DURATION_MS = 2_000;
-const PICK_ASSISTANT_STORAGE_OPTIONS = {
-  ...PICK_ASSISTANT_CONFIG,
-  validSongIds: VALID_SONG_IDS,
-};
-
 interface PendingBoardShareImport {
   payload: BoardSharePayload;
   baselinePicks: StoredPicks;
@@ -274,6 +270,22 @@ export default function PickExperienceClient({
   const slots = useMemo(
     () => getSortedExperienceSlots(experience),
     [experience],
+  );
+  const assistantEligibleSongs = useMemo(
+    () =>
+      getAssistantEligibleSongsForExperience(experience, effectiveContextId),
+    [effectiveContextId, experience],
+  );
+  const assistantEligibleSongIds = useMemo(
+    () => new Set(assistantEligibleSongs.map((song) => song.id)),
+    [assistantEligibleSongs],
+  );
+  const pickAssistantStorageOptions = useMemo(
+    () => ({
+      ...PICK_ASSISTANT_CONFIG,
+      validSongIds: assistantEligibleSongIds,
+    }),
+    [assistantEligibleSongIds],
   );
   const uiSlots = useMemo(
     () => uiCopy.slots.slice().sort((a, b) => a.sortOrder - b.sortOrder),
@@ -461,8 +473,8 @@ export default function PickExperienceClient({
       getBoardCandidateIds(
         storedPicks,
         slots.map((slot) => slot.id),
-      ),
-    [slots, storedPicks],
+      ).filter((songId) => assistantEligibleSongIds.has(songId)),
+    [assistantEligibleSongIds, slots, storedPicks],
   );
   const selectedRanksBySongId = useMemo(() => {
     const ranks: Record<string, number> = {};
@@ -495,15 +507,24 @@ export default function PickExperienceClient({
   );
   const searchSongs = useMemo(
     () =>
-      selectedSlot
-        ? getEligibleSongsForSlot(experience, selectedSlot, effectiveContextId)
-        : getEligibleSongsForExperience(experience, effectiveContextId),
-    [effectiveContextId, experience, selectedSlot],
+      searchSelectionMode === "assistant-shortlist"
+        ? assistantEligibleSongs
+        : selectedSlot
+          ? getEligibleSongsForSlot(
+              experience,
+              selectedSlot,
+              effectiveContextId,
+            )
+          : getEligibleSongsForExperience(experience, effectiveContextId),
+    [
+      assistantEligibleSongs,
+      effectiveContextId,
+      experience,
+      searchSelectionMode,
+      selectedSlot,
+    ],
   );
-  const eligibleSongsCount = useMemo(
-    () => getEligibleSongsForExperience(experience, effectiveContextId).length,
-    [effectiveContextId, experience],
-  );
+  const eligibleSongsCount = assistantEligibleSongs.length;
   const songBadgesBySongId = useMemo(
     () =>
       getSongBadgesBySongId(
@@ -684,7 +705,7 @@ export default function PickExperienceClient({
     const result = loadPickAssistantSnapshot(
       localStorage,
       storageKeys.assistant,
-      PICK_ASSISTANT_STORAGE_OPTIONS,
+      pickAssistantStorageOptions,
     );
     if (result.status === "valid") {
       setCurrentPickAssistantSnapshot(result.snapshot);
@@ -701,6 +722,7 @@ export default function PickExperienceClient({
   }, [
     hydrated,
     isExportRealm,
+    pickAssistantStorageOptions,
     setCurrentPickAssistantSnapshot,
     storageKeys.assistant,
   ]);
@@ -719,13 +741,13 @@ export default function PickExperienceClient({
       const incoming =
         event.key === storageKeys.assistant
           ? parsePickAssistantSnapshot(event.newValue, {
-              ...PICK_ASSISTANT_STORAGE_OPTIONS,
+              ...pickAssistantStorageOptions,
               now: Date.now(),
             })
           : loadPickAssistantSnapshot(
               localStorage,
               storageKeys.assistant,
-              PICK_ASSISTANT_STORAGE_OPTIONS,
+              pickAssistantStorageOptions,
             );
 
       assistantApplyBaselineRef.current = null;
@@ -767,6 +789,7 @@ export default function PickExperienceClient({
   }, [
     hydrated,
     isExportRealm,
+    pickAssistantStorageOptions,
     setCurrentPickAssistantSnapshot,
     storageKeys.assistant,
     t,
@@ -1363,7 +1386,7 @@ export default function PickExperienceClient({
           storageKey,
           expected,
           next,
-          PICK_ASSISTANT_STORAGE_OPTIONS,
+          pickAssistantStorageOptions,
           navigator.locks,
         );
         if (pickAssistantStorageKeyRef.current !== storageKey) return false;
@@ -1384,6 +1407,7 @@ export default function PickExperienceClient({
     },
     [
       pickAssistantStorageIssue,
+      pickAssistantStorageOptions,
       setCurrentPickAssistantSnapshot,
       storageKeys.assistant,
     ],
@@ -1392,6 +1416,13 @@ export default function PickExperienceClient({
   const handleToggleCandidate = useCallback(
     (song: Song) => {
       if (pickAssistantStorageIssue) return;
+      if (
+        !candidateSongIds.has(song.id) &&
+        !assistantEligibleSongIds.has(song.id)
+      ) {
+        window.alert(t("errors.songIneligible"));
+        return;
+      }
       const update = togglePickAssistantShortlistSong(
         assistantShortlistIds,
         song.id,
@@ -1409,6 +1440,8 @@ export default function PickExperienceClient({
     },
     [
       assistantShortlistIds,
+      assistantEligibleSongIds,
+      candidateSongIds,
       commitPickAssistantUpdate,
       pickAssistantStorageIssue,
       t,
@@ -1592,7 +1625,7 @@ export default function PickExperienceClient({
     const latestAssistant = loadPickAssistantSnapshot(
       localStorage,
       storageKeys.assistant,
-      PICK_ASSISTANT_STORAGE_OPTIONS,
+      pickAssistantStorageOptions,
     );
     if (!isWritableStorageStatus(latestBoard.status)) {
       setBoardStorageWritable(false);
@@ -1685,7 +1718,7 @@ export default function PickExperienceClient({
     const confirmedAssistant = loadPickAssistantSnapshot(
       localStorage,
       storageKeys.assistant,
-      PICK_ASSISTANT_STORAGE_OPTIONS,
+      pickAssistantStorageOptions,
     );
     if (!isWritableStorageStatus(confirmedBoard.status)) {
       setBoardStorageWritable(false);
@@ -2684,6 +2717,7 @@ export default function PickExperienceClient({
               selectedRanksBySongId={selectedRanksBySongId}
               recentSongIds={songDiscoveryState.recentSongIds}
               candidateSongIds={candidateSongIds}
+              candidateEligibleSongIds={assistantEligibleSongIds}
               selectionMode={searchPresentation.selectionMode}
               candidateLimitReached={
                 assistantShortlistIds.length >=
@@ -2726,8 +2760,9 @@ export default function PickExperienceClient({
               isCandidate={candidateSongIds.has(song.id)}
               candidateDisabled={
                 (!candidateSongIds.has(song.id) &&
-                  assistantShortlistIds.length >=
-                    PICK_ASSISTANT_CONFIG.maximumCandidates) ||
+                  (assistantShortlistIds.length >=
+                    PICK_ASSISTANT_CONFIG.maximumCandidates ||
+                    !assistantEligibleSongIds.has(song.id))) ||
                 assistantMutationPending ||
                 Boolean(pickAssistantStorageIssue)
               }

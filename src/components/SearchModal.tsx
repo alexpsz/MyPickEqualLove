@@ -20,6 +20,8 @@ import {
   getFirstSearchResultForEnter,
   normalizeSongSearchText,
   rankSongsByQuery,
+  shouldShowGraduatedMemberFeaturesByDefault,
+  type SearchSelectionMode,
 } from "../utils/songSearch";
 import { useDialogA11y } from "../utils/useDialogA11y";
 import AppIcon from "./AppIcon";
@@ -32,7 +34,7 @@ import type { PresenceState } from "./MotionPresence";
 type ReleaseFilter = "all" | ReleaseType;
 type TrackFilter = "all" | TrackType;
 
-export type SearchSelectionMode = "board" | "assistant-shortlist";
+export type { SearchSelectionMode } from "../utils/songSearch";
 
 interface SearchModalProps {
   songs: Song[];
@@ -49,6 +51,7 @@ interface SearchModalProps {
   recentSongIds?: string[];
   selectionMode?: SearchSelectionMode;
   candidateSongIds?: ReadonlySet<string>;
+  candidateEligibleSongIds?: ReadonlySet<string>;
   candidateLimitReached?: boolean;
   candidateChangesBlocked?: boolean;
   candidateMutationPending?: boolean;
@@ -166,6 +169,7 @@ export default function SearchModal({
   recentSongIds = [],
   selectionMode = "board",
   candidateSongIds = EMPTY_SONG_ID_SET,
+  candidateEligibleSongIds,
   candidateLimitReached = false,
   candidateChangesBlocked = false,
   candidateMutationPending = false,
@@ -188,7 +192,9 @@ export default function SearchModal({
   const [yearFilter, setYearFilter] = useState("all");
   const [memberFilters, setMemberFilters] = useState<string[]>([]);
   const [isMoreFiltersOpen, setIsMoreFiltersOpen] = useState(false);
-  const [showGraduatedMembers, setShowGraduatedMembers] = useState(false);
+  const [showGraduatedMembers, setShowGraduatedMembers] = useState(() =>
+    shouldShowGraduatedMemberFeaturesByDefault(selectionMode),
+  );
   const [hideSelected, setHideSelected] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -243,6 +249,12 @@ export default function SearchModal({
     }, 0);
     return () => window.clearTimeout(timer);
   }, [autoFocusSearch]);
+
+  useEffect(() => {
+    setShowGraduatedMembers(
+      shouldShowGraduatedMemberFeaturesByDefault(selectionMode),
+    );
+  }, [selectionMode]);
 
   const filteredSongs = useMemo(() => {
     const filterMatches = songs.filter((song) => {
@@ -612,6 +624,9 @@ export default function SearchModal({
                   const candidateDisabled =
                     candidateChangesBlocked ||
                     candidateMutationPending ||
+                    (!isCandidate &&
+                      candidateEligibleSongIds !== undefined &&
+                      !candidateEligibleSongIds.has(song.id)) ||
                     (!isCandidate && candidateLimitReached) ||
                     !onToggleCandidate;
 

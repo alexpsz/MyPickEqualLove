@@ -16,12 +16,20 @@ export interface RankedSong {
   originalIndex: number;
 }
 
+export type SearchSelectionMode = "board" | "assistant-shortlist";
+
 const KATAKANA_START = 0x30a1;
 const KATAKANA_END = 0x30f6;
 const KATAKANA_TO_HIRAGANA_OFFSET = 0x60;
 const MAX_TYPO_DISTANCE = 1;
 const MIN_TYPO_QUERY_LENGTH = 5;
 const LATIN_QUERY_PATTERN = /^[a-z0-9]+$/;
+
+export function shouldShowGraduatedMemberFeaturesByDefault(
+  selectionMode: SearchSelectionMode,
+) {
+  return selectionMode === "assistant-shortlist";
+}
 
 export function normalizeSongSearchText(value: string | undefined): string {
   if (!value) return "";
