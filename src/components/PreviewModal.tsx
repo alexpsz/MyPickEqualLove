@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useId, useRef, useState } from "react";
 import * as m from "motion/react-m";
 import { EXPORT_TEMPLATE_ORDER } from "../config/exportPresets";
 import { getExportTemplateMessageKey } from "../i18n/content";
@@ -75,6 +75,8 @@ export default function PreviewModal({
   const panelRef = useRef<HTMLDivElement>(null);
   const footerCloseButtonRef = useRef<HTMLButtonElement>(null);
   const actionRunIdRef = useRef(0);
+  const mobileOptionsId = useId();
+  const [isOptionsExpanded, setIsOptionsExpanded] = useState(false);
   const [imageActionStatus, setImageActionStatus] = useState<
     | {
         action: "image";
@@ -240,7 +242,7 @@ export default function PreviewModal({
         inert={presenceState === "exiting"}
         aria-busy={generating}
         aria-labelledby="preview-modal-title"
-        className="apple-sheet relative z-10 flex max-h-[92dvh] w-full max-w-4xl flex-col overflow-hidden rounded-b-none border-x-0 border-b-0 focus:outline-none sm:rounded-[var(--radius-lg)] sm:border"
+        className="apple-sheet relative z-10 flex h-[92dvh] max-h-[92dvh] w-full max-w-4xl flex-col overflow-hidden rounded-b-none border-x-0 border-b-0 focus:outline-none sm:rounded-[var(--radius-lg)] sm:border"
         initial={{ opacity: 0, y: 18, scale: 0.985 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 18, scale: 0.985 }}
@@ -250,61 +252,89 @@ export default function PreviewModal({
           scale: APPLE_SPRING_GENTLE,
         }}
       >
-        <div className="flex flex-col gap-4 border-b border-[var(--line)] bg-white px-4 py-4 sm:px-6">
-          <div>
-            <h3
-              id="preview-modal-title"
-              className="text-[20px] font-semibold tracking-[-0.03em] text-[var(--foreground)]"
+        <div className="flex flex-col gap-2 border-b border-[var(--line)] bg-white px-4 py-3 sm:gap-4 sm:px-6 sm:py-4">
+          <div className="flex min-w-0 items-center justify-between gap-3">
+            <div className="min-w-0">
+              <h3
+                id="preview-modal-title"
+                className="text-[18px] font-semibold tracking-[-0.03em] text-[var(--foreground)] sm:text-[20px]"
+              >
+                {t("preview.title")}
+              </h3>
+              <p className="mt-0.5 truncate text-[13px] text-[var(--muted)]">
+                {previewLabel}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsOptionsExpanded((expanded) => !expanded)}
+              aria-expanded={isOptionsExpanded}
+              aria-controls={mobileOptionsId}
+              className="official-button min-h-11 shrink-0 gap-1.5 px-3 text-[13px] sm:hidden"
             >
-              {t("preview.title")}
-            </h3>
-            <p className="mt-0.5 text-[13px] text-[var(--muted)]">
-              {previewLabel}
-            </p>
+              <span>{t("preview.options")}</span>
+              <AppIcon
+                name="chevron-down"
+                size={14}
+                strokeWidth={1.65}
+                className={`transition-transform duration-150 ${
+                  isOptionsExpanded ? "rotate-180" : ""
+                }`}
+              />
+            </button>
           </div>
 
-          <div className="rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--background)] p-3">
-            <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-5">
-              <AnchoredOptionMenu
-                compact
-                label={t("preview.templateLabel")}
-                value={templateId}
-                disabled={generating}
-                onValueChange={onTemplateChange}
-                options={EXPORT_TEMPLATE_ORDER.map((id) => ({
-                  value: id,
-                  label: t(getExportTemplateMessageKey(id)),
-                }))}
-              />
-              <div className="grid min-w-0 flex-1 grid-cols-1 gap-1 sm:flex sm:flex-wrap sm:items-center sm:justify-end sm:gap-x-2">
-                <ToggleOption
-                  checked={showQrCode}
+          <div
+            id={mobileOptionsId}
+            data-preview-options-panel
+            className={`${isOptionsExpanded ? "block" : "hidden"} sm:block`}
+          >
+            <div className="rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--background)] p-3">
+              <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-5">
+                <AnchoredOptionMenu
+                  compact
+                  label={t("preview.templateLabel")}
+                  value={templateId}
                   disabled={generating}
-                  onChange={onToggleShowQrCode}
-                  label={t("preview.showQrCode")}
+                  onValueChange={onTemplateChange}
+                  options={EXPORT_TEMPLATE_ORDER.map((id) => ({
+                    value: id,
+                    label: t(getExportTemplateMessageKey(id)),
+                  }))}
                 />
-                <ToggleOption
-                  checked={showTitles}
-                  disabled={generating}
-                  onChange={onToggleShowTitles}
-                  label={t("preview.showTitles")}
-                />
-                <ToggleOption
-                  checked={transparentBg}
-                  disabled={generating}
-                  onChange={onToggleTransparentBg}
-                  label={t("preview.transparentBackground")}
-                />
+                <div className="grid min-w-0 flex-1 grid-cols-1 gap-1 sm:flex sm:flex-wrap sm:items-center sm:justify-end sm:gap-x-2">
+                  <ToggleOption
+                    checked={showQrCode}
+                    disabled={generating}
+                    onChange={onToggleShowQrCode}
+                    label={t("preview.showQrCode")}
+                  />
+                  <ToggleOption
+                    checked={showTitles}
+                    disabled={generating}
+                    onChange={onToggleShowTitles}
+                    label={t("preview.showTitles")}
+                  />
+                  <ToggleOption
+                    checked={transparentBg}
+                    disabled={generating}
+                    onChange={onToggleTransparentBg}
+                    label={t("preview.transparentBackground")}
+                  />
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="no-scrollbar relative flex min-h-0 flex-1 justify-center overflow-y-auto bg-[var(--background)] p-4 sm:p-6">
+        <div
+          data-preview-image-stage
+          className="no-scrollbar relative flex min-h-0 flex-1 items-center justify-center overflow-y-auto bg-[var(--background)] p-4 sm:p-6"
+        >
           <img
             src={previewUrl}
             alt={t("preview.imageAlt", { title: shareTitle })}
-            className={`block max-h-[58dvh] max-w-full bg-white object-contain shadow-[var(--shadow-panel)] transition-[opacity,filter] duration-150 ${
+            className={`absolute inset-4 h-[calc(100%-2rem)] w-[calc(100%-2rem)] bg-white object-contain object-top shadow-[var(--shadow-panel)] transition-[opacity,filter] duration-150 sm:inset-6 sm:h-[calc(100%-3rem)] sm:w-[calc(100%-3rem)] ${
               generating ? "opacity-50 blur-[2px]" : "opacity-100"
             }`}
           />

@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -118,4 +120,33 @@ test("titleless standard cards become cover-priority while Live keeps slot seman
   assert.match(titledStandardMarkup, /border-left/);
   assert.ok(liveMarkup.includes(liveExperience.slots[0].label));
   assert.doesNotMatch(liveMarkup, /data-export-year-tag/);
+});
+
+test("mobile preview collapses export options and keeps the image stage flexible", () => {
+  const previewModalSource = readFileSync(
+    resolve(process.cwd(), "src/components/PreviewModal.tsx"),
+    "utf8",
+  );
+
+  assert.match(
+    previewModalSource,
+    /const \[isOptionsExpanded, setIsOptionsExpanded\] = useState\(false\)/,
+  );
+  assert.match(previewModalSource, /aria-expanded=\{isOptionsExpanded\}/);
+  assert.match(previewModalSource, /aria-controls=\{mobileOptionsId\}/);
+  assert.match(
+    previewModalSource,
+    /data-preview-options-panel[\s\S]*isOptionsExpanded \? "block" : "hidden"\} sm:block/,
+  );
+  assert.match(
+    previewModalSource,
+    /data-preview-image-stage[\s\S]*min-h-0 flex-1 items-center justify-center/,
+  );
+  assert.match(previewModalSource, /h-\[92dvh\] max-h-\[92dvh\]/);
+  assert.match(
+    previewModalSource,
+    /absolute inset-4 h-\[calc\(100%-2rem\)\] w-\[calc\(100%-2rem\)\] bg-white object-contain object-top/,
+  );
+  assert.doesNotMatch(previewModalSource, /max-h-\[58dvh\]/);
+  assert.match(previewModalSource, /grid-cols-5 items-stretch/);
 });
