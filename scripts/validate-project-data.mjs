@@ -883,6 +883,11 @@ function validatePerformanceProvenance(
           `${entryPrefix}: sourceUrl must reference a declared source`,
         );
       }
+      if (Object.prototype.hasOwnProperty.call(entry, "sourcePosition")) {
+        errors.push(
+          `${entryPrefix}: sourcePosition is not supported; use sourceOrder or beforeSourceOrder`,
+        );
+      }
       const hasOrder = entry.sourceOrder !== undefined;
       const hasBeforeOrder = entry.beforeSourceOrder !== undefined;
       if (Number(hasOrder) + Number(hasBeforeOrder) !== 1) {
@@ -986,10 +991,10 @@ function validatePerformanceProvenance(
       );
       if (
         excludedEntries.length === 0 ||
-        !excludedEntries.some((entry) => crossCheckUrlSet.has(entry?.sourceUrl))
+        excludedEntries.some((entry) => !crossCheckUrlSet.has(entry?.sourceUrl))
       ) {
         errors.push(
-          `${prefix}: matched-with-documented-differences requires an excluded entry tied to a crossCheck source URL`,
+          `${prefix}: matched-with-documented-differences requires every excluded entry to use a crossCheck source URL`,
         );
       }
     }
@@ -1255,12 +1260,35 @@ function runLiveExperienceValidatorSelfTests() {
     /define exactly one of sourceOrder or beforeSourceOrder/,
   );
   expectRejected(
+    "structured-exclusion-with-legacy-position",
+    "nearly-equal-joy",
+    (experience) => {
+      experience.performances[0].provenance.excludedEntries[0].sourcePosition =
+        "before M1";
+    },
+    /sourcePosition is not supported/,
+  );
+  expectRejected(
     "documented-difference-without-exclusion",
     "nearly-equal-joy",
     (experience) => {
       experience.performances[0].provenance.excludedEntries = [];
     },
-    /matched-with-documented-differences requires an excluded entry/,
+    /matched-with-documented-differences requires every excluded entry/,
+  );
+  expectRejected(
+    "documented-difference-with-unbound-additional-exclusion",
+    "nearly-equal-joy",
+    (experience) => {
+      const performance = experience.performances[0];
+      performance.provenance.excludedEntries.push({
+        sourceUrl: performance.provenance.primarySource.url,
+        beforeSourceOrder: 2,
+        label: "MC",
+        reason: "non-song",
+      });
+    },
+    /matched-with-documented-differences requires every excluded entry/,
   );
   expectRejected(
     "incorrect-repeat-declaration",
