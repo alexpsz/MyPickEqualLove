@@ -51,18 +51,19 @@ export function parseCurrentExportOptions(
       templateId: value.templateId,
       sizePresetId: value.sizePresetId,
     };
-    if (!Object.prototype.hasOwnProperty.call(value, "showQrCode")) {
+    const qrCode = parseOptionalQrCode(value);
+    if (!qrCode.ok) {
+      return { status: "invalid" };
+    }
+    if (!qrCode.explicit) {
       return {
         status: "intermediate",
-        options: { ...baseOptions, showQrCode: false },
+        options: { ...baseOptions, showQrCode: qrCode.value },
       };
-    }
-    if (typeof value.showQrCode !== "boolean") {
-      return { status: "invalid" };
     }
     return {
       status: "canonical",
-      options: { ...baseOptions, showQrCode: value.showQrCode },
+      options: { ...baseOptions, showQrCode: qrCode.value },
     };
   }
 
@@ -76,12 +77,17 @@ export function parseCurrentExportOptions(
     ) {
       return { status: "invalid" };
     }
+    const qrCode = parseOptionalQrCode(value);
+    if (!qrCode.ok) {
+      return { status: "invalid" };
+    }
     return {
       status: "intermediate",
       options: {
         ...DEFAULT_EXPORT_OPTIONS,
         showTitles: value.showTitles,
         transparentBg: value.transparentBg,
+        showQrCode: qrCode.value,
       },
     };
   }
@@ -101,10 +107,15 @@ export function parseLegacyExportOptions(
     ) {
       return null;
     }
+    const qrCode = parseOptionalQrCode(value);
+    if (!qrCode.ok) {
+      return null;
+    }
     return {
       ...DEFAULT_EXPORT_OPTIONS,
       showTitles: value.showTitles,
       transparentBg: value.transparentBg,
+      showQrCode: qrCode.value,
     };
   } catch {
     return null;
@@ -133,27 +144,25 @@ function parseLegacyOptions(serialized: string | null): ExportOptions {
   if (serialized === null) {
     return { ...DEFAULT_EXPORT_OPTIONS };
   }
+  return parseLegacyExportOptions(serialized) ?? { ...DEFAULT_EXPORT_OPTIONS };
+}
 
-  try {
-    const value: unknown = JSON.parse(serialized);
-    if (!isRecord(value)) {
-      return { ...DEFAULT_EXPORT_OPTIONS };
-    }
-
+function parseOptionalQrCode(value: Record<string, unknown>) {
+  if (!Object.prototype.hasOwnProperty.call(value, "showQrCode")) {
     return {
-      ...DEFAULT_EXPORT_OPTIONS,
-      showTitles:
-        typeof value.showTitles === "boolean"
-          ? value.showTitles
-          : DEFAULT_EXPORT_OPTIONS.showTitles,
-      transparentBg:
-        typeof value.transparentBg === "boolean"
-          ? value.transparentBg
-          : DEFAULT_EXPORT_OPTIONS.transparentBg,
+      ok: true as const,
+      explicit: false as const,
+      value: DEFAULT_EXPORT_OPTIONS.showQrCode,
     };
-  } catch {
-    return { ...DEFAULT_EXPORT_OPTIONS };
   }
+  if (typeof value.showQrCode !== "boolean") {
+    return { ok: false as const };
+  }
+  return {
+    ok: true as const,
+    explicit: true as const,
+    value: value.showQrCode,
+  };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

@@ -63,7 +63,7 @@ export const EXPORT_SIZE_PRESET_ORDER: readonly ExportSizePresetId[] = [
 export const DEFAULT_EXPORT_OPTIONS: Readonly<ExportOptions> = {
   showTitles: true,
   transparentBg: false,
-  showQrCode: false,
+  showQrCode: true,
   templateId: DEFAULT_EXPORT_TEMPLATE_ID,
   sizePresetId: DEFAULT_EXPORT_SIZE_PRESET_ID,
 };

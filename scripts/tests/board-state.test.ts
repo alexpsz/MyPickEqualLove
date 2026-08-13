@@ -157,7 +157,7 @@ test("legacy board and options migrate without deleting the legacy payload", () 
   assert.deepEqual(options.options, {
     showTitles: false,
     transparentBg: true,
-    showQrCode: false,
+    showQrCode: true,
     templateId: "classic",
     sizePresetId: "portrait",
   });
@@ -171,7 +171,7 @@ test("legacy board and options migrate without deleting the legacy payload", () 
     version: 2,
     showTitles: false,
     transparentBg: true,
-    showQrCode: false,
+    showQrCode: true,
     templateId: "classic",
     sizePresetId: "portrait",
   });
@@ -198,7 +198,7 @@ test("intermediate options migrate to the canonical export format", () => {
   assert.deepEqual(result.options, {
     showTitles: false,
     transparentBg: true,
-    showQrCode: false,
+    showQrCode: true,
     templateId: "classic",
     sizePresetId: "portrait",
   });
@@ -206,7 +206,7 @@ test("intermediate options migrate to the canonical export format", () => {
     version: 2,
     showTitles: false,
     transparentBg: true,
-    showQrCode: false,
+    showQrCode: true,
     templateId: "classic",
     sizePresetId: "portrait",
   });
@@ -242,6 +242,55 @@ test("canonical export options load without rewriting storage", () => {
   assert.equal(storage.writes.length, 0);
 });
 
+test("canonical export options preserve explicit disabled QR", () => {
+  const storage = new MemoryStorage();
+  const serialized = JSON.stringify({
+    version: 2,
+    showTitles: true,
+    transparentBg: false,
+    showQrCode: false,
+    templateId: "classic",
+    sizePresetId: "portrait",
+  });
+  storage.values.set("options-v2", serialized);
+
+  const result = loadStoredOptions({
+    storage,
+    versionedKey: "options-v2",
+    legacyKey: "options-v1",
+  });
+
+  assert.equal(result.status, "loaded");
+  assert.equal(result.options?.showQrCode, false);
+  assert.equal(storage.values.get("options-v2"), serialized);
+  assert.equal(storage.writes.length, 0);
+});
+
+test("legacy export options preserve explicit disabled QR during migration", () => {
+  const storage = new MemoryStorage();
+  storage.values.set(
+    "options-v1",
+    JSON.stringify({
+      showTitles: true,
+      transparentBg: false,
+      showQrCode: false,
+    }),
+  );
+
+  const result = loadStoredOptions({
+    storage,
+    versionedKey: "options-v2",
+    legacyKey: "options-v1",
+  });
+
+  assert.equal(result.status, "migrated");
+  assert.equal(result.options?.showQrCode, false);
+  assert.equal(
+    JSON.parse(storage.values.get("options-v2") ?? "").showQrCode,
+    false,
+  );
+});
+
 test("stored options mutation starts from canonical defaults when storage is empty", () => {
   const storage = new MemoryStorage();
   const result = mutateStoredOptions({
@@ -256,7 +305,7 @@ test("stored options mutation starts from canonical defaults when storage is emp
     options: {
       showTitles: true,
       transparentBg: false,
-      showQrCode: false,
+      showQrCode: true,
       templateId: "spotlight",
       sizePresetId: "portrait",
     },
@@ -265,7 +314,7 @@ test("stored options mutation starts from canonical defaults when storage is emp
     version: 2,
     showTitles: true,
     transparentBg: false,
-    showQrCode: false,
+    showQrCode: true,
     templateId: "spotlight",
     sizePresetId: "portrait",
   });
@@ -304,7 +353,7 @@ test("stored options mutation re-reads and preserves sibling fields", () => {
   }
 });
 
-test("published canonical v2 without QR migrates to disabled QR", () => {
+test("published canonical v2 without QR migrates to enabled QR", () => {
   const storage = new MemoryStorage();
   storage.values.set(
     "options-v2",
@@ -327,7 +376,7 @@ test("published canonical v2 without QR migrates to disabled QR", () => {
   assert.deepEqual(result.options, {
     showTitles: false,
     transparentBg: true,
-    showQrCode: false,
+    showQrCode: true,
     templateId: "spotlight",
     sizePresetId: "story",
   });
@@ -335,7 +384,7 @@ test("published canonical v2 without QR migrates to disabled QR", () => {
     version: 2,
     showTitles: false,
     transparentBg: true,
-    showQrCode: false,
+    showQrCode: true,
     templateId: "spotlight",
     sizePresetId: "story",
   });
@@ -384,6 +433,27 @@ test("stored options fail closed for malformed QR without legacy fallback", () =
   assert.deepEqual(result, { ok: false, status: "invalid" });
   assert.equal(storage.values.get("options-v2"), serialized);
   assert.equal(storage.reads.includes("options-v1"), false);
+  assert.equal(storage.writes.length, 0);
+});
+
+test("legacy options with malformed QR fail closed without migration", () => {
+  const storage = new MemoryStorage();
+  const serialized = JSON.stringify({
+    showTitles: true,
+    transparentBg: false,
+    showQrCode: "yes",
+  });
+  storage.values.set("options-v1", serialized);
+
+  const result = loadStoredOptions({
+    storage,
+    versionedKey: "options-v2",
+    legacyKey: "options-v1",
+  });
+
+  assert.deepEqual(result, { options: null, status: "invalid" });
+  assert.equal(storage.values.get("options-v1"), serialized);
+  assert.equal(storage.values.has("options-v2"), false);
   assert.equal(storage.writes.length, 0);
 });
 

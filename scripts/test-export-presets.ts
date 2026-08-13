@@ -22,7 +22,7 @@ test("default contract remains Classic portrait at scale 2", () => {
   assert.deepEqual(DEFAULT_EXPORT_OPTIONS, {
     showTitles: true,
     transparentBg: false,
-    showQrCode: false,
+    showQrCode: true,
     templateId: "classic",
     sizePresetId: "portrait",
   });
@@ -184,11 +184,28 @@ test("published schemaVersion 2 options migrate onto Classic portrait", () => {
     {
       showTitles: false,
       transparentBg: true,
-      showQrCode: false,
+      showQrCode: true,
       templateId: "classic",
       sizePresetId: "portrait",
     },
   );
+});
+
+test("published schemaVersion 2 preserves explicit QR booleans", () => {
+  for (const showQrCode of [false, true]) {
+    assert.equal(
+      parseStoredExportOptions(
+        JSON.stringify({
+          schemaVersion: 2,
+          showTitles: true,
+          transparentBg: false,
+          showQrCode,
+        }),
+        null,
+      ).showQrCode,
+      showQrCode,
+    );
+  }
 });
 
 test("invalid schemaVersion options fail closed without legacy fallback", () => {
@@ -198,6 +215,12 @@ test("invalid schemaVersion options fail closed without legacy fallback", () => 
     { showTitles: false, transparentBg: true },
     { schemaVersion: 2, transparentBg: true },
     { schemaVersion: 2, showTitles: false, transparentBg: "yes" },
+    {
+      schemaVersion: 2,
+      showTitles: false,
+      transparentBg: true,
+      showQrCode: "yes",
+    },
     {
       version: 99,
       schemaVersion: 2,
@@ -224,11 +247,27 @@ test("legacy booleans migrate onto Classic portrait", () => {
     {
       showTitles: false,
       transparentBg: true,
-      showQrCode: false,
+      showQrCode: true,
       templateId: "classic",
       sizePresetId: "portrait",
     },
   );
+});
+
+test("legacy options preserve explicit QR booleans", () => {
+  for (const showQrCode of [false, true]) {
+    assert.equal(
+      parseStoredExportOptions(
+        null,
+        JSON.stringify({
+          showTitles: true,
+          transparentBg: false,
+          showQrCode,
+        }),
+      ).showQrCode,
+      showQrCode,
+    );
+  }
 });
 
 test("unknown versions and invalid ids fail closed", () => {
@@ -261,7 +300,7 @@ test("unknown versions and invalid ids fail closed", () => {
   );
 });
 
-test("published v2 options without QR migrate to disabled QR", () => {
+test("published v2 options without QR migrate to enabled QR", () => {
   const oldV2 = JSON.stringify({
     version: 2,
     showTitles: false,
@@ -272,7 +311,7 @@ test("published v2 options without QR migrate to disabled QR", () => {
   assert.deepEqual(parseStoredExportOptions(oldV2, null), {
     showTitles: false,
     transparentBg: true,
-    showQrCode: false,
+    showQrCode: true,
     templateId: "spotlight",
     sizePresetId: "story",
   });
@@ -284,6 +323,24 @@ test("published v2 options without QR migrate to disabled QR", () => {
     ),
     DEFAULT_EXPORT_OPTIONS,
   );
+});
+
+test("canonical QR booleans preserve explicit false and true", () => {
+  const base = {
+    version: 2,
+    showTitles: true,
+    transparentBg: false,
+    templateId: "classic",
+    sizePresetId: "portrait",
+  };
+
+  for (const showQrCode of [false, true]) {
+    assert.equal(
+      parseStoredExportOptions(JSON.stringify({ ...base, showQrCode }), null)
+        .showQrCode,
+      showQrCode,
+    );
+  }
 });
 
 test("QR targets accept only canonical HTTP or HTTPS page URLs", () => {
