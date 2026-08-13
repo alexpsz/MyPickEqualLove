@@ -8,6 +8,7 @@ import notEqualMeMembersJson from "../../src/projects/not-equal-me/members.json"
 import notEqualMeSongsJson from "../../src/projects/not-equal-me/songs.json";
 import {
   derivePickInsights,
+  getUniquePickedSongs,
   limitInsightExportValues,
 } from "../../src/utils/pickInsights";
 import { getInsightsExportLayoutMetrics } from "../../src/utils/insightsExportLayout";
@@ -238,6 +239,30 @@ test("empty, single-pick, Top 10, and Live six-slot input use their actual selec
   );
 });
 
+test("three-pick and Top 10 cover context keep real selected songs visible", () => {
+  const threePicks = asPicks(equalLoveSongs.slice(0, 3));
+  const topTenPicks = asPicks(equalLoveSongs.slice(0, 10));
+  const portraitLayout = getInsightsExportLayoutMetrics("portrait");
+  const squareLayout = getInsightsExportLayoutMetrics("square");
+
+  assert.equal(getUniquePickedSongs(threePicks).length, 3);
+  assert.deepEqual(
+    limitInsightExportValues(
+      getUniquePickedSongs(threePicks),
+      portraitLayout.maxCoverThumbnails,
+    ),
+    { visible: equalLoveSongs.slice(0, 3), hiddenCount: 0 },
+  );
+  assert.equal(getUniquePickedSongs(topTenPicks).length, 10);
+  assert.equal(
+    limitInsightExportValues(
+      getUniquePickedSongs(topTenPicks),
+      squareLayout.maxCoverThumbnails,
+    ).hiddenCount,
+    6,
+  );
+});
+
 test("export limits retain overflow semantics for ten years and many tied leaders", () => {
   const portraitLayout = getInsightsExportLayoutMetrics("portrait");
   const storyLayout = getInsightsExportLayoutMetrics("story");
@@ -271,17 +296,23 @@ test("export limits retain overflow semantics for ten years and many tied leader
   });
 });
 
-test("all social presets leave a deterministic four-row Insights grid", () => {
+test("all social presets leave a deterministic three-section Insights layout", () => {
   const portrait = getInsightsExportLayoutMetrics("portrait");
   const square = getInsightsExportLayoutMetrics("square");
   const story = getInsightsExportLayoutMetrics("story");
   for (const layout of [portrait, square, story]) {
-    assert.match(layout.gridTemplateRows, /^repeat\(4, minmax\(/);
-    assert.ok(layout.metricHeight >= 160);
+    assert.match(
+      layout.gridTemplateRows,
+      /^minmax\(.+0\.82fr\) minmax\(.+1\.18fr\)$/,
+    );
+    assert.ok(layout.metricHeight >= 220);
+    assert.ok(layout.coverSize > 0);
+    assert.ok(layout.maxCoverThumbnails > 0);
   }
   assert.equal(square.canvasHeight, 1080);
   assert.ok(square.maxDistributionValues < portrait.maxDistributionValues);
   assert.ok(square.maxRankingLeaders < story.maxRankingLeaders);
+  assert.ok(square.maxCoverThumbnails < story.maxCoverThumbnails);
   assert.ok(story.metricHeight > portrait.metricHeight);
 });
 

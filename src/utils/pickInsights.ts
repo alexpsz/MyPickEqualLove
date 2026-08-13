@@ -18,9 +18,7 @@ export function derivePickInsights(
   picks: Picks,
   membersById: Readonly<Record<string, Member>>,
 ): PickInsights {
-  const songs = Array.from(
-    new Map(Object.values(picks).map((song) => [song.id, song])).values(),
-  );
+  const songs = getUniquePickedSongs(picks);
   const total = songs.length;
   const decades = new Map<string, number>();
   const releaseYears = new Map<string, number>();
@@ -87,6 +85,12 @@ export function derivePickInsights(
     },
     centers: createRanking(centers, knownCenters, total),
   };
+}
+
+export function getUniquePickedSongs(picks: Picks): Song[] {
+  return Array.from(
+    new Map(Object.values(picks).map((song) => [song.id, song])).values(),
+  );
 }
 
 export function limitInsightExportValues<T>(
