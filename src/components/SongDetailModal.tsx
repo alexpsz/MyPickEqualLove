@@ -28,7 +28,7 @@ interface SongDetailModalProps {
   presenceState: PresenceState;
   onClose: () => void;
   onSelect: (song: Song) => void;
-  onToggleCandidate?: (song: Song) => void;
+  onToggleCandidate: (song: Song) => void;
 }
 
 export default function SongDetailModal({
@@ -264,42 +264,41 @@ export default function SongDetailModal({
         <div className="flex flex-wrap items-center justify-end gap-2 border-t border-[var(--line)] bg-white px-4 py-3 pb-[max(.75rem,env(safe-area-inset-bottom))] sm:px-6">
           <button
             type="button"
-            onClick={() =>
-              isAssistantShortlistMode
-                ? onToggleCandidate?.(song)
-                : onSelect(song)
-            }
-            disabled={isAssistantShortlistMode && candidateDisabled}
-            aria-pressed={isAssistantShortlistMode ? isCandidate : undefined}
+            onClick={() => onToggleCandidate(song)}
+            disabled={candidateDisabled}
+            aria-pressed={isCandidate}
             aria-label={
-              isAssistantShortlistMode
-                ? isCandidate
-                  ? t("assistant.removeCandidateAria", {
-                      title: song.title.ja,
-                    })
-                  : t("assistant.addCandidateAria", {
-                      title: song.title.ja,
-                    })
-                : undefined
+              isCandidate
+                ? t("assistant.removeCandidateAria", {
+                    title: song.title.ja,
+                  })
+                : t("assistant.addCandidateAria", {
+                    title: song.title.ja,
+                  })
             }
-            className="official-button official-button-primary"
+            className={`official-button disabled:cursor-not-allowed disabled:opacity-45 ${
+              isAssistantShortlistMode
+                ? "official-button-primary"
+                : isCandidate
+                  ? "border-[var(--project-primary)] bg-[var(--project-primary-wash)]"
+                  : "official-button-quiet"
+            }`}
           >
-            <AppIcon
-              name={
-                isAssistantShortlistMode
-                  ? isCandidate
-                    ? "check"
-                    : "music"
-                  : "plus"
-              }
-              size={16}
-            />
-            {isAssistantShortlistMode
-              ? isCandidate
-                ? t("assistant.candidate")
-                : t("assistant.addCandidate")
-              : t("songDetail.selectSong")}
+            <AppIcon name={isCandidate ? "check" : "music"} size={16} />
+            {isCandidate
+              ? t("assistant.candidate")
+              : t("assistant.addCandidate")}
           </button>
+          {!isAssistantShortlistMode ? (
+            <button
+              type="button"
+              onClick={() => onSelect(song)}
+              className="official-button official-button-primary"
+            >
+              <AppIcon name="plus" size={16} />
+              {t("songDetail.selectSong")}
+            </button>
+          ) : null}
         </div>
       </m.div>
     </div>

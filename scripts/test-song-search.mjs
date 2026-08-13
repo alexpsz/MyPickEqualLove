@@ -119,7 +119,7 @@ test("orders title relevance before secondary matches and preserves source order
   );
 });
 
-test("ordinary search and song details omit orphan favorites while preserving board selection", () => {
+test("ordinary search and song details omit orphan favorites but keep real Assistant actions", () => {
   assert.doesNotMatch(
     searchModalSource,
     /favoriteSongIds|onToggleFavorite|name="star"/,
@@ -139,6 +139,36 @@ test("ordinary search and song details omit orphan favorites while preserving bo
   assert.match(
     searchModalSource,
     /isAssistantShortlistMode\s*\?\s*onToggleCandidate\?\.\(song\)\s*:\s*onSelect\(song\)/s,
+    "assistant mode must toggle the shortlist from the whole result row while board mode still selects",
+  );
+  assert.match(
+    searchModalSource,
+    /!isAssistantShortlistMode\s*\?\s*\(\s*<button[\s\S]*?onClick=\{\(\) => onToggleCandidate\?\.\(song\)\}[\s\S]*?aria-pressed=\{isCandidate\}[\s\S]*?<AppIcon[\s\S]*?name=\{isCandidate \? "check" : "music"\}/,
+    "board-mode results must expose a real Pick Assistant add/remove action",
+  );
+  assert.match(
+    songDetailModalSource,
+    /onToggleCandidate: \(song: Song\) => void;[\s\S]*?onClick=\{\(\) => onToggleCandidate\(song\)\}[\s\S]*?aria-pressed=\{isCandidate\}[\s\S]*?assistant\.removeCandidateAria[\s\S]*?assistant\.addCandidateAria/,
+    "song details must expose the real Pick Assistant add/remove action",
+  );
+  assert.match(
+    pickExperienceClientSource,
+    /<SongDetailModal[\s\S]*?onToggleCandidate=\{handleToggleCandidate\}/,
+    "the detail action must be wired to the persisted Assistant mutation",
+  );
+  assert.match(
+    songDetailModalSource,
+    /!isAssistantShortlistMode\s*\?\s*\([\s\S]*?onClick=\{\(\) => onSelect\(song\)\}[\s\S]*?songDetail\.selectSong/,
+    "only ordinary song details may select a song onto the board",
+  );
+  const candidateDisabledExpression = searchModalSource.match(
+    /const candidateDisabled =([\s\S]*?)!onToggleCandidate;/,
+  )?.[1];
+  assert.ok(candidateDisabledExpression);
+  assert.doesNotMatch(
+    candidateDisabledExpression,
+    /\bselected\b/,
+    "songs already on the board must remain eligible for the Assistant shortlist",
   );
   assert.match(
     pickExperienceClientSource,

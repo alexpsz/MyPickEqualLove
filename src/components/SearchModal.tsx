@@ -729,6 +729,38 @@ export default function SearchModal({
                       </button>
 
                       <div className="flex shrink-0 items-center border-l border-[var(--line)] px-1">
+                        {!isAssistantShortlistMode ? (
+                          <button
+                            type="button"
+                            onClick={() => onToggleCandidate?.(song)}
+                            disabled={candidateDisabled}
+                            aria-pressed={isCandidate}
+                            aria-label={
+                              isCandidate
+                                ? t("assistant.removeCandidateAria", {
+                                    title: song.title.ja,
+                                  })
+                                : t("assistant.addCandidateAria", {
+                                    title: song.title.ja,
+                                  })
+                            }
+                            title={
+                              isCandidate
+                                ? t("assistant.candidate")
+                                : t("assistant.addCandidate")
+                            }
+                            className={`flex h-11 w-11 items-center justify-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-45 ${
+                              isCandidate
+                                ? "bg-[var(--project-primary-wash)] text-[var(--foreground)]"
+                                : "text-[var(--muted)] hover:bg-white hover:text-[var(--foreground)]"
+                            }`}
+                          >
+                            <AppIcon
+                              name={isCandidate ? "check" : "music"}
+                              size={16}
+                            />
+                          </button>
+                        ) : null}
                         <button
                           type="button"
                           aria-haspopup="dialog"
