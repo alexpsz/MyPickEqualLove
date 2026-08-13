@@ -18,6 +18,7 @@ import {
 } from "../utils/songMetadata";
 import {
   getFirstSearchResultForEnter,
+  isGraduatedMemberVisibilityFilterActive,
   normalizeSongSearchText,
   rankSongsByQuery,
   shouldShowGraduatedMemberFeaturesByDefault,
@@ -316,7 +317,9 @@ export default function SearchModal({
     setTrackTypeFilter("all");
     setYearFilter("all");
     setMemberFilters([]);
-    setShowGraduatedMembers(false);
+    setShowGraduatedMembers(
+      shouldShowGraduatedMemberFeaturesByDefault(selectionMode),
+    );
     setHideSelected(false);
   };
 
@@ -357,7 +360,10 @@ export default function SearchModal({
     trackTypeFilter !== "all",
     yearFilter !== "all",
     memberFilters.length > 0,
-    showGraduatedMembers,
+    isGraduatedMemberVisibilityFilterActive(
+      selectionMode,
+      showGraduatedMembers,
+    ),
     hideSelected,
   ].filter(Boolean).length;
 

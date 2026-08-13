@@ -50,6 +50,7 @@ const compiled = ts
 const moduleUrl = `data:text/javascript;base64,${Buffer.from(compiled).toString("base64")}`;
 const {
   getFirstSearchResultForEnter,
+  isGraduatedMemberVisibilityFilterActive,
   normalizeSongSearchText,
   rankSongsByQuery,
   shouldShowGraduatedMemberFeaturesByDefault,
@@ -193,6 +194,26 @@ test("only the dedicated Assistant search shows the complete graduated-member fe
     searchModalSource,
     /setShowGraduatedMembers\(\s*shouldShowGraduatedMemberFeaturesByDefault\(selectionMode\)/,
     "retained Assistant and board searches must reset to their own default semantics",
+  );
+  assert.match(
+    searchModalSource,
+    /const resetFilters = \(\) => \{[\s\S]*?setShowGraduatedMembers\(\s*shouldShowGraduatedMemberFeaturesByDefault\(selectionMode\)[\s\S]*?setHideSelected\(false\)/,
+    "reset must restore the current search mode default",
+  );
+  assert.equal(isGraduatedMemberVisibilityFilterActive("board", false), false);
+  assert.equal(
+    isGraduatedMemberVisibilityFilterActive("assistant-shortlist", true),
+    false,
+  );
+  assert.equal(
+    isGraduatedMemberVisibilityFilterActive("assistant-shortlist", false),
+    true,
+  );
+  assert.equal(isGraduatedMemberVisibilityFilterActive("board", true), true);
+  assert.match(
+    searchModalSource,
+    /isGraduatedMemberVisibilityFilterActive\(\s*selectionMode,\s*showGraduatedMembers/,
+    "the active-filter badge must count deviations from the current mode default",
   );
 });
 

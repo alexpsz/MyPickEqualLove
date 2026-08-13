@@ -31,6 +31,16 @@ export function shouldShowGraduatedMemberFeaturesByDefault(
   return selectionMode === "assistant-shortlist";
 }
 
+export function isGraduatedMemberVisibilityFilterActive(
+  selectionMode: SearchSelectionMode,
+  showGraduatedMembers: boolean,
+) {
+  return (
+    showGraduatedMembers !==
+    shouldShowGraduatedMemberFeaturesByDefault(selectionMode)
+  );
+}
+
 export function normalizeSongSearchText(value: string | undefined): string {
   if (!value) return "";
 
