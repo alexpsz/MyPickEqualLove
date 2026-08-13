@@ -86,11 +86,11 @@ export default function Controls({
           </div>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+        <div className="grid gap-4">
           <div
             className={`grid gap-4 ${
               children
-                ? "sm:grid-cols-[minmax(220px,0.72fr)_minmax(0,1fr)] sm:items-end"
+                ? "lg:grid-cols-[minmax(220px,0.72fr)_minmax(420px,1fr)] lg:items-end"
                 : "lg:max-w-[620px]"
             }`}
           >

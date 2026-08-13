@@ -600,6 +600,14 @@ function validateExperienceSlots(prefix, experience, errors) {
 
 function validateExperiencePerformances(prefix, experience, songIds, errors) {
   const provenanceVersion = experience.provenanceSchemaVersion;
+  const requiresVersionedProvenance =
+    experience.kind === "live-afterglow" &&
+    experience.id?.endsWith("_afterglow");
+  if (requiresVersionedProvenance && provenanceVersion !== 1) {
+    errors.push(
+      `${prefix}: versioned live-afterglow experiences require provenanceSchemaVersion 1`,
+    );
+  }
   if (
     provenanceVersion !== undefined &&
     !provenanceSchemaVersions.has(provenanceVersion)
@@ -861,6 +869,9 @@ function validatePerformanceProvenance(
     errors.push(`${prefix}: provenance.excludedEntries must be an array`);
   } else {
     const excludedOrders = new Set();
+    const setlistOrders = new Set(
+      performance.setlist.map((entry) => entry.order),
+    );
     for (const [index, entry] of provenance.excludedEntries.entries()) {
       const entryPrefix = `${prefix} excludedEntries[${index}]`;
       if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
@@ -873,10 +884,10 @@ function validatePerformanceProvenance(
         );
       }
       const hasOrder = entry.sourceOrder !== undefined;
-      const hasPosition = entry.sourcePosition !== undefined;
-      if (hasOrder === hasPosition) {
+      const hasBeforeOrder = entry.beforeSourceOrder !== undefined;
+      if (Number(hasOrder) + Number(hasBeforeOrder) !== 1) {
         errors.push(
-          `${entryPrefix}: define exactly one of sourceOrder or sourcePosition`,
+          `${entryPrefix}: define exactly one of sourceOrder or beforeSourceOrder`,
         );
       }
       if (hasOrder) {
@@ -889,11 +900,20 @@ function validatePerformanceProvenance(
         }
       }
       if (
-        hasPosition &&
-        (typeof entry.sourcePosition !== "string" ||
-          !entry.sourcePosition.trim())
+        hasBeforeOrder &&
+        (!Number.isInteger(entry.beforeSourceOrder) ||
+          entry.beforeSourceOrder <= 0)
       ) {
-        errors.push(`${entryPrefix}: sourcePosition must be non-empty`);
+        errors.push(
+          `${entryPrefix}: beforeSourceOrder must be a positive integer`,
+        );
+      } else if (
+        hasBeforeOrder &&
+        !setlistOrders.has(entry.beforeSourceOrder)
+      ) {
+        errors.push(
+          `${entryPrefix}: beforeSourceOrder must reference an existing setlist order`,
+        );
       }
       if (typeof entry.label !== "string" || !entry.label.trim()) {
         errors.push(`${entryPrefix}: label is required`);
@@ -956,6 +976,22 @@ function validatePerformanceProvenance(
     }
     if (typeof crossCheck.note !== "string" || !crossCheck.note.trim()) {
       errors.push(`${prefix}: crossCheck.note is required`);
+    }
+    if (crossCheck.status === "matched-with-documented-differences") {
+      const excludedEntries = Array.isArray(provenance.excludedEntries)
+        ? provenance.excludedEntries
+        : [];
+      const crossCheckUrlSet = new Set(
+        Array.isArray(crossCheck.sourceUrls) ? crossCheck.sourceUrls : [],
+      );
+      if (
+        excludedEntries.length === 0 ||
+        !excludedEntries.some((entry) => crossCheckUrlSet.has(entry?.sourceUrl))
+      ) {
+        errors.push(
+          `${prefix}: matched-with-documented-differences requires an excluded entry tied to a crossCheck source URL`,
+        );
+      }
     }
   }
 }
@@ -1116,6 +1152,27 @@ function runLiveExperienceValidatorSelfTests() {
     /unsupported provenanceSchemaVersion/,
   );
   expectRejected(
+    "missing-schema",
+    "nearly-equal-joy",
+    (experience) => {
+      delete experience.provenanceSchemaVersion;
+    },
+    /versioned live-afterglow experiences require provenanceSchemaVersion 1/,
+  );
+  for (const projectId of ["nearly-equal-joy", "not-equal-me"]) {
+    expectRejected(
+      `missing-entire-provenance-chain-${projectId}`,
+      projectId,
+      (experience) => {
+        delete experience.provenanceSchemaVersion;
+        for (const performance of experience.performances) {
+          delete performance.provenance;
+        }
+      },
+      /versioned live-afterglow experiences require provenanceSchemaVersion 1/,
+    );
+  }
+  expectRejected(
     "missing-provenance",
     "nearly-equal-joy",
     (experience) => {
@@ -1177,6 +1234,33 @@ function runLiveExperienceValidatorSelfTests() {
         "https://example.com/unbound";
     },
     /sourceUrl must reference a declared source/,
+  );
+  expectRejected(
+    "unanchored-excluded-entry",
+    "nearly-equal-joy",
+    (experience) => {
+      experience.performances[0].provenance.excludedEntries[0].beforeSourceOrder = 999;
+    },
+    /beforeSourceOrder must reference an existing setlist order/,
+  );
+  expectRejected(
+    "legacy-free-text-excluded-position",
+    "nearly-equal-joy",
+    (experience) => {
+      const excludedEntry =
+        experience.performances[0].provenance.excludedEntries[0];
+      delete excludedEntry.beforeSourceOrder;
+      excludedEntry.sourcePosition = "after M999";
+    },
+    /define exactly one of sourceOrder or beforeSourceOrder/,
+  );
+  expectRejected(
+    "documented-difference-without-exclusion",
+    "nearly-equal-joy",
+    (experience) => {
+      experience.performances[0].provenance.excludedEntries = [];
+    },
+    /matched-with-documented-differences requires an excluded entry/,
   );
   expectRejected(
     "incorrect-repeat-declaration",

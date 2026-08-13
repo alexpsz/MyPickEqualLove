@@ -48,7 +48,7 @@ export interface LiveSupportingSource {
 export interface LiveExcludedSetlistEntry {
   sourceUrl: string;
   sourceOrder?: number;
-  sourcePosition?: string;
+  beforeSourceOrder?: number;
   label: string;
   reason: "non-catalog-intro" | "non-song" | "not-in-project-catalog";
 }

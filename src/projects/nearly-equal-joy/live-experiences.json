@@ -121,7 +121,7 @@
           "excludedEntries": [
             {
               "sourceUrl": "https://ototoy.jp/news/129065",
-              "sourcePosition": "before M1",
+              "beforeSourceOrder": 1,
               "label": "Overture",
               "reason": "non-catalog-intro"
             }
@@ -242,7 +242,7 @@
           "excludedEntries": [
             {
               "sourceUrl": "https://ototoy.jp/news/129065",
-              "sourcePosition": "before M1",
+              "beforeSourceOrder": 1,
               "label": "Overture",
               "reason": "non-catalog-intro"
             }
