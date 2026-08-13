@@ -140,13 +140,15 @@ test("mobile preview collapses export options and keeps the image stage flexible
   );
   assert.match(
     previewModalSource,
-    /data-preview-image-stage[\s\S]*min-h-0 flex-1 items-center justify-center/,
+    /data-preview-image-stage[\s\S]*min-h-0 flex-1 flex-col items-center justify-start/,
   );
   assert.match(previewModalSource, /h-\[92dvh\] max-h-\[92dvh\]/);
   assert.match(
     previewModalSource,
-    /absolute inset-4 h-\[calc\(100%-2rem\)\] w-\[calc\(100%-2rem\)\] bg-white object-contain object-top/,
+    /block h-auto w-auto max-h-full max-w-full object-contain shadow-\[var\(--shadow-panel\)\]/,
   );
+  assert.doesNotMatch(previewModalSource, /absolute inset-4/);
+  assert.doesNotMatch(previewModalSource, /bg-white object-contain object-top/);
   assert.doesNotMatch(previewModalSource, /max-h-\[58dvh\]/);
   assert.match(previewModalSource, /grid-cols-5 items-stretch/);
 });

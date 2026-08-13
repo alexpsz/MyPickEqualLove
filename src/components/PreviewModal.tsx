@@ -329,12 +329,12 @@ export default function PreviewModal({
 
         <div
           data-preview-image-stage
-          className="no-scrollbar relative flex min-h-0 flex-1 items-center justify-center overflow-y-auto bg-[var(--background)] p-4 sm:p-6"
+          className="no-scrollbar relative flex min-h-0 flex-1 flex-col items-center justify-start overflow-y-auto bg-[var(--background)] p-4 sm:p-6"
         >
           <img
             src={previewUrl}
             alt={t("preview.imageAlt", { title: shareTitle })}
-            className={`absolute inset-4 h-[calc(100%-2rem)] w-[calc(100%-2rem)] bg-white object-contain object-top shadow-[var(--shadow-panel)] transition-[opacity,filter] duration-150 sm:inset-6 sm:h-[calc(100%-3rem)] sm:w-[calc(100%-3rem)] ${
+            className={`block h-auto w-auto max-h-full max-w-full object-contain shadow-[var(--shadow-panel)] transition-[opacity,filter] duration-150 ${
               generating ? "opacity-50 blur-[2px]" : "opacity-100"
             }`}
           />
