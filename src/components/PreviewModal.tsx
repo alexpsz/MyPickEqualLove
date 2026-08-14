@@ -18,7 +18,6 @@ import {
   type PreviewPageShareSnapshot,
 } from "../utils/imageActions";
 import AppIcon from "./AppIcon";
-import AnchoredOptionMenu from "./AnchoredOptionMenu";
 import { APPLE_OPACITY, APPLE_SPRING_GENTLE } from "./AppleMotion";
 import type { PresenceState } from "./MotionPresence";
 
@@ -289,59 +288,60 @@ export default function PreviewModal({
             data-preview-options-panel
             className={`${isOptionsExpanded ? "block" : "hidden"} sm:block`}
           >
-            <div className="rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--background)] p-3">
+            <div className="rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--background)] p-2 sm:p-3">
               <div
                 data-preview-options-grid
-                className="grid min-w-0 grid-cols-2 items-stretch gap-2 sm:flex sm:flex-1 sm:flex-wrap sm:items-center sm:justify-end sm:gap-x-2 sm:gap-y-1"
+                className="grid min-w-0 grid-cols-2 items-stretch gap-1.5 sm:flex sm:flex-1 sm:flex-wrap sm:items-center sm:justify-end sm:gap-x-2 sm:gap-y-2"
               >
                 <div
                   data-preview-option="template"
-                  className="order-1 min-w-0 p-1 sm:w-36"
+                  className="order-1 min-w-0 sm:w-44"
                 >
-                  <AnchoredOptionMenu
-                    compact
-                    className="h-full w-full grid-rows-[minmax(0,1fr)_auto] sm:h-auto sm:w-36"
+                  <TemplateSegmentedControl
                     label={t("preview.templateLabel")}
                     value={templateId}
                     disabled={generating}
                     onValueChange={onTemplateChange}
-                    options={EXPORT_TEMPLATE_ORDER.map((id) => ({
-                      value: id,
-                      label: t(getExportTemplateMessageKey(id)),
-                    }))}
+                    getOptionLabel={(id) => t(getExportTemplateMessageKey(id))}
                   />
                 </div>
                 <div
                   data-preview-option="transparent"
-                  className="order-2 min-w-0 p-1 sm:order-4"
+                  className="order-2 min-w-0 sm:order-4"
                 >
-                  <ToggleOption
+                  <ToggleChip
                     checked={transparentBg}
                     disabled={generating}
-                    onChange={onToggleTransparentBg}
-                    label={t("preview.transparentBackground")}
+                    onPressedChange={onToggleTransparentBg}
+                    ariaLabel={t("preview.transparentBackground")}
+                    mobileLabel={t("preview.compactTransparentBackground")}
+                    desktopLabel={t("preview.transparentBackground")}
                   />
                 </div>
                 <div
                   data-preview-option="qr"
-                  className="order-3 min-w-0 p-1 sm:order-2"
+                  className="order-3 min-w-0 sm:order-2"
                 >
-                  <ToggleOption
+                  <ToggleChip
                     checked={showQrCode}
                     disabled={generating}
-                    onChange={onToggleShowQrCode}
-                    label={t("preview.showQrCode")}
+                    onPressedChange={onToggleShowQrCode}
+                    ariaLabel={t("preview.showQrCode")}
+                    mobileLabel={t("preview.compactShowQrCode")}
+                    desktopLabel={t("preview.showQrCode")}
                   />
                 </div>
                 <div
                   data-preview-option="titles"
-                  className="order-4 min-w-0 p-1 sm:order-3"
+                  className="order-4 min-w-0 sm:order-3"
                 >
-                  <ToggleOption
+                  <ToggleChip
                     checked={showTitles}
                     disabled={generating}
-                    onChange={onToggleShowTitles}
-                    label={t("preview.showTitles")}
+                    onPressedChange={onToggleShowTitles}
+                    ariaLabel={t("preview.showTitles")}
+                    mobileLabel={t("preview.compactShowTitles")}
+                    desktopLabel={t("preview.showTitles")}
                   />
                 </div>
               </div>
@@ -566,36 +566,96 @@ function isAndroidDevice() {
   return /Android/i.test(navigator.userAgent);
 }
 
-function ToggleOption({
+function TemplateSegmentedControl({
+  label,
+  value,
+  disabled,
+  onValueChange,
+  getOptionLabel,
+}: {
+  label: string;
+  value: ExportTemplateId;
+  disabled: boolean;
+  onValueChange: (value: ExportTemplateId) => void;
+  getOptionLabel: (value: ExportTemplateId) => string;
+}) {
+  return (
+    <div
+      role="group"
+      aria-label={label}
+      className="grid min-h-11 grid-cols-2 rounded-[var(--radius-sm)] border border-[var(--line-strong)] bg-white p-0.5"
+    >
+      {EXPORT_TEMPLATE_ORDER.map((option) => {
+        const selected = option === value;
+
+        return (
+          <button
+            key={option}
+            type="button"
+            data-preview-template-segment={option}
+            aria-pressed={selected}
+            disabled={disabled}
+            onClick={() => onValueChange(option)}
+            className={`flex min-h-10 min-w-0 items-center justify-center gap-1 rounded-[calc(var(--radius-sm)-2px)] px-1.5 text-[12px] font-semibold outline-none transition-[background-color,color,box-shadow] duration-150 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:opacity-50 sm:text-[13px] ${
+              selected
+                ? "bg-[var(--project-primary)] text-white shadow-sm"
+                : "text-[var(--foreground)] hover:bg-[var(--background)]"
+            }`}
+          >
+            <span
+              className="flex h-4 w-4 shrink-0 items-center justify-center"
+              aria-hidden="true"
+            >
+              {selected ? (
+                <AppIcon name="check" size={14} strokeWidth={2.25} />
+              ) : null}
+            </span>
+            <span className="truncate">{getOptionLabel(option)}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function ToggleChip({
   checked,
   disabled,
-  onChange,
-  label,
-  className = "",
+  onPressedChange,
+  ariaLabel,
+  mobileLabel,
+  desktopLabel,
 }: {
   checked: boolean;
   disabled: boolean;
-  onChange: (value: boolean) => void;
-  label: string;
-  className?: string;
+  onPressedChange: (value: boolean) => void;
+  ariaLabel: string;
+  mobileLabel: string;
+  desktopLabel: string;
 }) {
   return (
-    <label
-      className={`flex min-h-[72px] w-full cursor-pointer select-none flex-col-reverse items-center justify-between gap-1 rounded-[var(--radius-sm)] px-2 py-2 text-center text-[12px] leading-4 font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--background)] sm:min-h-11 sm:w-auto sm:flex-row sm:justify-center sm:gap-2 sm:py-0 sm:text-left sm:text-[13px] ${className}`}
+    <button
+      type="button"
+      data-preview-toggle-chip
+      aria-pressed={checked}
+      aria-label={ariaLabel}
+      disabled={disabled}
+      onClick={() => onPressedChange(!checked)}
+      className={`flex min-h-11 w-full min-w-0 items-center justify-center gap-1.5 rounded-[var(--radius-sm)] border px-2 text-center text-[12px] font-semibold outline-none transition-[background-color,color,border-color,box-shadow] duration-150 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:opacity-50 sm:w-auto sm:px-3 sm:text-[13px] ${
+        checked
+          ? "border-[var(--project-primary)] bg-[var(--project-primary-wash)] text-[var(--project-primary)]"
+          : "border-[var(--line-strong)] bg-white text-[var(--foreground)] hover:bg-[var(--background)]"
+      }`}
     >
-      <input
-        type="checkbox"
-        checked={checked}
-        disabled={disabled}
-        onChange={(event) => onChange(event.target.checked)}
-        className="peer sr-only"
-      />
       <span
+        className="flex h-4 w-4 shrink-0 items-center justify-center"
         aria-hidden="true"
-        className="relative h-[26px] w-[44px] shrink-0 rounded-full bg-[var(--line-strong)] transition-colors duration-150 after:absolute after:left-[2px] after:top-[2px] after:h-[22px] after:w-[22px] after:rounded-full after:bg-white after:shadow-sm after:transition-transform after:duration-150 peer-checked:bg-[var(--project-primary)] peer-checked:after:translate-x-[18px] peer-focus-visible:ring-2 peer-focus-visible:ring-[var(--focus-ring)] peer-focus-visible:ring-offset-2 peer-disabled:opacity-50"
-      />
-      <span className="min-w-0 text-center sm:text-left">{label}</span>
-    </label>
+      >
+        {checked ? <AppIcon name="check" size={14} strokeWidth={2.25} /> : null}
+      </span>
+      <span className="min-w-0 truncate sm:hidden">{mobileLabel}</span>
+      <span className="hidden min-w-0 truncate sm:inline">{desktopLabel}</span>
+    </button>
   );
 }
 

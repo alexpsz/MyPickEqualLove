@@ -146,13 +146,25 @@ test("mobile preview collapses export options and keeps the image stage flexible
     previewModalSource,
     /data-preview-option="template"[\s\S]*data-preview-option="transparent"[\s\S]*data-preview-option="qr"[\s\S]*data-preview-option="titles"/,
   );
-  assert.match(previewModalSource, /order-2 min-w-0 p-1 sm:order-4/);
-  assert.match(previewModalSource, /order-3 min-w-0 p-1 sm:order-2/);
-  assert.match(previewModalSource, /order-4 min-w-0 p-1 sm:order-3/);
+  assert.match(previewModalSource, /order-2 min-w-0 sm:order-4/);
+  assert.match(previewModalSource, /order-3 min-w-0 sm:order-2/);
+  assert.match(previewModalSource, /order-4 min-w-0 sm:order-3/);
   assert.match(
     previewModalSource,
-    /min-h-\[72px\][\s\S]*flex-col-reverse[\s\S]*sm:min-h-11/,
+    /data-preview-template-segment=\{option\}[\s\S]*aria-pressed=\{selected\}[\s\S]*min-h-10/,
   );
+  assert.match(previewModalSource, /role="group"[\s\S]*aria-label=\{label\}/);
+  assert.match(
+    previewModalSource,
+    /data-preview-toggle-chip[\s\S]*aria-pressed=\{checked\}[\s\S]*min-h-11/,
+  );
+  assert.match(previewModalSource, /compactTransparentBackground/);
+  assert.match(previewModalSource, /compactShowQrCode/);
+  assert.match(previewModalSource, /compactShowTitles/);
+  assert.doesNotMatch(previewModalSource, /AnchoredOptionMenu/);
+  assert.doesNotMatch(previewModalSource, /min-h-\[72px\]/);
+  assert.doesNotMatch(previewModalSource, /flex-col-reverse/);
+  assert.doesNotMatch(previewModalSource, /type="checkbox"/);
   assert.match(
     previewModalSource,
     /data-preview-image-stage[\s\S]*min-h-0 flex-1 flex-col items-center justify-start/,

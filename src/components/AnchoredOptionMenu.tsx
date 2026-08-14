@@ -25,7 +25,6 @@ interface AnchoredOptionMenuProps<T extends string> {
   options: readonly AnchoredOption<T>[];
   disabled: boolean;
   compact?: boolean;
-  className?: string;
 }
 
 export default function AnchoredOptionMenu<T extends string>({
@@ -35,7 +34,6 @@ export default function AnchoredOptionMenu<T extends string>({
   options,
   disabled,
   compact = false,
-  className = "",
 }: AnchoredOptionMenuProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
   const menuId = useId();
@@ -168,7 +166,7 @@ export default function AnchoredOptionMenu<T extends string>({
       ref={rootRef}
       className={`relative grid min-w-0 gap-1 ${
         compact ? "w-36" : "w-full sm:w-[190px]"
-      } ${className}`}
+      }`}
       onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
           setIsOpen(false);
