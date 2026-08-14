@@ -305,8 +305,8 @@ export default function Controls({
             <div
               className={`grid gap-4 ${
                 children
-                  ? "lg:grid-cols-[minmax(220px,0.72fr)_minmax(420px,1fr)] lg:items-end"
-                  : "lg:max-w-[620px]"
+                  ? "lg:w-fit lg:grid-cols-[minmax(220px,280px)_minmax(420px,560px)] lg:items-start"
+                  : "sm:max-w-[360px]"
               }`}
             >
               <NicknameField
@@ -321,7 +321,7 @@ export default function Controls({
               {children ? <div className="grid gap-3">{children}</div> : null}
             </div>
 
-            <div className="grid grid-cols-2 items-center gap-2 sm:flex sm:flex-wrap sm:justify-end">
+            <div className="grid grid-cols-2 items-center gap-2 sm:flex sm:flex-wrap sm:justify-start">
               <button
                 type="button"
                 onClick={onGlobalSearch}

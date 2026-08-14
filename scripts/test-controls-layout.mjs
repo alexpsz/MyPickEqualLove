@@ -27,18 +27,28 @@ test("control actions cannot consume the context selector's desktop column", () 
   );
   assert.match(
     controlsSource,
-    /lg:grid-cols-\[minmax\(220px,0\.72fr\)_minmax\(420px,1fr\)\]/,
-    "desktop nickname and context columns need explicit, non-zero width priorities",
+    /lg:w-fit lg:grid-cols-\[minmax\(220px,280px\)_minmax\(420px,560px\)\] lg:items-start/,
+    "desktop nickname and context columns need controlled widths and a shared top baseline",
   );
 
   const actionsStart = controlsSource.indexOf(
-    '<div className="grid grid-cols-2 items-center gap-2 sm:flex sm:flex-wrap sm:justify-end">',
+    '<div className="grid grid-cols-2 items-center gap-2 sm:flex sm:flex-wrap sm:justify-start">',
   );
   const desktopConfigurationStart = controlsSource.indexOf(
-    "lg:grid-cols-[minmax(220px,0.72fr)_minmax(420px,1fr)]",
+    "lg:grid-cols-[minmax(220px,280px)_minmax(420px,560px)]",
   );
   assert.ok(
     desktopConfigurationStart >= 0 && actionsStart > desktopConfigurationStart,
+  );
+  assert.doesNotMatch(
+    controlsSource,
+    /sm:justify-end/,
+    "desktop actions must start from the left instead of creating empty leading space",
+  );
+  assert.match(
+    controlsSource,
+    /children[\s\S]*sm:max-w-\[360px\]/,
+    "the standard page nickname configuration needs an intentional left-aligned width",
   );
 });
 
@@ -161,18 +171,28 @@ test("special activity details collapse only on mobile", () => {
   assert.match(headerSource, /collapseDetailsOnMobile = false/);
   assert.match(
     headerSource,
-    /const subtitleContent[\s\S]*resolvedSubtitle[\s\S]*\{subtitleContent\}[\s\S]*collapseDetailsOnMobile/,
-    "the concise subtitle must remain visible before the mobile disclosure",
+    /className="sm:hidden"[\s\S]*<button[\s\S]*min-h-11 w-full[\s\S]*\{resolvedSubtitle\}[\s\S]*name="chevron-down"/,
+    "mobile must use the visible subtitle and a subtle chevron as one full-width 44px disclosure trigger",
   );
   assert.match(
     headerSource,
-    /id=\{mobileDetailsId\}[\s\S]*\{extendedDetails\}/,
-    "only the extended description and metadata belong in the activity disclosure",
+    /aria-expanded=\{isMobileDetailsOpen\}[\s\S]*aria-controls=\{mobileDetailsId\}[\s\S]*aria-label=\{[\s\S]*header\.hideActivityDetails[\s\S]*header\.showActivityDetails/,
+    "the mobile subtitle trigger must expose state, ownership, and a localized accessible action name",
   );
   assert.match(
     headerSource,
-    /isMobileDetailsOpen \? "block md:block" : "hidden md:block"/,
-    "activity copy should stay available on desktop while defaulting closed on mobile",
+    /id=\{mobileDetailsId\}[\s\S]*isMobileDetailsOpen \? "block sm:hidden" : "hidden"[\s\S]*\{extendedDetails\}/,
+    "only the extended description and metadata belong in the mobile disclosure",
+  );
+  assert.match(
+    headerSource,
+    /className="hidden sm:block">[\s\S]*\{subtitleContent\}[\s\S]*\{extendedDetails\}/,
+    "desktop needs one non-interactive subtitle copy with description and metadata always present",
+  );
+  assert.doesNotMatch(
+    headerSource,
+    /official-button[\s\S]*header\.showActivityDetails/,
+    "activity details must not reintroduce a separately visible disclosure label",
   );
   assert.match(
     clientSource,

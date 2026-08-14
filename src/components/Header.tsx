@@ -4,6 +4,7 @@ import React, { useId, useState } from "react";
 import { PROJECT_CONFIG, PROJECT_ID } from "../config/project";
 import { localizeProjectCopy } from "../i18n/content";
 import { useLocale } from "../i18n/LocaleProvider";
+import AppIcon from "./AppIcon";
 
 interface HeaderProps {
   titlePrefix?: string;
@@ -48,31 +49,50 @@ export default function Header({
   );
   const details = (
     <div className="border-l-[3px] border-[var(--project-primary)] pl-3.5 sm:pl-5">
-      {subtitleContent}
       {collapseDetailsOnMobile ? (
         <>
-          <button
-            type="button"
-            onClick={() => setIsMobileDetailsOpen((open) => !open)}
-            aria-expanded={isMobileDetailsOpen}
-            aria-controls={mobileDetailsId}
-            className="official-button mt-2 w-fit gap-1.5 !px-3 text-[13px] md:hidden"
-          >
-            {isMobileDetailsOpen
-              ? t("header.hideActivityDetails")
-              : t("header.showActivityDetails")}
-          </button>
-          <div
-            id={mobileDetailsId}
-            className={
-              isMobileDetailsOpen ? "block md:block" : "hidden md:block"
-            }
-          >
+          <div className="sm:hidden">
+            <button
+              type="button"
+              onClick={() => setIsMobileDetailsOpen((open) => !open)}
+              aria-expanded={isMobileDetailsOpen}
+              aria-controls={mobileDetailsId}
+              aria-label={
+                isMobileDetailsOpen
+                  ? t("header.hideActivityDetails")
+                  : t("header.showActivityDetails")
+              }
+              className="flex min-h-11 w-full flex-col items-start justify-center gap-0.5 rounded-sm text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+            >
+              <span className="text-[15px] font-semibold leading-snug tracking-[-0.01em] text-[var(--foreground)]">
+                {resolvedSubtitle}
+              </span>
+              <AppIcon
+                name="chevron-down"
+                size={14}
+                strokeWidth={1.5}
+                className={`text-[var(--muted-soft)] transition-transform duration-150 ${
+                  isMobileDetailsOpen ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+            <div
+              id={mobileDetailsId}
+              className={isMobileDetailsOpen ? "block sm:hidden" : "hidden"}
+            >
+              {extendedDetails}
+            </div>
+          </div>
+          <div className="hidden sm:block">
+            {subtitleContent}
             {extendedDetails}
           </div>
         </>
       ) : (
-        extendedDetails
+        <>
+          {subtitleContent}
+          {extendedDetails}
+        </>
       )}
     </div>
   );
