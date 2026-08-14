@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useId, useRef, useState } from "react";
 import { useLocale } from "../i18n/LocaleProvider";
 import { DIALOG_RETURN_KEYS } from "../utils/useDialogA11y";
 import AppIcon from "./AppIcon";
@@ -61,13 +61,48 @@ export default function Controls({
   children,
 }: ControlsProps) {
   const { t } = useLocale();
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const morePanelId = useId();
+  const controlsRef = useRef<HTMLElement>(null);
+  const moreButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!isMoreOpen) return;
+
+    const closeMore = () => {
+      setIsMoreOpen(false);
+      moreButtonRef.current?.focus({ preventScroll: true });
+    };
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!controlsRef.current?.contains(event.target as Node)) {
+        closeMore();
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      closeMore();
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isMoreOpen]);
 
   return (
     <div
       data-page-reveal
       className="app-content-shell relative z-10 mb-4 px-4 sm:mb-5 sm:px-6 md:px-8"
     >
-      <section className="official-panel-soft grid gap-3 p-3.5 sm:p-5">
+      <section
+        ref={controlsRef}
+        className="official-panel-soft grid gap-3 p-3.5 sm:p-5"
+      >
         <div className="flex flex-wrap items-center gap-x-7 gap-y-2 border-b border-[var(--line)] pb-2.5 sm:pb-3">
           <Metric
             label={metricLabel ?? t("controls.songs")}
@@ -86,50 +121,20 @@ export default function Controls({
           </div>
         </div>
 
-        <div className="grid gap-4">
-          <div
-            className={`grid gap-4 ${
-              children
-                ? "lg:grid-cols-[minmax(220px,0.72fr)_minmax(420px,1fr)] lg:items-end"
-                : "lg:max-w-[620px]"
-            }`}
-          >
-            <div className="grid gap-2">
-              <label
-                htmlFor="export-nickname"
-                className="sr-only text-xs font-semibold tracking-[0.02em] text-[var(--muted)] sm:not-sr-only"
-              >
-                {t("controls.exportName")}
-              </label>
-              <div className="flex min-h-11 items-center rounded-[var(--radius-sm)] border border-[var(--line-strong)] bg-white transition-[border-color,box-shadow] focus-within:border-[var(--focus-ring)] focus-within:shadow-[0_0_0_2px_var(--focus-ring)]">
-                <input
-                  id="export-nickname"
-                  type="text"
-                  value={nickname}
-                  maxLength={nicknameMaxLength}
-                  disabled={generating}
-                  onChange={(event) => onNicknameChange(event.target.value)}
-                  placeholder={t("controls.exportNamePlaceholder")}
-                  className="min-w-0 flex-1 bg-transparent px-3 py-2 text-[15px] font-normal text-[var(--foreground)] outline-none placeholder:text-[var(--muted-soft)] disabled:opacity-50"
-                />
-                <span className="px-3 text-xs font-medium tabular-nums text-[var(--muted)]">
-                  {nickname.length}/{nicknameMaxLength}
-                </span>
-              </div>
-              <p className="hidden text-xs leading-relaxed text-[var(--muted)] sm:block">
-                {t("controls.exportNameHint")}
-              </p>
-            </div>
+        <div className="grid gap-3 sm:gap-4">
+          {children ? (
+            <div className="grid gap-3 sm:hidden">{children}</div>
+          ) : null}
 
-            {children ? <div className="grid gap-3">{children}</div> : null}
-          </div>
-
-          <div className="grid grid-cols-2 items-center gap-2 sm:flex sm:flex-wrap sm:justify-end">
+          <div className="grid grid-cols-2 gap-2 sm:hidden">
             <button
               type="button"
-              onClick={onGlobalSearch}
+              onClick={() => {
+                setIsMoreOpen(false);
+                onGlobalSearch();
+              }}
               data-dialog-return-key={DIALOG_RETURN_KEYS.globalSearch}
-              className="official-button w-full sm:w-auto"
+              className="official-button w-full"
             >
               <AppIcon name="search" />
               {t("controls.searchSongs")}
@@ -137,9 +142,12 @@ export default function Controls({
             <button
               ref={pickAssistantButtonRef}
               type="button"
-              onClick={onOpenPickAssistant}
+              onClick={() => {
+                setIsMoreOpen(false);
+                onOpenPickAssistant();
+              }}
               data-dialog-return-key={DIALOG_RETURN_KEYS.pickAssistant}
-              className="official-button w-full sm:w-auto"
+              className="official-button w-full"
             >
               <AppIcon name="music" />
               {t("controls.pickAssistant")}
@@ -149,27 +157,14 @@ export default function Controls({
             </button>
             <button
               type="button"
-              onClick={onCopyBoardLink}
-              disabled={!hasPicks}
-              data-dialog-return-key={DIALOG_RETURN_KEYS.copyBoardLink}
-              className="official-button w-full leading-tight sm:w-auto"
-            >
-              {boardLinkCopied ? (
-                <AppIcon name="check" />
-              ) : (
-                <AppIcon name="external" />
-              )}
-              {boardLinkCopied
-                ? t("controls.boardLinkCopied")
-                : t("controls.copyBoardLink")}
-            </button>
-            <button
-              type="button"
-              onClick={onGenerate}
+              onClick={() => {
+                setIsMoreOpen(false);
+                onGenerate();
+              }}
               disabled={generating || !hasPicks}
               ref={generateButtonRef}
               data-dialog-return-key={DIALOG_RETURN_KEYS.generateImage}
-              className="official-button official-button-primary min-w-0 w-full sm:min-w-[168px] sm:w-auto"
+              className="official-button official-button-primary min-w-0 w-full"
             >
               {generating ? (
                 <>
@@ -184,40 +179,209 @@ export default function Controls({
               )}
             </button>
             <button
+              ref={moreButtonRef}
               type="button"
-              onClick={onUndo}
-              disabled={!canUndo}
-              className="official-button w-full sm:w-auto"
+              onClick={() => setIsMoreOpen((open) => !open)}
+              aria-expanded={isMoreOpen}
+              aria-controls={isMoreOpen ? morePanelId : undefined}
+              className="official-button w-full"
             >
-              <AppIcon name="undo" />
-              {t("controls.undo")}
+              <AppIcon name="menu" />
+              {t("controls.more")}
+              <AppIcon
+                name="chevron-down"
+                size={14}
+                className={`ml-auto transition-transform duration-150 ${
+                  isMoreOpen ? "rotate-180" : ""
+                }`}
+              />
             </button>
-            <button
-              type="button"
-              onClick={onRedo}
-              disabled={!canRedo}
-              className="official-button w-full sm:w-auto"
+          </div>
+
+          {isMoreOpen ? (
+            <div
+              id={morePanelId}
+              className="grid gap-3 rounded-[var(--radius-sm)] border border-[var(--line)] bg-[var(--background)] p-3 sm:hidden"
             >
-              <AppIcon name="redo" />
-              {t("controls.redo")}
-            </button>
-            <button
-              type="button"
-              onClick={onOpenBoardLibrary}
-              data-dialog-return-key={DIALOG_RETURN_KEYS.boardLibrary}
-              className="official-button w-full sm:w-auto"
+              <NicknameField
+                id="export-nickname-mobile"
+                nickname={nickname}
+                nicknameMaxLength={nicknameMaxLength}
+                generating={generating}
+                onNicknameChange={onNicknameChange}
+              />
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={onCopyBoardLink}
+                  disabled={!hasPicks}
+                  data-dialog-return-key={DIALOG_RETURN_KEYS.copyBoardLink}
+                  className="official-button w-full leading-tight"
+                >
+                  {boardLinkCopied ? (
+                    <AppIcon name="check" />
+                  ) : (
+                    <AppIcon name="external" />
+                  )}
+                  {boardLinkCopied
+                    ? t("controls.boardLinkCopied")
+                    : t("controls.copyBoardLink")}
+                </button>
+                <button
+                  type="button"
+                  onClick={onOpenBoardLibrary}
+                  data-dialog-return-key={DIALOG_RETURN_KEYS.boardLibrary}
+                  className="official-button w-full"
+                >
+                  <AppIcon name="archive" />
+                  {t("controls.myBoards", { count: savedBoardCount })}
+                </button>
+                <button
+                  type="button"
+                  onClick={onUndo}
+                  disabled={!canUndo}
+                  className="official-button w-full"
+                >
+                  <AppIcon name="undo" />
+                  {t("controls.undo")}
+                </button>
+                <button
+                  type="button"
+                  onClick={onRedo}
+                  disabled={!canRedo}
+                  className="official-button w-full"
+                >
+                  <AppIcon name="redo" />
+                  {t("controls.redo")}
+                </button>
+                {hasPicks ? (
+                  <button
+                    type="button"
+                    onClick={onClearAll}
+                    className="official-button official-button-quiet col-span-2 !min-h-11 justify-self-stretch !px-3 text-red-700"
+                  >
+                    {t("controls.clear")}
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+
+          <div className="hidden sm:grid sm:gap-4">
+            <div
+              className={`grid gap-4 ${
+                children
+                  ? "lg:grid-cols-[minmax(220px,0.72fr)_minmax(420px,1fr)] lg:items-end"
+                  : "lg:max-w-[620px]"
+              }`}
             >
-              <AppIcon name="archive" />
-              {t("controls.myBoards", { count: savedBoardCount })}
-            </button>
-            <button
-              type="button"
-              onClick={onClearAll}
-              disabled={!hasPicks}
-              className="official-button official-button-quiet col-span-2 !min-h-9 justify-self-center !px-3 sm:col-span-1 sm:!min-h-11"
-            >
-              {t("controls.clear")}
-            </button>
+              <NicknameField
+                id="export-nickname-desktop"
+                nickname={nickname}
+                nicknameMaxLength={nicknameMaxLength}
+                generating={generating}
+                onNicknameChange={onNicknameChange}
+                showHint
+              />
+
+              {children ? <div className="grid gap-3">{children}</div> : null}
+            </div>
+
+            <div className="grid grid-cols-2 items-center gap-2 sm:flex sm:flex-wrap sm:justify-end">
+              <button
+                type="button"
+                onClick={onGlobalSearch}
+                data-dialog-return-key={DIALOG_RETURN_KEYS.globalSearch}
+                className="official-button w-full sm:w-auto"
+              >
+                <AppIcon name="search" />
+                {t("controls.searchSongs")}
+              </button>
+              <button
+                ref={pickAssistantButtonRef}
+                type="button"
+                onClick={onOpenPickAssistant}
+                data-dialog-return-key={DIALOG_RETURN_KEYS.pickAssistant}
+                className="official-button w-full sm:w-auto"
+              >
+                <AppIcon name="music" />
+                {t("controls.pickAssistant")}
+                <span className="rounded-full bg-[var(--background)] px-1.5 text-xs tabular-nums text-[var(--muted)]">
+                  {shortlistCount}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={onCopyBoardLink}
+                disabled={!hasPicks}
+                data-dialog-return-key={DIALOG_RETURN_KEYS.copyBoardLink}
+                className="official-button w-full leading-tight sm:w-auto"
+              >
+                {boardLinkCopied ? (
+                  <AppIcon name="check" />
+                ) : (
+                  <AppIcon name="external" />
+                )}
+                {boardLinkCopied
+                  ? t("controls.boardLinkCopied")
+                  : t("controls.copyBoardLink")}
+              </button>
+              <button
+                type="button"
+                onClick={onGenerate}
+                disabled={generating || !hasPicks}
+                ref={generateButtonRef}
+                data-dialog-return-key={DIALOG_RETURN_KEYS.generateImage}
+                className="official-button official-button-primary min-w-0 w-full sm:min-w-[168px] sm:w-auto"
+              >
+                {generating ? (
+                  <>
+                    <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-black/20 border-t-black" />
+                    {t("controls.generating")}
+                  </>
+                ) : (
+                  <>
+                    <AppIcon name="image" />
+                    {t("controls.generateImage")}
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={onUndo}
+                disabled={!canUndo}
+                className="official-button w-full sm:w-auto"
+              >
+                <AppIcon name="undo" />
+                {t("controls.undo")}
+              </button>
+              <button
+                type="button"
+                onClick={onRedo}
+                disabled={!canRedo}
+                className="official-button w-full sm:w-auto"
+              >
+                <AppIcon name="redo" />
+                {t("controls.redo")}
+              </button>
+              <button
+                type="button"
+                onClick={onOpenBoardLibrary}
+                data-dialog-return-key={DIALOG_RETURN_KEYS.boardLibrary}
+                className="official-button w-full sm:w-auto"
+              >
+                <AppIcon name="archive" />
+                {t("controls.myBoards", { count: savedBoardCount })}
+              </button>
+              <button
+                type="button"
+                onClick={onClearAll}
+                disabled={!hasPicks}
+                className="official-button official-button-quiet col-span-2 !min-h-9 justify-self-center !px-3 sm:col-span-1 sm:!min-h-11"
+              >
+                {t("controls.clear")}
+              </button>
+            </div>
           </div>
           <span className="sr-only" aria-live="polite">
             {generating
@@ -228,6 +392,55 @@ export default function Controls({
           </span>
         </div>
       </section>
+    </div>
+  );
+}
+
+function NicknameField({
+  id,
+  nickname,
+  nicknameMaxLength,
+  generating,
+  onNicknameChange,
+  showHint = false,
+}: {
+  id: string;
+  nickname: string;
+  nicknameMaxLength: number;
+  generating: boolean;
+  onNicknameChange: (nickname: string) => void;
+  showHint?: boolean;
+}) {
+  const { t } = useLocale();
+
+  return (
+    <div className="grid gap-2">
+      <label
+        htmlFor={id}
+        className="text-xs font-semibold tracking-[0.02em] text-[var(--muted)]"
+      >
+        {t("controls.exportName")}
+      </label>
+      <div className="flex min-h-11 items-center rounded-[var(--radius-sm)] border border-[var(--line-strong)] bg-white transition-[border-color,box-shadow] focus-within:border-[var(--focus-ring)] focus-within:shadow-[0_0_0_2px_var(--focus-ring)]">
+        <input
+          id={id}
+          type="text"
+          value={nickname}
+          maxLength={nicknameMaxLength}
+          disabled={generating}
+          onChange={(event) => onNicknameChange(event.target.value)}
+          placeholder={t("controls.exportNamePlaceholder")}
+          className="min-w-0 flex-1 bg-transparent px-3 py-2 text-[15px] font-normal text-[var(--foreground)] outline-none placeholder:text-[var(--muted-soft)] disabled:opacity-50"
+        />
+        <span className="px-3 text-xs font-medium tabular-nums text-[var(--muted)]">
+          {nickname.length}/{nicknameMaxLength}
+        </span>
+      </div>
+      {showHint ? (
+        <p className="text-xs leading-relaxed text-[var(--muted)]">
+          {t("controls.exportNameHint")}
+        </p>
+      ) : null}
     </div>
   );
 }

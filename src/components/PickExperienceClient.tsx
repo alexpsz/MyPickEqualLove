@@ -2597,6 +2597,7 @@ export default function PickExperienceClient({
           }
           meta={isStandard ? undefined : headerMeta}
           showTitle={!isStandard}
+          collapseDetailsOnMobile={!isStandard}
         />
 
         <ExperienceNavigation activeExperienceId={experience.id} />

@@ -10,6 +10,10 @@ const clientSource = await readFile(
   new URL("../src/components/PickExperienceClient.tsx", import.meta.url),
   "utf8",
 );
+const headerSource = await readFile(
+  new URL("../src/components/Header.tsx", import.meta.url),
+  "utf8",
+);
 const contextSelectorSource = clientSource.slice(
   clientSource.indexOf("function ContextSelector("),
   clientSource.indexOf("const ACTIVE_MEMBERS_BY_SORT_ORDER"),
@@ -65,5 +69,52 @@ test("mobile keeps each context label and date intact inside its own segment", (
     contextSelectorSource,
     /aria-label=\{[\s\S]*context\.label[\s\S]*context\.shortDateLabel/,
     "the compact visual treatment must retain an explicit accessible name",
+  );
+});
+
+test("mobile promotes the selection path and conditionally renders advanced controls", () => {
+  assert.match(
+    controlsSource,
+    /grid grid-cols-2 gap-2 sm:hidden[\s\S]*controls\.searchSongs[\s\S]*controls\.pickAssistant[\s\S]*controls\.generateImage[\s\S]*controls\.more/,
+    "mobile must retain search, assistant, generation, and More in its first control layer",
+  );
+  assert.match(
+    controlsSource,
+    /\{isMoreOpen \? \([\s\S]*id=\{morePanelId\}[\s\S]*export-nickname-mobile/,
+    "closed advanced controls must not remain in the document or tab order",
+  );
+  assert.match(
+    controlsSource,
+    /if \(!controlsRef\.current\?\.contains\(event\.target as Node\)\)[\s\S]*closeMore\(\)/,
+    "an outside pointer interaction must close More",
+  );
+  assert.match(
+    controlsSource,
+    /event\.key !== "Escape"[\s\S]*closeMore\(\)/,
+    "Escape must close More and restore the trigger focus",
+  );
+  assert.match(
+    controlsSource,
+    /\{hasPicks \? \([\s\S]*controls\.clear[\s\S]*\) : null\}/,
+    "the destructive control belongs at the bottom of More and is absent on an empty board",
+  );
+});
+
+test("special activity details collapse only on mobile", () => {
+  assert.match(
+    clientSource,
+    /collapseDetailsOnMobile=\{!isStandard\}/,
+    "standard My Pick must remain concise without gaining an activity disclosure",
+  );
+  assert.match(
+    controlsSource,
+    /<div className="grid gap-3 sm:hidden">\{children\}<\/div>/,
+    "the special context selector must remain directly before mobile actions",
+  );
+  assert.match(headerSource, /collapseDetailsOnMobile = false/);
+  assert.match(
+    headerSource,
+    /isMobileDetailsOpen \? "block md:block" : "hidden md:block"/,
+    "activity copy should stay available on desktop while defaulting closed on mobile",
   );
 });
