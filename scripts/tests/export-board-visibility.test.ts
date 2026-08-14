@@ -140,6 +140,21 @@ test("mobile preview collapses export options and keeps the image stage flexible
   );
   assert.match(
     previewModalSource,
+    /data-preview-options-grid[\s\S]*grid-cols-2[\s\S]*sm:flex/,
+  );
+  assert.match(
+    previewModalSource,
+    /data-preview-option="template"[\s\S]*data-preview-option="transparent"[\s\S]*data-preview-option="qr"[\s\S]*data-preview-option="titles"/,
+  );
+  assert.match(previewModalSource, /order-2 min-w-0 p-1 sm:order-4/);
+  assert.match(previewModalSource, /order-3 min-w-0 p-1 sm:order-2/);
+  assert.match(previewModalSource, /order-4 min-w-0 p-1 sm:order-3/);
+  assert.match(
+    previewModalSource,
+    /min-h-\[72px\][\s\S]*flex-col-reverse[\s\S]*sm:min-h-11/,
+  );
+  assert.match(
+    previewModalSource,
     /data-preview-image-stage[\s\S]*min-h-0 flex-1 flex-col items-center justify-start/,
   );
   assert.match(previewModalSource, /h-\[92dvh\] max-h-\[92dvh\]/);

@@ -290,36 +290,58 @@ export default function PreviewModal({
             className={`${isOptionsExpanded ? "block" : "hidden"} sm:block`}
           >
             <div className="rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--background)] p-3">
-              <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-5">
-                <AnchoredOptionMenu
-                  compact
-                  label={t("preview.templateLabel")}
-                  value={templateId}
-                  disabled={generating}
-                  onValueChange={onTemplateChange}
-                  options={EXPORT_TEMPLATE_ORDER.map((id) => ({
-                    value: id,
-                    label: t(getExportTemplateMessageKey(id)),
-                  }))}
-                />
-                <div className="grid min-w-0 flex-1 grid-cols-1 gap-1 sm:flex sm:flex-wrap sm:items-center sm:justify-end sm:gap-x-2">
+              <div
+                data-preview-options-grid
+                className="grid min-w-0 grid-cols-2 items-stretch gap-2 sm:flex sm:flex-1 sm:flex-wrap sm:items-center sm:justify-end sm:gap-x-2 sm:gap-y-1"
+              >
+                <div
+                  data-preview-option="template"
+                  className="order-1 min-w-0 p-1 sm:w-36"
+                >
+                  <AnchoredOptionMenu
+                    compact
+                    className="h-full w-full grid-rows-[minmax(0,1fr)_auto] sm:h-auto sm:w-36"
+                    label={t("preview.templateLabel")}
+                    value={templateId}
+                    disabled={generating}
+                    onValueChange={onTemplateChange}
+                    options={EXPORT_TEMPLATE_ORDER.map((id) => ({
+                      value: id,
+                      label: t(getExportTemplateMessageKey(id)),
+                    }))}
+                  />
+                </div>
+                <div
+                  data-preview-option="transparent"
+                  className="order-2 min-w-0 p-1 sm:order-4"
+                >
+                  <ToggleOption
+                    checked={transparentBg}
+                    disabled={generating}
+                    onChange={onToggleTransparentBg}
+                    label={t("preview.transparentBackground")}
+                  />
+                </div>
+                <div
+                  data-preview-option="qr"
+                  className="order-3 min-w-0 p-1 sm:order-2"
+                >
                   <ToggleOption
                     checked={showQrCode}
                     disabled={generating}
                     onChange={onToggleShowQrCode}
                     label={t("preview.showQrCode")}
                   />
+                </div>
+                <div
+                  data-preview-option="titles"
+                  className="order-4 min-w-0 p-1 sm:order-3"
+                >
                   <ToggleOption
                     checked={showTitles}
                     disabled={generating}
                     onChange={onToggleShowTitles}
                     label={t("preview.showTitles")}
-                  />
-                  <ToggleOption
-                    checked={transparentBg}
-                    disabled={generating}
-                    onChange={onToggleTransparentBg}
-                    label={t("preview.transparentBackground")}
                   />
                 </div>
               </div>
@@ -549,14 +571,18 @@ function ToggleOption({
   disabled,
   onChange,
   label,
+  className = "",
 }: {
   checked: boolean;
   disabled: boolean;
   onChange: (value: boolean) => void;
   label: string;
+  className?: string;
 }) {
   return (
-    <label className="flex min-h-11 cursor-pointer select-none items-center justify-center gap-2 rounded-[var(--radius-sm)] px-2 text-[13px] font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--background)]">
+    <label
+      className={`flex min-h-[72px] w-full cursor-pointer select-none flex-col-reverse items-center justify-between gap-1 rounded-[var(--radius-sm)] px-2 py-2 text-center text-[12px] leading-4 font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--background)] sm:min-h-11 sm:w-auto sm:flex-row sm:justify-center sm:gap-2 sm:py-0 sm:text-left sm:text-[13px] ${className}`}
+    >
       <input
         type="checkbox"
         checked={checked}
@@ -568,7 +594,7 @@ function ToggleOption({
         aria-hidden="true"
         className="relative h-[26px] w-[44px] shrink-0 rounded-full bg-[var(--line-strong)] transition-colors duration-150 after:absolute after:left-[2px] after:top-[2px] after:h-[22px] after:w-[22px] after:rounded-full after:bg-white after:shadow-sm after:transition-transform after:duration-150 peer-checked:bg-[var(--project-primary)] peer-checked:after:translate-x-[18px] peer-focus-visible:ring-2 peer-focus-visible:ring-[var(--focus-ring)] peer-focus-visible:ring-offset-2 peer-disabled:opacity-50"
       />
-      {label}
+      <span className="min-w-0 text-center sm:text-left">{label}</span>
     </label>
   );
 }
