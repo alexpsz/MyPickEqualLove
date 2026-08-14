@@ -299,7 +299,9 @@ function ShortlistView({
         <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-[var(--muted)]">
           {t("assistant.emptyHint", { count: minimumCandidates })}
         </p>
-        <div className="mx-auto mt-6 grid max-w-sm gap-2 sm:grid-cols-2">
+        <div
+          className={`mx-auto mt-6 grid max-w-sm gap-2 ${canImportCurrentBoard ? "sm:grid-cols-2" : ""}`}
+        >
           <button
             ref={browseCandidatesRef}
             type="button"

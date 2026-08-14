@@ -520,6 +520,34 @@ test("Assistant Search and the visible available count share one derived collect
   );
 });
 
+test("the empty Assistant action stays centered when no board import action is available", () => {
+  const source = readFileSync(
+    resolve(process.cwd(), "src/components/PickAssistantModal.tsx"),
+    "utf8",
+  );
+  const emptyStateStart = source.indexOf("if (shortlist.length === 0)");
+  const emptyState = source.slice(
+    emptyStateStart,
+    source.indexOf("\n  return (\n", emptyStateStart),
+  );
+
+  assert.match(
+    emptyState,
+    /className=\{`mx-auto mt-6 grid max-w-sm gap-2 \$\{canImportCurrentBoard \? "sm:grid-cols-2" : ""\}`\}/,
+    "the empty-state action group may split into columns only when both actions render",
+  );
+  assert.doesNotMatch(
+    emptyState,
+    /className="[^"]*sm:grid-cols-2[^"]*"/,
+    "a single CTA must not be stranded in the left half of a two-column grid",
+  );
+  assert.match(
+    emptyState,
+    /ref=\{browseCandidatesRef\}[\s\S]*className="official-button official-button-primary w-full"/,
+    "the centered CTA must retain its full-width mobile and touch-target behavior",
+  );
+});
+
 test("current board songs become assistant candidates in slot order without duplicates", () => {
   const boardPicks = {
     "slot-1": "song-1",
