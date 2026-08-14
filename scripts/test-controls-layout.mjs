@@ -122,12 +122,17 @@ test("mobile promotes the selection path and conditionally renders advanced cont
   );
   assert.match(
     controlsSource,
-    /const handleMobileClearAll = \(\) => \{[\s\S]*if \(!onClearAll\(\)\) return;[\s\S]*setIsMoreOpen\(false\);[\s\S]*requestAnimationFrame[\s\S]*getClientRects\(\)\.length[\s\S]*moreButton\.focus/,
+    /const handleMobileClearAll = \(\) => \{[\s\S]*const clearButton = mobileClearButtonRef\.current;[\s\S]*if \(onClearAll\(\)\) \{[\s\S]*setIsMoreOpen\(false\);[\s\S]*requestAnimationFrame\(focusVisibleMoreButton\);[\s\S]*return;/,
     "a successful mobile clear must close More and restore focus to its visible trigger",
   );
   assert.match(
     controlsSource,
-    /onClick=\{handleMobileClearAll\}[\s\S]*controls\.clear/,
+    /window\.requestAnimationFrame\(\(\) => \{[\s\S]*if \(clearButton\?\.isConnected\) return;[\s\S]*focusVisibleMoreButton\(\);/,
+    "a failed clear must preserve its focus when the button remains mounted, but repair focus if an external update unmounts it",
+  );
+  assert.match(
+    controlsSource,
+    /ref=\{mobileClearButtonRef\}[\s\S]*onClick=\{handleMobileClearAll\}[\s\S]*controls\.clear/,
     "mobile Clear must use the success-aware wrapper instead of forwarding directly",
   );
   assert.match(

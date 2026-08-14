@@ -65,16 +65,26 @@ export default function Controls({
   const morePanelId = useId();
   const controlsRef = useRef<HTMLElement>(null);
   const moreButtonRef = useRef<HTMLButtonElement>(null);
+  const mobileClearButtonRef = useRef<HTMLButtonElement>(null);
+
+  const focusVisibleMoreButton = () => {
+    const moreButton = moreButtonRef.current;
+    if (moreButton?.getClientRects().length) {
+      moreButton.focus({ preventScroll: true });
+    }
+  };
 
   const handleMobileClearAll = () => {
-    if (!onClearAll()) return;
+    const clearButton = mobileClearButtonRef.current;
+    if (onClearAll()) {
+      setIsMoreOpen(false);
+      window.requestAnimationFrame(focusVisibleMoreButton);
+      return;
+    }
 
-    setIsMoreOpen(false);
     window.requestAnimationFrame(() => {
-      const moreButton = moreButtonRef.current;
-      if (moreButton?.getClientRects().length) {
-        moreButton.focus({ preventScroll: true });
-      }
+      if (clearButton?.isConnected) return;
+      focusVisibleMoreButton();
     });
   };
 
@@ -279,6 +289,7 @@ export default function Controls({
                 </button>
                 {hasPicks ? (
                   <button
+                    ref={mobileClearButtonRef}
                     type="button"
                     onClick={handleMobileClearAll}
                     className="official-button official-button-quiet col-span-2 !min-h-11 justify-self-stretch !px-3 text-red-700"
