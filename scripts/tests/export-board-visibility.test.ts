@@ -187,4 +187,21 @@ test("mobile preview collapses export options and keeps the image stage flexible
   assert.doesNotMatch(previewModalSource, /bg-white object-contain object-top/);
   assert.doesNotMatch(previewModalSource, /max-h-\[58dvh\]/);
   assert.match(previewModalSource, /grid-cols-5 items-stretch/);
+
+  const pickExperienceClientSource = readFileSync(
+    resolve(process.cwd(), "src/components/PickExperienceClient.tsx"),
+    "utf8",
+  );
+  assert.match(
+    pickExperienceClientSource,
+    /const EXPORT_IMAGE_READY_TIMEOUT_MS = 10_000/,
+  );
+  assert.match(
+    pickExperienceClientSource,
+    /throw new Error\("Export cover image did not finish loading"\)/,
+  );
+  assert.match(
+    pickExperienceClientSource,
+    /image\.decode\(\)[\s\S]*window\.clearTimeout\(timeoutId\)/,
+  );
 });
