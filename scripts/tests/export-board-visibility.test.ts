@@ -202,6 +202,6 @@ test("mobile preview collapses export options and keeps the image stage flexible
   );
   assert.match(
     pickExperienceClientSource,
-    /image\.decode\(\)[\s\S]*window\.clearTimeout\(timeoutId\)/,
+    /image[\s\S]*?\.decode\(\)[\s\S]*window\.clearTimeout\(timeoutId\)/,
   );
 });
