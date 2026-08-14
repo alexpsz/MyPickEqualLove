@@ -17,6 +17,86 @@ import {
 } from "../../src/config/exportPresets";
 import type { PickExperience } from "../../src/schema/pick-experience";
 import type { Picks } from "../../src/schema/music";
+import {
+  EXPORT_IMAGE_READY_TIMEOUT_MS,
+  waitForExportImageReady,
+  type ExportImageReadinessTarget,
+  type ExportImageReadinessTimers,
+} from "../../src/utils/exportImageReadiness";
+
+type ImageEventType = "load" | "error";
+type ImageListener = () => void;
+
+class TestImage implements ExportImageReadinessTarget {
+  complete: boolean;
+  naturalWidth: number;
+  decode?: () => Promise<void>;
+  private readonly listeners = new Map<ImageEventType, Set<ImageListener>>();
+
+  constructor({
+    complete,
+    naturalWidth,
+    decode,
+  }: {
+    complete: boolean;
+    naturalWidth: number;
+    decode?: () => Promise<void>;
+  }) {
+    this.complete = complete;
+    this.naturalWidth = naturalWidth;
+    this.decode = decode;
+  }
+
+  addEventListener(type: ImageEventType, listener: ImageListener) {
+    const listeners = this.listeners.get(type) ?? new Set<ImageListener>();
+    listeners.add(listener);
+    this.listeners.set(type, listeners);
+  }
+
+  removeEventListener(type: ImageEventType, listener: ImageListener) {
+    this.listeners.get(type)?.delete(listener);
+  }
+
+  dispatch(type: ImageEventType) {
+    for (const listener of this.listeners.get(type) ?? []) listener();
+  }
+
+  get listenerCount() {
+    return [...this.listeners.values()].reduce(
+      (count, listeners) => count + listeners.size,
+      0,
+    );
+  }
+}
+
+class ManualTimers implements ExportImageReadinessTimers {
+  private nextId = 1;
+  private readonly callbacks = new Map<number, () => void>();
+
+  setTimeout(callback: () => void) {
+    const id = this.nextId++;
+    this.callbacks.set(id, callback);
+    return id;
+  }
+
+  clearTimeout(timerId: unknown) {
+    this.callbacks.delete(timerId as number);
+  }
+
+  fireNext() {
+    const entry = this.callbacks.entries().next().value as
+      | [number, () => void]
+      | undefined;
+    assert.ok(entry, "Expected a pending timer");
+    const [id, callback] = entry;
+    this.callbacks.delete(id);
+    callback();
+  }
+
+  get pendingCount() {
+    return this.callbacks.size;
+  }
+}
 
 const liveExperience = LIVE_EXPERIENCES.find(
   (experience) => experience.export.layout === "five-memory-list",
@@ -151,7 +231,7 @@ test("mobile preview collapses export options and keeps the image stage flexible
   assert.match(previewModalSource, /order-4 min-w-0 sm:order-3/);
   assert.match(
     previewModalSource,
-    /data-preview-template-segment=\{option\}[\s\S]*aria-pressed=\{selected\}[\s\S]*min-h-10/,
+    /data-preview-template-segment=\{option\}[\s\S]*aria-pressed=\{selected\}[\s\S]*min-h-11/,
   );
   const templateSegmentedControlSource = previewModalSource.slice(
     previewModalSource.indexOf("function TemplateSegmentedControl"),
@@ -187,21 +267,143 @@ test("mobile preview collapses export options and keeps the image stage flexible
   assert.doesNotMatch(previewModalSource, /bg-white object-contain object-top/);
   assert.doesNotMatch(previewModalSource, /max-h-\[58dvh\]/);
   assert.match(previewModalSource, /grid-cols-5 items-stretch/);
+});
 
-  const pickExperienceClientSource = readFileSync(
-    resolve(process.cwd(), "src/components/PickExperienceClient.tsx"),
-    "utf8",
+test("export image readiness resolves only after load and decode", async () => {
+  assert.equal(EXPORT_IMAGE_READY_TIMEOUT_MS, 10_000);
+  const timers = new ManualTimers();
+  let decodeCalls = 0;
+  const image = new TestImage({
+    complete: false,
+    naturalWidth: 0,
+    decode: async () => {
+      decodeCalls += 1;
+    },
+  });
+  const readiness = waitForExportImageReady(
+    image,
+    EXPORT_IMAGE_READY_TIMEOUT_MS,
+    timers,
   );
-  assert.match(
-    pickExperienceClientSource,
-    /const EXPORT_IMAGE_READY_TIMEOUT_MS = 10_000/,
+
+  assert.equal(image.listenerCount, 2);
+  assert.equal(timers.pendingCount, 1);
+  image.complete = true;
+  image.naturalWidth = 320;
+  image.dispatch("load");
+  await readiness;
+
+  assert.equal(decodeCalls, 1);
+  assert.equal(image.listenerCount, 0);
+  assert.equal(timers.pendingCount, 0);
+});
+
+test("export image readiness rejects images without decoded pixels", async () => {
+  const timers = new ManualTimers();
+  const image = new TestImage({ complete: true, naturalWidth: 0 });
+
+  await assert.rejects(
+    waitForExportImageReady(image, EXPORT_IMAGE_READY_TIMEOUT_MS, timers),
+    /no decoded pixels/,
   );
-  assert.match(
-    pickExperienceClientSource,
-    /throw new Error\("Export cover image did not finish loading"\)/,
+  assert.equal(image.listenerCount, 0);
+  assert.equal(timers.pendingCount, 0);
+});
+
+test("export image readiness rejects load errors and cleans up", async () => {
+  const timers = new ManualTimers();
+  const image = new TestImage({ complete: false, naturalWidth: 0 });
+  const readiness = waitForExportImageReady(
+    image,
+    EXPORT_IMAGE_READY_TIMEOUT_MS,
+    timers,
   );
-  assert.match(
-    pickExperienceClientSource,
-    /image[\s\S]*?\.decode\(\)[\s\S]*window\.clearTimeout\(timeoutId\)/,
+
+  image.dispatch("error");
+  await assert.rejects(readiness, /failed to load/);
+  assert.equal(image.listenerCount, 0);
+  assert.equal(timers.pendingCount, 0);
+});
+
+test("export image readiness rejects load timeouts and ignores late load", async () => {
+  const timers = new ManualTimers();
+  const image = new TestImage({ complete: false, naturalWidth: 0 });
+  let settlements = 0;
+  const readiness = waitForExportImageReady(
+    image,
+    EXPORT_IMAGE_READY_TIMEOUT_MS,
+    timers,
   );
+  void readiness.then(
+    () => {
+      settlements += 1;
+    },
+    () => {
+      settlements += 1;
+    },
+  );
+
+  timers.fireNext();
+  await assert.rejects(readiness, /load timed out/);
+  image.complete = true;
+  image.naturalWidth = 320;
+  image.dispatch("load");
+  await Promise.resolve();
+
+  assert.equal(settlements, 1);
+  assert.equal(image.listenerCount, 0);
+  assert.equal(timers.pendingCount, 0);
+});
+
+test("export image readiness rejects decode failures and clears its timer", async () => {
+  const timers = new ManualTimers();
+  const image = new TestImage({
+    complete: true,
+    naturalWidth: 320,
+    decode: () => Promise.reject(new Error("decode failed")),
+  });
+
+  await assert.rejects(
+    waitForExportImageReady(image, EXPORT_IMAGE_READY_TIMEOUT_MS, timers),
+    /decode failed/,
+  );
+  assert.equal(image.listenerCount, 0);
+  assert.equal(timers.pendingCount, 0);
+});
+
+test("export image readiness rejects decode timeouts and ignores late decode", async () => {
+  const timers = new ManualTimers();
+  let resolveDecode: (() => void) | undefined;
+  const image = new TestImage({
+    complete: true,
+    naturalWidth: 320,
+    decode: () =>
+      new Promise<void>((resolve) => {
+        resolveDecode = resolve;
+      }),
+  });
+  let settlements = 0;
+  const readiness = waitForExportImageReady(
+    image,
+    EXPORT_IMAGE_READY_TIMEOUT_MS,
+    timers,
+  );
+  void readiness.then(
+    () => {
+      settlements += 1;
+    },
+    () => {
+      settlements += 1;
+    },
+  );
+
+  assert.equal(timers.pendingCount, 1);
+  timers.fireNext();
+  await assert.rejects(readiness, /decode timed out/);
+  resolveDecode?.();
+  await Promise.resolve();
+
+  assert.equal(settlements, 1);
+  assert.equal(image.listenerCount, 0);
+  assert.equal(timers.pendingCount, 0);
 });

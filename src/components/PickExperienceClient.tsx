@@ -112,6 +112,7 @@ import {
   type ExportRenderRequest,
   type ExportRenderResult,
 } from "../utils/exportCapture";
+import { waitForExportImageReady } from "../utils/exportImageReadiness";
 import { getMemberColorGradient } from "../utils/memberColors";
 import {
   createPickAssistantSession,
@@ -3010,7 +3011,6 @@ const MEMBER_COLOR_BAR_BACKGROUND = getMemberColorGradient(
   ACTIVE_MEMBERS_BY_SORT_ORDER,
   PROJECT_THEME_COLOR,
 );
-const EXPORT_IMAGE_READY_TIMEOUT_MS = 10_000;
 
 async function copyTextToClipboard(value: string) {
   if (typeof navigator.clipboard?.writeText === "function") {
@@ -3071,49 +3071,8 @@ function createExportRenderResult(
 
 async function waitForExportImages(exportElement: HTMLElement) {
   await Promise.all(
-    Array.from(exportElement.querySelectorAll("img")).map(waitForExportImage),
+    Array.from(exportElement.querySelectorAll("img")).map((image) =>
+      waitForExportImageReady(image),
+    ),
   );
-}
-
-async function waitForExportImage(image: HTMLImageElement) {
-  const loaded = image.complete
-    ? image.naturalWidth > 0
-    : await new Promise<boolean>((resolve) => {
-        const finish = (value: boolean) => {
-          window.clearTimeout(timeoutId);
-          image.removeEventListener("load", handleLoad);
-          image.removeEventListener("error", handleError);
-          resolve(value);
-        };
-        const handleLoad = () => finish(image.naturalWidth > 0);
-        const handleError = () => finish(false);
-        const timeoutId = window.setTimeout(
-          () => finish(false),
-          EXPORT_IMAGE_READY_TIMEOUT_MS,
-        );
-
-        image.addEventListener("load", handleLoad);
-        image.addEventListener("error", handleError);
-        if (image.complete) handleLoad();
-      });
-
-  if (!loaded) {
-    throw new Error("Export cover image did not finish loading");
-  }
-
-  if (typeof image.decode === "function") {
-    await new Promise<void>((resolve) => {
-      const timeoutId = window.setTimeout(
-        resolve,
-        EXPORT_IMAGE_READY_TIMEOUT_MS,
-      );
-      void image
-        .decode()
-        .catch(() => undefined)
-        .finally(() => {
-          window.clearTimeout(timeoutId);
-          resolve();
-        });
-    });
-  }
 }
