@@ -63,17 +63,17 @@
       "ja": "≠ME",
       "romaji": "≠ ME"
     },
-    "releaseId": "2021-04-07-choutokkyuu-not-equal-me-iki-cd-only-noimii-ban",
+    "releaseId": "2019-10-30-zuru-iyo-zuru-ine-cd-dvd-type-c",
     "releaseTitle": {
-      "ja": "「超特急 ≠ME行き」 <CD Only/ノイミー盤>",
-      "romaji": "( choutokkyuu ≠ ME iki ) <CD Only/ noimii ban >"
+      "ja": "ズルいよ ズルいね[CD+DVD/Type-C]",
+      "romaji": "zuru iyo zuru ine [CD+DVD/Type-C ]"
     },
-    "releaseType": "album",
-    "releaseDate": "2021-04-07",
+    "releaseType": "single",
+    "releaseDate": "2019-10-30",
     "trackNo": 2,
-    "trackType": "album",
+    "trackType": "coupling",
     "coverUrl": "/covers/not-equal-me/kun-no-oto-dattanda.jpg",
-    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/cac76b5016ea3daf47762837cd3ff970.jpeg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/equallove/contents/discography/1509af29777c8278d106b2cc6daffc40.jpeg",
     "memberIds": [
       "ogi-hana",
       "ochiai-kirari",
@@ -87,7 +87,7 @@
       "nagata-shiori",
       "honda-miyuki"
     ],
-    "tags": ["2021", "album"],
+    "tags": ["2019", "coupling", "single"],
     "credits": {
       "lyricist": {
         "ja": "指原莉乃",
@@ -102,7 +102,7 @@
         "romaji": "bagubea"
       }
     },
-    "officialUrl": "https://not-equal-me.jp/discography/detail/4/",
+    "officialUrl": "https://equal-love.jp/discography/detail/18/",
     "creditSourceUrl": "https://www.uta-net.com/song/276602/"
   },
   {
@@ -115,17 +115,17 @@
       "ja": "≠ME",
       "romaji": "≠ ME"
     },
-    "releaseId": "2021-04-07-choutokkyuu-not-equal-me-iki-cd-only-noimii-ban",
+    "releaseId": "2020-07-08-cameo-cd-dvd-type-c",
     "releaseTitle": {
-      "ja": "「超特急 ≠ME行き」 <CD Only/ノイミー盤>",
-      "romaji": "( choutokkyuu ≠ ME iki ) <CD Only/ noimii ban >"
+      "ja": "CAMEO[CD+DVD/Type-C]",
+      "romaji": "CAMEO[CD+DVD/Type-C ]"
     },
-    "releaseType": "album",
-    "releaseDate": "2021-04-07",
-    "trackNo": 3,
-    "trackType": "album",
+    "releaseType": "single",
+    "releaseDate": "2020-07-08",
+    "trackNo": 2,
+    "trackType": "coupling",
     "coverUrl": "/covers/not-equal-me/kun-to-boku-no-uta.jpg",
-    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/cac76b5016ea3daf47762837cd3ff970.jpeg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/equallove/contents/discography/98df787babe230c47b4df22e4e3123bd.jpeg",
     "memberIds": [
       "ogi-hana",
       "ochiai-kirari",
@@ -139,7 +139,7 @@
       "nagata-shiori",
       "honda-miyuki"
     ],
-    "tags": ["2021", "album"],
+    "tags": ["2020", "coupling", "single"],
     "credits": {
       "lyricist": {
         "ja": "指原莉乃",
@@ -154,7 +154,7 @@
         "romaji": "bagubea"
       }
     },
-    "officialUrl": "https://not-equal-me.jp/discography/detail/4/",
+    "officialUrl": "https://equal-love.jp/discography/detail/22/",
     "creditSourceUrl": "https://www.uta-net.com/song/287666/"
   },
   {
@@ -219,17 +219,17 @@
       "ja": "≠ME",
       "romaji": "≠ ME"
     },
-    "releaseId": "2021-04-07-choutokkyuu-not-equal-me-iki-cd-only-noimii-ban",
+    "releaseId": "2020-07-08-kuuhaku-no-hana-single",
     "releaseTitle": {
-      "ja": "「超特急 ≠ME行き」 <CD Only/ノイミー盤>",
-      "romaji": "( choutokkyuu ≠ ME iki ) <CD Only/ noimii ban >"
+      "ja": "空白の花 - Single",
+      "romaji": "kuuhaku no hana - Single"
     },
-    "releaseType": "album",
-    "releaseDate": "2021-04-07",
-    "trackNo": 5,
-    "trackType": "album",
+    "releaseType": "digital",
+    "releaseDate": "2020-07-08",
+    "trackNo": 1,
+    "trackType": "title",
     "coverUrl": "/covers/not-equal-me/kuuhaku-no-hana.jpg",
-    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/cac76b5016ea3daf47762837cd3ff970.jpeg",
+    "coverSourceUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/a8/ab/b1/a8abb160-6842-2650-0a6b-3f2bfd3f2d5c/jacket_VVXX00705B00Z_550.jpg/1200x1200bb.jpg",
     "memberIds": [
       "ogi-hana",
       "ochiai-kirari",
@@ -243,7 +243,7 @@
       "nagata-shiori",
       "honda-miyuki"
     ],
-    "tags": ["2021", "album"],
+    "tags": ["2020", "digital", "title"],
     "credits": {
       "lyricist": {
         "ja": "指原莉乃",
@@ -258,7 +258,7 @@
         "romaji": "wakatabe makoto"
       }
     },
-    "officialUrl": "https://not-equal-me.jp/discography/detail/4/",
+    "officialUrl": "https://music.apple.com/jp/album/%E7%A9%BA%E7%99%BD%E3%81%AE%E8%8A%B1-single/1537916615",
     "creditSourceUrl": "https://www.uta-net.com/song/300575/"
   },
   {
@@ -271,17 +271,17 @@
       "ja": "≠ME",
       "romaji": "≠ ME"
     },
-    "releaseId": "2021-04-07-choutokkyuu-not-equal-me-iki-cd-only-noimii-ban",
+    "releaseId": "2020-11-25-seishun-saburiminaru-cd-dvd-type-c",
     "releaseTitle": {
-      "ja": "「超特急 ≠ME行き」 <CD Only/ノイミー盤>",
-      "romaji": "( choutokkyuu ≠ ME iki ) <CD Only/ noimii ban >"
+      "ja": "青春“サブリミナル”[CD+DVD/Type-C]",
+      "romaji": "seishun “ saburiminaru ” [CD+DVD/Type-C ]"
     },
-    "releaseType": "album",
-    "releaseDate": "2021-04-07",
-    "trackNo": 6,
-    "trackType": "album",
+    "releaseType": "single",
+    "releaseDate": "2020-11-25",
+    "trackNo": 2,
+    "trackType": "coupling",
     "coverUrl": "/covers/not-equal-me/p-i-c.jpg",
-    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/cac76b5016ea3daf47762837cd3ff970.jpeg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/equallove/contents/discography/c65a0b39538802272a1160686829f9c5.jpeg",
     "memberIds": [
       "ogi-hana",
       "ochiai-kirari",
@@ -295,7 +295,7 @@
       "nagata-shiori",
       "honda-miyuki"
     ],
-    "tags": ["2021", "album"],
+    "tags": ["2020", "coupling", "single"],
     "credits": {
       "lyricist": {
         "ja": "指原莉乃",
@@ -310,7 +310,7 @@
         "romaji": "Yu-ki Kokubo ・ NA . ZU . NA ・ YHANAEL"
       }
     },
-    "officialUrl": "https://not-equal-me.jp/discography/detail/4/",
+    "officialUrl": "https://equal-love.jp/discography/detail/26/",
     "creditSourceUrl": "https://www.uta-net.com/song/294205/"
   },
   {
@@ -531,17 +531,17 @@
       "ja": "≠ME",
       "romaji": "≠ ME"
     },
-    "releaseId": "2021-04-07-choutokkyuu-not-equal-me-iki-cd-only-noimii-ban",
+    "releaseId": "2019-08-04-not-equal-me-single",
     "releaseTitle": {
-      "ja": "「超特急 ≠ME行き」 <CD Only/ノイミー盤>",
-      "romaji": "( choutokkyuu ≠ ME iki ) <CD Only/ noimii ban >"
+      "ja": "≠ME - Single",
+      "romaji": "≠ ME - Single"
     },
-    "releaseType": "album",
-    "releaseDate": "2021-04-07",
-    "trackNo": 9,
-    "trackType": "album",
+    "releaseType": "digital",
+    "releaseDate": "2019-08-04",
+    "trackNo": 1,
+    "trackType": "title",
     "coverUrl": "/covers/not-equal-me/not-equal-me.jpg",
-    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/cac76b5016ea3daf47762837cd3ff970.jpeg",
+    "coverSourceUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/3d/9b/f2/3d9bf206-1b29-ba3c-07ad-40913dba9701/jacket_VVXX00447B00Z_550.jpg/1200x1200bb.jpg",
     "memberIds": [
       "ogi-hana",
       "ochiai-kirari",
@@ -555,7 +555,7 @@
       "nagata-shiori",
       "honda-miyuki"
     ],
-    "tags": ["2021", "album"],
+    "tags": ["2019", "digital", "title"],
     "credits": {
       "lyricist": {
         "ja": "指原莉乃",
@@ -570,7 +570,7 @@
         "romaji": "bagubea"
       }
     },
-    "officialUrl": "https://not-equal-me.jp/discography/detail/4/",
+    "officialUrl": "https://music.apple.com/jp/album/me-single/1537909064",
     "creditSourceUrl": "https://www.uta-net.com/song/300572/"
   },
   {
@@ -3124,17 +3124,17 @@
       "ja": "≠ME",
       "romaji": "≠ ME"
     },
-    "releaseId": "2026-06-24-ai-kudasaimase-kokode-faasutokissu",
+    "releaseId": "2026-06-24-ai-kudasaimase-kokode-faasutokissu-cd-dvd-type-a",
     "releaseTitle": {
-      "ja": "愛くださいませ/ここでファーストキッス",
-      "romaji": "ai kudasaimase / kokode faasutokissu"
+      "ja": "「愛くださいませ/ここでファーストキッス」<CD+DVD/Type A>",
+      "romaji": "( ai kudasaimase / kokode faasutokissu ) <CD+DVD/Type A>"
     },
     "releaseType": "single",
     "releaseDate": "2026-06-24",
     "trackNo": 2,
     "trackType": "title",
     "coverUrl": "/covers/not-equal-me/kokode-faasutokissu.jpg",
-    "coverSourceUrl": "https://m.media-amazon.com/images/I/51a5RuQvqXL._SL240_.jpg",
+    "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/0433a469c7b595dd3d28cccdec8c73ab.jpeg",
     "memberIds": [
       "ogi-hana",
       "ochiai-kirari",
@@ -3148,26 +3148,27 @@
       "nagata-shiori",
       "honda-miyuki"
     ],
+    "centerMemberIds": ["tomita-nanaka"],
     "tags": ["2026", "single", "title"],
     "credits": {
       "lyricist": {
-        "ja": "未確認",
-        "romaji": "mikakunin"
+        "ja": "指原莉乃",
+        "romaji": "Sashihara Rino"
       },
       "composer": {
-        "ja": "未確認",
-        "romaji": "mikakunin"
+        "ja": "えとゆま・菊池諒",
+        "romaji": "etoyuma ・ Kikuchi Ryo"
       },
       "arranger": {
-        "ja": "未確認",
-        "romaji": "mikakunin"
+        "ja": "えとゆま",
+        "romaji": "etoyuma"
       }
     },
-    "officialUrl": "https://not-equal-me.jp/feature/specialsite_12thsingle",
-    "creditSourceUrl": "https://not-equal-me.jp/feature/specialsite_12thsingle",
+    "officialUrl": "https://not-equal-me.jp/discography/detail/75/",
+    "creditSourceUrl": "https://www.uta-net.com/song/395187/",
     "visibility": "default",
-    "sourceStatus": "unverified",
-    "sourceNote": "12th両A面シングル収録曲として公式サイトで確認。作曲/編曲 credits は未確認。"
+    "sourceStatus": "released",
+    "ownershipEvidence": "verified-credits"
   },
   {
     "id": "summer-haze",
@@ -3190,10 +3191,38 @@
     "trackType": "coupling",
     "coverUrl": "/covers/not-equal-me/summer-haze.jpg",
     "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/0433a469c7b595dd3d28cccdec8c73ab.jpeg",
-    "tags": ["2026", "coupling", "credits_pending", "single"],
+    "memberIds": [
+      "ogi-hana",
+      "ochiai-kirari",
+      "kanisawa-moeko",
+      "kawaguchi-natsune",
+      "kawanago-natsumi",
+      "sakurai-momo",
+      "suzuki-hitomi",
+      "tanizaki-saya",
+      "tomita-nanaka",
+      "nagata-shiori",
+      "honda-miyuki"
+    ],
+    "centerMemberIds": ["suzuki-hitomi"],
+    "tags": ["2026", "coupling", "single"],
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "Sashihara Rino"
+      },
+      "composer": {
+        "ja": "中村歩・菊池博人",
+        "romaji": "Nakamura Ayumu ・ Kikuchi Hiroto"
+      },
+      "arranger": {
+        "ja": "菊池博人・中村歩",
+        "romaji": "Kikuchi Hiroto ・ Nakamura Ayumu"
+      }
+    },
     "officialUrl": "https://not-equal-me.jp/discography/detail/75/",
-    "sourceStatus": "credits_pending",
-    "sourceNote": "公式ディスコグラフィーで曲名・収録作品・ジャケットを確認済み。作詞・作曲・編曲クレジットは公開元の復旧または公開待ち。",
-    "ownershipEvidence": "official-multi-edition"
+    "creditSourceUrl": "https://www.uta-net.com/song/395186/",
+    "sourceStatus": "released",
+    "ownershipEvidence": "verified-credits"
   }
 ]

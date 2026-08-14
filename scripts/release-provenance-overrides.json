@@ -1,0 +1,184 @@
+{
+  "schemaVersion": 1,
+  "projects": {
+    "nearly-equal-joy": {
+      "≒JOY": {
+        "releaseId": "2022-07-03-nearly-equal-joy-single",
+        "releaseTitle": "≒JOY - Single",
+        "releaseType": "digital",
+        "releaseDate": "2022-07-03",
+        "trackNo": 1,
+        "trackType": "title",
+        "coverUrl": "/covers/nearly-equal-joy/nearly-equal-joy.jpg",
+        "coverSourceUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music112/v4/ff/e5/a4/ffe5a461-a0fc-58c8-d50c-701518862eab/4547366570915.jpg/1200x1200bb.jpg",
+        "officialUrl": "https://music.apple.com/jp/album/joy-single/1631260592"
+      },
+      "笑って フラジール": {
+        "releaseId": "2022-09-28-be-selfish-cd-dvd-type-d",
+        "releaseTitle": "Be Selfish[CD+DVD/Type-D]",
+        "releaseType": "single",
+        "releaseDate": "2022-09-28",
+        "trackNo": 2,
+        "trackType": "coupling",
+        "coverUrl": "/covers/nearly-equal-joy/waratsu-te-furajiiru.jpg",
+        "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/equallove/contents/discography/8469f0fd4584b0eb66b6e1d1d9f7777d.jpeg",
+        "officialUrl": "https://equal-love.jp/discography/detail/50/"
+      },
+      "超孤独ライオン": {
+        "releaseId": "2022-11-23-hanikami-shooto",
+        "releaseTitle": "「はにかみショート」",
+        "releaseType": "single",
+        "releaseDate": "2022-11-23",
+        "trackNo": 2,
+        "trackType": "coupling",
+        "coverUrl": "/covers/nearly-equal-joy/chou-kodoku-raion.jpg",
+        "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/notequalme/contents/discography/668b8557ffc53b7ea478fe4e5b8388f8.jpeg",
+        "officialUrl": "https://not-equal-me.jp/discography/detail/21/"
+      },
+      "スイートシックスティーン": {
+        "releaseId": "2023-02-22-kono-sora-ga-torigaa-cd-dvd-type-d",
+        "releaseTitle": "この空がトリガー[CD+DVD/Type-D]",
+        "releaseType": "single",
+        "releaseDate": "2023-02-22",
+        "trackNo": 2,
+        "trackType": "coupling",
+        "coverUrl": "/covers/nearly-equal-joy/suiitoshikkusuteiin.jpg",
+        "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/equallove/contents/discography/d7bb528557716b9585c56969c446c96f.jpeg",
+        "officialUrl": "https://equal-love.jp/discography/detail/55/"
+      },
+      "今日も君の夢を見たんだ": {
+        "releaseId": "2023-04-12-tenshi-ha-doko-he-special-edition-ep",
+        "releaseTitle": "天使は何処へ <Special Edition> - EP",
+        "releaseType": "digital",
+        "releaseDate": "2023-04-12",
+        "trackNo": 4,
+        "trackType": "coupling",
+        "coverUrl": "/covers/nearly-equal-joy/kyou-mo-kun-no-yume-wo-mita-nda.jpg",
+        "coverSourceUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music116/v4/d0/78/c2/d078c2a9-1aef-2732-9b93-046836471b96/NOPA-4153.jpg/1200x1200bb.jpg",
+        "officialUrl": "https://music.apple.com/jp/song/1679711799"
+      },
+      "大空、ビュンと": {
+        "releaseId": "2023-07-19-natsumatope-cd-dvd-type-d",
+        "releaseTitle": "ナツマトペ[CD+DVD/Type-D]",
+        "releaseType": "single",
+        "releaseDate": "2023-07-19",
+        "trackNo": 2,
+        "trackType": "coupling",
+        "coverUrl": "/covers/nearly-equal-joy/oozora-byun-to.jpg",
+        "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/equallove/contents/discography/f2bbdb530d11a3ffc88a21d2e4479d38.jpeg",
+        "officialUrl": "https://equal-love.jp/discography/detail/81/"
+      }
+    },
+    "not-equal-me": {
+      "≠ME": {
+        "releaseId": "2019-08-04-not-equal-me-single",
+        "releaseTitle": "≠ME - Single",
+        "releaseType": "digital",
+        "releaseDate": "2019-08-04",
+        "trackNo": 1,
+        "trackType": "title",
+        "coverUrl": "/covers/not-equal-me/not-equal-me.jpg",
+        "coverSourceUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music115/v4/3d/9b/f2/3d9bf206-1b29-ba3c-07ad-40913dba9701/jacket_VVXX00447B00Z_550.jpg/1200x1200bb.jpg",
+        "officialUrl": "https://music.apple.com/jp/album/me-single/1537909064"
+      },
+      "君の音だったんだ": {
+        "releaseId": "2019-10-30-zuru-iyo-zuru-ine-cd-dvd-type-c",
+        "releaseTitle": "ズルいよ ズルいね[CD+DVD/Type-C]",
+        "releaseType": "single",
+        "releaseDate": "2019-10-30",
+        "trackNo": 2,
+        "trackType": "coupling",
+        "coverUrl": "/covers/not-equal-me/kun-no-oto-dattanda.jpg",
+        "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/equallove/contents/discography/1509af29777c8278d106b2cc6daffc40.jpeg",
+        "officialUrl": "https://equal-love.jp/discography/detail/18/"
+      },
+      "君と僕の歌": {
+        "releaseId": "2020-07-08-cameo-cd-dvd-type-c",
+        "releaseTitle": "CAMEO[CD+DVD/Type-C]",
+        "releaseType": "single",
+        "releaseDate": "2020-07-08",
+        "trackNo": 2,
+        "trackType": "coupling",
+        "coverUrl": "/covers/not-equal-me/kun-to-boku-no-uta.jpg",
+        "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/equallove/contents/discography/98df787babe230c47b4df22e4e3123bd.jpeg",
+        "officialUrl": "https://equal-love.jp/discography/detail/22/"
+      },
+      "空白の花": {
+        "releaseId": "2020-07-08-kuuhaku-no-hana-single",
+        "releaseTitle": "空白の花 - Single",
+        "releaseType": "digital",
+        "releaseDate": "2020-07-08",
+        "trackNo": 1,
+        "trackType": "title",
+        "coverUrl": "/covers/not-equal-me/kuuhaku-no-hana.jpg",
+        "coverSourceUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music124/v4/a8/ab/b1/a8abb160-6842-2650-0a6b-3f2bfd3f2d5c/jacket_VVXX00705B00Z_550.jpg/1200x1200bb.jpg",
+        "officialUrl": "https://music.apple.com/jp/album/%E7%A9%BA%E7%99%BD%E3%81%AE%E8%8A%B1-single/1537916615"
+      },
+      "P.I.C.": {
+        "releaseId": "2020-11-25-seishun-saburiminaru-cd-dvd-type-c",
+        "releaseTitle": "青春“サブリミナル”[CD+DVD/Type-C]",
+        "releaseType": "single",
+        "releaseDate": "2020-11-25",
+        "trackNo": 2,
+        "trackType": "coupling",
+        "coverUrl": "/covers/not-equal-me/p-i-c.jpg",
+        "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/equallove/contents/discography/c65a0b39538802272a1160686829f9c5.jpeg",
+        "officialUrl": "https://equal-love.jp/discography/detail/26/"
+      }
+    }
+  },
+  "campaignTransitions": {
+    "equal-love": {
+      "恋、はじめました。": {
+        "advanceRelease": {
+          "releaseId": "2026-08-04-koi-hajimemashita-single",
+          "releaseTitle": "恋、はじめました。 - Single",
+          "releaseType": "digital",
+          "releaseDate": "2026-08-04",
+          "trackNo": 1,
+          "trackType": "title",
+          "coverUrl": "/covers/equal-love/koi-hajimemashita.jpg",
+          "coverSourceUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/4c/e8/31/4ce831bc-d6ef-bd1d-ecb4-1768b26bffe3/4547366839838.jpg/1200x1200bb.jpg",
+          "officialUrl": "https://music.apple.com/jp/album/%E6%81%8B-%E3%81%AF%E3%81%98%E3%82%81%E3%81%BE%E3%81%97%E3%81%9F-single/6792630528"
+        },
+        "primaryRelease": {
+          "releaseId": "2026-08-26-koi-hajimemashita-cd-blu-ray-type-a",
+          "releaseTitle": "恋、はじめました。[CD+Blu-ray/Type A]",
+          "releaseType": "single",
+          "releaseDate": "2026-08-26",
+          "trackNo": 1,
+          "trackType": "title",
+          "coverUrl": "/covers/equal-love/koi-hajimemashita.jpg",
+          "coverSourceUrl": "https://aop-emtg-jp.s3.amazonaws.com/prod/public/equallove/contents/information/1d404703e7f88ff29a22d8a24666caed.jpg",
+          "officialUrl": "https://equal-love.jp/news/detail/11815"
+        }
+      }
+    },
+    "nearly-equal-joy": {
+      "サマーツインテール": {
+        "advanceRelease": {
+          "releaseId": "2026-07-09-samaatsuinteeru-single",
+          "releaseTitle": "サマーツインテール - Single",
+          "releaseType": "digital",
+          "releaseDate": "2026-07-09",
+          "trackNo": 1,
+          "trackType": "title",
+          "coverUrl": "/covers/nearly-equal-joy/samaatsuinteeru.jpg",
+          "coverSourceUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/91/4e/fc/914efc95-ee99-9142-adb1-c44a6b537d46/4547366835076.jpg/1200x1200bb.jpg",
+          "officialUrl": "https://music.apple.com/jp/album/%E3%82%B5%E3%83%9E%E3%83%BC%E3%83%84%E3%82%A4%E3%83%B3%E3%83%86%E3%83%BC%E3%83%AB-single/6784647186"
+        },
+        "primaryRelease": {
+          "releaseId": "2026-08-05-samaatsuinteeru-cd-dvd-type-a",
+          "releaseTitle": "サマーツインテール[CD+DVD/Type A]",
+          "releaseType": "single",
+          "releaseDate": "2026-08-05",
+          "trackNo": 1,
+          "trackType": "title",
+          "coverUrl": "/covers/nearly-equal-joy/samaatsuinteeru.jpg",
+          "coverSourceUrl": "https://s3-aop.plusmember.jp/prod/public/yoani3rd/contents/discography/42ead484466f0b0f3c50b82fc564b345.jpeg",
+          "officialUrl": "https://nearly-equal-joy.jp/discography/detail/52/"
+        }
+      }
+    }
+  }
+}

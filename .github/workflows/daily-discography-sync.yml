@@ -9,20 +9,22 @@ on:
     types: [daily-discography-sync]
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: daily-discography-sync
   cancel-in-progress: false
 
 jobs:
-  sync:
+  scan:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    outputs:
+      changed: ${{ steps.changes.outputs.changed }}
 
     steps:
-      - name: Check out the production branch
+      - name: Check out the production commit
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
@@ -52,11 +54,25 @@ jobs:
       - name: Test the discography merge rules
         run: npm run test:discography
 
-      - name: Synchronize all three groups
-        run: npm run sync:songs:all
+      - name: Synchronize all three groups and write source receipts
+        shell: bash
+        run: |
+          report_dir="$RUNNER_TEMP/discography-reports"
+          mkdir -p "$report_dir"
+          status=0
+          for project in equal-love nearly-equal-joy not-equal-me; do
+            python scripts/sync-project-discography.py \
+              --project "$project" \
+              --songs-only \
+              --report-json "$report_dir/$project.json" || status=1
+          done
+          npm run format:data:songs
+          exit "$status"
 
-      - name: Reject destructive or unexpected generated changes
-        run: npm run check:data:sync:strict
+      - name: Reject destructive, unreported, or unexpected generated changes
+        run: >-
+          npm run check:data:sync:strict --
+          --source-report-dir "${{ runner.temp }}/discography-reports"
 
       - name: Validate generated data
         run: npm run validate:data
@@ -100,11 +116,89 @@ jobs:
       - name: Recheck generated data after all builds
         if: steps.changes.outputs.changed == 'true'
         run: |
-          npm run check:data:sync:strict
+          npm run check:data:sync:strict -- --source-report-dir "${{ runner.temp }}/discography-reports"
           npm run validate:data
 
-      - name: Commit the verified catalog update
+      - name: Prepare the verified candidate patch
         if: steps.changes.outputs.changed == 'true'
+        shell: bash
+        run: |
+          bundle_dir="$RUNNER_TEMP/discography-candidate"
+          mkdir -p "$bundle_dir/reports"
+          git add -N -- public/covers/equal-love public/covers/nearly-equal-joy public/covers/not-equal-me
+          git diff --binary HEAD -- src/projects public/covers > "$bundle_dir/candidate.patch"
+          cp "$RUNNER_TEMP"/discography-reports/*.json "$bundle_dir/reports/"
+          printf '%s\n' "${{ github.sha }}" > "$bundle_dir/base-sha.txt"
+          (cd "$bundle_dir" && sha256sum base-sha.txt candidate.patch reports/*.json > manifest.sha256)
+
+      - name: Write the source receipt summary
+        if: always()
+        shell: bash
+        run: >-
+          node scripts/summarize-discography-reports.mjs
+          "$RUNNER_TEMP/discography-reports" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload review receipts
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: discography-review-${{ github.run_id }}
+          path: ${{ runner.temp }}/discography-reports
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Upload the publishable candidate
+        if: steps.changes.outputs.changed == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: discography-candidate-${{ github.run_id }}
+          path: ${{ runner.temp }}/discography-candidate
+          if-no-files-found: error
+          retention-days: 3
+
+  publish:
+    needs: scan
+    if: needs.scan.result == 'success' && needs.scan.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: write
+
+    steps:
+      - name: Check out the exact scanned commit
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Download the verified candidate
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: discography-candidate-${{ github.run_id }}
+          path: ${{ runner.temp }}/discography-candidate
+
+      - name: Verify and apply the candidate
+        shell: bash
+        run: |
+          bundle_dir="$RUNNER_TEMP/discography-candidate"
+          test "$(cat "$bundle_dir/base-sha.txt")" = "${{ github.sha }}"
+          (cd "$bundle_dir" && sha256sum --check manifest.sha256)
+          git apply --index "$bundle_dir/candidate.patch"
+          node scripts/check-discography-update.mjs \
+            --enforce-allowlist \
+            --source-report-dir "$bundle_dir/reports"
+          node scripts/validate-project-data.mjs
+          git diff --cached --check
+
+      - name: Require a fresh production base
+        shell: bash
+        run: |
+          git fetch origin main
+          test "$(git rev-parse origin/main)" = "${{ github.sha }}"
+
+      - name: Commit the verified catalog update
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -112,14 +206,6 @@ jobs:
           gh auth setup-git
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -- \
-            src/projects/equal-love/songs.json \
-            src/projects/nearly-equal-joy/songs.json \
-            src/projects/not-equal-me/songs.json \
-            public/covers/equal-love \
-            public/covers/nearly-equal-joy \
-            public/covers/not-equal-me
-          git diff --cached --check
           git diff --cached --quiet && exit 0
           git commit -m "chore(data): daily discography sync"
           git push origin HEAD:main

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import sys
 import unittest
 from datetime import date
@@ -46,16 +47,16 @@ class DiscographyMergeTests(unittest.TestCase):
             "url": "https://example.com/credits",
         }
 
-    def test_complete_official_announcement_is_kept_without_credits(self) -> None:
+    def test_complete_official_announcement_without_credits_is_review_only(self) -> None:
         songs, stats = SYNC.merge_official_songs_with_credits(
             {"new": self.official_song},
             {},
             {},
         )
 
-        self.assertEqual(songs["new"]["sourceStatus"], "announced")
-        self.assertNotIn("credit", songs["new"])
+        self.assertEqual(songs, {})
         self.assertEqual(stats["officialMetadataWithoutCredits"], 1)
+        self.assertEqual(stats["reviewCandidates"][0]["kind"], "credits")
 
     def test_incomplete_announcement_is_excluded(self) -> None:
         incomplete = {**self.official_song, "coverSourceUrl": None}
@@ -68,16 +69,17 @@ class DiscographyMergeTests(unittest.TestCase):
         self.assertEqual(songs, {})
         self.assertEqual(stats["excludedIncompleteOfficialAnnouncements"], 1)
 
-    def test_released_official_song_without_credits_is_marked_pending(self) -> None:
+    def test_released_official_song_without_credits_is_review_only(self) -> None:
         released = {**self.official_song, "releaseDate": "2020-01-01"}
 
-        songs, _ = SYNC.merge_official_songs_with_credits(
+        songs, stats = SYNC.merge_official_songs_with_credits(
             {"new": released},
             {},
             {},
         )
 
-        self.assertEqual(songs["new"]["sourceStatus"], "credits_pending")
+        self.assertEqual(songs, {})
+        self.assertEqual(len(stats["reviewCandidates"]), 1)
 
     def test_current_credit_upgrades_an_announcement(self) -> None:
         songs, _ = SYNC.merge_official_songs_with_credits(
@@ -104,9 +106,178 @@ class DiscographyMergeTests(unittest.TestCase):
             {},
         )
 
-        self.assertEqual(songs["new"]["sourceStatus"], "announced")
-        self.assertNotIn("credit", songs["new"])
+        self.assertEqual(songs, {})
         self.assertEqual(stats["incompleteCurrentCreditsDeferred"], 1)
+        self.assertEqual(len(stats["reviewCandidates"]), 1)
+
+    def test_unknown_credit_marker_never_counts_as_complete(self) -> None:
+        placeholder = {**self.credit, "arranger": "未確認"}
+        self.assertFalse(SYNC.has_complete_credit_row(placeholder))
+        self.assertIsNone(
+            SYNC.credit_from_existing_song(
+                {
+                    "title": {"ja": "新曲"},
+                    "artist": {"ja": "=LOVE"},
+                    "credits": {
+                        "lyricist": {"ja": "作詞者"},
+                        "composer": {"ja": "作曲者"},
+                        "arranger": {"ja": "未確認"},
+                    },
+                },
+            ),
+        )
+
+    def test_forbidden_title_fallback_stops_after_first_needed_title(self) -> None:
+        response = Mock(status_code=403)
+        forbidden = SYNC.requests.HTTPError("forbidden", response=response)
+        official_songs = {
+            "one": self.official_song,
+            "two": {
+                **self.official_song,
+                "title": {"ja": "次の曲", "romaji": "Tsugi"},
+            },
+        }
+        with patch.object(
+            SYNC,
+            "search_utanet_credit",
+            side_effect=forbidden,
+        ) as search:
+            stats = SYNC.resolve_needed_utanet_credits(
+                self.config,
+                official_songs,
+                {},
+                {},
+            )
+        self.assertEqual(stats["fallbackAttempts"], 1)
+        self.assertEqual(stats["fallbackHttpStatuses"], [403])
+        self.assertEqual(search.call_count, 1)
+
+    def test_title_fallback_queries_only_records_that_need_credits(self) -> None:
+        existing = {
+            "title": {"ja": "既存曲"},
+            "artist": {"ja": "=LOVE"},
+            "credits": {
+                "lyricist": {"ja": "作詞者"},
+                "composer": {"ja": "作曲者"},
+                "arranger": {"ja": "編曲者"},
+            },
+        }
+        new_song = {
+            **self.official_song,
+            "title": {"ja": "新曲", "romaji": "Shinkyoku"},
+        }
+        credit_rows: dict[str, dict[str, str]] = {}
+        with patch.object(
+            SYNC,
+            "search_utanet_credit",
+            return_value=self.credit,
+        ) as search:
+            stats = SYNC.resolve_needed_utanet_credits(
+                self.config,
+                {"old": self.official_song, "new": new_song},
+                {"old": existing},
+                credit_rows,
+            )
+        search.assert_called_once_with(self.config, "新曲")
+        self.assertEqual(stats["searchedCreditRows"], 1)
+        self.assertIn(SYNC.title_key("新曲", self.config), credit_rows)
+
+    def test_release_news_discovers_only_unrepresented_cd_tracks(self) -> None:
+        list_soup = SYNC.BeautifulSoup(
+            """
+            <a href="/news/detail/11815">
+              リリース 2026.08.03
+              8/26(水)発売 =LOVE 21stシングル「恋、はじめました。」アートワーク公開！
+            </a>
+            """,
+            "html.parser",
+        )
+        detail_soup = SYNC.BeautifulSoup(
+            """
+            <p>《CD収録内容》</p>
+            <p>1. 恋、はじめました。</p>
+            <p>2. カップリングA「タイトル未定」</p>
+            <p>《Blu-ray収録内容》</p>
+            <p>1. 既存ライブ曲</p>
+            """,
+            "html.parser",
+        )
+        with patch.object(SYNC, "get_soup", side_effect=[list_soup, detail_soup]):
+            candidates, source = SYNC.discover_official_release_news(
+                self.config,
+                [],
+            )
+        self.assertEqual(source["status"], "healthy")
+        self.assertEqual(candidates[0]["uncoveredTitles"], ["恋、はじめました。"])
+
+        with patch.object(SYNC, "get_soup", side_effect=[list_soup, detail_soup]):
+            candidates, _ = SYNC.discover_official_release_news(
+                self.config,
+                [
+                    {
+                        "title": {"ja": "恋、はじめました。"},
+                        "releaseDate": "2026-08-26",
+                    },
+                ],
+            )
+        self.assertEqual(candidates, [])
+
+    def test_release_news_uses_quoted_headline_titles_for_streaming_releases(
+        self,
+    ) -> None:
+        list_soup = SYNC.BeautifulSoup(
+            """
+            <a href="/news/detail/3477">
+              リリース 2026.04.02
+              ≒JOY『「僕たちの歌」「ノンフィクション」配信リリース決定！
+            </a>
+            """,
+            "html.parser",
+        )
+        detail_soup = SYNC.BeautifulSoup(
+            "<p>各配信サービスで配信します。</p>",
+            "html.parser",
+        )
+        existing = [
+            {"title": {"ja": "僕たちの歌"}, "releaseDate": "2026-04-02"},
+            {"title": {"ja": "ノンフィクション"}, "releaseDate": "2026-04-02"},
+        ]
+        with patch.object(SYNC, "get_soup", side_effect=[list_soup, detail_soup]):
+            candidates, source = SYNC.discover_official_release_news(
+                self.config,
+                existing,
+            )
+        self.assertEqual(source["status"], "healthy")
+        self.assertEqual(candidates, [])
+
+    def test_release_news_recognizes_a_configured_primary_campaign_date(self) -> None:
+        config = SYNC.build_equal_love_config()
+        list_soup = SYNC.BeautifulSoup(
+            """
+            <a href="/news/detail/11588">
+              リリース 2026.06.16
+              =LOVE 21stシングル、2026年8月26日(水)に発売決定！
+            </a>
+            """,
+            "html.parser",
+        )
+        detail_soup = SYNC.BeautifulSoup(
+            "<p>=LOVE 21stシングルは2026年8月26日(水)発売です。</p>",
+            "html.parser",
+        )
+        with patch.object(SYNC, "get_soup", side_effect=[list_soup, detail_soup]):
+            candidates, source = SYNC.discover_official_release_news(
+                config,
+                [
+                    {
+                        "title": {"ja": "恋、はじめました。"},
+                        "releaseDate": "2026-08-04",
+                    },
+                ],
+            )
+
+        self.assertEqual(candidates, [])
+        self.assertEqual(source["status"], "healthy")
 
     def test_existing_credits_survive_a_temporary_credit_source_gap(self) -> None:
         existing = {
@@ -147,7 +318,7 @@ class DiscographyMergeTests(unittest.TestCase):
             "id": "future-song",
             "releaseDate": "2099-01-01",
             "sourceStatus": "announced",
-            "sourceNote": SYNC.ANNOUNCED_SOURCE_NOTE,
+            "sourceNote": "official announcement",
             "tags": ["announced", "single"],
         }
         scraped = {"credit": self.credit, "_creditOrigin": "current"}
@@ -171,7 +342,7 @@ class DiscographyMergeTests(unittest.TestCase):
             "artist": {"ja": "=LOVE", "romaji": "Equal Love"},
             "releaseDate": "2099-01-01",
             "sourceStatus": "announced",
-            "sourceNote": SYNC.ANNOUNCED_SOURCE_NOTE,
+            "sourceNote": "official announcement",
             "ownershipEvidence": "official-title-track",
             "tags": ["announced", "single"],
         }
@@ -203,7 +374,7 @@ class DiscographyMergeTests(unittest.TestCase):
             "id": "released-song",
             "releaseDate": "2099-01-01",
             "sourceStatus": "announced",
-            "sourceNote": SYNC.ANNOUNCED_SOURCE_NOTE,
+            "sourceNote": "official announcement",
             "tags": ["announced", "single"],
         }
         scraped = {"credit": self.credit, "_creditOrigin": "current"}
@@ -218,12 +389,12 @@ class DiscographyMergeTests(unittest.TestCase):
         self.assertNotIn("sourceNote", merged)
         self.assertNotIn("announced", merged["tags"])
 
-    def test_announcement_becomes_pending_on_release_day_without_credits(self) -> None:
+    def test_announcement_without_credits_stays_byte_stable_on_release_day(self) -> None:
         existing = {
             "id": "released-song",
             "releaseDate": "2099-01-01",
             "sourceStatus": "announced",
-            "sourceNote": SYNC.ANNOUNCED_SOURCE_NOTE,
+            "sourceNote": "official announcement",
             "tags": ["announced", "single"],
         }
 
@@ -233,9 +404,7 @@ class DiscographyMergeTests(unittest.TestCase):
             today=date(2099, 1, 1),
         )
 
-        self.assertEqual(merged["sourceStatus"], "credits_pending")
-        self.assertIn("credits_pending", merged["tags"])
-        self.assertNotIn("announced", merged["tags"])
+        self.assertEqual(merged, existing)
 
     def test_missing_announcement_with_existing_credits_releases_on_schedule(self) -> None:
         existing = {
@@ -269,7 +438,7 @@ class DiscographyMergeTests(unittest.TestCase):
             "id": "future-song",
             "releaseDate": "2099-01-02",
             "sourceStatus": "announced",
-            "sourceNote": SYNC.ANNOUNCED_SOURCE_NOTE,
+            "sourceNote": "official announcement",
             "tags": ["announced", "single"],
         }
 
@@ -318,6 +487,309 @@ class DiscographyMergeTests(unittest.TestCase):
         self.assertTrue(SYNC.should_prefer_release(type_a_hyphen, type_e))
         self.assertFalse(SYNC.should_prefer_release(type_e, type_a))
         self.assertEqual(SYNC.release_edition_letter(type_a["releaseTitle"]["ja"]), "A")
+
+    def test_earliest_commercial_release_is_input_order_invariant(self) -> None:
+        early = {
+            **self.official_song,
+            "releaseTitle": {"ja": "Digital - Single", "romaji": "Digital"},
+            "releaseType": "digital",
+            "releaseDate": "2019-08-04",
+            "trackNo": 1,
+            "trackType": "title",
+            "coverSourceUrl": "https://is1-ssl.mzstatic.com/image/thumb/early.jpg",
+            "officialUrl": "https://music.apple.com/jp/album/example/1",
+        }
+        late = {
+            **early,
+            "releaseTitle": {"ja": "Later Album", "romaji": "Later Album"},
+            "releaseType": "album",
+            "releaseDate": "2021-04-07",
+            "trackNo": 9,
+            "trackType": "album",
+            "coverSourceUrl": "https://s3-aop.plusmember.jp/later.jpeg",
+            "officialUrl": "https://not-equal-me.jp/discography/detail/4/",
+        }
+
+        def select(candidates: list[dict]) -> dict:
+            selected = None
+            for candidate in candidates:
+                if SYNC.should_prefer_release(candidate, selected):
+                    selected = candidate
+            return selected
+
+        self.assertEqual(select([early, late]), early)
+        self.assertEqual(select([late, early]), early)
+        self.assertFalse(SYNC.should_prefer_release(late, early))
+
+    def test_same_day_release_selection_is_deterministic(self) -> None:
+        type_c = {
+            **self.official_song,
+            "releaseTitle": {"ja": "Single[CD+DVD/Type-C]", "romaji": "C"},
+        }
+        type_d = {
+            **self.official_song,
+            "releaseTitle": {"ja": "Single[CD+DVD/Type-D]", "romaji": "D"},
+        }
+        self.assertTrue(SYNC.should_prefer_release(type_c, type_d))
+        self.assertFalse(SYNC.should_prefer_release(type_d, type_c))
+
+    def test_same_day_curated_provenance_requires_an_exact_rediscovery(self) -> None:
+        override = {
+            "releaseId": "2099-01-01-shinkyoku-single",
+            "releaseTitle": "新曲シングル",
+            "releaseType": "single",
+            "releaseDate": "2099-01-01",
+            "trackNo": 1,
+            "trackType": "title",
+            "coverUrl": "/covers/equal-love/shinkyoku.jpg",
+            "coverSourceUrl": "https://equal-love.jp/example-cover.jpg",
+            "officialUrl": "https://equal-love.jp/discography/detail/999/",
+        }
+        config = SYNC.ProjectConfig(
+            project_id="equal-love",
+            official_base="https://equal-love.jp",
+            group_artist="=LOVE",
+            utanet_artist_id="1",
+            utanet_artist_path="/artist/1/",
+            sister_group_markers=("≠ME", "≒JOY"),
+            release_provenance_overrides={"新曲": override},
+        )
+        rediscovered = {
+            **self.official_song,
+            "coverSourceUrl": override["coverSourceUrl"],
+            "officialUrl": override["officialUrl"],
+        }
+        songs = {SYNC.title_key("新曲", config): rediscovered}
+
+        SYNC.apply_release_provenance_overrides(config, songs)
+        self.assertEqual(
+            songs[SYNC.title_key("新曲", config)]["releaseId"],
+            override["releaseId"],
+        )
+
+        conflicting = {
+            SYNC.title_key("新曲", config): {
+                **rediscovered,
+                "trackNo": 2,
+            },
+        }
+        with self.assertRaisesRegex(RuntimeError, "Same-day commercial release conflict"):
+            SYNC.apply_release_provenance_overrides(config, conflicting)
+
+    def test_release_campaign_uses_advance_until_primary_release_date(self) -> None:
+        config = SYNC.build_equal_love_config()
+        transition = config.release_campaign_transitions["恋、はじめました。"]
+        existing_song = {
+            "id": "koi-hajimemashita",
+            "title": {"ja": "恋、はじめました。", "romaji": "Koi, Hajimemashita."},
+            "artist": {"ja": "=LOVE", "romaji": "Equal Love"},
+            "releaseTitle": {"ja": "恋、はじめました。[CD+Blu-ray/Type A]"},
+            "releaseType": "single",
+            "releaseDate": "2026-08-26",
+            "trackNo": 1,
+            "trackType": "title",
+            "coverUrl": "/covers/equal-love/koi-hajimemashita.jpg",
+            "coverSourceUrl": "https://equal-love.jp/later.jpg",
+            "officialUrl": "https://equal-love.jp/news/detail/11815",
+            "creditSourceUrl": "https://www.uta-net.com/song/397245/",
+            "ownershipEvidence": "verified-credits",
+            "credits": {
+                "lyricist": {"ja": "指原莉乃", "romaji": "Sashihara Rino"},
+                "composer": {"ja": "小池竜暉", "romaji": "Koike Ryuki"},
+                "arranger": {"ja": "めんま", "romaji": "Menma"},
+            },
+        }
+        official_songs: dict[str, dict] = {}
+        key = SYNC.title_key("恋、はじめました。", config)
+
+        SYNC.apply_release_campaign_transitions(
+            config,
+            official_songs,
+            {key: existing_song},
+            today=date(2026, 8, 14),
+        )
+
+        self.assertEqual(official_songs[key]["releaseDate"], "2026-08-04")
+        self.assertEqual(official_songs[key]["releaseType"], "digital")
+        self.assertEqual(
+            official_songs[key]["officialUrl"],
+            transition["advanceRelease"]["officialUrl"],
+        )
+        self.assertEqual(
+            SYNC.resolve_new_song_ownership(
+                config,
+                official_songs[key],
+                None,
+                key=key,
+                committed_by_key={},
+                known_other_project_title_keys=set(),
+                existing_by_key={key: existing_song},
+            ),
+            ("ACCEPT", "verified-credits"),
+        )
+
+        advance_song = SYNC.replace_release_provenance_bundle(
+            existing_song,
+            official_songs[key],
+        )
+        future_official_songs: dict[str, dict] = {}
+        SYNC.apply_release_campaign_transitions(
+            config,
+            future_official_songs,
+            {key: advance_song},
+            today=date(2026, 8, 26),
+        )
+        primary_song = SYNC.merge_existing_song_update(
+            advance_song,
+            future_official_songs[key],
+        )
+        self.assertEqual(primary_song["releaseDate"], "2026-08-26")
+        self.assertEqual(primary_song["releaseType"], "single")
+        self.assertEqual(
+            primary_song["officialUrl"],
+            transition["primaryRelease"]["officialUrl"],
+        )
+
+    def test_earlier_commercial_provenance_replaces_the_whole_bundle(self) -> None:
+        existing = {
+            "id": "not-equal-me",
+            "title": {"ja": "≠ME", "romaji": "Not Equal Me"},
+            "artist": {"ja": "≠ME", "romaji": "Not Equal Me"},
+            "releaseId": "2021-later-album",
+            "releaseTitle": {"ja": "Later Album", "romaji": "Later Album"},
+            "releaseType": "album",
+            "releaseDate": "2021-04-07",
+            "trackNo": 9,
+            "trackType": "album",
+            "coverUrl": "/covers/not-equal-me/not-equal-me.jpg",
+            "coverSourceUrl": "https://s3-aop.plusmember.jp/later.jpeg",
+            "officialUrl": "https://not-equal-me.jp/discography/detail/4/",
+            "memberIds": ["member"],
+            "tags": ["2021", "album", "manual-tag"],
+            "credits": {"lyricist": {"ja": "credit", "romaji": "Credit"}},
+        }
+        candidate = {
+            "title": existing["title"],
+            "releaseId": "2019-08-04-not-equal-me-single",
+            "releaseTitle": {"ja": "≠ME - Single", "romaji": "Not Equal Me Single"},
+            "releaseType": "digital",
+            "releaseDate": "2019-08-04",
+            "trackNo": 1,
+            "trackType": "title",
+            "coverUrl": existing["coverUrl"],
+            "coverSourceUrl": "https://is1-ssl.mzstatic.com/image/thumb/early.jpg",
+            "officialUrl": "https://music.apple.com/jp/album/me-single/1",
+        }
+
+        merged = SYNC.apply_earlier_release_provenance(existing, candidate)
+
+        for field in SYNC.RELEASE_PROVENANCE_FIELDS:
+            self.assertEqual(merged[field], candidate[field])
+        self.assertEqual(merged["memberIds"], existing["memberIds"])
+        self.assertEqual(merged["credits"], existing["credits"])
+        self.assertEqual(merged["tags"], ["2019", "digital", "manual-tag", "title"])
+
+    def test_incomplete_earlier_provenance_fails_closed(self) -> None:
+        existing = {
+            "id": "stable",
+            "title": {"ja": "Song"},
+            "releaseDate": "2021-01-01",
+        }
+        with self.assertRaisesRegex(RuntimeError, "incomplete"):
+            SYNC.apply_earlier_release_provenance(
+                existing,
+                {"title": {"ja": "Song"}, "releaseDate": "2020-01-01"},
+            )
+
+    def test_performance_only_dates_are_not_commercial_overrides(self) -> None:
+        not_equal_overrides = SYNC.build_not_equal_me_config().release_provenance_overrides
+        equal_config = SYNC.build_equal_love_config()
+        nearly_config = SYNC.build_nearly_equal_joy_config()
+        equal_overrides = equal_config.release_provenance_overrides
+        equal_campaigns = equal_config.release_campaign_transitions
+        nearly_campaigns = nearly_config.release_campaign_transitions
+        self.assertNotIn("クルクルかき氷", not_equal_overrides)
+        self.assertNotIn("866", equal_overrides)
+        self.assertEqual(
+            equal_campaigns["恋、はじめました。"]["advanceRelease"]["releaseDate"],
+            "2026-08-04",
+        )
+        self.assertEqual(
+            equal_campaigns["恋、はじめました。"]["primaryRelease"]["releaseDate"],
+            "2026-08-26",
+        )
+        self.assertEqual(
+            nearly_campaigns["サマーツインテール"]["advanceRelease"]["releaseDate"],
+            "2026-07-09",
+        )
+        self.assertEqual(
+            nearly_campaigns["サマーツインテール"]["primaryRelease"]["releaseDate"],
+            "2026-08-05",
+        )
+
+        not_equal_songs = json.loads(
+            SYNC.build_not_equal_me_config().songs_path.read_text(encoding="utf-8"),
+        )
+        equal_songs = json.loads(
+            SYNC.build_equal_love_config().songs_path.read_text(encoding="utf-8"),
+        )
+        nearly_songs = json.loads(
+            SYNC.build_nearly_equal_joy_config().songs_path.read_text(encoding="utf-8"),
+        )
+        self.assertEqual(
+            next(song for song in not_equal_songs if song["id"] == "kurukuru-kaki-koori")["releaseDate"],
+            "2021-04-07",
+        )
+        self.assertEqual(
+            next(song for song in equal_songs if song["id"] == "866")["releaseDate"],
+            "2021-05-12",
+        )
+        koi = next(song for song in equal_songs if song["id"] == "koi-hajimemashita")
+        summer_twintail = next(
+            song for song in nearly_songs if song["id"] == "samaatsuinteeru"
+        )
+
+        def published_bundle(song: dict) -> dict:
+            bundle = {
+                field: song[field]
+                for field in SYNC.RELEASE_PROVENANCE_FIELDS
+            }
+            bundle["releaseTitle"] = song["releaseTitle"]["ja"]
+            return bundle
+
+        self.assertEqual(
+            published_bundle(koi),
+            SYNC.select_release_campaign_bundle(
+                equal_campaigns["恋、はじめました。"],
+                SYNC.current_catalog_date(),
+            ),
+        )
+        self.assertNotEqual(koi.get("sourceStatus"), "announced")
+        self.assertNotIn("announced", koi["tags"])
+        self.assertEqual(
+            published_bundle(summer_twintail),
+            SYNC.select_release_campaign_bundle(
+                nearly_campaigns["サマーツインテール"],
+                SYNC.current_catalog_date(),
+            ),
+        )
+
+    def test_review_candidates_take_precedence_over_publishable_changes(self) -> None:
+        self.assertEqual(
+            SYNC.determine_sync_report_outcome(
+                True,
+                [{"candidateKey": "needs-review"}],
+            ),
+            ("review-required", "review"),
+        )
+        self.assertEqual(
+            SYNC.determine_sync_report_outcome(True, []),
+            ("publishable-change", "publish"),
+        )
+        self.assertEqual(
+            SYNC.determine_sync_report_outcome(False, []),
+            ("no-change", "none"),
+        )
 
     def test_explicit_track_owner_is_extracted_before_title_cleanup(self) -> None:
         owner, title = SYNC.split_explicit_track_owner("新曲（≒JOY）")

@@ -6,6 +6,25 @@ import assert from "node:assert/strict";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
 const projectsDir = path.join(root, "src", "projects");
+const releaseProvenanceOverrides = JSON.parse(
+  fs.readFileSync(
+    path.join(root, "scripts", "release-provenance-overrides.json"),
+    "utf8",
+  ),
+);
+assert.equal(releaseProvenanceOverrides.schemaVersion, 1);
+const releaseProvenanceOverrideFields = [
+  "releaseId",
+  "releaseTitle",
+  "releaseType",
+  "releaseDate",
+  "trackNo",
+  "trackType",
+  "coverUrl",
+  "coverSourceUrl",
+  "officialUrl",
+];
+const releaseCampaignTransitionFields = ["advanceRelease", "primaryRelease"];
 
 const releaseTypes = new Set(["single", "album", "digital", "dvd_bd", "other"]);
 const trackTypes = new Set([
@@ -28,13 +47,6 @@ const sourceStatuses = new Set([
   "cm_pv",
   "live_only",
   "unverified",
-]);
-const pendingOwnershipEvidence = new Set([
-  "verified-credits",
-  "verified-artist",
-  "explicit-current-group",
-  "official-title-track",
-  "official-multi-edition",
 ]);
 const experienceKinds = new Set([
   "standard",
@@ -73,6 +85,14 @@ const excludedEntryFields = new Set([
   "reason",
 ]);
 const unknownAnnouncementMarkers = ["タイトル未定", "後日発表", "TBD"];
+const unknownCreditMarkers = [
+  "未確認",
+  "不明",
+  "UNKNOWN",
+  "TBD",
+  "MIKAKUNIN",
+  "MI KAKUNIN",
+];
 const catalogDate = currentJapanDate();
 
 const expectedEqualLoveBoundarySongs = new Map([
@@ -184,6 +204,7 @@ function validateProject(projectId) {
 
   validateMembers(projectPrefix, members, errors);
   validateSongs(projectPrefix, songs, memberIds, songIds, songTitles, errors);
+  validateReleaseProvenanceOverrides(projectId, songs, errors);
   validateLiveExperiences(
     projectPrefix,
     projectId,
@@ -283,6 +304,131 @@ function validateMembers(projectPrefix, members, errors) {
   }
 }
 
+function validateReleaseProvenanceOverrides(projectId, songs, errors) {
+  const overrides = releaseProvenanceOverrides.projects?.[projectId] ?? {};
+  for (const [title, expected] of Object.entries(overrides)) {
+    if (
+      JSON.stringify(Object.keys(expected).sort()) !==
+      JSON.stringify([...releaseProvenanceOverrideFields].sort())
+    ) {
+      errors.push(`[${projectId}] ${title}: invalid release provenance fields`);
+      continue;
+    }
+    const song = songs.find((candidate) => candidate.title?.ja === title);
+    if (!song) {
+      errors.push(
+        `[${projectId}] curated release provenance is missing ${title}`,
+      );
+      continue;
+    }
+    validateReleaseBundleMatch(
+      projectId,
+      song,
+      expected,
+      "earliest commercial release provenance",
+      errors,
+    );
+  }
+
+  const transitions =
+    releaseProvenanceOverrides.campaignTransitions?.[projectId] ?? {};
+  for (const [title, transition] of Object.entries(transitions)) {
+    if (
+      JSON.stringify(Object.keys(transition).sort()) !==
+      JSON.stringify([...releaseCampaignTransitionFields].sort())
+    ) {
+      errors.push(`[${projectId}] ${title}: invalid release campaign fields`);
+      continue;
+    }
+    const stages = releaseCampaignTransitionFields.map(
+      (field) => transition[field],
+    );
+    if (
+      stages.some(
+        (stage) =>
+          !stage ||
+          JSON.stringify(Object.keys(stage).sort()) !==
+            JSON.stringify([...releaseProvenanceOverrideFields].sort()),
+      )
+    ) {
+      errors.push(`[${projectId}] ${title}: invalid release campaign bundle`);
+      continue;
+    }
+    if (
+      transition.advanceRelease.releaseDate >=
+        transition.primaryRelease.releaseDate ||
+      transition.advanceRelease.coverUrl !== transition.primaryRelease.coverUrl
+    ) {
+      errors.push(
+        `[${projectId}] ${title}: release campaign order or stable coverUrl is invalid`,
+      );
+      continue;
+    }
+    const song = songs.find((candidate) => candidate.title?.ja === title);
+    if (!song) {
+      errors.push(`[${projectId}] release campaign is missing ${title}`);
+      continue;
+    }
+    const expected =
+      catalogDate < transition.primaryRelease.releaseDate
+        ? transition.advanceRelease
+        : transition.primaryRelease;
+    validateReleaseBundleMatch(
+      projectId,
+      song,
+      expected,
+      "effective release campaign provenance",
+      errors,
+    );
+  }
+}
+
+function validateReleaseBundleMatch(
+  projectId,
+  song,
+  expected,
+  description,
+  errors,
+) {
+  for (const field of [
+    "releaseId",
+    "releaseType",
+    "releaseDate",
+    "trackNo",
+    "trackType",
+    "coverUrl",
+    "coverSourceUrl",
+    "officialUrl",
+  ]) {
+    if (JSON.stringify(song[field]) !== JSON.stringify(expected[field])) {
+      errors.push(
+        `[${projectId}] ${song.id}: ${field} does not match its ${description}`,
+      );
+    }
+  }
+  if (song.releaseTitle?.ja !== expected.releaseTitle) {
+    errors.push(
+      `[${projectId}] ${song.id}: releaseTitle is mixed across release bundles`,
+    );
+  }
+  if (!song.releaseTitle?.romaji) {
+    errors.push(
+      `[${projectId}] ${song.id}: releaseId/releaseTitle localization is incomplete`,
+    );
+  }
+  for (const tag of [
+    expected.releaseType,
+    expected.trackType,
+    expected.releaseDate.slice(0, 4),
+  ]) {
+    if (!song.tags?.includes(tag)) {
+      errors.push(
+        `[${projectId}] ${song.id}: tags are not derived from its ${description}`,
+      );
+    }
+  }
+}
+
 function validateSongs(
   projectPrefix,
   songs,
@@ -368,10 +514,20 @@ function validateSongs(
     }
 
     validateCover(projectPrefix, song, errors);
-    if (["announced", "credits_pending"].includes(song.sourceStatus)) {
+    if (["credits_pending", "unverified"].includes(song.sourceStatus)) {
+      errors.push(
+        `${projectPrefix} ${song.id}: incomplete or unverified songs must stay in the review report`,
+      );
+    }
+    if (song.sourceStatus === "announced") {
       validatePendingCreditsSong(projectPrefix, song, errors);
     } else {
       validateCredits(projectPrefix, song, errors);
+    }
+    if (!song.creditSourceUrl?.startsWith("https://")) {
+      errors.push(
+        `${projectPrefix} ${song.id}: an https creditSourceUrl is required`,
+      );
     }
   }
 }
@@ -1425,23 +1581,38 @@ function validateCover(projectPrefix, song, errors) {
 }
 
 function validateCredits(projectPrefix, song, errors) {
-  if (!song.credits?.lyricist?.ja || !song.credits.lyricist.romaji) {
-    errors.push(
-      `${projectPrefix} ${song.id}: credits.lyricist ja and romaji are required`,
-    );
+  for (const role of ["lyricist", "composer", "arranger"]) {
+    const credit = song.credits?.[role];
+    if (!credit?.ja || !credit.romaji) {
+      errors.push(
+        `${projectPrefix} ${song.id}: credits.${role} ja and romaji are required`,
+      );
+      continue;
+    }
+    if (
+      hasUnknownCreditMarker(credit.ja) ||
+      hasUnknownCreditMarker(credit.romaji)
+    ) {
+      errors.push(
+        `${projectPrefix} ${song.id}: credits.${role} contains an unknown placeholder`,
+      );
+    }
   }
+}
 
-  if (!song.credits?.composer?.ja || !song.credits.composer.romaji) {
-    errors.push(
-      `${projectPrefix} ${song.id}: credits.composer ja and romaji are required`,
-    );
-  }
-
-  if (!song.credits?.arranger?.ja || !song.credits.arranger.romaji) {
-    errors.push(
-      `${projectPrefix} ${song.id}: credits.arranger ja and romaji are required`,
-    );
-  }
+function hasUnknownCreditMarker(value) {
+  const normalizedValue = (value ?? "")
+    .normalize("NFKC")
+    .replace(/[\s._-]+/gu, "")
+    .toUpperCase();
+  return unknownCreditMarkers.some((marker) =>
+    normalizedValue.includes(
+      marker
+        .normalize("NFKC")
+        .replace(/[\s._-]+/gu, "")
+        .toUpperCase(),
+    ),
+  );
 }
 
 function validatePendingCreditsSong(projectPrefix, song, errors) {
@@ -1480,31 +1651,9 @@ function validatePendingCreditsSong(projectPrefix, song, errors) {
     );
   }
 
-  if (!pendingOwnershipEvidence.has(song.ownershipEvidence)) {
+  if (song.ownershipEvidence !== "verified-credits") {
     errors.push(
-      `${projectPrefix} ${song.id}: pending-credits song needs trusted ownershipEvidence`,
-    );
-  }
-
-  if (song.ownershipEvidence === "verified-credits" && !song.credits) {
-    errors.push(
-      `${projectPrefix} ${song.id}: verified-credits evidence needs complete credits`,
-    );
-  } else if (song.ownershipEvidence === "verified-artist") {
-    if (
-      song.credits ||
-      !song.creditSourceUrl?.startsWith("https://www.uta-net.com/")
-    ) {
-      errors.push(
-        `${projectPrefix} ${song.id}: verified-artist evidence needs an Uta-Net source and no partial credits payload`,
-      );
-    }
-  } else if (
-    song.ownershipEvidence !== "verified-credits" &&
-    (song.memberIds ?? []).length > 0
-  ) {
-    errors.push(
-      `${projectPrefix} ${song.id}: heuristic ownership must not guess participating members`,
+      `${projectPrefix} ${song.id}: announced song needs verified-credits ownershipEvidence`,
     );
   }
 
@@ -1523,18 +1672,20 @@ function validatePendingCreditsSong(projectPrefix, song, errors) {
   }
 
   if (/^\d{4}-\d{2}-\d{2}$/.test(song.releaseDate ?? "")) {
-    const expectedStatus =
-      song.releaseDate > catalogDate ? "announced" : "credits_pending";
+    const expectedStatus = "announced";
     if (song.sourceStatus !== expectedStatus) {
       errors.push(
         `${projectPrefix} ${song.id}: releaseDate ${song.releaseDate} requires sourceStatus ${expectedStatus}`,
       );
     }
+    if (song.releaseDate <= catalogDate) {
+      errors.push(
+        `${projectPrefix} ${song.id}: announced releaseDate ${song.releaseDate} has already arrived`,
+      );
+    }
   }
 
-  if (song.credits) {
-    validateCredits(projectPrefix, song, errors);
-  }
+  validateCredits(projectPrefix, song, errors);
 }
 
 function currentJapanDate() {

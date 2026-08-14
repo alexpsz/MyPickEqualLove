@@ -3870,6 +3870,58 @@
     "creditSourceUrl": "https://www.uta-net.com/song/390404/"
   },
   {
+    "id": "koi-hajimemashita",
+    "title": {
+      "ja": "恋、はじめました。",
+      "romaji": "koi, hajimemashita."
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2026-08-04-koi-hajimemashita-single",
+    "releaseTitle": {
+      "ja": "恋、はじめました。 - Single",
+      "romaji": "koi , hajimemashita . - Single"
+    },
+    "releaseType": "digital",
+    "releaseDate": "2026-08-04",
+    "trackNo": 1,
+    "trackType": "title",
+    "coverUrl": "/covers/equal-love/koi-hajimemashita.jpg",
+    "coverSourceUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/4c/e8/31/4ce831bc-d6ef-bd1d-ecb4-1768b26bffe3/4547366839838.jpg/1200x1200bb.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": ["2026", "digital", "title"],
+    "officialUrl": "https://music.apple.com/jp/album/%E6%81%8B-%E3%81%AF%E3%81%98%E3%82%81%E3%81%BE%E3%81%97%E3%81%9F-single/6792630528",
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "Sashihara Rino"
+      },
+      "composer": {
+        "ja": "小池竜暉",
+        "romaji": "Koike Ryuki"
+      },
+      "arranger": {
+        "ja": "めんま",
+        "romaji": "menma"
+      }
+    },
+    "creditSourceUrl": "https://www.uta-net.com/song/397245/",
+    "ownershipEvidence": "verified-credits"
+  },
+  {
     "id": "kimi-dake-no-hanamichi",
     "title": {
       "ja": "君だけの花道",

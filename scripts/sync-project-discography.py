@@ -103,23 +103,61 @@ PENDING_OWNERSHIP_EVIDENCE = {
     "official-multi-edition",
 }
 TRUSTED_COVER_HOSTS = {
+    "aop-emtg-jp.s3.amazonaws.com",
     "s3-aop.plusmember.jp",
     "i.ytimg.com",
     "img.youtube.com",
     "m.media-amazon.com",
+    "is1-ssl.mzstatic.com",
+}
+TRUSTED_COMMERCIAL_RELEASE_HOSTS = {
+    "equal-love.jp",
+    "music.apple.com",
+    "nearly-equal-joy.jp",
+    "not-equal-me.jp",
+}
+MAX_UTANET_FALLBACK_TITLES = 10
+RELEASE_PROVENANCE_OVERRIDE_FIELDS = {
+    "releaseId",
+    "releaseTitle",
+    "releaseType",
+    "releaseDate",
+    "trackNo",
+    "trackType",
+    "coverUrl",
+    "coverSourceUrl",
+    "officialUrl",
+}
+RELEASE_CAMPAIGN_TRANSITION_FIELDS = {
+    "advanceRelease",
+    "primaryRelease",
+}
+UNKNOWN_CREDIT_MARKERS = (
+    "未確認",
+    "不明",
+    "unknown",
+    "tbd",
+    "mikakunin",
+    "mi kakunin",
+)
+CREDIT_ROMAJI_OVERRIDES = {
+    "指原莉乃": "Sashihara Rino",
+    "小池竜暉": "Koike Ryuki",
+    "小池竜暉・齋藤奏太": "Koike Ryuki ・ Saitou Kanata",
+    "齋藤奏太": "Saitou Kanata",
+    "古川貴浩": "Furukawa Takahiro",
+    "YAmai": "YAmai",
+    "脇眞富": "Waki Masatomi",
+    "えとゆま・菊池諒": "etoyuma ・ Kikuchi Ryo",
+    "えとゆま": "etoyuma",
+    "中村歩・菊池博人": "Nakamura Ayumu ・ Kikuchi Hiroto",
+    "菊池博人・中村歩": "Kikuchi Hiroto ・ Nakamura Ayumu",
+    "めんま": "menma",
 }
 
-ANNOUNCED_SOURCE_NOTE = (
-    "公式ディスコグラフィーで曲名・収録作品・ジャケットが公開済み。"
-    "作詞・作曲・編曲クレジットは公開待ち。"
-)
 ANNOUNCED_CREDITS_VERIFIED_SOURCE_NOTE = (
     "公式ディスコグラフィーで曲名・収録作品・ジャケットが公開済み。"
     "作詞・作曲・編曲クレジットも確認済み。"
-)
-CREDITS_PENDING_SOURCE_NOTE = (
-    "公式ディスコグラフィーで曲名・収録作品・ジャケットを確認済み。"
-    "作詞・作曲・編曲クレジットは公開元の復旧または公開待ち。"
 )
 UNKNOWN_METADATA_MARKERS = ("タイトル未定", "後日発表", "TBD")
 
@@ -154,12 +192,19 @@ class ProjectConfig:
     title_aliases: dict[str, str] = field(default_factory=dict)
     release_title_aliases: dict[str, str] = field(default_factory=dict)
     credit_overrides: dict[str, dict[str, str]] = field(default_factory=dict)
+    release_provenance_overrides: dict[str, dict[str, object]] = field(
+        default_factory=dict,
+    )
+    release_campaign_transitions: dict[str, dict[str, dict[str, object]]] = field(
+        default_factory=dict,
+    )
     special_tracks: list[dict] = field(default_factory=list)
     graduated_members: list[GraduatedMemberOverride] = field(default_factory=list)
     group_member_overrides: dict[str, list[str]] = field(default_factory=dict)
     member_color_overrides: dict[str, dict[str, object]] = field(default_factory=dict)
     clear_member_color_arrays: bool = False
     legacy_incomplete_release_paths: tuple[str, ...] = ()
+    release_news_path: str = "/news/list/1/8"
 
     @property
     def songs_path(self) -> Path:
@@ -181,6 +226,73 @@ class ProjectConfig:
 
 def normalize(value: str | None) -> str:
     return unicodedata.normalize("NFKC", value or "").replace("\xa0", " ").strip()
+
+
+def load_release_provenance_payload() -> dict[str, object]:
+    source_path = ROOT / "scripts/release-provenance-overrides.json"
+    payload = json.loads(source_path.read_text(encoding="utf-8"))
+    if payload.get("schemaVersion") != 1:
+        raise RuntimeError("Unsupported release provenance override schema")
+    return payload
+
+
+def load_release_provenance_overrides(project_id: str) -> dict[str, dict[str, object]]:
+    payload = load_release_provenance_payload()
+    projects = payload.get("projects")
+    if not isinstance(projects, dict):
+        raise RuntimeError("Release provenance overrides are missing projects")
+    overrides = projects.get(project_id, {})
+    if not isinstance(overrides, dict):
+        raise RuntimeError(f"Invalid release provenance overrides for {project_id}")
+    for title, override in overrides.items():
+        if not isinstance(override, dict) or set(override) != RELEASE_PROVENANCE_OVERRIDE_FIELDS:
+            raise RuntimeError(
+                f"Invalid release provenance override fields for {project_id}: {title}",
+            )
+    return overrides
+
+
+def load_release_campaign_transitions(
+    project_id: str,
+) -> dict[str, dict[str, dict[str, object]]]:
+    payload = load_release_provenance_payload()
+    projects = payload.get("campaignTransitions", {})
+    if not isinstance(projects, dict):
+        raise RuntimeError("Release campaign transitions must be an object")
+    transitions = projects.get(project_id, {})
+    if not isinstance(transitions, dict):
+        raise RuntimeError(f"Invalid release campaign transitions for {project_id}")
+    for title, transition in transitions.items():
+        if (
+            not isinstance(transition, dict)
+            or set(transition) != RELEASE_CAMPAIGN_TRANSITION_FIELDS
+        ):
+            raise RuntimeError(
+                f"Invalid release campaign transition fields for {project_id}: {title}",
+            )
+        for stage_name in RELEASE_CAMPAIGN_TRANSITION_FIELDS:
+            stage = transition.get(stage_name)
+            if (
+                not isinstance(stage, dict)
+                or set(stage) != RELEASE_PROVENANCE_OVERRIDE_FIELDS
+            ):
+                raise RuntimeError(
+                    f"Invalid {stage_name} fields for {project_id}: {title}",
+                )
+        advance_date = str(transition["advanceRelease"]["releaseDate"])
+        primary_date = str(transition["primaryRelease"]["releaseDate"])
+        if advance_date >= primary_date:
+            raise RuntimeError(
+                f"Advance release must precede primary release for {project_id}: {title}",
+            )
+        if (
+            transition["advanceRelease"]["coverUrl"]
+            != transition["primaryRelease"]["coverUrl"]
+        ):
+            raise RuntimeError(
+                f"Release campaign coverUrl must stay stable for {project_id}: {title}",
+            )
+    return transitions
 
 
 def unwrap_quotes(value: str) -> str:
@@ -305,6 +417,31 @@ def localized(value: str) -> dict[str, str]:
     return {"ja": normalize(value), "romaji": romanize(value)}
 
 
+def localized_credit(value: str) -> dict[str, str]:
+    normalized_value = normalize(value)
+    return {
+        "ja": normalized_value,
+        "romaji": CREDIT_ROMAJI_OVERRIDES.get(
+            normalized_value,
+            romanize(normalized_value),
+        ),
+    }
+
+
+def is_unknown_credit_value(value: str | None) -> bool:
+    normalized_value = normalize(value).casefold()
+    compact_value = re.sub(r"[\s._-]+", "", normalized_value)
+    return any(
+        re.sub(r"[\s._-]+", "", marker.casefold()) in compact_value
+        for marker in UNKNOWN_CREDIT_MARKERS
+    )
+
+
+def request_exception_status(exc: requests.RequestException) -> int | None:
+    response = getattr(exc, "response", None)
+    return response.status_code if response is not None else None
+
+
 def get_soup(url: str, *, params: dict[str, str | int] | None = None) -> BeautifulSoup:
     response = SESSION.get(url, params=params, timeout=30)
     response.raise_for_status()
@@ -327,6 +464,229 @@ class Release:
     release_type: str
     cover_source_url: str | None
     tracks: list[ReleaseTrack]
+
+
+@dataclass
+class ReleaseNewsItem:
+    url: str
+    published_date: str
+    headline: str
+    release_date: str | None = None
+
+
+def parse_news_release_date(headline: str, published_date: str) -> str | None:
+    full_date = re.search(r"(20\d{2})年(\d{1,2})月(\d{1,2})日", headline)
+    if full_date:
+        year, month, day = (int(value) for value in full_date.groups())
+        return f"{year:04d}-{month:02d}-{day:02d}"
+
+    short_date = re.search(r"(?<!\d)(\d{1,2})/(\d{1,2})(?!\d)", headline)
+    if short_date and re.fullmatch(r"20\d{2}-\d{2}-\d{2}", published_date):
+        month, day = (int(value) for value in short_date.groups())
+        return f"{published_date[:4]}-{month:02d}-{day:02d}"
+    return None
+
+
+def parse_release_news_list(
+    config: ProjectConfig,
+    soup: BeautifulSoup,
+    *,
+    limit: int = 6,
+) -> list[ReleaseNewsItem]:
+    items: list[ReleaseNewsItem] = []
+    seen_urls: set[str] = set()
+    for anchor in soup.select('a[href*="/news/detail/"]'):
+        href = anchor.get("href") or ""
+        url = urljoin(config.official_base, href)
+        if url in seen_urls or not is_same_https_host(url, config.official_base):
+            continue
+
+        text = normalize(anchor.get_text(" ", strip=True))
+        published_match = re.search(r"(20\d{2})[./](\d{2})[./](\d{2})", text)
+        if not published_match:
+            continue
+        published_date = "-".join(published_match.groups())
+        headline = normalize(text[published_match.end() :])
+        headline = re.sub(r"^(?:NEW\s*)?リリース\s*", "", headline)
+        if not headline:
+            continue
+
+        seen_urls.add(url)
+        items.append(
+            ReleaseNewsItem(
+                url=url,
+                published_date=published_date,
+                headline=headline,
+                release_date=parse_news_release_date(headline, published_date),
+            ),
+        )
+        if len(items) >= limit:
+            break
+    return items
+
+
+def is_song_release_news(headline: str) -> bool:
+    normalized_headline = normalize(headline)
+    if any(
+        marker in normalized_headline
+        for marker in ("映像商品", "映像作品", "Blu-ray", "DVD", "ライブBD")
+    ):
+        return False
+    return "シングル" in normalized_headline or any(
+        marker in normalized_headline
+        for marker in ("配信リリース", "配信決定")
+    )
+
+
+def extract_news_cd_track_titles(
+    config: ProjectConfig,
+    soup: BeautifulSoup,
+) -> list[str]:
+    in_cd_track_list = False
+    titles: list[str] = []
+    for element in soup.select("p, li"):
+        text = normalize(element.get_text(" ", strip=True))
+        if re.search(r"CD.*収録(?:内容|曲)", text, re.IGNORECASE):
+            in_cd_track_list = True
+            continue
+        if in_cd_track_list and any(
+            marker.lower() in text.lower()
+            for marker in ("Blu-ray", "DVD収録", "封入特典", "商品仕様")
+        ):
+            in_cd_track_list = False
+            continue
+        if not in_cd_track_list:
+            continue
+
+        track_match = re.match(r"^\d+\s*[.．]\s*(.+)$", text)
+        if not track_match:
+            continue
+        raw_title = track_match.group(1)
+        if not should_keep_raw_track(config, raw_title):
+            continue
+        _, ownerless_title = split_explicit_track_owner(raw_title)
+        title = clean_title(ownerless_title, config)
+        if title and title not in titles:
+            titles.append(title)
+    return titles
+
+
+def extract_news_headline_track_titles(
+    config: ProjectConfig,
+    headline: str,
+) -> list[str]:
+    titles: list[str] = []
+    for raw_title in re.findall(r"「([^」]+)」", headline):
+        if not should_keep_raw_track(config, raw_title):
+            continue
+        _, ownerless_title = split_explicit_track_owner(raw_title)
+        title = clean_title(ownerless_title, config)
+        if title and title not in titles:
+            titles.append(title)
+    return titles
+
+
+def discover_official_release_news(
+    config: ProjectConfig,
+    existing_songs: list[dict],
+) -> tuple[list[dict[str, object]], dict[str, object]]:
+    list_url = urljoin(config.official_base, config.release_news_path)
+    try:
+        list_soup = get_soup(list_url)
+        items = parse_release_news_list(config, list_soup)
+    except requests.RequestException as exc:
+        return [], {
+            "status": "degraded",
+            "url": list_url,
+            "error": str(exc),
+            "itemsScanned": 0,
+        }
+
+    if not items:
+        return [], {
+            "status": "degraded",
+            "url": list_url,
+            "error": "official release NEWS selector returned no detail links",
+            "itemsScanned": 0,
+        }
+
+    existing_title_keys = {
+        title_key(song.get("title", {}).get("ja", ""), config)
+        for song in existing_songs
+    }
+    existing_release_dates = {
+        song.get("releaseDate") for song in existing_songs if song.get("releaseDate")
+    }
+    represented_campaign_release_dates = {
+        transition["primaryRelease"]["releaseDate"]
+        for title, transition in config.release_campaign_transitions.items()
+        if title_key(title, config) in existing_title_keys
+    }
+    candidates: list[dict[str, object]] = []
+    detail_errors: list[str] = []
+    scanned = 0
+    for item in items:
+        if not is_song_release_news(item.headline):
+            continue
+        scanned += 1
+        try:
+            detail_soup = get_soup(item.url)
+        except requests.RequestException as exc:
+            detail_errors.append(f"{item.url}: {exc}")
+            continue
+
+        detail_text = normalize(detail_soup.get_text(" ", strip=True))
+        release_date = item.release_date or parse_news_release_date(
+            detail_text,
+            item.published_date,
+        )
+        track_titles = extract_news_cd_track_titles(config, detail_soup)
+        if not track_titles:
+            track_titles = extract_news_headline_track_titles(
+                config,
+                item.headline,
+            )
+        uncovered_titles = [
+            title
+            for title in track_titles
+            if title_key(title, config) not in existing_title_keys
+        ]
+        if track_titles and not uncovered_titles:
+            continue
+        if not track_titles and release_date in {
+            *existing_release_dates,
+            *represented_campaign_release_dates,
+        }:
+            continue
+
+        candidate_key = hashlib.sha256(
+            f"{config.project_id}|official-news|{item.url}".encode("utf-8"),
+        ).hexdigest()[:20]
+        candidates.append(
+            {
+                "candidateKey": candidate_key,
+                "kind": "official-news",
+                "headline": item.headline,
+                "newsUrl": item.url,
+                "publishedDate": item.published_date,
+                "releaseDate": release_date,
+                "trackTitles": track_titles,
+                "uncoveredTitles": uncovered_titles,
+                "blockingReasons": [
+                    "official release NEWS is not fully represented in the catalog; "
+                    "review official metadata, cover, ownership, and all three credits",
+                ],
+            },
+        )
+        time.sleep(0.05)
+
+    return candidates, {
+        "status": "degraded" if detail_errors else "healthy",
+        "url": list_url,
+        "itemsScanned": scanned,
+        "candidateCount": len(candidates),
+        "errors": detail_errors,
+    }
 
 
 def list_official_detail_paths(config: ProjectConfig, kind: int) -> list[str]:
@@ -606,6 +966,48 @@ def search_utanet_credit(config: ProjectConfig, title: str) -> dict[str, str] | 
     return None
 
 
+def resolve_needed_utanet_credits(
+    config: ProjectConfig,
+    official_songs: dict[str, dict],
+    existing_by_key: dict[str, dict],
+    credit_rows: dict[str, dict[str, str]],
+) -> dict[str, object]:
+    searched_credit_count = 0
+    fallback_attempts = 0
+    fallback_http_statuses: list[int | None] = []
+    unresolved_credit_keys = [
+        key
+        for key in official_songs
+        if key not in credit_rows
+        and credit_from_existing_song(existing_by_key.get(key)) is None
+    ][:MAX_UTANET_FALLBACK_TITLES]
+    for key in unresolved_credit_keys:
+        song = official_songs[key]
+        fallback_attempts += 1
+        try:
+            row = search_utanet_credit(config, song["title"]["ja"])
+            fallback_http_statuses.append(200)
+        except requests.RequestException as exc:
+            status_code = request_exception_status(exc)
+            fallback_http_statuses.append(status_code)
+            print(
+                f"Warning: Uta-Net search unavailable for {config.project_id}: {exc}",
+                file=sys.stderr,
+            )
+            if status_code == 403:
+                break
+            continue
+        if row:
+            register_credit_row(config, credit_rows, row)
+            searched_credit_count += 1
+        time.sleep(0.08)
+    return {
+        "searchedCreditRows": searched_credit_count,
+        "fallbackAttempts": fallback_attempts,
+        "fallbackHttpStatuses": fallback_http_statuses,
+    }
+
+
 def release_edition_letter(release_title: str) -> str | None:
     normalized_title = normalize(release_title).upper()
     match = re.search(r"TYPE[\s\-‐‑–—]*([A-F])", normalized_title)
@@ -627,6 +1029,59 @@ def should_prefer_release(candidate: dict, current: dict | None) -> bool:
     return current is None or release_preference_key(candidate) < release_preference_key(
         current,
     )
+
+
+def validate_commercial_release_source(source_url: str) -> None:
+    """Accept only the three label sites and the curated digital distributor."""
+    parsed = urlparse(source_url)
+    if (
+        parsed.scheme != "https"
+        or parsed.username
+        or parsed.password
+        or parsed.port is not None
+        or parsed.hostname not in TRUSTED_COMMERCIAL_RELEASE_HOSTS
+    ):
+        raise RuntimeError(
+            f"Refusing untrusted commercial-release source URL: {source_url}",
+        )
+
+
+def validate_release_provenance_candidate(
+    config: ProjectConfig,
+    candidate: dict,
+) -> None:
+    required_text_fields = (
+        "releaseType",
+        "releaseDate",
+        "trackType",
+        "coverSourceUrl",
+        "officialUrl",
+    )
+    missing = [field for field in required_text_fields if not normalize(candidate.get(field))]
+    release_title = candidate.get("releaseTitle")
+    if not isinstance(release_title, dict) or not normalize(release_title.get("ja")):
+        missing.append("releaseTitle.ja")
+    if not isinstance(candidate.get("trackNo"), int) or candidate["trackNo"] < 1:
+        missing.append("trackNo")
+    if missing:
+        raise RuntimeError(
+            "Incomplete commercial release provenance for "
+            f"{candidate.get('title', {}).get('ja', '<unknown>')}: "
+            + ", ".join(missing),
+        )
+
+    try:
+        date.fromisoformat(candidate["releaseDate"])
+    except (TypeError, ValueError) as exc:
+        raise RuntimeError(
+            f"Invalid commercial release date {candidate.get('releaseDate')!r}",
+        ) from exc
+    validate_commercial_release_source(candidate["officialUrl"])
+    if not is_trusted_cover_url(config, candidate["coverSourceUrl"]):
+        raise RuntimeError(
+            "Refusing untrusted commercial-release cover URL: "
+            f"{candidate['coverSourceUrl']}",
+        )
 
 
 def is_same_https_host(candidate_url: str, base_url: str) -> bool:
@@ -834,6 +1289,193 @@ def merge_release_evidence(preferred: dict, other: dict | None) -> dict:
     return result
 
 
+def catalog_anchor_release_candidate(existing_song: dict) -> dict:
+    return {
+        "title": deepcopy(existing_song.get("title")),
+        "releaseTitle": deepcopy(existing_song.get("releaseTitle")),
+        "releaseType": existing_song.get("releaseType"),
+        "releaseDate": existing_song.get("releaseDate"),
+        "trackNo": existing_song.get("trackNo"),
+        "trackType": existing_song.get("trackType"),
+        "coverUrl": existing_song.get("coverUrl"),
+        "coverSourceUrl": existing_song.get("coverSourceUrl"),
+        "officialUrl": existing_song.get("officialUrl"),
+        "_curatedCatalogAnchor": True,
+    }
+
+
+def release_provenance_bundle(candidate: dict) -> dict[str, object]:
+    return {
+        "releaseId": candidate.get("releaseId"),
+        "releaseTitle": normalize(candidate.get("releaseTitle", {}).get("ja")),
+        "releaseType": candidate.get("releaseType"),
+        "releaseDate": candidate.get("releaseDate"),
+        "trackNo": candidate.get("trackNo"),
+        "trackType": candidate.get("trackType"),
+        "coverUrl": candidate.get("coverUrl"),
+        "coverSourceUrl": candidate.get("coverSourceUrl"),
+        "officialUrl": candidate.get("officialUrl"),
+    }
+
+
+def rediscovered_release_provenance_bundle(candidate: dict) -> dict[str, object]:
+    bundle = release_provenance_bundle(candidate)
+    bundle.pop("releaseId")
+    bundle.pop("coverUrl")
+    return bundle
+
+
+def apply_release_provenance_overrides(
+    config: ProjectConfig,
+    official_songs: dict[str, dict],
+    existing_by_key: dict[str, dict] | None = None,
+) -> None:
+    for title, override in config.release_provenance_overrides.items():
+        key = title_key(title, config)
+        song = official_songs.get(key)
+        if song is None and existing_by_key is not None:
+            existing_song = existing_by_key.get(key)
+            if existing_song is not None:
+                song = catalog_anchor_release_candidate(existing_song)
+        if song is None:
+            raise RuntimeError(
+                f"Release provenance override title was neither rediscovered nor "
+                f"anchored in the current catalog for "
+                f"{config.project_id}: {title}",
+            )
+        candidate = {
+            **song,
+            "releaseId": override.get("releaseId"),
+            "releaseTitle": localized(str(override.get("releaseTitle", ""))),
+            "releaseType": override.get("releaseType"),
+            "releaseDate": override.get("releaseDate"),
+            "trackNo": override.get("trackNo"),
+            "trackType": override.get("trackType"),
+            "coverUrl": override.get("coverUrl"),
+            "coverSourceUrl": override.get("coverSourceUrl"),
+            "officialUrl": override.get("officialUrl"),
+            "_commercialProvenanceCorrection": True,
+        }
+        validate_release_provenance_candidate(config, candidate)
+        if candidate["releaseDate"] > song["releaseDate"]:
+            raise RuntimeError(
+                f"Release provenance override for {title} must be strictly earlier "
+                f"than {song['releaseDate']}",
+            )
+        if candidate["releaseDate"] == song["releaseDate"]:
+            rediscovered_bundle = {
+                "releaseTitle": normalize(song.get("releaseTitle", {}).get("ja")),
+                "releaseType": song.get("releaseType"),
+                "releaseDate": song.get("releaseDate"),
+                "trackNo": song.get("trackNo"),
+                "trackType": song.get("trackType"),
+                "coverSourceUrl": song.get("coverSourceUrl"),
+                "officialUrl": song.get("officialUrl"),
+            }
+            curated_bundle = {
+                "releaseTitle": normalize(str(override.get("releaseTitle", ""))),
+                "releaseType": override.get("releaseType"),
+                "releaseDate": override.get("releaseDate"),
+                "trackNo": override.get("trackNo"),
+                "trackType": override.get("trackType"),
+                "coverSourceUrl": override.get("coverSourceUrl"),
+                "officialUrl": override.get("officialUrl"),
+            }
+            if rediscovered_bundle != curated_bundle:
+                raise RuntimeError(
+                    f"Same-day commercial release conflict for {title}; "
+                    "curated and rediscovered provenance must match exactly",
+                )
+        official_songs[key] = merge_release_evidence(candidate, song)
+
+
+def select_release_campaign_bundle(
+    transition: dict[str, dict[str, object]],
+    today: date,
+) -> dict[str, object]:
+    primary_release = transition["primaryRelease"]
+    primary_date = date.fromisoformat(str(primary_release["releaseDate"]))
+    return (
+        transition["advanceRelease"]
+        if today < primary_date
+        else primary_release
+    )
+
+
+def apply_release_campaign_transitions(
+    config: ProjectConfig,
+    official_songs: dict[str, dict],
+    existing_by_key: dict[str, dict],
+    *,
+    today: date | None = None,
+) -> None:
+    effective_date = today or current_catalog_date()
+    for title, transition in config.release_campaign_transitions.items():
+        key = title_key(title, config)
+        song = official_songs.get(key)
+        if song is None:
+            existing_song = existing_by_key.get(key)
+            if existing_song is not None:
+                song = catalog_anchor_release_candidate(existing_song)
+        if song is None:
+            raise RuntimeError(
+                f"Release campaign title was neither rediscovered nor anchored "
+                f"in the current catalog for {config.project_id}: {title}",
+            )
+
+        for stage in RELEASE_CAMPAIGN_TRANSITION_FIELDS:
+            stage_bundle = transition[stage]
+            stage_candidate = {
+                **song,
+                "releaseId": stage_bundle["releaseId"],
+                "releaseTitle": localized(str(stage_bundle["releaseTitle"])),
+                "releaseType": stage_bundle["releaseType"],
+                "releaseDate": stage_bundle["releaseDate"],
+                "trackNo": stage_bundle["trackNo"],
+                "trackType": stage_bundle["trackType"],
+                "coverUrl": stage_bundle["coverUrl"],
+                "coverSourceUrl": stage_bundle["coverSourceUrl"],
+                "officialUrl": stage_bundle["officialUrl"],
+            }
+            validate_release_provenance_candidate(config, stage_candidate)
+            derived_release_id = slugify(
+                f"{stage_candidate['releaseDate']}-"
+                f"{stage_candidate['releaseTitle']['ja']}",
+            )
+            if stage_candidate["releaseId"] != derived_release_id:
+                raise RuntimeError(
+                    f"Release campaign releaseId mismatch for {config.project_id}: "
+                    f"{title} {stage}",
+                )
+
+        selected_bundle = select_release_campaign_bundle(
+            transition,
+            effective_date,
+        )
+        candidate = {
+            **song,
+            "releaseId": selected_bundle["releaseId"],
+            "releaseTitle": localized(str(selected_bundle["releaseTitle"])),
+            "releaseType": selected_bundle["releaseType"],
+            "releaseDate": selected_bundle["releaseDate"],
+            "trackNo": selected_bundle["trackNo"],
+            "trackType": selected_bundle["trackType"],
+            "coverUrl": selected_bundle["coverUrl"],
+            "coverSourceUrl": selected_bundle["coverSourceUrl"],
+            "officialUrl": selected_bundle["officialUrl"],
+            "_releaseCampaignTransition": True,
+        }
+        if (
+            candidate["releaseDate"] == song.get("releaseDate")
+            and rediscovered_release_provenance_bundle(candidate)
+            != rediscovered_release_provenance_bundle(song)
+        ):
+            raise RuntimeError(
+                f"Same-day release campaign conflict for {config.project_id}: {title}",
+            )
+        official_songs[key] = merge_release_evidence(candidate, song)
+
+
 def resolve_new_song_ownership(
     config: ProjectConfig,
     song: dict,
@@ -842,6 +1484,7 @@ def resolve_new_song_ownership(
     key: str,
     committed_by_key: dict[str, dict],
     known_other_project_title_keys: set[str],
+    existing_by_key: dict[str, dict] | None = None,
 ) -> tuple[str, str]:
     """Return ACCEPT/REJECT/REVIEW plus a durable evidence label or reason."""
     committed_song = committed_by_key.get(key)
@@ -850,6 +1493,17 @@ def resolve_new_song_ownership(
         "credits_pending",
     }:
         return "ACCEPT", "committed-existing"
+
+    if credit is None and song.get("_curatedCatalogAnchor") and existing_by_key:
+        catalog_anchor = existing_by_key.get(key)
+        anchor_credit_url = normalize(
+            (catalog_anchor or {}).get("creditSourceUrl"),
+        )
+        if (
+            (catalog_anchor or {}).get("ownershipEvidence") == "verified-credits"
+            and is_trusted_utanet_credit_url(anchor_credit_url)
+        ):
+            credit = credit_from_existing_song(catalog_anchor)
 
     if credit:
         credit_owners = project_owners_from_artist(credit.get("artist", ""))
@@ -918,7 +1572,7 @@ def validate_official_catalog_coverage(
     current_release_urls: set[str],
     minimum_count_ratio: float = 0.9,
     minimum_overlap_ratio: float = 0.75,
-) -> None:
+) -> dict[str, int | float]:
     """Compare only releases still exposed by the site's rolling index."""
     committed_official_keys = {
         title_key(song.get("title", {}).get("ja", ""), config)
@@ -929,7 +1583,13 @@ def validate_official_catalog_coverage(
     }
     committed_official_keys.discard("")
     if not committed_official_keys:
-        return
+        return {
+            "committedCurrentlyListed": 0,
+            "rediscovered": 0,
+            "discovered": len(official_songs),
+            "minimumCountRatio": minimum_count_ratio,
+            "minimumOverlapRatio": minimum_overlap_ratio,
+        }
 
     rediscovered = committed_official_keys.intersection(official_songs)
     required_count = math.ceil(len(committed_official_keys) * minimum_count_ratio)
@@ -943,6 +1603,13 @@ def validate_official_catalog_coverage(
             "rediscovered; "
             f"missing title keys include {missing_titles}",
         )
+    return {
+        "committedCurrentlyListed": len(committed_official_keys),
+        "rediscovered": len(rediscovered),
+        "discovered": len(official_songs),
+        "minimumCountRatio": minimum_count_ratio,
+        "minimumOverlapRatio": minimum_overlap_ratio,
+    }
 
 
 def register_title_key_variant(
@@ -1231,7 +1898,9 @@ def credit_from_existing_song(song: dict | None) -> dict[str, str] | None:
         role: normalize((credits.get(role) or {}).get("ja"))
         for role in ("lyricist", "composer", "arranger")
     }
-    if not all(values.values()):
+    if not all(values.values()) or any(
+        is_unknown_credit_value(value) for value in values.values()
+    ):
         return None
     return {
         "title": normalize(song.get("title", {}).get("ja")),
@@ -1244,7 +1913,11 @@ def credit_from_existing_song(song: dict | None) -> dict[str, str] | None:
 def has_complete_credit_row(credit: dict[str, str] | None) -> bool:
     return bool(
         credit
-        and all(normalize(credit.get(role)) for role in ("lyricist", "composer", "arranger"))
+        and all(
+            normalize(credit.get(role))
+            and not is_unknown_credit_value(credit.get(role))
+            for role in ("lyricist", "composer", "arranger")
+        )
     )
 
 
@@ -1252,13 +1925,14 @@ def merge_official_songs_with_credits(
     official_songs: dict[str, dict],
     credit_rows: dict[str, dict[str, str]],
     existing_by_key: dict[str, dict],
-) -> tuple[dict[str, dict], dict[str, int]]:
+) -> tuple[dict[str, dict], dict[str, object]]:
     final_songs: dict[str, dict] = {}
     stats = {
         "officialMetadataWithoutCredits": 0,
         "preservedExistingCredits": 0,
         "incompleteCurrentCreditsDeferred": 0,
         "excludedIncompleteOfficialAnnouncements": 0,
+        "reviewCandidates": [],
     }
 
     for key, song in official_songs.items():
@@ -1290,27 +1964,140 @@ def merge_official_songs_with_credits(
             continue
 
         if has_known_announcement_metadata(song):
-            is_future_release = (
-                song.get("releaseDate", "") > current_catalog_date().isoformat()
-            )
-            pending_status = "announced" if is_future_release else "credits_pending"
-            source_note = (
-                ANNOUNCED_SOURCE_NOTE
-                if is_future_release
-                else CREDITS_PENDING_SOURCE_NOTE
-            )
-            final_songs[key] = {
-                **song,
-                "sourceStatus": pending_status,
-                "sourceNote": source_note,
-                "tags": [pending_status],
-            }
             stats["officialMetadataWithoutCredits"] += 1
+            candidate_key = hashlib.sha256(
+                f"official-discography|{song.get('officialUrl')}|{key}".encode("utf-8"),
+            ).hexdigest()[:20]
+            stats["reviewCandidates"].append(
+                {
+                    "candidateKey": candidate_key,
+                    "kind": "credits",
+                    "title": song.get("title", {}).get("ja"),
+                    "releaseTitle": song.get("releaseTitle", {}).get("ja"),
+                    "releaseDate": song.get("releaseDate"),
+                    "officialUrl": song.get("officialUrl"),
+                    "blockingReasons": [
+                        "complete lyricist, composer, and arranger evidence is unavailable",
+                    ],
+                },
+            )
             continue
 
         stats["excludedIncompleteOfficialAnnouncements"] += 1
 
     return final_songs, stats
+
+
+RELEASE_PROVENANCE_FIELDS = (
+    "releaseId",
+    "releaseTitle",
+    "releaseType",
+    "releaseDate",
+    "trackNo",
+    "trackType",
+    "coverUrl",
+    "coverSourceUrl",
+    "officialUrl",
+)
+
+
+def apply_earlier_release_provenance(existing_song: dict, candidate: dict) -> dict:
+    """Atomically replace only a complete, strictly earlier commercial bundle."""
+    candidate_date = normalize(candidate.get("releaseDate"))
+    existing_date = normalize(existing_song.get("releaseDate"))
+    if not candidate_date or not existing_date or candidate_date >= existing_date:
+        return deepcopy(existing_song)
+
+    return replace_release_provenance_bundle(existing_song, candidate)
+
+
+def replace_release_provenance_bundle(existing_song: dict, candidate: dict) -> dict:
+    """Replace one complete release bundle without mixing its provenance fields."""
+    candidate_date = normalize(candidate.get("releaseDate"))
+    existing_date = normalize(existing_song.get("releaseDate"))
+
+    missing = [field for field in RELEASE_PROVENANCE_FIELDS if candidate.get(field) in (None, "")]
+    if missing:
+        raise RuntimeError(
+            f"Release provenance bundle for {existing_song.get('id')} is incomplete: "
+            + ", ".join(missing),
+        )
+    if candidate.get("title", {}).get("ja") != existing_song.get("title", {}).get("ja"):
+        raise RuntimeError(
+            f"Release provenance title mismatch for {existing_song.get('id')}",
+        )
+
+    result = deepcopy(existing_song)
+    for field_name in RELEASE_PROVENANCE_FIELDS:
+        result[field_name] = deepcopy(candidate[field_name])
+
+    old_provenance_tags = {
+        existing_song.get("releaseType"),
+        existing_song.get("trackType"),
+        existing_date[:4],
+    }
+    retained_tags = [
+        tag
+        for tag in existing_song.get("tags", [])
+        if tag not in old_provenance_tags
+    ]
+    result["tags"] = sorted(
+        {
+            *retained_tags,
+            candidate["releaseType"],
+            candidate["trackType"],
+            candidate_date[:4],
+        },
+    )
+    return result
+
+
+def materialize_release_provenance(
+    config: ProjectConfig,
+    existing_song: dict,
+    scraped_song: dict,
+    song_id: str,
+) -> dict:
+    is_campaign_transition = bool(
+        scraped_song.get("_releaseCampaignTransition"),
+    )
+    if (
+        not is_campaign_transition
+        and normalize(scraped_song.get("releaseDate"))
+        >= normalize(existing_song.get("releaseDate"))
+    ):
+        return scraped_song
+    if (
+        is_campaign_transition
+        and release_provenance_bundle(scraped_song)
+        == release_provenance_bundle(existing_song)
+    ):
+        return scraped_song
+    validate_release_provenance_candidate(config, scraped_song)
+    cover_url = download_cover(
+        config,
+        scraped_song["coverSourceUrl"],
+        song_id,
+        refresh=True,
+    )
+    derived_release_id = slugify(
+        f"{scraped_song['releaseDate']}-{scraped_song['releaseTitle']['ja']}",
+    )
+    expected_release_id = scraped_song.get("releaseId")
+    if expected_release_id and expected_release_id != derived_release_id:
+        raise RuntimeError(
+            f"Commercial releaseId mismatch for {existing_song.get('id')}",
+        )
+    expected_cover_url = scraped_song.get("coverUrl")
+    if expected_cover_url and expected_cover_url != cover_url:
+        raise RuntimeError(
+            f"Commercial coverUrl mismatch for {existing_song.get('id')}",
+        )
+    return {
+        **scraped_song,
+        "releaseId": derived_release_id,
+        "coverUrl": cover_url,
+    }
 
 
 def merge_existing_song_update(
@@ -1322,8 +2109,11 @@ def merge_existing_song_update(
     members: list[dict] | None = None,
     member_name_to_id: dict[str, str] | None = None,
 ) -> dict:
-    """Keep existing records byte-stable except for a verified announcement upgrade."""
-    result = deepcopy(existing_song)
+    """Keep existing records stable except for narrow verified upgrades."""
+    if scraped_song.get("_releaseCampaignTransition"):
+        result = replace_release_provenance_bundle(existing_song, scraped_song)
+    else:
+        result = apply_earlier_release_provenance(existing_song, scraped_song)
     if existing_song.get("sourceStatus") not in {"announced", "credits_pending"}:
         return result
 
@@ -1343,9 +2133,9 @@ def merge_existing_song_update(
     )
     if has_current_credit:
         result["credits"] = {
-            "lyricist": localized(credit["lyricist"]),
-            "composer": localized(credit["composer"]),
-            "arranger": localized(credit["arranger"]),
+            "lyricist": localized_credit(credit["lyricist"]),
+            "composer": localized_credit(credit["composer"]),
+            "arranger": localized_credit(credit["arranger"]),
         }
         if credit.get("url"):
             result["creditSourceUrl"] = credit["url"]
@@ -1382,19 +2172,6 @@ def merge_existing_song_update(
                 for tag in result.get("tags", [])
                 if tag not in {"announced", "credits_pending"}
             ]
-        elif existing_song.get("sourceStatus") == "announced":
-            result["sourceStatus"] = "credits_pending"
-            result["sourceNote"] = CREDITS_PENDING_SOURCE_NOTE
-            result["tags"] = sorted(
-                {
-                    *(
-                        tag
-                        for tag in result.get("tags", [])
-                        if tag != "announced"
-                    ),
-                    "credits_pending",
-                },
-            )
     elif has_current_credit:
         result["sourceStatus"] = "announced"
         result["sourceNote"] = ANNOUNCED_CREDITS_VERIFIED_SOURCE_NOTE
@@ -1415,7 +2192,7 @@ def merge_existing_song_update(
 def build_song_data(
     config: ProjectConfig,
     members: list[dict] | None = None,
-) -> tuple[list[dict], dict[str, int]]:
+) -> tuple[list[dict], dict[str, object]]:
     if members is None:
         members = json.loads(config.members_path.read_text(encoding="utf-8"))
     member_name_to_id = {
@@ -1519,60 +2296,80 @@ def build_song_data(
                     candidate,
                 )
 
+    apply_release_provenance_overrides(
+        config,
+        official_songs,
+        existing_by_key,
+    )
+    apply_release_campaign_transitions(
+        config,
+        official_songs,
+        existing_by_key,
+    )
+
     if len(official_songs) < config.minimum_official_songs:
         raise RuntimeError(
             f"Official discography for {config.project_id} returned only "
             f"{len(official_songs)} songs; expected at least "
             f"{config.minimum_official_songs}",
         )
-    validate_official_catalog_coverage(
+    coverage_metrics = validate_official_catalog_coverage(
         config,
         official_songs,
         committed_songs,
         current_release_urls={release.url for release in releases if release.tracks},
     )
+    news_candidates, news_source = discover_official_release_news(
+        config,
+        [*existing_songs, *official_songs.values()],
+    )
 
     credit_rows: dict[str, dict[str, str]] = {}
-    credit_source_available = True
+    artist_index_status = "healthy"
+    artist_index_http_status: int | None = 200
     try:
         for row in parse_utanet_artist_rows(config):
             register_credit_row(config, credit_rows, row)
         if not credit_rows:
-            credit_source_available = False
+            artist_index_status = "degraded"
             print(
                 f"Warning: Uta-Net artist index was empty for {config.project_id}",
                 file=sys.stderr,
             )
     except requests.RequestException as exc:
-        credit_source_available = False
+        artist_index_http_status = request_exception_status(exc)
+        artist_index_status = (
+            "forbidden" if artist_index_http_status == 403 else "degraded"
+        )
         print(
             f"Warning: Uta-Net artist index unavailable for {config.project_id}: {exc}",
             file=sys.stderr,
         )
 
-    searched_credit_count = 0
-    if credit_source_available:
-        for key, song in list(official_songs.items()):
-            if key in credit_rows:
-                continue
-            try:
-                row = search_utanet_credit(config, song["title"]["ja"])
-            except requests.RequestException as exc:
-                credit_source_available = False
-                print(
-                    f"Warning: Uta-Net search unavailable for {config.project_id}: {exc}",
-                    file=sys.stderr,
-                )
-                break
-            if row:
-                register_credit_row(config, credit_rows, row)
-                searched_credit_count += 1
-                time.sleep(0.08)
+    fallback_stats = resolve_needed_utanet_credits(
+        config,
+        official_songs,
+        existing_by_key,
+        credit_rows,
+    )
+    searched_credit_count = int(fallback_stats["searchedCreditRows"])
+    fallback_attempts = int(fallback_stats["fallbackAttempts"])
+    fallback_http_statuses = list(fallback_stats["fallbackHttpStatuses"])
+
+    credit_source_available = bool(credit_rows)
+    if 403 in fallback_http_statuses:
+        credit_source_status = "forbidden"
+    elif artist_index_status != "healthy" or any(
+        status not in {200, None} for status in fallback_http_statuses
+    ):
+        credit_source_status = "degraded"
+    else:
+        credit_source_status = "healthy"
 
     # A release page can contain a sister group's track without labeling the row.
     # Never default a brand-new, no-credit title to the current group. Require
     # explicit artist/track evidence or a conservative official-release signal.
-    ownership_review_errors: list[str] = []
+    ownership_review_candidates: list[dict[str, object]] = []
     for key in list(official_songs):
         song = official_songs[key]
         decision, evidence_or_reason = resolve_new_song_ownership(
@@ -1582,16 +2379,29 @@ def build_song_data(
             key=key,
             committed_by_key=committed_by_key,
             known_other_project_title_keys=known_other_project_title_keys,
+            existing_by_key=existing_by_key,
         )
         if decision == "REJECT":
             del official_songs[key]
             excluded_known_sister_group_songs += 1
             continue
         if decision == "REVIEW":
-            ownership_review_errors.append(
-                f"{song['title']['ja']} ({song['officialUrl']}, track "
-                f"{song['trackNo']}): {evidence_or_reason}",
+            candidate_key = hashlib.sha256(
+                f"ownership|{song['officialUrl']}|{key}".encode("utf-8"),
+            ).hexdigest()[:20]
+            ownership_review_candidates.append(
+                {
+                    "candidateKey": candidate_key,
+                    "kind": "ownership",
+                    "title": song["title"]["ja"],
+                    "releaseTitle": song["releaseTitle"]["ja"],
+                    "releaseDate": song.get("releaseDate"),
+                    "officialUrl": song["officialUrl"],
+                    "trackNo": song["trackNo"],
+                    "blockingReasons": [evidence_or_reason],
+                },
             )
+            del official_songs[key]
             continue
         if evidence_or_reason in PENDING_OWNERSHIP_EVIDENCE:
             song["_ownershipEvidence"] = evidence_or_reason
@@ -1599,29 +2409,24 @@ def build_song_data(
             song["_ownershipSourceUrl"] = credit_rows[key].get("url")
             song["_ownershipArtist"] = credit_rows[key].get("artist")
 
-    if ownership_review_errors:
-        formatted_errors = "\n  - ".join(ownership_review_errors)
-        raise RuntimeError(
-            f"New songs need manual artist-ownership review for "
-            f"{config.project_id}:\n  - {formatted_errors}",
-        )
-
     final_songs, official_merge_stats = merge_official_songs_with_credits(
         official_songs,
         credit_rows,
         existing_by_key,
     )
+    review_candidates = [
+        *ownership_review_candidates,
+        *official_merge_stats.pop("reviewCandidates", []),
+        *news_candidates,
+    ]
 
     special_tracks_added = 0
     for track in config.special_tracks:
         key = title_key(track["title"], config)
-        if key in final_songs and final_songs[key].get("credit"):
-            continue
-
         cover_source_url = track.get("coverSourceUrl") or release_cover_sources.get(
             track.get("coverReleaseUrl"),
         )
-        final_songs[key] = {
+        special_candidate = {
             "title": localized(track["title"]),
             "releaseTitle": localized(track["releaseTitle"]),
             "releaseType": track["releaseType"],
@@ -1637,7 +2442,21 @@ def build_song_data(
             "memberIds": track.get("memberIds"),
             "credit": track["credit"],
         }
-        special_tracks_added += 1
+        current_candidate = final_songs.get(key)
+        if current_candidate is None:
+            final_songs[key] = special_candidate
+            special_tracks_added += 1
+        elif should_prefer_release(special_candidate, current_candidate):
+            merged = merge_release_evidence(special_candidate, current_candidate)
+            merged["credit"] = current_candidate.get("credit") or track["credit"]
+            merged["_creditOrigin"] = current_candidate.get("_creditOrigin")
+            final_songs[key] = merged
+        else:
+            merged = merge_release_evidence(current_candidate, special_candidate)
+            if not merged.get("credit"):
+                merged["credit"] = track["credit"]
+                merged["_creditOrigin"] = "override"
+            final_songs[key] = merged
 
     used_ids: set[str] = set()
     reserved_existing_ids = {
@@ -1672,10 +2491,16 @@ def build_song_data(
         used_ids.add(song_id)
 
         if existing_song and key in committed_by_key:
+            scraped_for_merge = materialize_release_provenance(
+                config,
+                existing_song,
+                song,
+                song_id,
+            )
             output.append(
                 merge_existing_song_update(
                     existing_song,
-                    song,
+                    scraped_for_merge,
                     config=config,
                     members=members,
                     member_name_to_id=member_name_to_id,
@@ -1754,9 +2579,9 @@ def build_song_data(
 
         if credit:
             output_song["credits"] = {
-                "lyricist": localized(credit["lyricist"]),
-                "composer": localized(credit["composer"]),
-                "arranger": localized(credit["arranger"]),
+                "lyricist": localized_credit(credit["lyricist"]),
+                "composer": localized_credit(credit["composer"]),
+                "arranger": localized_credit(credit["arranger"]),
             }
             if credit.get("url"):
                 output_song["creditSourceUrl"] = credit["url"]
@@ -1817,6 +2642,15 @@ def build_song_data(
         )
         stable_output.insert(insertion_index, new_song)
     output = stable_output
+    existing_by_id = {song["id"]: song for song in existing_songs}
+    publishable_added_ids = [
+        song["id"] for song in output if song["id"] not in existing_by_id
+    ]
+    allowed_updated_ids = [
+        song["id"]
+        for song in output
+        if song["id"] in existing_by_id and song != existing_by_id[song["id"]]
+    ]
 
     stats = {
         "officialReleases": len(releases),
@@ -1825,6 +2659,30 @@ def build_song_data(
         "creditSourceAvailable": credit_source_available,
         "creditRows": len(credit_rows),
         "searchedCreditRows": searched_credit_count,
+        "reviewCandidates": review_candidates,
+        "publishableAddedIds": publishable_added_ids,
+        "allowedUpdatedIds": allowed_updated_ids,
+        "sources": {
+            "officialDiscography": {
+                "status": "healthy",
+                "releaseCount": len(releases),
+                "songCount": len(official_songs),
+                "coverage": coverage_metrics,
+            },
+            "officialNews": news_source,
+            "credits": {
+                "status": credit_source_status,
+                "artistIndexUrl": urljoin(
+                    UTANET_BASE,
+                    config.utanet_artist_path,
+                ),
+                "artistIndexStatus": artist_index_status,
+                "artistIndexHttpStatus": artist_index_http_status,
+                "fallbackLimit": MAX_UTANET_FALLBACK_TITLES,
+                "fallbackAttempts": fallback_attempts,
+                "fallbackHttpStatuses": fallback_http_statuses,
+            },
+        },
         **official_merge_stats,
         "specialTracksAdded": special_tracks_added,
         "preservedExistingSongs": preserved_existing_songs,
@@ -1843,6 +2701,13 @@ def build_equal_love_config() -> ProjectConfig:
         utanet_artist_path="/artist/23032/",
         sister_group_markers=("≠ME", "≒JOY"),
         minimum_official_songs=70,
+        release_provenance_overrides=load_release_provenance_overrides(
+            "equal-love",
+        ),
+        release_campaign_transitions=load_release_campaign_transitions(
+            "equal-love",
+        ),
+        release_news_path="/news/list/8",
         # These four old pages publish title/date/cover but have an empty CD list.
         # Keep the exception URL-exact so every new detail page still fails closed.
         legacy_incomplete_release_paths=(
@@ -1948,6 +2813,12 @@ def build_nearly_equal_joy_config() -> ProjectConfig:
         utanet_artist_path="/artist/32604/",
         sister_group_markers=("=LOVE", "＝LOVE", "≠ME"),
         minimum_official_songs=15,
+        release_provenance_overrides=load_release_provenance_overrides(
+            "nearly-equal-joy",
+        ),
+        release_campaign_transitions=load_release_campaign_transitions(
+            "nearly-equal-joy",
+        ),
         clear_member_color_arrays=True,
         graduated_members=[
             GraduatedMemberOverride(
@@ -2064,6 +2935,9 @@ def build_not_equal_me_config() -> ProjectConfig:
         utanet_artist_path="/artist/27489/6/",
         sister_group_markers=("=LOVE", "＝LOVE", "≒JOY"),
         minimum_official_songs=45,
+        release_provenance_overrides=load_release_provenance_overrides(
+            "not-equal-me",
+        ),
         # These old pages have official metadata but an empty CD track list.
         legacy_incomplete_release_paths=(
             "/discography/detail/22/",
@@ -2195,27 +3069,6 @@ def build_not_equal_me_config() -> ProjectConfig:
                 },
             },
             {
-                "title": "ここでファーストキッス",
-                "releaseTitle": "愛くださいませ/ここでファーストキッス",
-                "releaseType": "single",
-                "releaseDate": "2026-06-24",
-                "trackNo": 2,
-                "trackType": "title",
-                "coverSourceUrl": "https://m.media-amazon.com/images/I/51a5RuQvqXL._SL240_.jpg",
-                "officialUrl": "https://not-equal-me.jp/feature/specialsite_12thsingle",
-                "visibility": "default",
-                "sourceStatus": "unverified",
-                "sourceNote": "12th両A面シングル収録曲として公式サイトで確認。作曲/編曲 credits は未確認。",
-                "credit": {
-                    "title": "ここでファーストキッス",
-                    "artist": "≠ME",
-                    "lyricist": "未確認",
-                    "composer": "未確認",
-                    "arranger": "未確認",
-                    "url": "https://not-equal-me.jp/feature/specialsite_12thsingle",
-                },
-            },
-            {
                 "title": "君はもう一度タネになる",
                 "releaseTitle": "君はもう一度タネになる",
                 "releaseType": "digital",
@@ -2249,7 +3102,7 @@ PROJECT_CONFIGS = {
 }
 
 
-def write_json_atomically(path: Path, value: list[dict]) -> None:
+def write_json_atomically(path: Path, value: object) -> None:
     if path.exists():
         try:
             existing_value = json.loads(path.read_text(encoding="utf-8"))
@@ -2266,20 +3119,136 @@ def write_json_atomically(path: Path, value: list[dict]) -> None:
     temporary_path.replace(path)
 
 
-def sync_project(config: ProjectConfig, *, songs_only: bool = False) -> None:
-    members = load_existing_members(config) if songs_only else parse_members(config)
-    if not members:
-        raise RuntimeError(f"No existing members found for {config.project_id}")
-    songs, stats = build_song_data(config, members)
+def current_head_sha() -> str:
+    try:
+        return subprocess.check_output(
+            ["git", "rev-parse", "HEAD"],
+            cwd=ROOT,
+            encoding="utf-8",
+            stderr=subprocess.PIPE,
+        ).strip()
+    except (FileNotFoundError, subprocess.CalledProcessError) as exc:
+        raise RuntimeError("Cannot resolve the catalog baseline commit") from exc
 
-    if not songs_only:
-        write_json_atomically(config.members_path, members)
-    write_json_atomically(config.songs_path, songs)
 
-    print(json.dumps({"project": config.project_id, **stats}, ensure_ascii=False, indent=2))
-    if not songs_only:
-        print(f"Wrote {len(members)} members to {config.members_path}")
-    print(f"Wrote {len(songs)} songs to {config.songs_path}")
+def validate_report_path(report_path: Path) -> Path:
+    if not report_path.is_absolute():
+        raise RuntimeError("--report-json must be an absolute path outside the repository")
+    resolved_path = report_path.resolve()
+    try:
+        resolved_path.relative_to(ROOT.resolve())
+    except ValueError:
+        return resolved_path
+    raise RuntimeError("--report-json must not write inside the repository")
+
+
+def write_sync_report(report_path: Path | None, report: dict[str, object]) -> None:
+    if report_path is None:
+        return
+    resolved_path = validate_report_path(report_path)
+    resolved_path.parent.mkdir(parents=True, exist_ok=True)
+    write_json_atomically(resolved_path, report)
+
+
+def determine_sync_report_outcome(
+    has_publishable_change: bool,
+    review_candidates: list[object],
+) -> tuple[str, str]:
+    if review_candidates:
+        return "review-required", "review"
+    if has_publishable_change:
+        return "publishable-change", "publish"
+    return "no-change", "none"
+
+
+def sync_project(
+    config: ProjectConfig,
+    *,
+    songs_only: bool = False,
+    report_path: Path | None = None,
+) -> None:
+    started_at = datetime.now(timezone.utc).isoformat()
+    base_sha = current_head_sha()
+    try:
+        members = load_existing_members(config) if songs_only else parse_members(config)
+        if not members:
+            raise RuntimeError(f"No existing members found for {config.project_id}")
+        songs, stats = build_song_data(config, members)
+
+        if not songs_only:
+            write_json_atomically(config.members_path, members)
+        write_json_atomically(config.songs_path, songs)
+
+        added_ids = list(stats.get("publishableAddedIds", []))
+        updated_ids = list(stats.get("allowedUpdatedIds", []))
+        review_candidates = list(stats.get("reviewCandidates", []))
+        has_publishable_change = bool(added_ids or updated_ids)
+        outcome, publish_decision = determine_sync_report_outcome(
+            has_publishable_change,
+            review_candidates,
+        )
+        report = {
+            "schemaVersion": 1,
+            "projectId": config.project_id,
+            "baseSha": base_sha,
+            "startedAt": started_at,
+            "completedAt": datetime.now(timezone.utc).isoformat(),
+            "outcome": outcome,
+            "publishDecision": publish_decision,
+            "reviewRequired": bool(review_candidates),
+            "publishableAddedIds": added_ids,
+            "allowedUpdatedIds": updated_ids,
+            "reviewCandidates": review_candidates,
+            "sources": stats.get("sources", {}),
+            "stats": {
+                key: value
+                for key, value in stats.items()
+                if key
+                not in {
+                    "publishableAddedIds",
+                    "allowedUpdatedIds",
+                    "reviewCandidates",
+                    "sources",
+                }
+            },
+        }
+        write_sync_report(report_path, report)
+
+        print(
+            json.dumps(
+                {"project": config.project_id, **stats},
+                ensure_ascii=False,
+                indent=2,
+            ),
+        )
+        if not songs_only:
+            print(f"Wrote {len(members)} members to {config.members_path}")
+        print(f"Wrote {len(songs)} songs to {config.songs_path}")
+    except Exception as exc:
+        write_sync_report(
+            report_path,
+            {
+                "schemaVersion": 1,
+                "projectId": config.project_id,
+                "baseSha": base_sha,
+                "startedAt": started_at,
+                "completedAt": datetime.now(timezone.utc).isoformat(),
+                "outcome": "error",
+                "publishDecision": "block",
+                "reviewRequired": True,
+                "publishableAddedIds": [],
+                "allowedUpdatedIds": [],
+                "reviewCandidates": [],
+                "sources": {
+                    "officialDiscography": {
+                        "status": "error",
+                        "error": str(exc),
+                    },
+                },
+                "error": str(exc),
+            },
+        )
+        raise
 
 
 def parse_args() -> argparse.Namespace:
@@ -2295,12 +3264,21 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Use the checked-in member roster and update only songs/covers.",
     )
+    parser.add_argument(
+        "--report-json",
+        type=Path,
+        help="Write a schema-versioned source-health report outside the repository.",
+    )
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
-    sync_project(PROJECT_CONFIGS[args.project](), songs_only=args.songs_only)
+    sync_project(
+        PROJECT_CONFIGS[args.project](),
+        songs_only=args.songs_only,
+        report_path=args.report_json,
+    )
 
 
 if __name__ == "__main__":
