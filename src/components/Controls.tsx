@@ -119,6 +119,24 @@ export default function Controls({
               {selectedCount}/{slotCount}
             </span>
           </div>
+          <button
+            ref={moreButtonRef}
+            type="button"
+            onClick={() => setIsMoreOpen((open) => !open)}
+            aria-expanded={isMoreOpen}
+            aria-controls={isMoreOpen ? morePanelId : undefined}
+            className="official-button ml-auto w-auto gap-1 !px-2 text-[12px] sm:hidden"
+          >
+            <AppIcon name="menu" size={16} />
+            {t("controls.more")}
+            <AppIcon
+              name="chevron-down"
+              size={14}
+              className={`transition-transform duration-150 ${
+                isMoreOpen ? "rotate-180" : ""
+              }`}
+            />
+          </button>
         </div>
 
         <div className="grid gap-3 sm:gap-4">
@@ -126,7 +144,7 @@ export default function Controls({
             <div className="grid gap-3 sm:hidden">{children}</div>
           ) : null}
 
-          <div className="grid grid-cols-2 gap-2 sm:hidden">
+          <div className="grid grid-cols-3 gap-2 sm:hidden">
             <button
               type="button"
               onClick={() => {
@@ -134,10 +152,13 @@ export default function Controls({
                 onGlobalSearch();
               }}
               data-dialog-return-key={DIALOG_RETURN_KEYS.globalSearch}
-              className="official-button w-full"
+              aria-label={t("controls.searchSongs")}
+              className="official-button min-w-0 gap-1 !px-1.5 text-[11px] leading-tight"
             >
-              <AppIcon name="search" />
-              {t("controls.searchSongs")}
+              <AppIcon name="search" size={16} />
+              <span className="min-w-0 truncate">
+                {t("controls.searchSongsShort")}
+              </span>
             </button>
             <button
               ref={pickAssistantButtonRef}
@@ -147,11 +168,14 @@ export default function Controls({
                 onOpenPickAssistant();
               }}
               data-dialog-return-key={DIALOG_RETURN_KEYS.pickAssistant}
-              className="official-button w-full"
+              aria-label={t("controls.pickAssistant")}
+              className="official-button min-w-0 gap-1 !px-1.5 text-[11px] leading-tight"
             >
-              <AppIcon name="music" />
-              {t("controls.pickAssistant")}
-              <span className="rounded-full bg-[var(--background)] px-1.5 text-xs tabular-nums text-[var(--muted)]">
+              <AppIcon name="music" size={16} />
+              <span className="min-w-0 truncate">
+                {t("controls.pickAssistantShort")}
+              </span>
+              <span className="rounded-full bg-[var(--background)] px-1 text-[10px] tabular-nums text-[var(--muted)]">
                 {shortlistCount}
               </span>
             </button>
@@ -164,7 +188,8 @@ export default function Controls({
               disabled={generating || !hasPicks}
               ref={generateButtonRef}
               data-dialog-return-key={DIALOG_RETURN_KEYS.generateImage}
-              className="official-button official-button-primary min-w-0 w-full"
+              aria-label={t("controls.generateImage")}
+              className="official-button official-button-primary min-w-0 gap-1 !px-1.5 text-[11px] leading-tight"
             >
               {generating ? (
                 <>
@@ -173,28 +198,12 @@ export default function Controls({
                 </>
               ) : (
                 <>
-                  <AppIcon name="image" />
-                  {t("controls.generateImage")}
+                  <AppIcon name="image" size={16} />
+                  <span className="min-w-0 truncate">
+                    {t("controls.generateImageShort")}
+                  </span>
                 </>
               )}
-            </button>
-            <button
-              ref={moreButtonRef}
-              type="button"
-              onClick={() => setIsMoreOpen((open) => !open)}
-              aria-expanded={isMoreOpen}
-              aria-controls={isMoreOpen ? morePanelId : undefined}
-              className="official-button w-full"
-            >
-              <AppIcon name="menu" />
-              {t("controls.more")}
-              <AppIcon
-                name="chevron-down"
-                size={14}
-                className={`ml-auto transition-transform duration-150 ${
-                  isMoreOpen ? "rotate-180" : ""
-                }`}
-              />
             </button>
           </div>
 

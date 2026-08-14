@@ -31,17 +31,49 @@ export default function Header({
   const [isMobileDetailsOpen, setIsMobileDetailsOpen] = useState(false);
   const mobileDetailsId = useId();
 
-  const details = (
-    <div className="border-l-[3px] border-[var(--project-primary)] pl-3.5 sm:pl-5">
-      <p className="text-[15px] font-semibold leading-snug tracking-[-0.01em] text-[var(--foreground)]">
-        {resolvedSubtitle}
-      </p>
+  const subtitleContent = (
+    <p className="text-[15px] font-semibold leading-snug tracking-[-0.01em] text-[var(--foreground)]">
+      {resolvedSubtitle}
+    </p>
+  );
+  const extendedDetails = (
+    <>
       <p className="mt-1 text-[13px] leading-relaxed text-[var(--muted)] sm:mt-1.5 sm:text-sm">
         {resolvedDescription}
       </p>
       {meta ? (
         <p className="mt-2 text-xs font-medium text-[var(--muted)]">{meta}</p>
       ) : null}
+    </>
+  );
+  const details = (
+    <div className="border-l-[3px] border-[var(--project-primary)] pl-3.5 sm:pl-5">
+      {subtitleContent}
+      {collapseDetailsOnMobile ? (
+        <>
+          <button
+            type="button"
+            onClick={() => setIsMobileDetailsOpen((open) => !open)}
+            aria-expanded={isMobileDetailsOpen}
+            aria-controls={mobileDetailsId}
+            className="official-button mt-2 w-fit gap-1.5 !px-3 text-[13px] md:hidden"
+          >
+            {isMobileDetailsOpen
+              ? t("header.hideActivityDetails")
+              : t("header.showActivityDetails")}
+          </button>
+          <div
+            id={mobileDetailsId}
+            className={
+              isMobileDetailsOpen ? "block md:block" : "hidden md:block"
+            }
+          >
+            {extendedDetails}
+          </div>
+        </>
+      ) : (
+        extendedDetails
+      )}
     </div>
   );
 
@@ -64,31 +96,7 @@ export default function Header({
           </h1>
         ) : null}
 
-        {collapseDetailsOnMobile ? (
-          <div className="grid gap-2 md:block">
-            <button
-              type="button"
-              onClick={() => setIsMobileDetailsOpen((open) => !open)}
-              aria-expanded={isMobileDetailsOpen}
-              aria-controls={mobileDetailsId}
-              className="official-button w-fit gap-1.5 !px-3 text-[13px] md:hidden"
-            >
-              {isMobileDetailsOpen
-                ? t("header.hideActivityDetails")
-                : t("header.showActivityDetails")}
-            </button>
-            <div
-              id={mobileDetailsId}
-              className={
-                isMobileDetailsOpen ? "block md:block" : "hidden md:block"
-              }
-            >
-              {details}
-            </div>
-          </div>
-        ) : (
-          details
-        )}
+        {details}
       </div>
     </header>
   );

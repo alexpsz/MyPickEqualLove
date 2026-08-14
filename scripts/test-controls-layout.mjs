@@ -73,10 +73,32 @@ test("mobile keeps each context label and date intact inside its own segment", (
 });
 
 test("mobile promotes the selection path and conditionally renders advanced controls", () => {
+  const mobilePrimaryActionsStart = controlsSource.indexOf(
+    '<div className="grid grid-cols-3 gap-2 sm:hidden">',
+  );
+  const mobilePrimaryActionsEnd = controlsSource.indexOf(
+    "{isMoreOpen ? (",
+    mobilePrimaryActionsStart,
+  );
+  const mobilePrimaryActions = controlsSource.slice(
+    mobilePrimaryActionsStart,
+    mobilePrimaryActionsEnd,
+  );
+
+  assert.match(
+    mobilePrimaryActions,
+    /controls\.searchSongs[\s\S]*controls\.pickAssistant[\s\S]*controls\.generateImage/,
+    "the one-row mobile action grid must retain search, assistant, and generation",
+  );
+  assert.doesNotMatch(
+    mobilePrimaryActions,
+    /controls\.more/,
+    "More belongs in the compact metric header, not as a fourth primary action",
+  );
   assert.match(
     controlsSource,
-    /grid grid-cols-2 gap-2 sm:hidden[\s\S]*controls\.searchSongs[\s\S]*controls\.pickAssistant[\s\S]*controls\.generateImage[\s\S]*controls\.more/,
-    "mobile must retain search, assistant, generation, and More in its first control layer",
+    /selectedCount\}\/\{slotCount\}[\s\S]*controls\.more[\s\S]*sm:hidden/,
+    "More must stay adjacent to the mobile progress metrics",
   );
   assert.match(
     controlsSource,
@@ -114,7 +136,22 @@ test("special activity details collapse only on mobile", () => {
   assert.match(headerSource, /collapseDetailsOnMobile = false/);
   assert.match(
     headerSource,
+    /const subtitleContent[\s\S]*resolvedSubtitle[\s\S]*\{subtitleContent\}[\s\S]*collapseDetailsOnMobile/,
+    "the concise subtitle must remain visible before the mobile disclosure",
+  );
+  assert.match(
+    headerSource,
+    /id=\{mobileDetailsId\}[\s\S]*\{extendedDetails\}/,
+    "only the extended description and metadata belong in the activity disclosure",
+  );
+  assert.match(
+    headerSource,
     /isMobileDetailsOpen \? "block md:block" : "hidden md:block"/,
     "activity copy should stay available on desktop while defaulting closed on mobile",
+  );
+  assert.match(
+    clientSource,
+    /returnFocusKey=\{DIALOG_RETURN_KEYS\.generateImage\}[\s\S]*returnFocusFallbackKey=\{DIALOG_RETURN_KEYS\.globalSearch\}/,
+    "responsive duplicate action markup must retain a visible keyed focus fallback",
   );
 });
