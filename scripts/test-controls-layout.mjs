@@ -120,6 +120,26 @@ test("mobile promotes the selection path and conditionally renders advanced cont
     /\{hasPicks \? \([\s\S]*controls\.clear[\s\S]*\) : null\}/,
     "the destructive control belongs at the bottom of More and is absent on an empty board",
   );
+  assert.match(
+    controlsSource,
+    /const handleMobileClearAll = \(\) => \{[\s\S]*if \(!onClearAll\(\)\) return;[\s\S]*setIsMoreOpen\(false\);[\s\S]*requestAnimationFrame[\s\S]*getClientRects\(\)\.length[\s\S]*moreButton\.focus/,
+    "a successful mobile clear must close More and restore focus to its visible trigger",
+  );
+  assert.match(
+    controlsSource,
+    /onClick=\{handleMobileClearAll\}[\s\S]*controls\.clear/,
+    "mobile Clear must use the success-aware wrapper instead of forwarding directly",
+  );
+  assert.match(
+    controlsSource,
+    /onClick=\{onClearAll\}[\s\S]*disabled=\{!hasPicks\}/,
+    "desktop Clear must continue using its existing always-mounted behavior",
+  );
+  assert.match(
+    clientSource,
+    /const handleClearAllPicks = \(\) => \{[\s\S]*if \(!window\.confirm\(t\("errors\.clearAllConfirm"\)\)\) return false;[\s\S]*return commitUserMutation\("clear", \{\}\);/,
+    "the parent clear handler must distinguish cancellation from a successful mutation",
+  );
 });
 
 test("special activity details collapse only on mobile", () => {

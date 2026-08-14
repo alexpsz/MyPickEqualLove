@@ -6,7 +6,7 @@ import { DIALOG_RETURN_KEYS } from "../utils/useDialogA11y";
 import AppIcon from "./AppIcon";
 
 interface ControlsProps {
-  onClearAll: () => void;
+  onClearAll: () => boolean;
   onGenerate: () => void;
   onGlobalSearch: () => void;
   onOpenPickAssistant: () => void;
@@ -65,6 +65,18 @@ export default function Controls({
   const morePanelId = useId();
   const controlsRef = useRef<HTMLElement>(null);
   const moreButtonRef = useRef<HTMLButtonElement>(null);
+
+  const handleMobileClearAll = () => {
+    if (!onClearAll()) return;
+
+    setIsMoreOpen(false);
+    window.requestAnimationFrame(() => {
+      const moreButton = moreButtonRef.current;
+      if (moreButton?.getClientRects().length) {
+        moreButton.focus({ preventScroll: true });
+      }
+    });
+  };
 
   useEffect(() => {
     if (!isMoreOpen) return;
@@ -268,7 +280,7 @@ export default function Controls({
                 {hasPicks ? (
                   <button
                     type="button"
-                    onClick={onClearAll}
+                    onClick={handleMobileClearAll}
                     className="official-button official-button-quiet col-span-2 !min-h-11 justify-self-stretch !px-3 text-red-700"
                   >
                     {t("controls.clear")}

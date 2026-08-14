@@ -1921,9 +1921,8 @@ export default function PickExperienceClient({
   };
 
   const handleClearAllPicks = () => {
-    if (window.confirm(t("errors.clearAllConfirm"))) {
-      commitUserMutation("clear", {});
-    }
+    if (!window.confirm(t("errors.clearAllConfirm"))) return false;
+    return commitUserMutation("clear", {});
   };
 
   const previewRelocation = useCallback(
