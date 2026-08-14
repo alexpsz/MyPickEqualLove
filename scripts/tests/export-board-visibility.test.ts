@@ -153,6 +153,15 @@ test("mobile preview collapses export options and keeps the image stage flexible
     previewModalSource,
     /data-preview-template-segment=\{option\}[\s\S]*aria-pressed=\{selected\}[\s\S]*min-h-10/,
   );
+  const templateSegmentedControlSource = previewModalSource.slice(
+    previewModalSource.indexOf("function TemplateSegmentedControl"),
+    previewModalSource.indexOf("function ToggleChip"),
+  );
+  assert.match(
+    templateSegmentedControlSource,
+    /bg-\[var\(--project-primary\)\] text-\[var\(--project-contrast\)\]/,
+  );
+  assert.doesNotMatch(templateSegmentedControlSource, /text-white/);
   assert.match(previewModalSource, /role="group"[\s\S]*aria-label=\{label\}/);
   assert.match(
     previewModalSource,

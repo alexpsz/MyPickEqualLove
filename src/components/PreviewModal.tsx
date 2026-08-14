@@ -598,7 +598,7 @@ function TemplateSegmentedControl({
             onClick={() => onValueChange(option)}
             className={`flex min-h-10 min-w-0 items-center justify-center gap-1 rounded-[calc(var(--radius-sm)-2px)] px-1.5 text-[12px] font-semibold outline-none transition-[background-color,color,box-shadow] duration-150 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:opacity-50 sm:text-[13px] ${
               selected
-                ? "bg-[var(--project-primary)] text-white shadow-sm"
+                ? "bg-[var(--project-primary)] text-[var(--project-contrast)] shadow-sm"
                 : "text-[var(--foreground)] hover:bg-[var(--background)]"
             }`}
           >
