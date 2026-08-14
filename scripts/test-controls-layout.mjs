@@ -171,8 +171,13 @@ test("special activity details collapse only on mobile", () => {
   assert.match(headerSource, /collapseDetailsOnMobile = false/);
   assert.match(
     headerSource,
-    /className="sm:hidden"[\s\S]*<button[\s\S]*min-h-11 w-full[\s\S]*\{resolvedSubtitle\}[\s\S]*name="chevron-down"/,
-    "mobile must use the visible subtitle and a subtle chevron as one full-width 44px disclosure trigger",
+    /className="md:hidden"[\s\S]*<button[\s\S]*min-h-11 w-full[\s\S]*\{resolvedSubtitle\}[\s\S]*name="chevron-down"/,
+    "the activity disclosure must remain available below the original 768px boundary",
+  );
+  assert.match(
+    headerSource,
+    /inline-flex w-fit max-w-full flex-col items-center gap-0\.5[\s\S]*max-w-full text-left[\s\S]*\{resolvedSubtitle\}[\s\S]*name="chevron-down"/,
+    "the chevron must center beneath the subtitle's own wrapping content width",
   );
   assert.match(
     headerSource,
@@ -181,13 +186,22 @@ test("special activity details collapse only on mobile", () => {
   );
   assert.match(
     headerSource,
-    /id=\{mobileDetailsId\}[\s\S]*isMobileDetailsOpen \? "block sm:hidden" : "hidden"[\s\S]*\{extendedDetails\}/,
+    /id=\{mobileDetailsId\}[\s\S]*isMobileDetailsOpen \? "block md:hidden" : "hidden"[\s\S]*\{extendedDetails\}/,
     "only the extended description and metadata belong in the mobile disclosure",
   );
   assert.match(
     headerSource,
-    /className="hidden sm:block">[\s\S]*\{subtitleContent\}[\s\S]*\{extendedDetails\}/,
-    "desktop needs one non-interactive subtitle copy with description and metadata always present",
+    /className="hidden md:block">[\s\S]*\{subtitleContent\}[\s\S]*\{extendedDetails\}/,
+    "desktop details must become static only at the original 768px boundary",
+  );
+  const mobileDisclosure = headerSource.slice(
+    headerSource.indexOf('<div className="md:hidden">'),
+    headerSource.indexOf('<div className="hidden md:block">'),
+  );
+  assert.doesNotMatch(
+    mobileDisclosure,
+    /<p\b/,
+    "the disclosure button must not contain a paragraph element",
   );
   assert.doesNotMatch(
     headerSource,

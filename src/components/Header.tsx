@@ -51,7 +51,7 @@ export default function Header({
     <div className="border-l-[3px] border-[var(--project-primary)] pl-3.5 sm:pl-5">
       {collapseDetailsOnMobile ? (
         <>
-          <div className="sm:hidden">
+          <div className="md:hidden">
             <button
               type="button"
               onClick={() => setIsMobileDetailsOpen((open) => !open)}
@@ -62,28 +62,30 @@ export default function Header({
                   ? t("header.hideActivityDetails")
                   : t("header.showActivityDetails")
               }
-              className="flex min-h-11 w-full flex-col items-start justify-center gap-0.5 rounded-sm text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+              className="flex min-h-11 w-full items-center justify-start rounded-sm text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
             >
-              <span className="text-[15px] font-semibold leading-snug tracking-[-0.01em] text-[var(--foreground)]">
-                {resolvedSubtitle}
+              <span className="inline-flex w-fit max-w-full flex-col items-center gap-0.5">
+                <span className="max-w-full text-left text-[15px] font-semibold leading-snug tracking-[-0.01em] text-[var(--foreground)]">
+                  {resolvedSubtitle}
+                </span>
+                <AppIcon
+                  name="chevron-down"
+                  size={14}
+                  strokeWidth={1.5}
+                  className={`text-[var(--muted-soft)] transition-transform duration-150 ${
+                    isMobileDetailsOpen ? "rotate-180" : ""
+                  }`}
+                />
               </span>
-              <AppIcon
-                name="chevron-down"
-                size={14}
-                strokeWidth={1.5}
-                className={`text-[var(--muted-soft)] transition-transform duration-150 ${
-                  isMobileDetailsOpen ? "rotate-180" : ""
-                }`}
-              />
             </button>
             <div
               id={mobileDetailsId}
-              className={isMobileDetailsOpen ? "block sm:hidden" : "hidden"}
+              className={isMobileDetailsOpen ? "block md:hidden" : "hidden"}
             >
               {extendedDetails}
             </div>
           </div>
-          <div className="hidden sm:block">
+          <div className="hidden md:block">
             {subtitleContent}
             {extendedDetails}
           </div>
