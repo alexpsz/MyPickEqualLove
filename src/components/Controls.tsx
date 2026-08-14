@@ -153,7 +153,7 @@ export default function Controls({
               }}
               data-dialog-return-key={DIALOG_RETURN_KEYS.globalSearch}
               aria-label={t("controls.searchSongs")}
-              className="official-button min-w-0 gap-1 !px-1.5 text-[11px] leading-tight"
+              className="official-button min-w-0 gap-1 !px-1.5 !text-[13px] leading-tight"
             >
               <AppIcon name="search" size={16} />
               <span className="min-w-0 truncate">
@@ -169,15 +169,17 @@ export default function Controls({
               }}
               data-dialog-return-key={DIALOG_RETURN_KEYS.pickAssistant}
               aria-label={t("controls.pickAssistant")}
-              className="official-button min-w-0 gap-1 !px-1.5 text-[11px] leading-tight"
+              className="official-button min-w-0 gap-0.5 !px-1 !text-[13px] leading-tight"
             >
               <AppIcon name="music" size={16} />
               <span className="min-w-0 truncate">
                 {t("controls.pickAssistantShort")}
               </span>
-              <span className="rounded-full bg-[var(--background)] px-1 text-[10px] tabular-nums text-[var(--muted)]">
-                {shortlistCount}
-              </span>
+              {shortlistCount > 0 ? (
+                <span className="rounded-full bg-[var(--background)] px-1 text-[10px] tabular-nums text-[var(--muted)]">
+                  {shortlistCount}
+                </span>
+              ) : null}
             </button>
             <button
               type="button"
@@ -189,7 +191,7 @@ export default function Controls({
               ref={generateButtonRef}
               data-dialog-return-key={DIALOG_RETURN_KEYS.generateImage}
               aria-label={t("controls.generateImage")}
-              className="official-button official-button-primary min-w-0 gap-1 !px-1.5 text-[11px] leading-tight"
+              className="official-button official-button-primary min-w-0 gap-1 !px-1.5 !text-[13px] leading-tight"
             >
               {generating ? (
                 <>
