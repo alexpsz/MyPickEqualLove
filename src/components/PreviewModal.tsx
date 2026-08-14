@@ -253,7 +253,7 @@ export default function PreviewModal({
       >
         <div className="flex flex-col gap-2 border-b border-[var(--line)] bg-white px-4 py-3 sm:gap-4 sm:px-6 sm:py-4">
           <div className="flex min-w-0 items-center justify-between gap-3">
-            <div className="min-w-0">
+            <div className="min-w-0 text-left">
               <h3
                 id="preview-modal-title"
                 className="text-[18px] font-semibold tracking-[-0.03em] text-[var(--foreground)] sm:text-[20px]"
@@ -286,12 +286,12 @@ export default function PreviewModal({
           <div
             id={mobileOptionsId}
             data-preview-options-panel
-            className={`${isOptionsExpanded ? "block" : "hidden"} sm:block`}
+            className={`${isOptionsExpanded ? "block" : "hidden"} sm:block sm:w-full`}
           >
             <div className="rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--background)] p-2 sm:p-3">
               <div
                 data-preview-options-grid
-                className="grid min-w-0 grid-cols-2 items-stretch gap-1.5 sm:flex sm:flex-1 sm:flex-wrap sm:items-center sm:justify-end sm:gap-x-2 sm:gap-y-2"
+                className="grid min-w-0 grid-cols-2 items-stretch gap-1.5 sm:flex sm:w-full sm:flex-wrap sm:items-center sm:justify-center sm:gap-3"
               >
                 <div
                   data-preview-option="template"

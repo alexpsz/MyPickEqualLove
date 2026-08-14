@@ -269,6 +269,27 @@ test("mobile preview collapses export options and keeps the image stage flexible
   assert.match(previewModalSource, /grid-cols-5 items-stretch/);
 });
 
+test("desktop preview keeps headings left aligned and centers its independent controls row", () => {
+  const previewModalSource = readFileSync(
+    resolve(process.cwd(), "src/components/PreviewModal.tsx"),
+    "utf8",
+  );
+
+  assert.match(
+    previewModalSource,
+    /className="min-w-0 text-left"[\s\S]*id="preview-modal-title"/,
+  );
+  assert.match(
+    previewModalSource,
+    /data-preview-options-panel[\s\S]*sm:block sm:w-full/,
+  );
+  assert.match(
+    previewModalSource,
+    /data-preview-options-grid[\s\S]*grid-cols-2[\s\S]*sm:flex sm:w-full sm:flex-wrap sm:items-center sm:justify-center sm:gap-3/,
+  );
+  assert.doesNotMatch(previewModalSource, /sm:justify-end sm:gap-x-2/);
+});
+
 test("export image readiness resolves only after load and decode", async () => {
   assert.equal(EXPORT_IMAGE_READY_TIMEOUT_MS, 10_000);
   const timers = new ManualTimers();
