@@ -19,6 +19,8 @@
     "modelId",
     "thinkingLevel",
     "maxOutputTokens",
+    "providerUsage",
+    "elapsedMs",
     "promptHash",
     "annotatedAt",
     "scores",
@@ -49,8 +51,25 @@
     "channelId": { "type": "string", "pattern": "^[A-Za-z0-9_-]{6,}$" },
     "channelTitle": { "type": "string", "minLength": 1 },
     "modelId": { "const": "gemini-3.7-flash" },
-    "thinkingLevel": { "const": "medium" },
+    "thinkingLevel": { "enum": ["low", "medium", "high"] },
     "maxOutputTokens": { "const": 2048 },
+    "providerUsage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "total_input_tokens",
+        "total_output_tokens",
+        "total_thought_tokens",
+        "total_tokens"
+      ],
+      "properties": {
+        "total_input_tokens": { "type": "integer", "minimum": 0 },
+        "total_output_tokens": { "type": "integer", "minimum": 0 },
+        "total_thought_tokens": { "type": "integer", "minimum": 0 },
+        "total_tokens": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "elapsedMs": { "type": "integer", "minimum": 0 },
     "promptHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
     "annotatedAt": { "type": "string", "format": "date-time" },
     "scores": { "$ref": "#/$defs/scores" },

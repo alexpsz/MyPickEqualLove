@@ -4,7 +4,8 @@ import { fileURLToPath } from "node:url";
 
 export const MODEL_ID = "gemini-3.7-flash";
 export const API_REVISION = "2026-05-20";
-export const THINKING_LEVEL = "medium";
+export const THINKING_LEVELS = Object.freeze(["low", "medium", "high"]);
+export const DEFAULT_THINKING_LEVEL = "medium";
 export const MAX_OUTPUT_TOKENS = 2048;
 export const RUBRIC_VERSION = "gemini-video-v1";
 export const INTERACTIONS_ENDPOINT =
@@ -33,6 +34,12 @@ export const SOURCE_MODES = Object.freeze([
   "text-only",
 ]);
 export const CONFIDENCE_LEVELS = Object.freeze(["low", "medium", "high"]);
+export const PROVIDER_USAGE_FIELDS = Object.freeze([
+  "total_input_tokens",
+  "total_output_tokens",
+  "total_thought_tokens",
+  "total_tokens",
+]);
 
 const CONTRACT_DIR = fileURLToPath(new URL(".", import.meta.url));
 const PROMPT_PATH = fileURLToPath(new URL("./prompt.md", import.meta.url));
@@ -42,6 +49,23 @@ const OUTPUT_SCHEMA_PATH = fileURLToPath(
 
 export function fail(message) {
   throw new Error(message);
+}
+
+export function validateThinkingLevel(thinkingLevel) {
+  if (!THINKING_LEVELS.includes(thinkingLevel)) {
+    fail("thinking level must be low, medium, or high");
+  }
+  return thinkingLevel;
+}
+
+export function validateProviderUsage(providerUsage) {
+  assertExactKeys(providerUsage, PROVIDER_USAGE_FIELDS, "provider usage");
+  for (const field of PROVIDER_USAGE_FIELDS) {
+    if (!Number.isInteger(providerUsage[field]) || providerUsage[field] < 0) {
+      fail(`provider usage.${field} must be a non-negative integer`);
+    }
+  }
+  return providerUsage;
 }
 
 export function assertExactKeys(value, expected, label) {
@@ -242,11 +266,13 @@ export async function loadContracts() {
     readFile(PROMPT_PATH, "utf8"),
     readFile(OUTPUT_SCHEMA_PATH, "utf8"),
   ]);
+  const outputSchema = JSON.parse(outputSchemaText);
   return {
     contractDir: CONTRACT_DIR,
     promptTemplate: promptTemplate.trim(),
     promptContractHash: sha256(promptTemplate.trim()),
-    outputSchema: JSON.parse(outputSchemaText),
+    outputSchema,
+    outputSchemaHash: sha256(canonicalJson(outputSchema)),
   };
 }
 
@@ -267,7 +293,13 @@ export function renderPrompt(promptTemplate, song) {
   return `${promptTemplate}\n\nSOURCE RECORD\n${JSON.stringify(source, null, 2)}`;
 }
 
-export function buildInteractionBody(song, prompt, outputSchema) {
+export function buildInteractionBody(
+  song,
+  prompt,
+  outputSchema,
+  thinkingLevel = DEFAULT_THINKING_LEVEL,
+) {
+  validateThinkingLevel(thinkingLevel);
   const assessmentSchema = outputSchema.properties;
   const responseSchema = {
     type: "object",
@@ -292,7 +324,7 @@ export function buildInteractionBody(song, prompt, outputSchema) {
     input,
     store: false,
     generation_config: {
-      thinking_level: THINKING_LEVEL,
+      thinking_level: thinkingLevel,
       max_output_tokens: MAX_OUTPUT_TOKENS,
     },
     response_format: {
@@ -414,7 +446,20 @@ export function validateAssessment(assessment, song) {
   return assessment;
 }
 
-export function createEnvelope(song, assessment, promptHash, annotatedAt) {
+export function createEnvelope(
+  song,
+  assessment,
+  promptHash,
+  annotatedAt,
+  thinkingLevel = DEFAULT_THINKING_LEVEL,
+  providerUsage,
+  elapsedMs,
+) {
+  validateThinkingLevel(thinkingLevel);
+  validateProviderUsage(providerUsage);
+  if (!Number.isInteger(elapsedMs) || elapsedMs < 0) {
+    fail("elapsedMs must be a non-negative integer");
+  }
   validateAssessment(assessment, song);
   return {
     schemaVersion: 1,
@@ -429,8 +474,10 @@ export function createEnvelope(song, assessment, promptHash, annotatedAt) {
     channelId: song.channelId,
     channelTitle: song.channelTitle,
     modelId: MODEL_ID,
-    thinkingLevel: THINKING_LEVEL,
+    thinkingLevel,
     maxOutputTokens: MAX_OUTPUT_TOKENS,
+    providerUsage,
+    elapsedMs,
     promptHash,
     annotatedAt,
     scores: assessment.scores,
@@ -442,7 +489,13 @@ export function createEnvelope(song, assessment, promptHash, annotatedAt) {
   };
 }
 
-export function validateEnvelope(envelope, song, promptHash) {
+export function validateEnvelope(
+  envelope,
+  song,
+  promptHash,
+  thinkingLevel = DEFAULT_THINKING_LEVEL,
+) {
+  validateThinkingLevel(thinkingLevel);
   assertExactKeys(
     envelope,
     [
@@ -460,6 +513,8 @@ export function validateEnvelope(envelope, song, promptHash) {
       "modelId",
       "thinkingLevel",
       "maxOutputTokens",
+      "providerUsage",
+      "elapsedMs",
       "promptHash",
       "annotatedAt",
       "scores",
@@ -484,7 +539,7 @@ export function validateEnvelope(envelope, song, promptHash) {
     envelope.channelId !== song.channelId ||
     envelope.channelTitle !== song.channelTitle ||
     envelope.modelId !== MODEL_ID ||
-    envelope.thinkingLevel !== THINKING_LEVEL ||
+    envelope.thinkingLevel !== thinkingLevel ||
     envelope.maxOutputTokens !== MAX_OUTPUT_TOKENS ||
     envelope.promptHash !== promptHash
   ) {
@@ -492,6 +547,10 @@ export function validateEnvelope(envelope, song, promptHash) {
   }
   if (Number.isNaN(Date.parse(envelope.annotatedAt))) {
     fail(`annotation annotatedAt is invalid for ${song.songId}`);
+  }
+  validateProviderUsage(envelope.providerUsage);
+  if (!Number.isInteger(envelope.elapsedMs) || envelope.elapsedMs < 0) {
+    fail(`annotation elapsedMs is invalid for ${song.songId}`);
   }
   if (canonicalJson(envelope.qaFlags) !== canonicalJson(song.qaFlags)) {
     fail(`annotation qaFlags mismatch for ${song.songId}`);

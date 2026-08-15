@@ -5,11 +5,12 @@ import { join } from "node:path";
 import test from "node:test";
 import {
   API_REVISION,
+  DEFAULT_THINKING_LEVEL,
   MAX_OUTPUT_TOKENS,
   MODEL_ID,
   RUBRIC_VERSION,
   TEXT_ONLY_QA_FLAGS,
-  THINKING_LEVEL,
+  THINKING_LEVELS,
   YOUTUBE_PREVIEW_DAILY_SECONDS,
   buildInteractionBody,
   createEnvelope,
@@ -22,6 +23,7 @@ import {
 import {
   buildPlan,
   callInteraction,
+  parseCli,
   runLive,
   selectSongs,
 } from "./label-archetypes.mjs";
@@ -83,6 +85,16 @@ function assessment(overrides = {}) {
         supports: ["uplift"],
       },
     ],
+    ...overrides,
+  };
+}
+
+function providerUsage(overrides = {}) {
+  return {
+    total_input_tokens: 17_422,
+    total_output_tokens: 128,
+    total_thought_tokens: 512,
+    total_tokens: 18_062,
     ...overrides,
   };
 }
@@ -182,8 +194,38 @@ test("YouTube preview duration gate fails closed above eight hours", () => {
 });
 
 test("smoke mode selects exactly eight songs", () => {
-  assert.equal(selectSongs(sourceMap(10), true).length, 8);
-  assert.throws(() => selectSongs(sourceMap(7), true), /at least 8 songs/);
+  assert.equal(selectSongs(sourceMap(10), { smoke: true }).length, 8);
+  assert.throws(
+    () => selectSongs(sourceMap(7), { smoke: true }),
+    /at least 8 songs/,
+  );
+});
+
+test("CLI thinking levels and exact song selection fail closed", () => {
+  const base = ["--source-map", "source-map.json", "--dry-run"];
+  assert.equal(parseCli(base).thinkingLevel, DEFAULT_THINKING_LEVEL);
+  for (const thinkingLevel of THINKING_LEVELS) {
+    assert.equal(
+      parseCli([...base, "--thinking-level", thinkingLevel]).thinkingLevel,
+      thinkingLevel,
+    );
+  }
+  assert.throws(
+    () => parseCli([...base, "--thinking-level", "minimal"]),
+    /low, medium, or high/,
+  );
+  assert.throws(
+    () => parseCli([...base, "--smoke", "--song-id", "cameo"]),
+    /mutually exclusive/,
+  );
+
+  const map = sourceMap(85);
+  map.songs[42].songId = "cameo";
+  assert.equal(selectSongs(map, { songId: "cameo" })[0].title, "Song 43");
+  assert.throws(
+    () => selectSongs(map, { songId: "missing-song" }),
+    /not present in source map/,
+  );
 });
 
 test("Interactions response_format is the exact single text object", async () => {
@@ -197,11 +239,18 @@ test("Interactions response_format is the exact single text object", async () =>
     thinking_level: "medium",
     max_output_tokens: 2048,
   });
-  assert.equal(
-    JSON.stringify(body.generation_config).includes("minimal"),
-    false,
+  for (const thinkingLevel of THINKING_LEVELS) {
+    assert.equal(
+      buildInteractionBody(entry, prompt, contracts.outputSchema, thinkingLevel)
+        .generation_config.thinking_level,
+      thinkingLevel,
+    );
+  }
+  assert.throws(
+    () =>
+      buildInteractionBody(entry, prompt, contracts.outputSchema, "minimal"),
+    /low, medium, or high/,
   );
-  assert.equal(JSON.stringify(body.generation_config).includes('"low"'), false);
   assert.equal("temperature" in body.generation_config, false);
   assert.equal("top_p" in body.generation_config, false);
   assert.equal("top_k" in body.generation_config, false);
@@ -225,6 +274,11 @@ test("Interactions response_format is the exact single text object", async () =>
   assert.deepEqual(body.response_format.schema.properties.confidence, {
     enum: ["low", "medium", "high"],
   });
+  assert.equal(
+    "providerUsage" in body.response_format.schema.properties,
+    false,
+  );
+  assert.equal("elapsedMs" in body.response_format.schema.properties, false);
   assert.equal("previous_interaction_id" in body, false);
   assert.equal("background" in body, false);
   assert.equal("requests" in body, false);
@@ -288,19 +342,38 @@ test("dry-run plan reports calls, YouTube seconds, remaining gate, and estimates
   assert.equal(plan.modelId, "gemini-3.7-flash");
   assert.equal(plan.modelId.includes("latest"), false);
   assert.equal(plan.apiRevision, "2026-05-20");
-  assert.equal(plan.thinkingLevel, THINKING_LEVEL);
+  assert.equal(plan.thinkingLevel, DEFAULT_THINKING_LEVEL);
   assert.equal(plan.maxOutputTokens, MAX_OUTPUT_TOKENS);
   assert.equal(plan.rubricVersion, RUBRIC_VERSION);
+  assert.match(plan.outputSchemaHash, /^[a-f0-9]{64}$/);
 
   const largerMap = validateSourceMap(sourceMap(10));
   const smokePlan = await buildPlan(
     largerMap,
-    selectSongs(largerMap, true),
+    selectSongs(largerMap, { smoke: true }),
     contracts,
+    null,
+    { selectionMode: "smoke" },
   );
   assert.equal(smokePlan.youtubePreviewSeconds, 10 * 240);
   assert.equal(smokePlan.selectedYoutubePreviewSeconds, 8 * 240);
   assert.equal(smokePlan.expectedRequestCount, 8);
+
+  const fullMapInput = sourceMap(85);
+  fullMapInput.songs[42].songId = "cameo";
+  const fullMap = validateSourceMap(fullMapInput);
+  const cameoSongs = selectSongs(fullMap, { songId: "cameo" });
+  const cameoPlan = await buildPlan(fullMap, cameoSongs, contracts, null, {
+    thinkingLevel: "low",
+    selectionMode: "song-id",
+    selectedSongId: "cameo",
+  });
+  assert.equal(cameoPlan.sourceMapSongCount, 85);
+  assert.equal(cameoPlan.selectedSongCount, 1);
+  assert.equal(cameoPlan.expectedRequestCount, 1);
+  assert.equal(cameoPlan.selectionMode, "song-id");
+  assert.equal(cameoPlan.selectedSongId, "cameo");
+  assert.equal(cameoPlan.thinkingLevel, "low");
 });
 
 test("provider key is sent only as a header and is redacted from errors", async () => {
@@ -337,6 +410,38 @@ test("provider key is sent only as a header and is redacted from errors", async 
     "x-goog-api-key",
   ]);
   assert.equal(captured.init.body.includes(secret), false);
+});
+
+test("missing or malformed provider usage fails closed", async () => {
+  const contracts = await loadContracts();
+  for (const usage of [undefined, providerUsage({ total_tokens: -1 })]) {
+    await assert.rejects(
+      () =>
+        callInteraction(
+          song(1),
+          "prompt",
+          contracts.outputSchema,
+          "secret",
+          async () => ({
+            ok: true,
+            status: 200,
+            json: async () => ({
+              status: "completed",
+              usage,
+              steps: [
+                {
+                  type: "model_output",
+                  content: [
+                    { type: "text", text: JSON.stringify(assessment()) },
+                  ],
+                },
+              ],
+            }),
+          }),
+        ),
+      /missing provider usage|non-negative integer/,
+    );
+  }
 });
 
 test("live run requires the exact preflight call confirmation", async () => {
@@ -385,11 +490,58 @@ test("missing API key fails before fetch", async () => {
   assert.equal(calls, 0);
 });
 
+test("invalid provider output is never frozen", async () => {
+  const contracts = await loadContracts();
+  const map = validateSourceMap(sourceMap(1));
+  const directory = await mkdtemp(join(tmpdir(), "mypick-archetype-invalid-"));
+  const plan = await buildPlan(map, map.songs, contracts, directory);
+  const invalidAssessment = assessment();
+  invalidAssessment.scores.drive = 1;
+  await assert.rejects(
+    () =>
+      runLive({
+        selectedSongs: map.songs,
+        contracts,
+        outputDir: directory,
+        plan,
+        confirmCalls: 1,
+        requestsPerMinute: 60,
+        apiKey: "secret",
+        fetchImpl: async () => ({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            status: "completed",
+            usage: providerUsage(),
+            steps: [
+              {
+                type: "model_output",
+                content: [
+                  { type: "text", text: JSON.stringify(invalidAssessment) },
+                ],
+              },
+            ],
+          }),
+        }),
+      }),
+    /exactly two score-2 dimensions/,
+  );
+  await assert.rejects(
+    () => readFile(join(directory, "results", "song-1.json"), "utf8"),
+    (error) => error.code === "ENOENT",
+  );
+  const checkpoint = JSON.parse(
+    await readFile(join(directory, "checkpoint.json"), "utf8"),
+  );
+  assert.deepEqual(checkpoint.frozen, {});
+});
+
 test("each successful response is frozen and recovered without another request", async () => {
   const contracts = await loadContracts();
   const map = validateSourceMap(sourceMap(1));
   const directory = await mkdtemp(join(tmpdir(), "mypick-archetype-freeze-"));
-  const plan = await buildPlan(map, map.songs, contracts, directory);
+  const execution = { thinkingLevel: "low" };
+  const plan = await buildPlan(map, map.songs, contracts, directory, execution);
   let calls = 0;
   const fakeFetch = async () => {
     calls += 1;
@@ -398,6 +550,7 @@ test("each successful response is frozen and recovered without another request",
       status: 200,
       json: async () => ({
         status: "completed",
+        usage: { ...providerUsage(), total_cached_tokens: 20 },
         steps: [
           {
             type: "model_output",
@@ -424,8 +577,11 @@ test("each successful response is frozen and recovered without another request",
   );
   const result = JSON.parse(resultText);
   assert.equal(result.modelId, MODEL_ID);
-  assert.equal(result.thinkingLevel, THINKING_LEVEL);
+  assert.equal(result.thinkingLevel, "low");
   assert.equal(result.maxOutputTokens, MAX_OUTPUT_TOKENS);
+  assert.deepEqual(result.providerUsage, providerUsage());
+  assert.equal(Number.isInteger(result.elapsedMs), true);
+  assert.equal(result.elapsedMs >= 0, true);
   assert.equal(result.rubricVersion, RUBRIC_VERSION);
   assert.equal(result.status, "draft");
   assert.equal(result.confidence, "high");
@@ -436,7 +592,13 @@ test("each successful response is frozen and recovered without another request",
     sha256(renderPrompt(contracts.promptTemplate, map.songs[0])),
   );
 
-  const resumed = await buildPlan(map, map.songs, contracts, directory);
+  const resumed = await buildPlan(
+    map,
+    map.songs,
+    contracts,
+    directory,
+    execution,
+  );
   assert.equal(resumed.expectedRequestCount, 0);
   assert.equal(resumed.frozenSongCount, 1);
   const checkpoint = JSON.parse(
@@ -444,7 +606,7 @@ test("each successful response is frozen and recovered without another request",
   );
   assert.equal(checkpoint.modelId, MODEL_ID);
   assert.equal(checkpoint.apiRevision, API_REVISION);
-  assert.equal(checkpoint.thinkingLevel, THINKING_LEVEL);
+  assert.equal(checkpoint.thinkingLevel, "low");
   assert.equal(checkpoint.maxOutputTokens, MAX_OUTPUT_TOKENS);
   assert.equal(checkpoint.frozen["song-1"].resultSha256, sha256(resultText));
 });
@@ -465,6 +627,9 @@ test("existing frozen result fails closed when metadata drifts", async () => {
     assessment(),
     promptHash,
     new Date().toISOString(),
+    DEFAULT_THINKING_LEVEL,
+    providerUsage(),
+    0,
   );
   envelope.modelId = "different-model";
   await writeFile(
@@ -492,10 +657,13 @@ test("checkpoint fails closed when the source map drifts", async () => {
       sourceMapHash: originalPlan.sourceMapHash,
       modelId: MODEL_ID,
       apiRevision: API_REVISION,
-      thinkingLevel: THINKING_LEVEL,
+      thinkingLevel: DEFAULT_THINKING_LEVEL,
       maxOutputTokens: MAX_OUTPUT_TOKENS,
+      selectionMode: "all",
+      selectedSongId: null,
       rubricVersion: RUBRIC_VERSION,
       promptContractHash: contracts.promptContractHash,
+      outputSchemaHash: contracts.outputSchemaHash,
       frozen: {},
     })}\n`,
     "utf8",
@@ -515,6 +683,8 @@ test("checkpoint fails closed when execution metadata drifts", async () => {
     { apiRevision: "2026-05-07" },
     { thinkingLevel: "low" },
     { maxOutputTokens: 128 },
+    { selectionMode: "song-id", selectedSongId: "song-1" },
+    { outputSchemaHash: "0".repeat(64) },
   ];
   for (const drift of driftCases) {
     const directory = await mkdtemp(
@@ -528,10 +698,13 @@ test("checkpoint fails closed when execution metadata drifts", async () => {
         sourceMapHash: originalPlan.sourceMapHash,
         modelId: MODEL_ID,
         apiRevision: API_REVISION,
-        thinkingLevel: THINKING_LEVEL,
+        thinkingLevel: DEFAULT_THINKING_LEVEL,
         maxOutputTokens: MAX_OUTPUT_TOKENS,
+        selectionMode: "all",
+        selectedSongId: null,
         rubricVersion: RUBRIC_VERSION,
         promptContractHash: contracts.promptContractHash,
+        outputSchemaHash: contracts.outputSchemaHash,
         frozen: {},
         ...drift,
       })}\n`,

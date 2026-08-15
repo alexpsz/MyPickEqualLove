@@ -3,14 +3,16 @@
 import { parseArgs } from "node:util";
 import { mkdir, readFile, readdir, rename, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
+import { performance } from "node:perf_hooks";
 import { pathToFileURL } from "node:url";
 import {
   API_REVISION,
+  DEFAULT_THINKING_LEVEL,
   INTERACTIONS_ENDPOINT,
   MAX_OUTPUT_TOKENS,
   MODEL_ID,
+  PROVIDER_USAGE_FIELDS,
   RUBRIC_VERSION,
-  THINKING_LEVEL,
   YOUTUBE_PREVIEW_DAILY_SECONDS,
   buildInteractionBody,
   canonicalJson,
@@ -19,15 +21,17 @@ import {
   renderPrompt,
   sha256,
   validateEnvelope,
+  validateProviderUsage,
   validateSourceMap,
+  validateThinkingLevel,
 } from "./archetype-contract.mjs";
 
 function usage() {
   return `Usage:
-  node scripts/archetype/label-archetypes.mjs --source-map <file> --dry-run [--smoke]
-  node scripts/archetype/label-archetypes.mjs --source-map <file> --output-dir <dir> --live --confirm-calls <n> [--smoke] [--requests-per-minute <n>]
+  node scripts/archetype/label-archetypes.mjs --source-map <file> --dry-run [--smoke | --song-id <exact-id>] [--thinking-level <low|medium|high>]
+  node scripts/archetype/label-archetypes.mjs --source-map <file> --output-dir <dir> --live --confirm-calls <n> [--smoke | --song-id <exact-id>] [--thinking-level <low|medium|high>] [--requests-per-minute <n>]
 
-Modes are explicit. --smoke always selects exactly the first 8 validated songs.`;
+Modes are explicit. --smoke selects exactly the first 8 validated songs and is mutually exclusive with --song-id. The default thinking level is medium.`;
 }
 
 export function parseCli(argv) {
@@ -41,6 +45,8 @@ export function parseCli(argv) {
       "dry-run": { type: "boolean", default: false },
       live: { type: "boolean", default: false },
       smoke: { type: "boolean", default: false },
+      "song-id": { type: "string" },
+      "thinking-level": { type: "string", default: DEFAULT_THINKING_LEVEL },
       "confirm-calls": { type: "string" },
       "requests-per-minute": { type: "string", default: "10" },
       help: { type: "boolean", default: false },
@@ -54,6 +60,14 @@ export function parseCli(argv) {
   if (values.live && !values["output-dir"]) {
     throw new Error("--output-dir is required for --live");
   }
+  const songId = values["song-id"] ?? null;
+  if (values.smoke && songId !== null) {
+    throw new Error("--smoke and --song-id are mutually exclusive");
+  }
+  if (songId !== null && !/^[a-z0-9][a-z0-9-]*$/.test(songId)) {
+    throw new Error("--song-id must be an exact valid song ID");
+  }
+  const thinkingLevel = validateThinkingLevel(values["thinking-level"]);
   const requestsPerMinute = Number(values["requests-per-minute"]);
   if (
     !Number.isInteger(requestsPerMinute) ||
@@ -79,6 +93,8 @@ export function parseCli(argv) {
     dryRun: values["dry-run"],
     live: values.live,
     smoke: values.smoke,
+    songId,
+    thinkingLevel,
     confirmCalls,
     requestsPerMinute,
   };
@@ -98,7 +114,16 @@ async function readJson(path, label) {
   }
 }
 
-export function selectSongs(sourceMap, smoke) {
+export function selectSongs(sourceMap, { smoke = false, songId = null } = {}) {
+  if (smoke && songId !== null) {
+    throw new Error("--smoke and --song-id are mutually exclusive");
+  }
+  if (songId !== null) {
+    const song = sourceMap.songs.find((entry) => entry.songId === songId);
+    if (!song)
+      throw new Error(`--song-id is not present in source map: ${songId}`);
+    return [song];
+  }
   if (!smoke) return sourceMap.songs;
   if (sourceMap.songs.length < 8) {
     throw new Error(
@@ -140,8 +165,11 @@ async function existingFrozenSongs(
       "apiRevision",
       "thinkingLevel",
       "maxOutputTokens",
+      "selectionMode",
+      "selectedSongId",
       "rubricVersion",
       "promptContractHash",
+      "outputSchemaHash",
       "frozen",
     ].sort();
     if (JSON.stringify(checkpointKeys) !== JSON.stringify(expectedKeys)) {
@@ -152,10 +180,13 @@ async function existingFrozenSongs(
       checkpoint.sourceMapHash !== expectedMetadata.sourceMapHash ||
       checkpoint.modelId !== MODEL_ID ||
       checkpoint.apiRevision !== API_REVISION ||
-      checkpoint.thinkingLevel !== THINKING_LEVEL ||
+      checkpoint.thinkingLevel !== expectedMetadata.thinkingLevel ||
       checkpoint.maxOutputTokens !== MAX_OUTPUT_TOKENS ||
+      checkpoint.selectionMode !== expectedMetadata.selectionMode ||
+      checkpoint.selectedSongId !== expectedMetadata.selectedSongId ||
       checkpoint.rubricVersion !== RUBRIC_VERSION ||
       checkpoint.promptContractHash !== contracts.promptContractHash ||
+      checkpoint.outputSchemaHash !== contracts.outputSchemaHash ||
       !checkpoint.frozen ||
       typeof checkpoint.frozen !== "object" ||
       Array.isArray(checkpoint.frozen)
@@ -189,7 +220,12 @@ async function existingFrozenSongs(
     } catch {
       throw new Error(`existing result is invalid JSON: ${name}`);
     }
-    validateEnvelope(envelope, song, promptHash);
+    validateEnvelope(
+      envelope,
+      song,
+      promptHash,
+      expectedMetadata.thinkingLevel,
+    );
     frozen.set(songId, {
       resultPath: `results/${name}`,
       resultSha256: sha256(text),
@@ -212,7 +248,42 @@ export async function buildPlan(
   selectedSongs,
   contracts,
   outputDir = null,
+  {
+    thinkingLevel = DEFAULT_THINKING_LEVEL,
+    selectionMode = "all",
+    selectedSongId = null,
+  } = {},
 ) {
+  validateThinkingLevel(thinkingLevel);
+  const selectedSongIds = selectedSongs.map((song) => song.songId);
+  const sourceSongIds = sourceMap.songs.map((song) => song.songId);
+  if (selectionMode === "all") {
+    if (
+      selectedSongId !== null ||
+      canonicalJson(selectedSongIds) !== canonicalJson(sourceSongIds)
+    ) {
+      throw new Error("all-song selection metadata does not match queue");
+    }
+  } else if (selectionMode === "smoke") {
+    if (
+      selectedSongId !== null ||
+      selectedSongs.length !== 8 ||
+      canonicalJson(selectedSongIds) !==
+        canonicalJson(sourceSongIds.slice(0, 8))
+    ) {
+      throw new Error("smoke selection metadata does not match queue");
+    }
+  } else if (selectionMode === "song-id") {
+    if (
+      selectedSongs.length !== 1 ||
+      selectedSongId === null ||
+      selectedSongs[0].songId !== selectedSongId
+    ) {
+      throw new Error("song-id selection metadata does not match queue");
+    }
+  } else {
+    throw new Error("selection mode must be all, smoke, or song-id");
+  }
   const sourceMapHash = sha256(canonicalJson(sourceMap));
   const frozen = await existingFrozenSongs(
     outputDir,
@@ -220,6 +291,9 @@ export async function buildPlan(
     contracts,
     {
       sourceMapHash,
+      thinkingLevel,
+      selectionMode,
+      selectedSongId,
     },
   );
   const pendingSongs = selectedSongs.filter((song) => !frozen.has(song.songId));
@@ -241,8 +315,10 @@ export async function buildPlan(
     schemaVersion: 1,
     modelId: MODEL_ID,
     apiRevision: API_REVISION,
-    thinkingLevel: THINKING_LEVEL,
+    thinkingLevel,
     maxOutputTokens: MAX_OUTPUT_TOKENS,
+    selectionMode,
+    selectedSongId,
     rubricVersion: RUBRIC_VERSION,
     api: "interactions",
     endpoint: INTERACTIONS_ENDPOINT,
@@ -253,6 +329,7 @@ export async function buildPlan(
     clientQueue: "sequential-rate-limited",
     sourceMapHash,
     promptContractHash: contracts.promptContractHash,
+    outputSchemaHash: contracts.outputSchemaHash,
     sourceMapSongCount: sourceMap.songs.length,
     selectedSongCount: selectedSongs.length,
     frozenSongCount: frozen.size,
@@ -271,7 +348,7 @@ export async function buildPlan(
       "output tokens",
       "provider pricing",
     ],
-    selectedSongIds: selectedSongs.map((song) => song.songId),
+    selectedSongIds,
     pendingSongIds: pendingSongs.map((song) => song.songId),
     frozen: Object.fromEntries(frozen),
   };
@@ -298,14 +375,26 @@ function sanitizeProviderMessage(message, apiKey) {
   return apiKey ? raw.split(apiKey).join("[redacted]") : raw;
 }
 
+function extractProviderUsage(payload) {
+  if (!payload?.usage || typeof payload.usage !== "object") {
+    throw new Error("Interactions response is missing provider usage");
+  }
+  const providerUsage = Object.fromEntries(
+    PROVIDER_USAGE_FIELDS.map((field) => [field, payload.usage[field]]),
+  );
+  return validateProviderUsage(providerUsage);
+}
+
 export async function callInteraction(
   song,
   prompt,
   outputSchema,
   apiKey,
   fetchImpl = fetch,
+  thinkingLevel = DEFAULT_THINKING_LEVEL,
 ) {
-  const body = buildInteractionBody(song, prompt, outputSchema);
+  const startedAt = performance.now();
+  const body = buildInteractionBody(song, prompt, outputSchema, thinkingLevel);
   let response;
   try {
     response = await fetchImpl(INTERACTIONS_ENDPOINT, {
@@ -333,12 +422,19 @@ export async function callInteraction(
     throw new Error(sanitizeProviderMessage(providerMessage, apiKey));
   }
   const payload = await response.json();
-  if (payload.status && payload.status !== "completed") {
-    throw new Error(`Interactions request did not complete: ${payload.status}`);
+  if (payload.status !== "completed") {
+    throw new Error(
+      `Interactions request did not complete: ${payload.status ?? "missing status"}`,
+    );
   }
+  const providerUsage = extractProviderUsage(payload);
   const outputText = extractOutputText(payload);
   try {
-    return JSON.parse(outputText);
+    return {
+      assessment: JSON.parse(outputText),
+      providerUsage,
+      elapsedMs: Math.max(0, Math.round(performance.now() - startedAt)),
+    };
   } catch {
     throw new Error("Interactions model output is not valid JSON");
   }
@@ -359,10 +455,13 @@ async function writeCheckpoint(outputDir, plan, frozen) {
     sourceMapHash: plan.sourceMapHash,
     modelId: MODEL_ID,
     apiRevision: API_REVISION,
-    thinkingLevel: THINKING_LEVEL,
+    thinkingLevel: plan.thinkingLevel,
     maxOutputTokens: MAX_OUTPUT_TOKENS,
+    selectionMode: plan.selectionMode,
+    selectedSongId: plan.selectedSongId,
     rubricVersion: RUBRIC_VERSION,
     promptContractHash: plan.promptContractHash,
+    outputSchemaHash: plan.outputSchemaHash,
     frozen: Object.fromEntries(
       [...frozen.entries()].sort(([a], [b]) => a.localeCompare(b)),
     ),
@@ -395,20 +494,24 @@ export async function runLive({
   const intervalMs = Math.ceil(60_000 / requestsPerMinute);
   for (const [index, song] of pending.entries()) {
     const { prompt, promptHash } = promptForSong(contracts, song);
-    const assessment = await callInteraction(
+    const { assessment, providerUsage, elapsedMs } = await callInteraction(
       song,
       prompt,
       contracts.outputSchema,
       apiKey,
       fetchImpl,
+      plan.thinkingLevel,
     );
     const envelope = createEnvelope(
       song,
       assessment,
       promptHash,
       new Date().toISOString(),
+      plan.thinkingLevel,
+      providerUsage,
+      elapsedMs,
     );
-    validateEnvelope(envelope, song, promptHash);
+    validateEnvelope(envelope, song, promptHash, plan.thinkingLevel);
     const path = resultPath(outputDir, song.songId);
     const text = await writeJsonAtomic(path, envelope);
     frozen.set(song.songId, {
@@ -435,12 +538,25 @@ export async function main(argv = process.argv.slice(2)) {
     await readJson(options.sourceMapPath, "source map"),
   );
   const contracts = await loadContracts();
-  const selectedSongs = selectSongs(sourceMap, options.smoke);
+  const selectedSongs = selectSongs(sourceMap, {
+    smoke: options.smoke,
+    songId: options.songId,
+  });
+  const selectionMode = options.songId
+    ? "song-id"
+    : options.smoke
+      ? "smoke"
+      : "all";
   const plan = await buildPlan(
     sourceMap,
     selectedSongs,
     contracts,
     options.outputDir,
+    {
+      thinkingLevel: options.thinkingLevel,
+      selectionMode,
+      selectedSongId: options.songId,
+    },
   );
   process.stdout.write(`${JSON.stringify(plan, null, 2)}\n`);
   if (options.dryRun) return 0;
