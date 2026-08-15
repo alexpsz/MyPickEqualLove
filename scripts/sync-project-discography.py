@@ -2736,6 +2736,18 @@ def build_equal_love_config() -> ProjectConfig:
                 profile_url=None,
             ),
         ],
+        member_color_overrides={
+            "otani-emiri": {"color": "#9B6BC8"},
+            "oba-hana": {"color": "#D97706"},
+            "otoshima-risa": {"color": "#2F9FD0"},
+            "saito-kiara": {"color": "#E26D9F"},
+            "sasaki-maika": {"color": "#FFFFFF"},
+            "takamatsu-hitomi": {"color": "#D64045"},
+            "takiwaki-shoko": {"color": "#C99700"},
+            "noguchi-iori": {"color": "#7146A3"},
+            "morohashi-sana": {"color": "#5F9E6E"},
+            "yamamoto-anna": {"color": "#2F67B1"},
+        },
         title_aliases={
             "Sweetest girl(=LOVE)": "Sweetest girl",
             "推しのいる世界(=LOVE)": "推しのいる世界",

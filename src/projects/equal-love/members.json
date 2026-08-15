@@ -2,7 +2,7 @@
   {
     "id": "otani-emiri",
     "name": { "ja": "大谷 映美里", "romaji": "Otani Emiri" },
-    "color": "#e84b8a",
+    "color": "#9B6BC8",
     "profileUrl": "https://sp.equal-love.jp/feature/profile_fs",
     "active": true,
     "sortOrder": 1
@@ -10,7 +10,7 @@
   {
     "id": "oba-hana",
     "name": { "ja": "大場 花菜", "romaji": "Oba Hana" },
-    "color": "#f5b14c",
+    "color": "#D97706",
     "profileUrl": "https://sp.equal-love.jp/feature/profile_fs",
     "active": true,
     "sortOrder": 2
@@ -18,7 +18,7 @@
   {
     "id": "otoshima-risa",
     "name": { "ja": "音嶋 莉沙", "romaji": "Otoshima Risa" },
-    "color": "#55b7b2",
+    "color": "#2F9FD0",
     "profileUrl": "https://sp.equal-love.jp/feature/profile_fs",
     "active": true,
     "sortOrder": 3
@@ -26,7 +26,7 @@
   {
     "id": "saito-kiara",
     "name": { "ja": "齋藤 樹愛羅", "romaji": "Saito Kiara" },
-    "color": "#f0cf5b",
+    "color": "#E26D9F",
     "profileUrl": "https://sp.equal-love.jp/feature/profile_fs",
     "active": true,
     "sortOrder": 4
@@ -34,7 +34,7 @@
   {
     "id": "sasaki-maika",
     "name": { "ja": "佐々木 舞香", "romaji": "Sasaki Maika" },
-    "color": "#986ad6",
+    "color": "#FFFFFF",
     "profileUrl": "https://sp.equal-love.jp/feature/profile_fs",
     "active": true,
     "sortOrder": 5
@@ -42,7 +42,7 @@
   {
     "id": "takamatsu-hitomi",
     "name": { "ja": "髙松 瞳", "romaji": "Takamatsu Hitomi" },
-    "color": "#ef6f4f",
+    "color": "#D64045",
     "profileUrl": "https://sp.equal-love.jp/feature/profile_fs",
     "active": true,
     "sortOrder": 6
@@ -50,7 +50,7 @@
   {
     "id": "takiwaki-shoko",
     "name": { "ja": "瀧脇 笙古", "romaji": "Takiwaki Shoko" },
-    "color": "#91c95d",
+    "color": "#C99700",
     "profileUrl": "https://sp.equal-love.jp/feature/profile_fs",
     "active": true,
     "sortOrder": 7
@@ -58,7 +58,7 @@
   {
     "id": "noguchi-iori",
     "name": { "ja": "野口 衣織", "romaji": "Noguchi Iori" },
-    "color": "#5d8bd7",
+    "color": "#7146A3",
     "profileUrl": "https://sp.equal-love.jp/feature/profile_fs",
     "active": true,
     "sortOrder": 8
@@ -66,7 +66,7 @@
   {
     "id": "morohashi-sana",
     "name": { "ja": "諸橋 沙夏", "romaji": "Morohashi Sana" },
-    "color": "#a86dd7",
+    "color": "#5F9E6E",
     "profileUrl": "https://sp.equal-love.jp/feature/profile_fs",
     "active": true,
     "sortOrder": 9
@@ -74,7 +74,7 @@
   {
     "id": "yamamoto-anna",
     "name": { "ja": "山本 杏奈", "romaji": "Yamamoto Anna" },
-    "color": "#eb6f92",
+    "color": "#2F67B1",
     "profileUrl": "https://sp.equal-love.jp/feature/profile_fs",
     "active": true,
     "sortOrder": 10
