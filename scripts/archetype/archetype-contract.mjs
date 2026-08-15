@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 export const MODEL_ID = "gemini-3.6-flash";
+export const RUBRIC_VERSION = "gemini-video-v1";
 export const INTERACTIONS_ENDPOINT =
   "https://generativelanguage.googleapis.com/v1beta/interactions";
 export const DIMENSIONS = Object.freeze([
@@ -21,6 +22,14 @@ export const TEXT_ONLY_QA_FLAGS = Object.freeze([
   "long_video_text_only",
   "human_review_required",
 ]);
+export const SOURCE_MODES = Object.freeze([
+  "official-mv",
+  "official-art-track",
+  "official-dance",
+  "official-live",
+  "text-only",
+]);
+export const CONFIDENCE_LEVELS = Object.freeze(["low", "medium", "high"]);
 
 const CONTRACT_DIR = fileURLToPath(new URL(".", import.meta.url));
 const PROMPT_PATH = fileURLToPath(new URL("./prompt.md", import.meta.url));
@@ -60,31 +69,33 @@ export function sha256(value) {
   return createHash("sha256").update(value, "utf8").digest("hex");
 }
 
-function isOfficialYoutubeUrl(rawUrl) {
+function youtubeVideoId(rawUrl) {
   let url;
   try {
     url = new URL(rawUrl);
   } catch {
-    return false;
+    return null;
   }
   if (url.protocol !== "https:" || url.username || url.password || url.hash) {
-    return false;
+    return null;
   }
   const host = url.hostname.toLowerCase();
   if (host === "youtu.be") {
-    return (
-      /^\/[A-Za-z0-9_-]{6,}$/.test(url.pathname) &&
+    const videoId = url.pathname.slice(1);
+    return /^[A-Za-z0-9_-]{6,}$/.test(videoId) &&
       [...url.searchParams.keys()].every((key) => key === "si")
-    );
+      ? videoId
+      : null;
   }
   if (!["youtube.com", "www.youtube.com", "m.youtube.com"].includes(host)) {
-    return false;
+    return null;
   }
-  return (
-    url.pathname === "/watch" &&
-    /^[A-Za-z0-9_-]{6,}$/.test(url.searchParams.get("v") ?? "") &&
+  const videoId = url.searchParams.get("v") ?? "";
+  return url.pathname === "/watch" &&
+    /^[A-Za-z0-9_-]{6,}$/.test(videoId) &&
     [...url.searchParams.keys()].every((key) => ["v", "si"].includes(key))
-  );
+    ? videoId
+    : null;
 }
 
 export function validateSourceMap(sourceMap) {
@@ -106,6 +117,7 @@ export function validateSourceMap(sourceMap) {
 
   const songIds = new Set();
   const sourceUrls = new Set();
+  const videoIds = new Set();
   for (const [index, song] of sourceMap.songs.entries()) {
     const label = `songs[${index}]`;
     assertExactKeys(
@@ -115,6 +127,10 @@ export function validateSourceMap(sourceMap) {
         "title",
         "sourceMode",
         "sourceUrl",
+        "videoId",
+        "videoTitle",
+        "channelId",
+        "channelTitle",
         "durationSeconds",
         "clipScope",
         "sourceAuthority",
@@ -131,13 +147,29 @@ export function validateSourceMap(sourceMap) {
     if (typeof song.title !== "string" || !song.title.trim()) {
       fail(`${label}.title must be non-empty`);
     }
-    if (
-      !["official-mv", "official-live", "text-only"].includes(song.sourceMode)
-    ) {
+    if (!SOURCE_MODES.includes(song.sourceMode)) {
       fail(`${label}.sourceMode is invalid`);
     }
-    if (!isOfficialYoutubeUrl(song.sourceUrl)) {
+    const urlVideoId = youtubeVideoId(song.sourceUrl);
+    if (!urlVideoId) {
       fail(`${label}.sourceUrl must be a canonical HTTPS YouTube video URL`);
+    }
+    if (song.videoId !== urlVideoId) {
+      fail(`${label}.videoId must match sourceUrl`);
+    }
+    if (videoIds.has(song.videoId)) fail(`${label}.videoId is duplicated`);
+    videoIds.add(song.videoId);
+    if (typeof song.videoTitle !== "string" || !song.videoTitle.trim()) {
+      fail(`${label}.videoTitle must be non-empty`);
+    }
+    if (
+      typeof song.channelId !== "string" ||
+      !/^[A-Za-z0-9_-]{6,}$/.test(song.channelId)
+    ) {
+      fail(`${label}.channelId is invalid`);
+    }
+    if (typeof song.channelTitle !== "string" || !song.channelTitle.trim()) {
+      fail(`${label}.channelTitle must be non-empty`);
     }
     if (sourceUrls.has(song.sourceUrl))
       fail(`${label}.sourceUrl is duplicated`);
@@ -221,6 +253,10 @@ export function renderPrompt(promptTemplate, song) {
     title: song.title,
     sourceMode: song.sourceMode,
     sourceUrl: song.sourceUrl,
+    videoId: song.videoId,
+    videoTitle: song.videoTitle,
+    channelId: song.channelId,
+    channelTitle: song.channelTitle,
     durationSeconds: song.durationSeconds,
     sourceNotes: song.sourceNotes,
     qaFlags: song.qaFlags,
@@ -233,11 +269,12 @@ export function buildInteractionBody(song, prompt, outputSchema) {
   const responseSchema = {
     type: "object",
     additionalProperties: false,
-    required: ["scores", "dominant", "accent", "evidence"],
+    required: ["scores", "dominant", "accent", "confidence", "evidence"],
     properties: {
       scores: assessmentSchema.scores,
       dominant: assessmentSchema.dominant,
       accent: assessmentSchema.accent,
+      confidence: assessmentSchema.confidence,
       evidence: assessmentSchema.evidence,
     },
     $defs: outputSchema.$defs,
@@ -251,13 +288,11 @@ export function buildInteractionBody(song, prompt, outputSchema) {
     model: MODEL_ID,
     input,
     store: false,
-    response_format: [
-      {
-        type: "text",
-        mime_type: "application/json",
-        schema: responseSchema,
-      },
-    ],
+    response_format: {
+      type: "text",
+      mime_type: "application/json",
+      schema: responseSchema,
+    },
   };
 }
 
@@ -272,9 +307,12 @@ function parseTimestamp(timestamp, label) {
 export function validateAssessment(assessment, song) {
   assertExactKeys(
     assessment,
-    ["scores", "dominant", "accent", "evidence"],
+    ["scores", "dominant", "accent", "confidence", "evidence"],
     "assessment",
   );
+  if (!CONFIDENCE_LEVELS.includes(assessment.confidence)) {
+    fail("assessment.confidence must be low, medium, or high");
+  }
   assertExactKeys(assessment.scores, DIMENSIONS, "assessment.scores");
   for (const dimension of DIMENSIONS) {
     if (![0, 1, 2].includes(assessment.scores[dimension])) {
@@ -373,16 +411,23 @@ export function createEnvelope(song, assessment, promptHash, annotatedAt) {
   validateAssessment(assessment, song);
   return {
     schemaVersion: 1,
+    rubricVersion: RUBRIC_VERSION,
+    status: "draft",
     songId: song.songId,
     title: song.title,
     sourceMode: song.sourceMode,
     sourceUrl: song.sourceUrl,
+    videoId: song.videoId,
+    videoTitle: song.videoTitle,
+    channelId: song.channelId,
+    channelTitle: song.channelTitle,
     modelId: MODEL_ID,
     promptHash,
     annotatedAt,
     scores: assessment.scores,
     dominant: assessment.dominant,
     accent: assessment.accent,
+    confidence: assessment.confidence,
     evidence: assessment.evidence,
     qaFlags: [...song.qaFlags],
   };
@@ -393,16 +438,23 @@ export function validateEnvelope(envelope, song, promptHash) {
     envelope,
     [
       "schemaVersion",
+      "rubricVersion",
+      "status",
       "songId",
       "title",
       "sourceMode",
       "sourceUrl",
+      "videoId",
+      "videoTitle",
+      "channelId",
+      "channelTitle",
       "modelId",
       "promptHash",
       "annotatedAt",
       "scores",
       "dominant",
       "accent",
+      "confidence",
       "evidence",
       "qaFlags",
     ],
@@ -410,10 +462,16 @@ export function validateEnvelope(envelope, song, promptHash) {
   );
   if (
     envelope.schemaVersion !== 1 ||
+    envelope.rubricVersion !== RUBRIC_VERSION ||
+    envelope.status !== "draft" ||
     envelope.songId !== song.songId ||
     envelope.title !== song.title ||
     envelope.sourceMode !== song.sourceMode ||
     envelope.sourceUrl !== song.sourceUrl ||
+    envelope.videoId !== song.videoId ||
+    envelope.videoTitle !== song.videoTitle ||
+    envelope.channelId !== song.channelId ||
+    envelope.channelTitle !== song.channelTitle ||
     envelope.modelId !== MODEL_ID ||
     envelope.promptHash !== promptHash
   ) {
@@ -430,6 +488,7 @@ export function validateEnvelope(envelope, song, promptHash) {
       scores: envelope.scores,
       dominant: envelope.dominant,
       accent: envelope.accent,
+      confidence: envelope.confidence,
       evidence: envelope.evidence,
     },
     song,

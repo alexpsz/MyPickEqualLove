@@ -5,6 +5,7 @@ import { join } from "node:path";
 import test from "node:test";
 import {
   MODEL_ID,
+  RUBRIC_VERSION,
   TEXT_ONLY_QA_FLAGS,
   YOUTUBE_PREVIEW_DAILY_SECONDS,
   buildInteractionBody,
@@ -28,6 +29,10 @@ function song(index, overrides = {}) {
     title: `Song ${index}`,
     sourceMode: "official-mv",
     sourceUrl: `https://www.youtube.com/watch?v=video_${index}`,
+    videoId: `video_${index}`,
+    videoTitle: `Official video ${index}`,
+    channelId: "UCofficial123",
+    channelTitle: "Official Channel",
     durationSeconds: 240,
     clipScope: "single-song",
     sourceAuthority: "official",
@@ -60,6 +65,7 @@ function assessment(overrides = {}) {
     },
     dominant: ["drive", "rhythm"],
     accent: "uplift",
+    confidence: "high",
     evidence: [
       {
         timestamp: "00:12",
@@ -95,6 +101,41 @@ test("source map is locked to =LOVE standard Top10", () => {
     () => validateSourceMap(timestamped),
     /canonical HTTPS YouTube/,
   );
+  const mismatchedIdentity = sourceMap(1);
+  mismatchedIdentity.songs[0].videoId = "different_video";
+  assert.throws(
+    () => validateSourceMap(mismatchedIdentity),
+    /videoId must match sourceUrl/,
+  );
+  const duplicatedIdentity = sourceMap(2);
+  duplicatedIdentity.songs[1].sourceUrl =
+    "https://youtu.be/video_1?si=provider";
+  duplicatedIdentity.songs[1].videoId = "video_1";
+  assert.throws(
+    () => validateSourceMap(duplicatedIdentity),
+    /videoId is duplicated/,
+  );
+});
+
+test("all official source modes use direct video input", async () => {
+  const contracts = await loadContracts();
+  for (const sourceMode of [
+    "official-mv",
+    "official-art-track",
+    "official-dance",
+    "official-live",
+  ]) {
+    const map = sourceMap(1);
+    map.songs[0].sourceMode = sourceMode;
+    assert.doesNotThrow(() => validateSourceMap(map));
+    const prompt = renderPrompt(contracts.promptTemplate, map.songs[0]);
+    const body = buildInteractionBody(
+      map.songs[0],
+      prompt,
+      contracts.outputSchema,
+    );
+    assert.equal(body.input[0].type, "video");
+  }
 });
 
 test("official live video must be a single-song clip", () => {
@@ -142,7 +183,7 @@ test("smoke mode selects exactly eight songs", () => {
   assert.throws(() => selectSongs(sourceMap(7), true), /at least 8 songs/);
 });
 
-test("Interactions request is stateless and contains no batch or background chain", async () => {
+test("Interactions response_format is the exact single text object", async () => {
   const contracts = await loadContracts();
   const entry = song(1);
   const prompt = renderPrompt(contracts.promptTemplate, entry);
@@ -151,7 +192,24 @@ test("Interactions request is stateless and contains no batch or background chai
   assert.equal(body.store, false);
   assert.equal(body.input[0].type, "video");
   assert.equal(body.input[1].type, "text");
-  assert.equal(body.response_format[0].mime_type, "application/json");
+  assert.equal(Array.isArray(body.response_format), false);
+  assert.deepEqual(Object.keys(body.response_format).sort(), [
+    "mime_type",
+    "schema",
+    "type",
+  ]);
+  assert.equal(body.response_format.type, "text");
+  assert.equal(body.response_format.mime_type, "application/json");
+  assert.deepEqual(body.response_format.schema.required, [
+    "scores",
+    "dominant",
+    "accent",
+    "confidence",
+    "evidence",
+  ]);
+  assert.deepEqual(body.response_format.schema.properties.confidence, {
+    enum: ["low", "medium", "high"],
+  });
   assert.equal("previous_interaction_id" in body, false);
   assert.equal("background" in body, false);
   assert.equal("requests" in body, false);
@@ -190,6 +248,14 @@ test("assessment requires two dominants, one different accent, and bounded evide
     () => validateAssessment(late, song(1)),
     /exceeds source duration/,
   );
+  assert.throws(
+    () => validateAssessment(assessment({ confidence: "approved" }), song(1)),
+    /confidence must be low, medium, or high/,
+  );
+  assert.throws(
+    () => validateAssessment({ ...assessment(), status: "approved" }, song(1)),
+    /assessment keys must be exactly/,
+  );
 });
 
 test("dry-run plan reports calls, YouTube seconds, remaining gate, and estimates", async () => {
@@ -204,6 +270,8 @@ test("dry-run plan reports calls, YouTube seconds, remaining gate, and estimates
   assert.equal(plan.estimatedVideoInputTokensDefault, 8 * 240 * 300);
   assert.equal(plan.store, false);
   assert.equal(plan.serverBatch, false);
+  assert.equal(plan.modelId, "gemini-3.6-flash");
+  assert.equal(plan.rubricVersion, RUBRIC_VERSION);
 
   const largerMap = validateSourceMap(sourceMap(10));
   const smokePlan = await buildPlan(
@@ -331,6 +399,11 @@ test("each successful response is frozen and recovered without another request",
   );
   const result = JSON.parse(resultText);
   assert.equal(result.modelId, MODEL_ID);
+  assert.equal(result.rubricVersion, RUBRIC_VERSION);
+  assert.equal(result.status, "draft");
+  assert.equal(result.confidence, "high");
+  assert.equal(result.videoId, map.songs[0].videoId);
+  assert.equal(result.channelId, map.songs[0].channelId);
   assert.equal(
     result.promptHash,
     sha256(renderPrompt(contracts.promptTemplate, map.songs[0])),
@@ -387,6 +460,7 @@ test("checkpoint fails closed when the source map drifts", async () => {
       schemaVersion: 1,
       sourceMapHash: originalPlan.sourceMapHash,
       modelId: MODEL_ID,
+      rubricVersion: RUBRIC_VERSION,
       promptContractHash: contracts.promptContractHash,
       frozen: {},
     })}\n`,

@@ -20,6 +20,10 @@
           "title",
           "sourceMode",
           "sourceUrl",
+          "videoId",
+          "videoTitle",
+          "channelId",
+          "channelTitle",
           "durationSeconds",
           "clipScope",
           "sourceAuthority",
@@ -30,9 +34,25 @@
           "songId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
           "title": { "type": "string", "minLength": 1 },
           "sourceMode": {
-            "enum": ["official-mv", "official-live", "text-only"]
+            "enum": [
+              "official-mv",
+              "official-art-track",
+              "official-dance",
+              "official-live",
+              "text-only"
+            ]
           },
           "sourceUrl": { "type": "string", "format": "uri" },
+          "videoId": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{6,}$"
+          },
+          "videoTitle": { "type": "string", "minLength": 1 },
+          "channelId": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{6,}$"
+          },
+          "channelTitle": { "type": "string", "minLength": 1 },
           "durationSeconds": { "type": "integer", "minimum": 1 },
           "clipScope": { "enum": ["single-song", "long-form"] },
           "sourceAuthority": { "const": "official" },

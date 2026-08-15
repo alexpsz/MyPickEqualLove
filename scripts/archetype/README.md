@@ -11,8 +11,8 @@ AI, backend, media downloader, or media cache.
 - Model: `gemini-3.6-flash`.
 - State: every song is an independent request with `store: false`. The request
   never includes `previous_interaction_id` or background execution.
-- Structured output: top-level `response_format` with an `application/json`
-  schema.
+- Structured output: one top-level `response_format` object with
+  `type: "text"`, `mime_type: "application/json"`, and the assessment schema.
 - Queue: sequential, client-side rate limiting only. The Interactions API is not
   submitted through the provider Batch API.
 - Agent boundary: the generator uses a standard Gemini model interaction only.
@@ -21,14 +21,20 @@ AI, backend, media downloader, or media cache.
 - Video: direct public YouTube URI only. The tool never downloads or caches
   audio/video.
 - Scope: `projectId=equal-love`, `experienceId=standard-top10` only.
+- Rubric: `rubricVersion=gemini-video-v1`. Frozen model rows are always
+  `status=draft` with `confidence=low|medium|high`; only a later deterministic
+  consolidation/QA stage may create an approved matcher record.
 - Dimensions: `drive`, `care`, `rhythm`, `growth`, `drama`, `ingenuity`,
   `uplift`, `cuteness`. Every row has exactly two score-2 dominants, one distinct
   score-1 accent, and five zeroes.
 
 The source map must pass `source-map.schema.json` and the stricter runtime
-validator. Each entry declares an official canonical YouTube video URL and its
-reviewed duration. `official-live` is accepted only for a `single-song` clip no
-longer than 15 minutes. A full concert or other long-form source must use
+validator. Each entry declares an official canonical YouTube video URL, its
+reviewed duration, and frozen provider identity (`videoId`, video title,
+`channelId`, and channel title). The URL video ID must match `videoId` exactly.
+Supported video modes are `official-mv`, `official-art-track`,
+`official-dance`, and `official-live`; the last is accepted only for a
+`single-song` clip no longer than 15 minutes. A full concert or other long-form source must use
 `text-only`, include a non-empty source note, and carry both
 `long_video_text_only` and `human_review_required`. In that mode the URL remains
 provenance, but the request contains text only; the tool does not send the long
@@ -47,6 +53,10 @@ video to Gemini and does not switch to another generation API.
       "title": "Example Song",
       "sourceMode": "official-mv",
       "sourceUrl": "https://www.youtube.com/watch?v=EXAMPLE123",
+      "videoId": "EXAMPLE123",
+      "videoTitle": "Example Song (Official Video)",
+      "channelId": "UCEXAMPLE123",
+      "channelTitle": "=LOVE Official YouTube Channel",
       "durationSeconds": 240,
       "clipScope": "single-song",
       "sourceAuthority": "official",

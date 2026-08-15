@@ -7,6 +7,7 @@ import { pathToFileURL } from "node:url";
 import {
   INTERACTIONS_ENDPOINT,
   MODEL_ID,
+  RUBRIC_VERSION,
   YOUTUBE_PREVIEW_DAILY_SECONDS,
   buildInteractionBody,
   canonicalJson,
@@ -133,6 +134,7 @@ async function existingFrozenSongs(
       "schemaVersion",
       "sourceMapHash",
       "modelId",
+      "rubricVersion",
       "promptContractHash",
       "frozen",
     ].sort();
@@ -143,6 +145,7 @@ async function existingFrozenSongs(
       checkpoint.schemaVersion !== 1 ||
       checkpoint.sourceMapHash !== expectedMetadata.sourceMapHash ||
       checkpoint.modelId !== MODEL_ID ||
+      checkpoint.rubricVersion !== RUBRIC_VERSION ||
       checkpoint.promptContractHash !== contracts.promptContractHash ||
       !checkpoint.frozen ||
       typeof checkpoint.frozen !== "object" ||
@@ -228,6 +231,7 @@ export async function buildPlan(
   return {
     schemaVersion: 1,
     modelId: MODEL_ID,
+    rubricVersion: RUBRIC_VERSION,
     api: "interactions",
     endpoint: INTERACTIONS_ENDPOINT,
     stateful: false,
@@ -341,6 +345,7 @@ async function writeCheckpoint(outputDir, plan, frozen) {
     schemaVersion: 1,
     sourceMapHash: plan.sourceMapHash,
     modelId: MODEL_ID,
+    rubricVersion: RUBRIC_VERSION,
     promptContractHash: plan.promptContractHash,
     frozen: Object.fromEntries(
       [...frozen.entries()].sort(([a], [b]) => a.localeCompare(b)),

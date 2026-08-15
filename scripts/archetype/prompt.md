@@ -20,4 +20,8 @@ with MM:SS timestamps. For text-only fallback, use only the supplied source note
 set timestamp to null, set basis to source-note, and keep the mandatory human QA
 flag; never invent a video observation.
 
+Set confidence to low, medium, or high based only on how directly the cited
+evidence supports the selected dimensions. Do not emit workflow status or QA
+approval fields; the deterministic authoring pipeline owns those fields.
+
 Return only JSON matching the supplied response schema.
