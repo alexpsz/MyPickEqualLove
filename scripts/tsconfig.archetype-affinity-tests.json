@@ -1,0 +1,18 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "incremental": false,
+    "module": "Node16",
+    "moduleResolution": "Node16",
+    "target": "ES2023",
+    "types": ["node"],
+    "rootDir": "..",
+    "plugins": []
+  },
+  "include": [
+    "../src/schema/archetype.ts",
+    "../src/utils/archetypeAffinity.ts",
+    "./archetype-affinity.test.ts"
+  ]
+}
