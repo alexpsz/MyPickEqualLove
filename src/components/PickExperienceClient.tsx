@@ -2487,16 +2487,7 @@ export default function PickExperienceClient({
               .map((character) => character.displayName)
               .join(" / ")
           : "";
-        const sharePageUrl = archetypeForExport
-          ? await buildBoardShareUrl(
-              pageUrl,
-              createBoardSharePayload({
-                experience,
-                contextId: effectiveContextId,
-                storedPicks: filteredPicks,
-              }),
-            )
-          : pageUrl;
+        const sharePageUrl = pageUrl;
         const dataUrl = await captureExportImageInFrame(
           {
             kind,

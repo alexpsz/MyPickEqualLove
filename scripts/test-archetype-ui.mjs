@@ -282,10 +282,7 @@ test("partner image reuses the existing export realm without becoming a saved te
   assert.match(modalSource, /onGenerateImage/);
   assert.match(clientSource, /generateImage\("archetype"\)/);
   assert.match(clientSource, /kind,[\s\S]*archetypeInputKey/);
-  assert.match(
-    clientSource,
-    /buildBoardShareUrl\([\s\S]*createBoardSharePayload/,
-  );
+  assert.match(clientSource, /const sharePageUrl = pageUrl;/);
   assert.match(
     clientSource,
     /headerPresentation=\{archetypeExportPresentation\}/,
