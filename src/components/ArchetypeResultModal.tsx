@@ -10,6 +10,7 @@ import {
   type EqualLoveArchetypeResult,
   type EqualLoveArchetypeUiCopy,
 } from "../data/equalLoveArchetype";
+import { getArchetypeAccentContrast } from "../utils/archetypeAccent";
 import { getMemberColors } from "../utils/memberColors";
 import { useDialogA11y } from "../utils/useDialogA11y";
 import AppIcon from "./AppIcon";
@@ -185,6 +186,7 @@ function CharacterResultCard({
     return song;
   });
   const accentColor = resolveArchetypeAccent(character);
+  const accentContrast = getArchetypeAccentContrast(accentColor);
   const radarAriaLabel = buildRadarAriaLabel(character, ui);
 
   return (
@@ -210,7 +212,10 @@ function CharacterResultCard({
           <div className="grid min-w-0 grid-cols-[5.5rem_minmax(0,1fr)] items-baseline gap-2">
             <dt
               className="text-[11px] font-semibold tracking-[0.06em] uppercase"
-              style={{ color: accentColor }}
+              style={{
+                color: accentColor,
+                textShadow: accentContrast.textShadow,
+              }}
             >
               {ui.labels.className}
             </dt>
@@ -224,7 +229,10 @@ function CharacterResultCard({
           <div className="grid min-w-0 grid-cols-[5.5rem_minmax(0,1fr)] items-baseline gap-2">
             <dt
               className="text-[11px] font-semibold tracking-[0.06em] uppercase"
-              style={{ color: accentColor }}
+              style={{
+                color: accentColor,
+                textShadow: accentContrast.textShadow,
+              }}
             >
               {ui.labels.weapon}
             </dt>
@@ -265,7 +273,10 @@ function CharacterResultCard({
           <section>
             <h4
               className="text-xs font-semibold tracking-[0.06em] uppercase"
-              style={{ color: accentColor }}
+              style={{
+                color: accentColor,
+                textShadow: accentContrast.textShadow,
+              }}
             >
               {ui.labels.stats}
             </h4>
@@ -289,7 +300,10 @@ function CharacterResultCard({
           <section>
             <h4
               className="text-xs font-semibold tracking-[0.06em] uppercase"
-              style={{ color: accentColor }}
+              style={{
+                color: accentColor,
+                textShadow: accentContrast.textShadow,
+              }}
             >
               {ui.explanation.dimensionsHeading}
             </h4>
@@ -302,7 +316,10 @@ function CharacterResultCard({
                   <span
                     aria-hidden="true"
                     className="h-1.5 w-1.5 shrink-0 rounded-full"
-                    style={{ backgroundColor: accentColor }}
+                    style={{
+                      backgroundColor: accentColor,
+                      boxShadow: accentContrast.outlineShadow,
+                    }}
                   />
                   {ui.traits[traitId]}
                 </li>
@@ -313,7 +330,10 @@ function CharacterResultCard({
           <section>
             <h4
               className="text-xs font-semibold tracking-[0.06em] uppercase"
-              style={{ color: accentColor }}
+              style={{
+                color: accentColor,
+                textShadow: accentContrast.textShadow,
+              }}
             >
               {ui.explanation.songsHeading}
             </h4>

@@ -32,6 +32,8 @@ import {
   type ExportImageReadinessTarget,
   type ExportImageReadinessTimers,
 } from "../../src/utils/exportImageReadiness";
+import { ARCHETYPE_ACCENT_OUTLINE } from "../../src/utils/archetypeAccent";
+import ArchetypeRadarChart from "../../src/components/ArchetypeRadarChart";
 
 type ImageEventType = "load" | "error";
 type ImageListener = () => void;
@@ -308,6 +310,46 @@ test("single archetype export is a dedicated fixed dossier with radar and Top 10
   assert.equal((markup.match(/<img/g) ?? []).length, 10);
   assert.match(markup, /data-export-qr-code="true"/);
   assert.ok(officialAccent && markup.includes(officialAccent));
+});
+
+test("white archetype accents remain white with a derived neutral export outline", () => {
+  const character = realArchetypeCharacters[0];
+  const secondCharacter = realArchetypeCharacters[1];
+  const member = MEMBERS_BY_ID[character.memberId];
+  const originalColor = member.color;
+  let markup = "";
+
+  try {
+    member.color = "#FFFFFF";
+    markup = renderDossierPoster([character, secondCharacter]);
+  } finally {
+    member.color = originalColor;
+  }
+
+  assert.match(markup, /data-archetype-accent-color="#FFFFFF"/);
+  assert.match(
+    markup,
+    new RegExp(`data-archetype-accent-outline="${ARCHETYPE_ACCENT_OUTLINE}"`),
+  );
+  assert.match(markup, /fill="#FFFFFF"/);
+  assert.match(markup, /stroke="#64748b"/);
+  assert.match(markup, /color:#FFFFFF;text-shadow:[^;]*#64748b/);
+  assert.match(
+    markup,
+    /border-top:4px solid #FFFFFF;box-shadow:inset 0 1px 0 #64748b/,
+  );
+  assert.equal(member.color, originalColor);
+
+  const nonWhiteRadar = renderToStaticMarkup(
+    createElement(ArchetypeRadarChart, {
+      stats: character.stats,
+      labels: character.statLabels,
+      accentColor: originalColor ?? "#986ad6",
+      ariaLabel: "Non-white radar",
+    }),
+  );
+  assert.doesNotMatch(nonWhiteRadar, /data-archetype-accent-outline=/);
+  assert.doesNotMatch(nonWhiteRadar, /#64748b/);
 });
 
 test("two-person ties render a dual dossier without silently selecting one", () => {

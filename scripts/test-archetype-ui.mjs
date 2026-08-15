@@ -21,6 +21,7 @@ const [
   charactersZhCnSource,
   charactersJaSource,
   charactersKoSource,
+  archetypeAccentSource,
 ] = await Promise.all([
   read("../src/components/PickExperienceClient.tsx"),
   read("../src/components/Controls.tsx"),
@@ -40,6 +41,7 @@ const [
   read("../src/projects/equal-love/archetype-21/characters.zh-CN.json"),
   read("../src/projects/equal-love/archetype-21/characters.ja.json"),
   read("../src/projects/equal-love/archetype-21/characters.ko.json"),
+  read("../src/utils/archetypeAccent.ts"),
 ]);
 
 test("result matching is gated to a complete unique equal-love standard Top 10", () => {
@@ -314,6 +316,29 @@ test("radar is pure fixed SVG with a shared 1200 maximum and accessible labeling
     /"atk"[\s\S]*"def"[\s\S]*"spdMobility"[\s\S]*"sta"[\s\S]*"bearCharmResistance"/,
   );
   assert.doesNotMatch(radarSource, /animate|transition|filter:|backdrop/i);
+});
+
+test("white member accents keep their factual color and derive one shared neutral outline", () => {
+  assert.match(archetypeAccentSource, /WHITE_ACCENT = "#ffffff"/);
+  assert.match(archetypeAccentSource, /ARCHETYPE_ACCENT_OUTLINE = "#64748b"/);
+  assert.match(
+    archetypeAccentSource,
+    /color: accentColor,[\s\S]*outlineColor,[\s\S]*textShadow:[\s\S]*outlineShadow:/,
+  );
+  assert.match(radarSource, /getArchetypeAccentContrast\(accentColor\)/);
+  assert.match(radarSource, /data-archetype-accent-color=\{accent\.color\}/);
+  assert.match(
+    radarSource,
+    /data-archetype-accent-outline=\{accent\.outlineColor\}/,
+  );
+  assert.match(modalSource, /getArchetypeAccentContrast\(accentColor\)/);
+  assert.match(modalSource, /textShadow: accentContrast\.textShadow/);
+  assert.match(modalSource, /boxShadow: accentContrast\.outlineShadow/);
+  assert.match(exportBoardSource, /getArchetypeAccentContrast/);
+  assert.doesNotMatch(
+    `${modalSource}\n${exportBoardSource}`,
+    /accentColor\s*===?\s*["']#(?:fff|ffffff)["']/i,
+  );
 });
 
 test("every single or tied result card renders a localized member-color radar and compact values", () => {

@@ -22,6 +22,7 @@ import type {
 } from "../schema/export";
 import type { PickExperience } from "../schema/pick-experience";
 import type { PickSlot, Picks } from "../schema/music";
+import { getArchetypeAccentContrast } from "../utils/archetypeAccent";
 import { getColorBackground, getMemberColors } from "../utils/memberColors";
 import ArchetypeRadarChart from "./ArchetypeRadarChart";
 import ExportQrCode from "./ExportQrCode";
@@ -410,6 +411,8 @@ export function ArchetypeDossierPoster({
   const songAccents = getContributingSongAccents(result.characters);
   const pageLabel = formatPageLabel(pageUrl);
   const selectedByLabel = selectedBy.trim();
+  const primaryAccent = resolveArchetypeAccent(result.characters[0]);
+  const primaryAccentContrast = getArchetypeAccentContrast(primaryAccent);
 
   return (
     <div
@@ -444,7 +447,8 @@ export function ArchetypeDossierPoster({
             alignItems: "center",
             gap: "18px",
             height: "24px",
-            color: resolveArchetypeAccent(result.characters[0]),
+            color: primaryAccent,
+            textShadow: primaryAccentContrast.textShadow,
             fontSize: "18px",
             fontWeight: 900,
             letterSpacing: "0.22em",
@@ -456,7 +460,12 @@ export function ArchetypeDossierPoster({
           </span>
           <span
             aria-hidden="true"
-            style={{ height: "2px", flex: 1, background: "currentColor" }}
+            style={{
+              height: "2px",
+              flex: 1,
+              background: "currentColor",
+              boxShadow: primaryAccentContrast.outlineShadow,
+            }}
           />
           <span aria-hidden="true">＋</span>
         </div>
@@ -537,6 +546,9 @@ export function ArchetypeDossierPoster({
             const contributionAccent = song
               ? songAccents.get(song.id)
               : undefined;
+            const contributionAccentContrast = contributionAccent
+              ? getArchetypeAccentContrast(contributionAccent)
+              : undefined;
             return (
               <div
                 key={slot.id}
@@ -550,6 +562,7 @@ export function ArchetypeDossierPoster({
                   style={{
                     height: "22px",
                     color: contributionAccent ?? "#4b5563",
+                    textShadow: contributionAccentContrast?.textShadow,
                     fontSize: "16px",
                     fontWeight: 900,
                     letterSpacing: "0.08em",
@@ -568,6 +581,7 @@ export function ArchetypeDossierPoster({
                         border: contributionAccent
                           ? `3px solid ${contributionAccent}`
                           : "1px solid #d1d5db",
+                        boxShadow: contributionAccentContrast?.outlineShadow,
                         padding: contributionAccent ? "3px" : 0,
                         background: "#ffffff",
                       }}
@@ -654,7 +668,10 @@ export function ArchetypeDossierPoster({
           <div
             style={{
               flex: "0 0 auto",
-              borderLeft: `5px solid ${resolveArchetypeAccent(result.characters[0])}`,
+              borderLeft: `5px solid ${primaryAccent}`,
+              boxShadow: primaryAccentContrast.outlineColor
+                ? `-1px 0 0 ${primaryAccentContrast.outlineColor}`
+                : undefined,
               paddingLeft: "18px",
               fontSize: "25px",
               fontWeight: 900,
@@ -784,6 +801,7 @@ function DualDossierCard({
   result: EqualLoveArchetypeResult;
 }) {
   const accent = resolveArchetypeAccent(character);
+  const accentContrast = getArchetypeAccentContrast(accent);
   return (
     <article
       data-archetype-dual-character={character.roleId}
@@ -793,6 +811,9 @@ function DualDossierCard({
         boxSizing: "border-box",
         padding: "18px 20px 12px",
         borderTop: `4px solid ${accent}`,
+        boxShadow: accentContrast.outlineColor
+          ? `inset 0 1px 0 ${accentContrast.outlineColor}`
+          : undefined,
         background: "rgba(255, 255, 255, 0.72)",
       }}
     >
@@ -879,6 +900,7 @@ function SquadDossier({
     >
       {characters.map((character) => {
         const accent = resolveArchetypeAccent(character);
+        const accentContrast = getArchetypeAccentContrast(accent);
         return (
           <article
             key={character.roleId}
@@ -888,6 +910,9 @@ function SquadDossier({
               minHeight: characters.length <= 6 ? "220px" : "196px",
               boxSizing: "border-box",
               borderTop: `4px solid ${accent}`,
+              boxShadow: accentContrast.outlineColor
+                ? `inset 0 1px 0 ${accentContrast.outlineColor}`
+                : undefined,
               padding: "10px 8px 8px",
               textAlign: "center",
               background: "rgba(255, 255, 255, 0.72)",
@@ -930,6 +955,7 @@ function SquadDossier({
             <div
               style={{
                 color: accent,
+                textShadow: accentContrast.textShadow,
                 fontSize: characters.length <= 6 ? "10px" : "9px",
                 fontWeight: 900,
                 lineHeight: 1.3,
@@ -955,6 +981,7 @@ function DossierFacts({
   accent: string;
   compact: boolean;
 }) {
+  const accentContrast = getArchetypeAccentContrast(accent);
   return (
     <div
       style={{
@@ -981,6 +1008,7 @@ function DossierFacts({
           <span
             style={{
               color: accent,
+              textShadow: accentContrast.textShadow,
               fontWeight: 900,
               letterSpacing: "0.12em",
             }}
@@ -1005,6 +1033,7 @@ function TraitPills({
   accent: string;
   compact?: boolean;
 }) {
+  const accentContrast = getArchetypeAccentContrast(accent);
   return (
     <div
       data-archetype-traits="true"
@@ -1020,8 +1049,10 @@ function TraitPills({
           key={traitId}
           style={{
             border: `1px solid ${accent}`,
+            boxShadow: accentContrast.outlineShadow,
             padding: compact ? "5px 8px" : "7px 11px",
             color: accent,
+            textShadow: accentContrast.textShadow,
             fontSize: compact ? "10px" : "12px",
             fontWeight: 900,
             letterSpacing: "0.04em",

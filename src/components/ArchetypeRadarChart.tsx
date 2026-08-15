@@ -2,6 +2,7 @@ import type {
   EqualLoveArchetypeStatId,
   EqualLoveArchetypeStats,
 } from "../data/equalLoveArchetype";
+import { getArchetypeAccentContrast } from "../utils/archetypeAccent";
 
 export interface ArchetypeRadarChartProps {
   stats: EqualLoveArchetypeStats;
@@ -41,6 +42,8 @@ export default function ArchetypeRadarChart({
   const center = size / 2;
   const radius = size * 0.31;
   const labelRadius = size * 0.43;
+  const accent = getArchetypeAccentContrast(accentColor);
+  const dataStrokeWidth = Math.max(2, size * 0.008);
   const points = AXES.map((axis) =>
     polarPoint(
       center,
@@ -61,6 +64,8 @@ export default function ArchetypeRadarChart({
       style={{ display: "block", flex: "0 0 auto", overflow: "visible" }}
       data-archetype-radar="true"
       data-archetype-radar-max={maxValue}
+      data-archetype-accent-color={accent.color}
+      data-archetype-accent-outline={accent.outlineColor}
     >
       <title>{ariaLabel}</title>
       {GRID_STEPS.map((step) => (
@@ -101,12 +106,22 @@ export default function ArchetypeRadarChart({
             </text>
           ))
         : null}
+      {accent.outlineColor ? (
+        <polygon
+          aria-hidden="true"
+          points={points.map(({ x, y }) => `${x},${y}`).join(" ")}
+          fill="none"
+          stroke={accent.outlineColor}
+          strokeWidth={dataStrokeWidth + Math.max(2, size * 0.006)}
+          strokeLinejoin="round"
+        />
+      ) : null}
       <polygon
         points={points.map(({ x, y }) => `${x},${y}`).join(" ")}
-        fill={accentColor}
+        fill={accent.color}
         fillOpacity={0.14}
-        stroke={accentColor}
-        strokeWidth={Math.max(2, size * 0.008)}
+        stroke={accent.color}
+        strokeWidth={dataStrokeWidth}
         strokeLinejoin="round"
       />
       {points.map((point, index) => (
@@ -115,7 +130,9 @@ export default function ArchetypeRadarChart({
           cx={point.x}
           cy={point.y}
           r={Math.max(3.5, size * 0.012)}
-          fill={accentColor}
+          fill={accent.color}
+          stroke={accent.outlineColor}
+          strokeWidth={accent.outlineColor ? Math.max(1.5, size * 0.005) : 0}
         />
       ))}
       {showLabels
@@ -147,7 +164,12 @@ export default function ArchetypeRadarChart({
                   x={labelPoint.x}
                   y={labelPoint.y + size * 0.036}
                   textAnchor={anchor}
-                  fill={accentColor}
+                  fill={accent.color}
+                  stroke={accent.outlineColor}
+                  strokeWidth={
+                    accent.outlineColor ? Math.max(1.5, size * 0.006) : 0
+                  }
+                  paintOrder="stroke fill"
                   fontSize={Math.max(10, size * 0.035)}
                   fontWeight={900}
                 >
