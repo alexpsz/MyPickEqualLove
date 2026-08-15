@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mypick.kozueginko.com/schemas/archetype-output-v1.json",
+  "title": "MyPick =LOVE archetype annotation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "songId",
+    "title",
+    "sourceMode",
+    "sourceUrl",
+    "modelId",
+    "promptHash",
+    "annotatedAt",
+    "scores",
+    "dominant",
+    "accent",
+    "evidence",
+    "qaFlags"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "songId": { "type": "string", "minLength": 1 },
+    "title": { "type": "string", "minLength": 1 },
+    "sourceMode": {
+      "enum": ["official-mv", "official-live", "text-only"]
+    },
+    "sourceUrl": { "type": "string", "format": "uri" },
+    "modelId": { "const": "gemini-3.6-flash" },
+    "promptHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "annotatedAt": { "type": "string", "format": "date-time" },
+    "scores": { "$ref": "#/$defs/scores" },
+    "dominant": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/dimension" }
+    },
+    "accent": { "$ref": "#/$defs/dimension" },
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 8,
+      "items": { "$ref": "#/$defs/evidence" }
+    },
+    "qaFlags": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "$defs": {
+    "dimension": {
+      "enum": [
+        "drive",
+        "care",
+        "rhythm",
+        "growth",
+        "drama",
+        "ingenuity",
+        "uplift",
+        "cuteness"
+      ]
+    },
+    "scores": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "drive",
+        "care",
+        "rhythm",
+        "growth",
+        "drama",
+        "ingenuity",
+        "uplift",
+        "cuteness"
+      ],
+      "properties": {
+        "drive": { "enum": [0, 1, 2] },
+        "care": { "enum": [0, 1, 2] },
+        "rhythm": { "enum": [0, 1, 2] },
+        "growth": { "enum": [0, 1, 2] },
+        "drama": { "enum": [0, 1, 2] },
+        "ingenuity": { "enum": [0, 1, 2] },
+        "uplift": { "enum": [0, 1, 2] },
+        "cuteness": { "enum": [0, 1, 2] }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["timestamp", "basis", "observation", "supports"],
+      "properties": {
+        "timestamp": {
+          "oneOf": [
+            { "type": "string", "pattern": "^[0-9]{2}:[0-5][0-9]$" },
+            { "type": "null" }
+          ]
+        },
+        "basis": { "enum": ["video", "source-note"] },
+        "observation": { "type": "string", "minLength": 1, "maxLength": 300 },
+        "supports": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/dimension" }
+        }
+      }
+    }
+  }
+}
