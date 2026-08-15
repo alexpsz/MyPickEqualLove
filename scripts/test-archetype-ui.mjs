@@ -91,6 +91,49 @@ test("result omits similarity percentages and renders the required explanation",
     modalSource,
     /"atk",[\s\S]*"def",[\s\S]*"spdMobility",[\s\S]*"sta",[\s\S]*"bearCharmResistance"/,
   );
+  assert.match(
+    registrySource,
+    /singleSummary: readTemplate\(explanation\.singleSummary/,
+  );
+  assert.match(
+    registrySource,
+    /tieSummary: readTemplate\(explanation\.tieSummary/,
+  );
+  assert.match(
+    modalSource,
+    /isTie \? ui\.explanation\.tieSummary : ui\.explanation\.singleSummary/,
+  );
+  for (const placeholder of ["dimension1", "dimension2", "song1", "song2"]) {
+    assert.match(modalSource, new RegExp(`${placeholder}:`));
+  }
+  assert.match(modalSource, /Unresolved archetype UI template placeholder/);
+});
+
+test("canonical character names lead the result while title stays separately labeled", () => {
+  assert.match(registrySource, /displayName: readString\(character\.name\)/);
+  assert.match(registrySource, /weaponName: readString\(weapon\.name\)/);
+
+  const jointNames = modalSource.slice(
+    modalSource.indexOf("const characterNames"),
+    modalSource.indexOf("const lead"),
+  );
+  assert.match(jointNames, /character\.displayName/);
+  assert.doesNotMatch(jointNames, /character\.title/);
+  assert.match(
+    modalSource,
+    /characterName: result\.characters\[0\]\?\.displayName/,
+  );
+
+  const cardHeading = modalSource.slice(
+    modalSource.indexOf("<h3"),
+    modalSource.indexOf("</h3>") + "</h3>".length,
+  );
+  assert.match(cardHeading, /character\.displayName/);
+  assert.doesNotMatch(cardHeading, /character\.title/);
+  assert.match(modalSource, /ui\.labels\.title/);
+  assert.match(modalSource, /character\.title/);
+  assert.match(modalSource, /ui\.labels\.weapon/);
+  assert.match(modalSource, /character\.weaponName/);
 });
 
 test("ui.json is the single four-locale UI copy source", () => {
@@ -118,6 +161,32 @@ test("ui.json is the single four-locale UI copy source", () => {
   );
   assert.doesNotMatch(messagesSource, /"archetype\./);
   assert.match(registrySource, /import uiData from .*ui\.json/);
+
+  const templateValues = {
+    dimension1: "D1",
+    dimension2: "D2",
+    song1: "S1",
+    song2: "S2",
+  };
+  for (const locale of Object.values(ui.locales)) {
+    for (const templateKey of ["singleSummary", "tieSummary"]) {
+      const template = locale.explanation[templateKey];
+      const placeholders = [...template.matchAll(/\{\{(\w+)\}\}/g)].map(
+        (match) => match[1],
+      );
+      assert.deepEqual([...new Set(placeholders)].sort(), [
+        "dimension1",
+        "dimension2",
+        "song1",
+        "song2",
+      ]);
+      const rendered = template.replace(
+        /\{\{(\w+)\}\}/g,
+        (_, key) => templateValues[key],
+      );
+      assert.doesNotMatch(rendered, /\{\{\w+\}\}/);
+    }
+  }
 });
 
 test("missing approved fingerprints leave the feature fail closed", () => {

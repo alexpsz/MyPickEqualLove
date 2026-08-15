@@ -43,13 +43,13 @@ export default function ArchetypeResultModal({
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const ui = result.ui;
   const characterNames = result.characters
-    .map((character) => character.title)
+    .map((character) => character.displayName)
     .join(" / ");
   const lead = formatTemplate(
     result.isTie ? ui.result.tieLead : ui.result.singleLead,
     result.isTie
       ? { characterNames }
-      : { characterName: result.characters[0]?.title ?? "" },
+      : { characterName: result.characters[0]?.displayName ?? "" },
   );
 
   useDialogA11y({
@@ -135,6 +135,7 @@ export default function ArchetypeResultModal({
                 key={character.roleId}
                 character={character}
                 ui={ui}
+                isTie={result.isTie}
               />
             ))}
           </div>
@@ -158,32 +159,53 @@ export default function ArchetypeResultModal({
 function CharacterResultCard({
   character,
   ui,
+  isTie,
 }: {
   character: EqualLoveArchetypeCharacterResult;
   ui: EqualLoveArchetypeUiCopy;
+  isTie: boolean;
 }) {
-  const contributingSongs = character.contributingSongIds
-    .map((songId) => SONGS_BY_ID[songId])
-    .filter(Boolean);
+  const contributingSongs = character.contributingSongIds.map((songId) => {
+    const song = SONGS_BY_ID[songId];
+    if (!song) throw new Error(`Missing contributing song: ${songId}`);
+    return song;
+  });
+  const explanation = formatTemplate(
+    isTie ? ui.explanation.tieSummary : ui.explanation.singleSummary,
+    {
+      dimension1: ui.traits[character.overlapTraitIds[0]],
+      dimension2: ui.traits[character.overlapTraitIds[1]],
+      song1: contributingSongs[0].title.ja,
+      song2: contributingSongs[1].title.ja,
+    },
+  );
 
   return (
     <article className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--line)] bg-white">
       <div className="border-b border-[var(--line)] p-4 sm:p-5">
-        <h3
-          lang={character.contentLocale}
-          className="mt-1 text-[20px] font-semibold tracking-[-0.03em] text-[var(--foreground)] sm:text-[23px]"
-        >
-          {character.title}
+        <h3 className="mt-1 text-[20px] font-semibold tracking-[-0.03em] text-[var(--foreground)] sm:text-[23px]">
+          {character.displayName}
         </h3>
+        <p className="mt-1 text-[13px] font-semibold text-[var(--project-primary)]">
+          {ui.labels.title}:{" "}
+          <span lang={character.contentLocale}>{character.title}</span>
+        </p>
         <p className="mt-1 text-[13px] font-semibold text-[var(--project-primary)]">
           {ui.labels.className}:{" "}
           <span lang={character.contentLocale}>{character.className}</span>
+        </p>
+        <p className="mt-1 text-[13px] font-semibold text-[var(--project-primary)]">
+          {ui.labels.weapon}:{" "}
+          <span lang={character.contentLocale}>{character.weaponName}</span>
         </p>
         <p
           lang={character.contentLocale}
           className="mt-3 text-[14px] leading-6 text-[var(--foreground)]"
         >
           {character.profile}
+        </p>
+        <p className="mt-3 rounded-[var(--radius-sm)] bg-[var(--project-primary-wash)] px-3 py-2.5 text-[13px] leading-relaxed text-[var(--foreground)]">
+          {explanation}
         </p>
       </div>
 
@@ -254,7 +276,12 @@ function formatTemplate(
   template: string,
   values: Readonly<Record<string, string>>,
 ) {
-  return template.replace(/\{\{(\w+)\}\}/g, (match, key: string) =>
-    Object.hasOwn(values, key) ? values[key] : match,
-  );
+  const rendered = template.replace(/\{\{(\w+)\}\}/g, (match, key: string) => {
+    const replacement = values[key];
+    return Object.hasOwn(values, key) && replacement ? replacement : match;
+  });
+  if (/\{\{\w+\}\}/.test(rendered)) {
+    throw new Error("Unresolved archetype UI template placeholder");
+  }
+  return rendered;
 }

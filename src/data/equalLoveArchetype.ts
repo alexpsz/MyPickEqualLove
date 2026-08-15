@@ -27,8 +27,10 @@ export type EqualLoveArchetypeStatId = keyof EqualLoveArchetypeStats;
 export interface EqualLoveArchetypeCharacterResult {
   roleId: string;
   contentLocale: AppLocale;
+  displayName: string;
   title: string;
   className: string;
+  weaponName: string;
   profile: string;
   stats: EqualLoveArchetypeStats;
   statLabels: Record<EqualLoveArchetypeStatId, string>;
@@ -47,11 +49,15 @@ export interface EqualLoveArchetypeUiCopy {
     tieLead: string;
   };
   explanation: {
+    singleSummary: string;
+    tieSummary: string;
     dimensionsHeading: string;
     songsHeading: string;
   };
   labels: {
+    title: string;
     className: string;
+    weapon: string;
     stats: string;
   };
   traits: Record<TraitId, string>;
@@ -70,8 +76,10 @@ export interface EqualLoveArchetypeResult {
 
 interface EnglishCharacter {
   roleId: string;
+  displayName: string;
   title: string;
   className: string;
+  weaponName: string;
   profile: string;
   stats: EqualLoveArchetypeStats;
   roleFingerprint: RoleAffinityProfile["affinities"];
@@ -85,6 +93,7 @@ interface LocalizedCharacterCatalog {
 interface CharacterPresentation {
   title: string;
   className: string;
+  weaponName: string;
   profile: string;
 }
 
@@ -140,6 +149,12 @@ export function resolveEqualLoveArchetype(
       englishCharacters.map((character) => [character.roleId, character]),
     );
     const characters = match.winners.map((winner) => {
+      if (
+        winner.overlapTraits.length !== 2 ||
+        winner.contributingSongs.length !== 2
+      ) {
+        throw new Error("Archetype explanation is incomplete");
+      }
       const character = charactersByRoleId.get(winner.roleId);
       const presentation = localizedCatalog.characters.get(winner.roleId);
       if (!character || !presentation) {
@@ -148,8 +163,10 @@ export function resolveEqualLoveArchetype(
       return {
         roleId: winner.roleId,
         contentLocale: locale,
+        displayName: character.displayName,
         title: presentation.title,
         className: presentation.className,
+        weaponName: presentation.weaponName,
         profile: presentation.profile,
         stats: character.stats,
         statLabels: localizedCatalog.statLabels,
@@ -191,10 +208,13 @@ function parseEnglishCharacters(value: unknown): EnglishCharacter[] {
     if (seenRoleIds.has(roleId)) throw new Error("Duplicate archetype role");
     seenRoleIds.add(roleId);
     const stats = asRecord(character.stats);
+    const weapon = asRecord(character.weapon);
     return {
       roleId,
+      displayName: readString(character.name),
       title: readString(character.title),
       className: readString(character.className),
+      weaponName: readString(weapon.name),
       profile: readString(character.profile),
       stats: {
         atk: readFiniteNumber(stats.atk),
@@ -218,9 +238,9 @@ function parseLocalizedCharacters(
     const characters = parseEnglishCharacters(value);
     return {
       characters: new Map(
-        characters.map(({ roleId, title, className, profile }) => [
+        characters.map(({ roleId, title, className, weaponName, profile }) => [
           roleId,
-          { title, className, profile },
+          { title, className, weaponName, profile },
         ]),
       ),
       statLabels: {
@@ -248,11 +268,13 @@ function parseLocalizedCharacters(
     characters: new Map<string, CharacterPresentation>(
       Object.entries(characters).map(([roleId, candidate]) => {
         const character = asRecord(candidate);
+        const weapon = asRecord(character.weapon);
         return [
           roleId,
           {
             title: readString(character.title),
             className: readString(character.className),
+            weaponName: readString(weapon.name),
             profile: readString(character.profile),
           },
         ];
@@ -289,16 +311,30 @@ function parseUiCopy(
     result: {
       close: readString(result.close),
       singleKicker: readString(result.singleKicker),
-      singleLead: readString(result.singleLead),
+      singleLead: readTemplate(result.singleLead, ["characterName"]),
       tieKicker: readString(result.tieKicker),
-      tieLead: readString(result.tieLead),
+      tieLead: readTemplate(result.tieLead, ["characterNames"]),
     },
     explanation: {
+      singleSummary: readTemplate(explanation.singleSummary, [
+        "dimension1",
+        "dimension2",
+        "song1",
+        "song2",
+      ]),
+      tieSummary: readTemplate(explanation.tieSummary, [
+        "dimension1",
+        "dimension2",
+        "song1",
+        "song2",
+      ]),
       dimensionsHeading: readString(explanation.dimensionsHeading),
       songsHeading: readString(explanation.songsHeading),
     },
     labels: {
+      title: readString(labels.title),
       className: readString(labels.className),
+      weapon: readString(labels.weapon),
       stats: readString(labels.stats),
     },
     traits: {
@@ -343,6 +379,20 @@ function readString(value: unknown) {
     throw new Error("Expected a non-empty string");
   }
   return value;
+}
+
+function readTemplate(value: unknown, expectedPlaceholders: readonly string[]) {
+  const template = readString(value);
+  const placeholders = new Set(
+    [...template.matchAll(/\{\{(\w+)\}\}/g)].map((match) => match[1]),
+  );
+  if (
+    placeholders.size !== expectedPlaceholders.length ||
+    expectedPlaceholders.some((placeholder) => !placeholders.has(placeholder))
+  ) {
+    throw new Error("Invalid archetype UI template placeholders");
+  }
+  return template;
 }
 
 function readFiniteNumber(value: unknown) {
