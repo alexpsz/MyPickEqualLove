@@ -4,13 +4,21 @@ import { resolve } from "node:path";
 import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import ExportBoard from "../../src/components/ExportBoard";
+import ExportBoard, {
+  ArchetypeDossierPoster,
+} from "../../src/components/ExportBoard";
 import {
   LIVE_EXPERIENCES,
   STANDARD_PICK_EXPERIENCE,
   getSortedExperienceSlots,
 } from "../../src/data/pickExperiences";
-import { SONGS } from "../../src/data/songs";
+import {
+  resolveEqualLoveArchetype,
+  type EqualLoveArchetypeCharacterResult,
+  type EqualLoveArchetypeResult,
+} from "../../src/data/equalLoveArchetype";
+import { MEMBERS_BY_ID, SONGS } from "../../src/data/songs";
+import equalLoveArchetypeAffinitiesData from "../../src/projects/equal-love/archetype-21/song-affinities.json";
 import {
   EXPORT_SIZE_PRESET_ORDER,
   EXPORT_TEMPLATE_ORDER,
@@ -138,6 +146,54 @@ function renderPoster(
   );
 }
 
+const realArchetypeResults = Array.from({ length: SONGS.length }, (_, offset) =>
+  resolveEqualLoveArchetype(
+    Array.from(
+      { length: 10 },
+      (__, index) => SONGS[(offset + index) % SONGS.length].id,
+    ),
+    "en",
+    equalLoveArchetypeAffinitiesData,
+  ),
+).filter((result): result is EqualLoveArchetypeResult => Boolean(result));
+
+const realArchetypeCharacters = [
+  ...new Map(
+    realArchetypeResults
+      .flatMap((result) => result.characters)
+      .map((character) => [character.roleId, character]),
+  ).values(),
+];
+
+if (realArchetypeCharacters.length < 3 || !realArchetypeResults[0]) {
+  throw new Error("Expected at least three real production archetype winners.");
+}
+
+function renderDossierPoster(
+  characters: readonly EqualLoveArchetypeCharacterResult[],
+  showQrCode = false,
+  baseResult: EqualLoveArchetypeResult = realArchetypeResults[0],
+) {
+  return renderToStaticMarkup(
+    createElement(ArchetypeDossierPoster, {
+      exportCanvasId: "test-archetype-dossier",
+      result: {
+        ...baseResult,
+        isTie: characters.length > 1,
+        characters,
+      },
+      slots: getSortedExperienceSlots(STANDARD_PICK_EXPERIENCE),
+      picks: createPicks(STANDARD_PICK_EXPERIENCE),
+      showTitles: true,
+      transparentBg: false,
+      showQrCode,
+      selectedBy: "Test Picker",
+      pageUrl: "https://mypick.kozueginko.com/",
+      footerLabel: "MY PICK ARCHETYPE",
+    }),
+  );
+}
+
 test("poster metadata is all-or-nothing across templates, sizes, and layouts", () => {
   for (const experience of [STANDARD_PICK_EXPERIENCE, liveExperience]) {
     const slotCount = getSortedExperienceSlots(experience).length;
@@ -205,33 +261,103 @@ test("titleless standard cards become cover-priority while Live keeps slot seman
   assert.doesNotMatch(liveMarkup, /data-export-year-tag/);
 });
 
-test("archetype presentation changes only poster chrome and keeps all ten picks", () => {
+test("ordinary poster retains its existing header, grid, metadata, and footer DOM", () => {
   const markup = renderPoster(
     STANDARD_PICK_EXPERIENCE,
     true,
     "classic",
     "portrait",
-    {
-      title: "MY ADVENTURE PARTNER",
-      subtitle: "HITOMI · THE SUN WHO DANCES GRACEFULLY",
-      highlights: ["BRIGHTNESS / AFFINITY", "CUTENESS / SWEETNESS"],
-      footerLabel: "MY PICK ARCHETYPE",
-    },
   );
+  assert.match(markup, /data-export-content-kind="picks"/);
+  assert.match(markup, /data-export-header="hasunosora-style"/);
+  assert.match(markup, /data-member-color-strip="true"/);
+  assert.match(markup, /data-export-boundary="content"/);
+  assert.match(markup, /data-export-boundary="footer"/);
+  assert.equal((markup.match(/data-export-song-metadata/g) ?? []).length, 10);
+  assert.equal((markup.match(/data-export-year-tag/g) ?? []).length, 10);
+  assert.doesNotMatch(markup, /data-archetype-radar/);
+  assert.doesNotMatch(markup, /data-export-boundary="archetype-dossier"/);
+});
+
+test("single archetype export is a dedicated fixed dossier with radar and Top 10", () => {
+  const character = realArchetypeCharacters[0];
+  const markup = renderDossierPoster([character], true);
+  const officialAccent = MEMBERS_BY_ID[character.memberId].color;
 
   assert.match(markup, /data-export-content-kind="archetype"/);
-  assert.match(markup, /MY ADVENTURE PARTNER/);
-  assert.match(markup, /HITOMI · THE SUN WHO DANCES GRACEFULLY/);
-  assert.match(markup, /data-archetype-highlights="true"/);
+  assert.match(markup, /data-archetype-tie-mode="single"/);
+  assert.match(markup, /data-export-boundary="archetype-dossier"/);
+  assert.match(markup, /data-export-boundary="archetype-top-ten"/);
+  assert.match(markup, /data-export-boundary="archetype-footer"/);
+  assert.match(markup, /width:1080px;height:1350px/);
+  assert.match(markup, /height:596px/);
+  assert.match(markup, /height:615px/);
+  assert.match(markup, /height:135px/);
+  assert.ok(markup.includes(character.displayName));
+  assert.ok(markup.includes(character.exportSummary));
+  assert.equal((markup.match(/data-archetype-radar="true"/g) ?? []).length, 1);
+  assert.match(markup, /data-archetype-radar-max="1200"/);
+  assert.equal((markup.match(/data-archetype-song-rank=/g) ?? []).length, 10);
+  assert.equal((markup.match(/data-archetype-song-title=/g) ?? []).length, 10);
   assert.equal(
-    (markup.match(/data-archetype-highlight-text="true"/g) ?? []).length,
+    (markup.match(/data-archetype-contributing-song="true"/g) ?? []).length,
     2,
   );
-  assert.match(markup, /BRIGHTNESS \/ AFFINITY/);
-  assert.match(markup, /CUTENESS \/ SWEETNESS/);
-  assert.match(markup, /MY PICK ARCHETYPE/);
-  assert.doesNotMatch(markup, /data-member-color-strip="true"/);
-  assert.equal((markup.match(/data-export-song-metadata/g) ?? []).length, 10);
+  assert.doesNotMatch(markup, /data-export-year-tag/);
+  assert.match(markup, /-webkit-line-clamp:2/);
+  assert.equal((markup.match(/<img/g) ?? []).length, 10);
+  assert.match(markup, /data-export-qr-code="true"/);
+  assert.ok(officialAccent && markup.includes(officialAccent));
+});
+
+test("two-person ties render a dual dossier without silently selecting one", () => {
+  const characters = realArchetypeCharacters.slice(0, 2);
+  const markup = renderDossierPoster(characters);
+  assert.match(markup, /data-archetype-tie-mode="dual"/);
+  assert.match(markup, /data-archetype-dual-dossier="true"/);
+  assert.equal(
+    (markup.match(/data-archetype-dual-character=/g) ?? []).length,
+    2,
+  );
+  assert.equal((markup.match(/data-archetype-radar="true"/g) ?? []).length, 2);
+  for (const character of characters) {
+    assert.ok(markup.includes(character.displayName));
+  }
+});
+
+test("three-or-more ties render every winner as a compact squad", () => {
+  const characters = realArchetypeCharacters.slice(0, 3);
+  const markup = renderDossierPoster(characters);
+  assert.match(markup, /data-archetype-tie-mode="squad"/);
+  assert.match(markup, /data-archetype-squad-dossier="true"/);
+  assert.match(markup, /data-archetype-squad-size="3"/);
+  assert.equal(
+    (markup.match(/data-archetype-squad-character=/g) ?? []).length,
+    3,
+  );
+  assert.equal((markup.match(/data-archetype-radar="true"/g) ?? []).length, 3);
+  for (const character of characters) {
+    assert.ok(markup.includes(character.displayName));
+  }
+});
+
+test("localized dossier fields render from all four reviewed catalogs", () => {
+  const songIds = SONGS.slice(0, 10).map(({ id }) => id);
+  for (const locale of ["en", "zh-CN", "ja", "ko"] as const) {
+    const result = resolveEqualLoveArchetype(
+      songIds,
+      locale,
+      equalLoveArchetypeAffinitiesData,
+    );
+    assert.ok(result);
+    const markup = renderDossierPoster(result.characters, false, result);
+    for (const character of result.characters) {
+      assert.ok(markup.includes(character.title));
+      assert.ok(markup.includes(character.className));
+      assert.ok(markup.includes(character.weaponName));
+      assert.ok(markup.includes(character.exportSummary));
+    }
+  }
 });
 
 test("mobile preview collapses export options and keeps the image stage flexible", () => {

@@ -26,12 +26,14 @@ export type EqualLoveArchetypeStatId = keyof EqualLoveArchetypeStats;
 
 export interface EqualLoveArchetypeCharacterResult {
   roleId: string;
+  memberId: string;
   contentLocale: AppLocale;
   displayName: string;
   title: string;
   className: string;
   weaponName: string;
   profile: string;
+  exportSummary: string;
   stats: EqualLoveArchetypeStats;
   statLabels: Record<EqualLoveArchetypeStatId, string>;
   overlapTraitIds: readonly TraitId[];
@@ -90,11 +92,13 @@ export interface EqualLoveArchetypeResult {
 
 interface EnglishCharacter {
   roleId: string;
+  memberId: string;
   displayName: string;
   title: string;
   className: string;
   weaponName: string;
   profile: string;
+  exportSummary: string;
   stats: EqualLoveArchetypeStats;
   roleFingerprint: RoleAffinityProfile["affinities"];
 }
@@ -109,6 +113,7 @@ interface CharacterPresentation {
   className: string;
   weaponName: string;
   profile: string;
+  exportSummary: string;
 }
 
 export function getEqualLoveArchetypeUiCopy(
@@ -186,12 +191,14 @@ export function resolveEqualLoveArchetype(
       }
       return {
         roleId: winner.roleId,
+        memberId: character.memberId,
         contentLocale: locale,
         displayName: character.displayName,
         title: presentation.title,
         className: presentation.className,
         weaponName: presentation.weaponName,
         profile: presentation.profile,
+        exportSummary: presentation.exportSummary,
         stats: character.stats,
         statLabels: localizedCatalog.statLabels,
         overlapTraitIds: winner.overlapTraits.map(({ traitId }) => traitId),
@@ -235,11 +242,13 @@ function parseEnglishCharacters(value: unknown): EnglishCharacter[] {
     const weapon = asRecord(character.weapon);
     return {
       roleId,
+      memberId: readString(character.memberId),
       displayName: readString(character.name),
       title: readString(character.title),
       className: readString(character.className),
       weaponName: readString(weapon.name),
       profile: readString(character.profile),
+      exportSummary: readString(character.exportSummary),
       stats: {
         atk: readFiniteNumber(stats.atk),
         def: readFiniteNumber(stats.def),
@@ -262,10 +271,19 @@ function parseLocalizedCharacters(
     const characters = parseEnglishCharacters(value);
     return {
       characters: new Map(
-        characters.map(({ roleId, title, className, weaponName, profile }) => [
-          roleId,
-          { title, className, weaponName, profile },
-        ]),
+        characters.map(
+          ({
+            roleId,
+            title,
+            className,
+            weaponName,
+            profile,
+            exportSummary,
+          }) => [
+            roleId,
+            { title, className, weaponName, profile, exportSummary },
+          ],
+        ),
       ),
       statLabels: {
         atk: "ATK",
@@ -300,6 +318,7 @@ function parseLocalizedCharacters(
             className: readString(character.className),
             weaponName: readString(weapon.name),
             profile: readString(character.profile),
+            exportSummary: readString(character.exportSummary),
           },
         ];
       }),

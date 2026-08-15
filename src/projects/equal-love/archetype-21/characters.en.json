@@ -12,6 +12,7 @@
       "dateOfJoining": "0709",
       "title": "The Breakthrough Squad Captain",
       "className": "Athlete Chef",
+      "exportSummary": "A physical powerhouse with the squad's best stamina and discipline, equally ready to clear a dungeon or run the camp kitchen.",
       "profile": "A physical monster boasting the squad's best stamina and discipline. She sprints through even the harshest dungeons like it's a casual marathon. Her camp-cooking skills are maxed out, and she single-handedly runs the party's entire buff-meal operation.",
       "weapon": {
         "name": "Hammer & Pipe",
@@ -45,6 +46,7 @@
       "dateOfJoining": "1130",
       "title": "The Small but Mighty Commander",
       "className": "Small Commander",
+      "exportSummary": "The army's spirited leader, known for razor-sharp dance moves, a tiny frame, and a mandatory daily live-streamed debrief.",
       "profile": "The absolute leader at the head of the whole army, overflowing with spirit and razor-sharp dance moves. Her tiny frame grants her the ultimate passive skill \"Enemy Physical Attacks Phase Right Through (Evasion Massively Up)\" — but step into slightly tall grass and she becomes completely invisible, even to the player. At a fixed time every single day, regardless of how the battle is going, she forcibly triggers her unique system: a mandatory live-streamed debrief session.",
       "weapon": {
         "name": "Megaphone",
@@ -79,6 +81,7 @@
       "dateOfJoining": "1126",
       "title": "The Youngest, Sharpest Scout",
       "className": "Gamer Baby",
+      "exportSummary": "The youngest member and a hardcore gamer who reads attack patterns instantly. Her occasional tongue-tied commands still lift the whole squad.",
       "profile": "The youngest member, yet a hardcore gamer who has fully mastered the game's mechanics. Even the boss's most brutal attacks get coolly called out with a \"yep, this is that pattern.\" Her diction sometimes slips mid-command thanks to her tongue-tied moments, but she's so cute it mysteriously buffs the entire squad's attack power.",
       "weapon": {
         "name": "White Bouquet",
@@ -112,6 +115,7 @@
       "dateOfJoining": "0803",
       "title": "The Watchful Elder Sister of the Squad",
       "className": "Dramatic Diva",
+      "exportSummary": "A powerhouse singer and watchful big sister who sees every battle as grand romance. Her unpredictable incantations can send friend and foe into chaos.",
       "profile": "A maidenly big sister who watches even life-or-death situations like they're \"one scene from a grand romance.\" An area-wide buffer with a powerhouse singing voice, but her skill incantations are riddled with such uniquely bizarre mispronunciations that they frequently and accidentally inflict the whole squad with \"Paralyzed from Laughter\" and \"Confusion\" debuffs at once — a volatile wildcard who plunges friend and foe alike into chaos.",
       "weapon": {
         "name": "Giant Hammer",
@@ -145,6 +149,7 @@
       "dateOfJoining": "0119",
       "title": "The Sun Who Dances Gracefully",
       "className": "Sunshine Leader",
+      "exportSummary": "A radiant protagonist whose smile brightens the whole scene and pulls even stealthy enemies straight into the spotlight.",
       "profile": "An overwhelming protagonist who brightens the whole scene just by being on screen. Even against enemies who should excel at stealth missions, she can't help greeting them with her signature booming smile, forcibly dragging them into the spotlight — making any covert operation completely impossible.",
       "weapon": {
         "name": "Bow and Arrow",
@@ -178,6 +183,7 @@
       "dateOfJoining": "0121",
       "title": "The Quiet Secret Weapon",
       "className": "Energy-Saving Legend Star",
+      "exportSummary": "Usually carefree and in power-save mode, she awakens at the critical moment, strikes with overwhelming precision, then returns to rest.",
       "profile": "Carefree and unbothered by default — permanently running in power-save mode. The moment the squad faces near-total wipeout, she suddenly awakens, annihilates the enemy with overwhelming precision, and goes right back to sleep. Thanks to her passive skill \"Never Leaves Her Room on Days Off,\" she's the hardest member to mobilize from base.",
       "weapon": {
         "name": "White Bear Plush",
@@ -211,6 +217,7 @@
       "dateOfJoining": "0204",
       "title": "The Army's Flag Illustrator",
       "className": "Sniper Illustrator",
+      "exportSummary": "A sensitive sharpshooter who records the squad with exceptional artistic flair. Cute animals and precious member moments can completely steal her focus.",
       "profile": "A sensitive, talented sharpshooter who documents the team's every moment with overwhelming artistic flair. She's supposed to specialize in precision long-range shooting, but the instant a cute animal (bears included) or a precious moment between members enters her scope, she mistakes it for a photo op and bursts into tears shouting \"precious!\" — losing all will to fight, which means her sniper duties almost never actually get carried out.",
       "weapon": {
         "name": "Rifle",
@@ -244,6 +251,7 @@
       "dateOfJoining": "0811",
       "title": "The Intelligence Officer Who Sees Through Hearts",
       "className": "Ojou-sama Detective",
+      "exportSummary": "The squad's elegant self-proclaimed detective. Her unpredictable airheaded instincts somehow guide her around enemy traps every time.",
       "profile": "The squad's self-proclaimed detective, boasting outstanding style and elegance. She looks like she's scanning the battlefield with a piercing gaze — but she's usually just wondering \"what's for dinner tonight.\" Her natural airheadedness leads to unpredictable, bizarre behavior that, somehow, miraculously dodges enemy traps every time.",
       "weapon": {
         "name": "White Bear Plush",
@@ -277,6 +285,7 @@
       "dateOfJoining": "0426",
       "title": "The Strategist Who Reads the Battlefield",
       "className": "2D Brain & Summoner",
+      "exportSummary": "An eccentric strategist immersed in 2D worlds, whose dramatic awakenings and expressive power can turn enemies into allies.",
       "profile": "The squad's eccentric brain, whose mind is permanently occupied by 2D settings. The more hopeless the enemy's situation looks, the more her excitement climbs — she tends to spontaneously trigger her own \"this is... my true power...!\" awakening event, solo. Her expressiveness is so overwhelming that even enemies get disarmed and turned into allies (fans).",
       "weapon": {
         "name": "Chainsaw",
@@ -310,6 +319,7 @@
       "dateOfJoining": "0315",
       "title": "The Beauty Commander Leading the Charge",
       "className": "Beauty Berserker",
+      "exportSummary": "A beauty commander who sustains the army's visual morale and restores her own HP with ramen and an extra-large bowl of rice.",
       "profile": "The absolute deity of beauty, single-handedly keeping the entire army's visual motivation intact. Possesses the unique physiology of instantly regenerating HP by devouring ramen and an extra-large bowl of rice. Her morale crashes the moment she gets hungry.",
       "weapon": {
         "name": "Giant Hammer",

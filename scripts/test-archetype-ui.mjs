@@ -15,6 +15,12 @@ const [
   songsSource,
   exportBoardSource,
   exportCaptureSource,
+  radarSource,
+  membersSource,
+  charactersEnSource,
+  charactersZhCnSource,
+  charactersJaSource,
+  charactersKoSource,
 ] = await Promise.all([
   read("../src/components/PickExperienceClient.tsx"),
   read("../src/components/Controls.tsx"),
@@ -28,6 +34,12 @@ const [
   read("../src/projects/equal-love/songs.json"),
   read("../src/components/ExportBoard.tsx"),
   read("../src/utils/exportCapture.ts"),
+  read("../src/components/ArchetypeRadarChart.tsx"),
+  read("../src/projects/equal-love/members.json"),
+  read("../src/projects/equal-love/archetype-21/characters.en.json"),
+  read("../src/projects/equal-love/archetype-21/characters.zh-CN.json"),
+  read("../src/projects/equal-love/archetype-21/characters.ja.json"),
+  read("../src/projects/equal-love/archetype-21/characters.ko.json"),
 ]);
 
 test("result matching is gated to a complete unique equal-love standard Top 10", () => {
@@ -278,14 +290,71 @@ test("partner image reuses the existing export realm without becoming a saved te
   );
   assert.match(clientSource, /MY ADVENTURE PARTNER/);
   assert.match(exportBoardSource, /data-export-content-kind/);
-  assert.match(exportBoardSource, /data-archetype-highlights/);
-  assert.match(exportBoardSource, /headerPresentation\?\.footerLabel/);
+  assert.match(exportBoardSource, /data-export-boundary="archetype-dossier"/);
+  assert.match(exportBoardSource, /data-export-boundary="archetype-top-ten"/);
+  assert.match(exportBoardSource, /data-archetype-tie-mode/);
+  assert.match(exportBoardSource, /ArchetypeRadarChart/);
+  assert.match(exportBoardSource, /headerPresentation\.footerLabel/);
   assert.match(exportCaptureSource, /EXPORT_CAPTURE_PROTOCOL_VERSION = 4/);
   assert.match(
     exportCaptureSource,
     /value\.kind === "picks" \|\| value\.kind === "archetype"/,
   );
   assert.match(clientSource, /DIALOG_RETURN_KEYS\.archetype/);
+});
+
+test("radar is pure fixed SVG with a shared 1200 maximum and accessible labeling", () => {
+  assert.match(radarSource, /<svg/);
+  assert.match(radarSource, /role="img"/);
+  assert.match(radarSource, /aria-label=\{ariaLabel\}/);
+  assert.match(radarSource, /maxValue = 1200/);
+  assert.match(radarSource, /data-archetype-radar-max=\{maxValue\}/);
+  assert.match(
+    radarSource,
+    /"atk"[\s\S]*"def"[\s\S]*"spdMobility"[\s\S]*"sta"[\s\S]*"bearCharmResistance"/,
+  );
+  assert.doesNotMatch(radarSource, /animate|transition|filter:|backdrop/i);
+});
+
+test("four locale catalogs provide reviewed export summaries and canonical member ids", () => {
+  const members = new Set(JSON.parse(membersSource).map(({ id }) => id));
+  const catalogs = {
+    en: JSON.parse(charactersEnSource),
+    "zh-CN": JSON.parse(charactersZhCnSource),
+    ja: JSON.parse(charactersJaSource),
+    ko: JSON.parse(charactersKoSource),
+  };
+  const englishCharacters = catalogs.en.characters;
+  const roleIds = englishCharacters.map(({ roleId }) => roleId);
+  assert.equal(englishCharacters.length, 10);
+  for (const character of englishCharacters) {
+    assert.ok(members.has(character.memberId));
+    assert.ok(character.exportSummary.length >= 55);
+    assert.ok(character.exportSummary.length <= 175);
+    assert.ok(countSentences(character.exportSummary, "en") >= 1);
+    assert.ok(countSentences(character.exportSummary, "en") <= 2);
+  }
+  for (const locale of ["zh-CN", "ja", "ko"]) {
+    assert.deepEqual(Object.keys(catalogs[locale].characters), roleIds);
+    for (const character of Object.values(catalogs[locale].characters)) {
+      assert.ok(character.exportSummary.length >= 35);
+      assert.ok(character.exportSummary.length <= 95);
+      assert.ok(countSentences(character.exportSummary, locale) >= 1);
+      assert.ok(countSentences(character.exportSummary, locale) <= 2);
+    }
+  }
+  assert.match(registrySource, /memberId: readString\(character\.memberId\)/);
+  assert.match(
+    registrySource,
+    /exportSummary: readString\(character\.exportSummary\)/,
+  );
+  assert.match(exportBoardSource, /MEMBERS_BY_ID\[character\.memberId\]/);
+  assert.match(exportBoardSource, /window\.parent\.document/);
+  assert.match(
+    exportBoardSource,
+    /locale === "en"[\s\S]*locale === "zh-CN"[\s\S]*locale === "ja"[\s\S]*locale === "ko"/,
+  );
+  assert.doesNotMatch(exportBoardSource, /archetype-21-\w+["']\s*:/);
 });
 
 test("result omits algorithm prose while keeping traits, songs, and official stats", () => {
@@ -423,4 +492,9 @@ test("the matcher still fails closed for missing or invalid approved data", () =
 
 async function read(relativePath) {
   return readFile(new URL(relativePath, import.meta.url), "utf8");
+}
+
+function countSentences(value, locale) {
+  const punctuation = locale === "en" ? /[.!?]+/g : /[。！？.!?]+/g;
+  return value.match(punctuation)?.length ?? 0;
 }
