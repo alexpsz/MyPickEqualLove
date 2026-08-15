@@ -4,7 +4,7 @@
   "locales": {
     "en": {
       "productName": "MyPick Archetype",
-      "title": "Your Song-Sync Adventure Partner",
+      "title": "Your Adventure Partner",
       "entry": {
         "requirement": "Complete your Top 10 to find your song-sync partner.",
         "cta": "View my song-sync partner"
@@ -13,15 +13,19 @@
         "loading": "Analyzing your Top 10…",
         "close": "Close",
         "singleKicker": "Your song-sync partner",
-        "singleLead": "After adjusting for common patterns across the full catalog, your song-sync partner in the 21st single MV adventure is—{{characterName}}.",
+        "singleLead": "Based on your Top 10, your best match for the 21st single MV adventure is—{{characterName}}.",
         "tieKicker": "Your joint song-sync partners",
-        "tieLead": "After adjusting for common patterns across the full catalog, your song-sync partners in the 21st single MV adventure are tied—{{characterNames}}.",
+        "tieLead": "Based on your Top 10, your best matches for the 21st single MV adventure are—{{characterNames}}.",
         "dataUnavailable": "Match data is not yet available for this selection."
       },
+      "export": {
+        "button": "Generate partner image",
+        "generating": "Generating…",
+        "previewLabel": "Your adventure partner: {{characterNames}}",
+        "shareText": "My 21st single MV adventure partner is {{characterNames}}!"
+      },
       "explanation": {
-        "singleSummary": "The unadjusted card-profile overlap is strongest in {{dimension1}} and {{dimension2}}; {{song1}} and {{song2}} contribute most.",
-        "tieSummary": "For this tied character, the unadjusted card-profile overlap is strongest in {{dimension1}} and {{dimension2}}; {{song1}} and {{song2}} contribute most.",
-        "dimensionsHeading": "Top sync dimensions",
+        "dimensionsHeading": "Why you click",
         "dimensionItem": "{{dimension}} · {{reason}}",
         "songsHeading": "Top contributing songs",
         "songItem": "{{songTitle}} · {{reason}}"
@@ -47,12 +51,12 @@
         "statsNote": "World-building stats; not used in matching.",
         "sourceAttribution": "Character settings: official =LOVE 21st single MV.",
         "translationAttribution": "Japanese, Simplified Chinese, and Korean copy is translated by MyPick from the English cards shown in the MV.",
-        "entertainmentNotice": "AI song-sync analysis, for entertainment only."
+        "entertainmentNotice": "AI analysis of your song picks, for entertainment only."
       }
     },
     "zh-CN": {
       "productName": "MyPick Archetype",
-      "title": "选曲同频型冒险搭档",
+      "title": "你的冒险搭档",
       "entry": {
         "requirement": "完成 Top 10 后，即可查看你的选曲同频搭档。",
         "cta": "查看我的同频搭档"
@@ -61,15 +65,19 @@
         "loading": "正在分析你的 Top 10…",
         "close": "关闭",
         "singleKicker": "你的同频搭档",
-        "singleLead": "校正曲库整体的常见倾向后，你在 21 单 MV 冒险世界里的选曲同频搭档是——{{characterName}}。",
+        "singleLead": "根据你的 Top 10，你在 21 单 MV 冒险世界里最合拍的搭档是——{{characterName}}。",
         "tieKicker": "你的共同同频搭档",
-        "tieLead": "校正曲库整体的常见倾向后，你在 21 单 MV 冒险世界里的选曲同频搭档并列为——{{characterNames}}。",
+        "tieLead": "根据你的 Top 10，你在 21 单 MV 冒险世界里最合拍的搭档是——{{characterNames}}。",
         "dataUnavailable": "本期匹配数据尚未覆盖这份选曲。"
       },
+      "export": {
+        "button": "生成搭档图片",
+        "generating": "正在生成…",
+        "previewLabel": "你的冒险搭档：{{characterNames}}",
+        "shareText": "我的 21 单 MV 冒险搭档是 {{characterNames}}！"
+      },
       "explanation": {
-        "singleSummary": "未经校正的卡面重合中，「{{dimension1}}」和「{{dimension2}}」最为突出；贡献最高的歌曲是《{{song1}}》《{{song2}}》。",
-        "tieSummary": "对这位并列角色，未经校正的卡面重合以「{{dimension1}}」和「{{dimension2}}」最为突出；贡献最高的歌曲是《{{song1}}》《{{song2}}》。",
-        "dimensionsHeading": "主要同频维度",
+        "dimensionsHeading": "你们的契合特点",
         "dimensionItem": "{{dimension}} · {{reason}}",
         "songsHeading": "贡献最高歌曲",
         "songItem": "《{{songTitle}}》· {{reason}}"
@@ -95,12 +103,12 @@
         "statsNote": "世界观展示数值，不参与匹配。",
         "sourceAttribution": "角色设定来源：＝LOVE 第 21 单官方 MV。",
         "translationAttribution": "日文、简体中文与韩文由 MyPick 根据 MV 内英文卡面翻译。",
-        "entertainmentNotice": "AI 选曲同频分析，仅供娱乐。"
+        "entertainmentNotice": "AI 选曲分析，仅供娱乐。"
       }
     },
     "ja": {
       "productName": "MyPick Archetype",
-      "title": "選曲シンクロ型・冒険パートナー",
+      "title": "あなたの冒険パートナー",
       "entry": {
         "requirement": "Top 10を完成させると、選曲シンクロ・パートナーを確認できます。",
         "cta": "選曲シンクロ・パートナーを見る"
@@ -109,15 +117,19 @@
         "loading": "あなたのTop 10を分析しています…",
         "close": "閉じる",
         "singleKicker": "あなたの選曲シンクロ・パートナー",
-        "singleLead": "楽曲カタログ全体で出やすい傾向を補正すると、21stシングルMVの冒険世界であなたと最も相性のいい選曲シンクロ・パートナーは——{{characterName}}。",
+        "singleLead": "あなたのTop 10をもとに、21stシングルMVの冒険世界で最も相性のいいパートナーは——{{characterName}}。",
         "tieKicker": "あなたの共同シンクロ・パートナー",
-        "tieLead": "楽曲カタログ全体で出やすい傾向を補正すると、21stシングルMVの冒険世界であなたと最も相性のいい選曲シンクロ・パートナーは同率で——{{characterNames}}。",
+        "tieLead": "あなたのTop 10をもとに、21stシングルMVの冒険世界で最も相性のいいパートナーは——{{characterNames}}。",
         "dataUnavailable": "今回の選曲は、まだマッチングデータの対象になっていません。"
       },
+      "export": {
+        "button": "パートナー画像を生成",
+        "generating": "生成中…",
+        "previewLabel": "あなたの冒険パートナー：{{characterNames}}",
+        "shareText": "私の21stシングルMV冒険パートナーは{{characterNames}}！"
+      },
       "explanation": {
-        "singleSummary": "補正前のカード設定との重なりでは、「{{dimension1}}」と「{{dimension2}}」が最も強く、『{{song1}}』『{{song2}}』の貢献が最大です。",
-        "tieSummary": "同率のこのキャラクターも、補正前のカード設定との重なりは「{{dimension1}}」と「{{dimension2}}」で最も強く、『{{song1}}』『{{song2}}』の貢献が最大です。",
-        "dimensionsHeading": "主なシンクロ軸",
+        "dimensionsHeading": "相性のいいポイント",
         "dimensionItem": "{{dimension}}・{{reason}}",
         "songsHeading": "貢献度の高い楽曲",
         "songItem": "『{{songTitle}}』・{{reason}}"
@@ -143,12 +155,12 @@
         "statsNote": "世界観上の表示値であり、マッチングには使用していません。",
         "sourceAttribution": "キャラクター設定出典：＝LOVE 21stシングル公式MV。",
         "translationAttribution": "日本語・簡体字中国語・韓国語は、MV内の英語カードをもとにMyPickが翻訳しています。",
-        "entertainmentNotice": "AIによる選曲シンクロ分析です。エンターテインメントとしてお楽しみください。"
+        "entertainmentNotice": "AIによる選曲分析です。エンターテインメントとしてお楽しみください。"
       }
     },
     "ko": {
       "productName": "MyPick Archetype",
-      "title": "선곡 싱크로형 모험 파트너",
+      "title": "나의 모험 파트너",
       "entry": {
         "requirement": "Top 10을 완성하면 나의 선곡 싱크로 파트너를 확인할 수 있어요.",
         "cta": "내 선곡 싱크로 파트너 보기"
@@ -157,15 +169,19 @@
         "loading": "나의 Top 10을 분석하고 있어요…",
         "close": "닫기",
         "singleKicker": "나의 선곡 싱크로 파트너",
-        "singleLead": "전체 곡 목록에서 자주 나타나는 경향을 보정하면, 21번째 싱글 MV 모험 세계에서 당신과 가장 잘 맞는 선곡 싱크로 파트너는 {{characterName}}입니다.",
+        "singleLead": "나의 Top 10을 바탕으로, 21번째 싱글 MV 모험 세계에서 가장 잘 맞는 파트너는 {{characterName}}입니다.",
         "tieKicker": "나의 공동 싱크로 파트너",
-        "tieLead": "전체 곡 목록에서 자주 나타나는 경향을 보정하면, 21번째 싱글 MV 모험 세계에서 {{characterNames}}가 공동으로 가장 잘 맞는 선곡 싱크로 파트너입니다.",
+        "tieLead": "나의 Top 10을 바탕으로, 21번째 싱글 MV 모험 세계에서 가장 잘 맞는 파트너는 {{characterNames}}입니다.",
         "dataUnavailable": "이번 선곡은 아직 매칭 데이터 지원 대상이 아닙니다."
       },
+      "export": {
+        "button": "파트너 이미지 만들기",
+        "generating": "생성 중…",
+        "previewLabel": "나의 모험 파트너: {{characterNames}}",
+        "shareText": "나의 21번째 싱글 MV 모험 파트너는 {{characterNames}}!"
+      },
       "explanation": {
-        "singleSummary": "보정 전 카드 설정과의 겹침은 ‘{{dimension1}}’와 ‘{{dimension2}}’에서 가장 크며, 〈{{song1}}〉와 〈{{song2}}〉가 가장 많이 기여했습니다.",
-        "tieSummary": "동률인 이 캐릭터도 보정 전 카드 설정과의 겹침은 ‘{{dimension1}}’와 ‘{{dimension2}}’에서 가장 크며, 〈{{song1}}〉와 〈{{song2}}〉가 가장 많이 기여했습니다.",
-        "dimensionsHeading": "주요 싱크로 차원",
+        "dimensionsHeading": "잘 맞는 포인트",
         "dimensionItem": "{{dimension}} · {{reason}}",
         "songsHeading": "기여도가 높은 곡",
         "songItem": "〈{{songTitle}}〉 · {{reason}}"
@@ -191,7 +207,7 @@
         "statsNote": "세계관을 보여 주는 수치이며 매칭에는 사용하지 않습니다.",
         "sourceAttribution": "캐릭터 설정 출처: =LOVE 21번째 싱글 공식 MV.",
         "translationAttribution": "일본어, 중국어 간체, 한국어 문구는 MyPick이 MV 속 영어 카드를 바탕으로 번역했습니다.",
-        "entertainmentNotice": "AI 선곡 싱크로 분석이며, 재미로만 즐겨 주세요."
+        "entertainmentNotice": "AI 선곡 분석이며, 재미로만 즐겨 주세요."
       }
     }
   }

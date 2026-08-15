@@ -4,6 +4,15 @@ export type ExportSizePresetId = "portrait" | "square" | "story";
 
 export type ExportExperienceLayout = "top10-grid" | "five-memory-list";
 
+export type ExportContentKind = "picks" | "archetype";
+
+export interface ExportHeaderPresentation {
+  title: string;
+  subtitle: string;
+  highlights: readonly string[];
+  footerLabel: string;
+}
+
 export interface ExportOptions {
   showTitles: boolean;
   transparentBg: boolean;

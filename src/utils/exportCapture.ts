@@ -3,12 +3,16 @@ import {
   isExportSizePresetId,
   isExportTemplateId,
 } from "../config/exportPresets";
-import type { ExportSizePresetId, ExportTemplateId } from "../schema/export";
+import type {
+  ExportContentKind,
+  ExportSizePresetId,
+  ExportTemplateId,
+} from "../schema/export";
 import type { StoredPicks } from "../schema/music";
 import { isExportQrTarget } from "./exportQr";
 
-export const EXPORT_CAPTURE_PROTOCOL_VERSION = 3 as const;
-export const EXPORT_REALM_HASH = "#__mypick_export_realm_v3";
+export const EXPORT_CAPTURE_PROTOCOL_VERSION = 4 as const;
+export const EXPORT_REALM_HASH = "#__mypick_export_realm_v4";
 export const EXPORT_REALM_READY_TYPE = "mypick-export:ready";
 export const EXPORT_REALM_RENDER_TYPE = "mypick-export:render";
 export const EXPORT_REALM_RESULT_TYPE = "mypick-export:result";
@@ -24,6 +28,7 @@ export interface ExportRenderRequest {
   type: typeof EXPORT_REALM_RENDER_TYPE;
   version: typeof EXPORT_CAPTURE_PROTOCOL_VERSION;
   requestId: string;
+  kind: ExportContentKind;
   experienceId: string;
   contextId?: string;
   picks: StoredPicks;
@@ -81,6 +86,7 @@ export function isExportRenderRequest(
     value.version === EXPORT_CAPTURE_PROTOCOL_VERSION &&
     typeof value.requestId === "string" &&
     value.requestId.length > 0 &&
+    (value.kind === "picks" || value.kind === "archetype") &&
     typeof value.experienceId === "string" &&
     value.experienceId.length > 0 &&
     (value.contextId === undefined || typeof value.contextId === "string") &&

@@ -34,7 +34,10 @@ import {
   SONGS_BY_ID,
   TRACK_TYPES,
 } from "../data/songs";
-import { resolveEqualLoveArchetype } from "../data/equalLoveArchetype";
+import {
+  formatArchetypeTemplate,
+  resolveEqualLoveArchetype,
+} from "../data/equalLoveArchetype";
 import equalLoveArchetypeAffinitiesData from "../projects/equal-love/archetype-21/song-affinities.json";
 import {
   createBoardSharePayload,
@@ -65,6 +68,8 @@ import { localizeExperienceUi } from "../i18n/content";
 import { useLocale } from "../i18n/LocaleProvider";
 import type { PickExperience } from "../schema/pick-experience";
 import type {
+  ExportContentKind,
+  ExportHeaderPresentation,
   ExportOptions,
   ExportSizePresetId,
   ExportTemplateId,
@@ -210,6 +215,8 @@ interface AssistantApplyBaseline {
 }
 
 interface PreviewSnapshot {
+  kind: ExportContentKind;
+  archetypeInputKey?: string;
   dataUrl: string;
   optionsKey: string;
   imageFileName: string;
@@ -225,6 +232,8 @@ const getPreviewOptionsKey = (
   transparentBg: boolean,
   showQrCode: boolean,
   templateId: ExportTemplateId,
+  kind: ExportContentKind = "picks",
+  archetypeInputKey = "",
 ) =>
   [
     showTitles ? "titles" : "no-titles",
@@ -232,6 +241,8 @@ const getPreviewOptionsKey = (
     showQrCode ? "qr" : "no-qr",
     templateId,
     DEFAULT_EXPORT_SIZE_PRESET_ID,
+    kind,
+    archetypeInputKey,
   ].join(":");
 
 export default function PickExperienceClient({
@@ -421,7 +432,7 @@ export default function PickExperienceClient({
   const archetypeTopTenSongIds = useMemo(() => {
     if (
       !hydrated ||
-      isExportRealm ||
+      (isExportRealm && frameCaptureRequest?.kind !== "archetype") ||
       PROJECT_ID !== "equal-love" ||
       !isStandard ||
       slots.length !== 10
@@ -436,7 +447,14 @@ export default function PickExperienceClient({
       return null;
     }
     return songIds as string[];
-  }, [hydrated, isExportRealm, isStandard, picks, slots]);
+  }, [
+    frameCaptureRequest?.kind,
+    hydrated,
+    isExportRealm,
+    isStandard,
+    picks,
+    slots,
+  ]);
   const archetypeResult = useMemo(
     () =>
       archetypeTopTenSongIds
@@ -448,6 +466,32 @@ export default function PickExperienceClient({
         : null,
     [archetypeTopTenSongIds, locale],
   );
+  const archetypeExportPresentation = useMemo<
+    ExportHeaderPresentation | undefined
+  >(() => {
+    if (frameCaptureRequest?.kind !== "archetype" || !archetypeResult) {
+      return undefined;
+    }
+
+    const names = archetypeResult.characters
+      .map((character) => character.displayName)
+      .join(" / ");
+    const character = archetypeResult.characters[0];
+    return {
+      title: "MY ADVENTURE PARTNER",
+      subtitle:
+        !archetypeResult.isTie && character
+          ? `${names} · ${character.title}`
+          : names,
+      highlights:
+        !archetypeResult.isTie && character
+          ? character.overlapTraitIds.map(
+              (traitId) => archetypeResult.ui.traits[traitId],
+            )
+          : ["TIED PARTNERS", "21ST SINGLE MV"],
+      footerLabel: "MY PICK ARCHETYPE",
+    };
+  }, [archetypeResult, frameCaptureRequest?.kind]);
 
   useEffect(() => {
     setOpenArchetypeInputKey((current) =>
@@ -2276,6 +2320,13 @@ export default function PickExperienceClient({
         });
       }) as typeof window.getComputedStyle;
 
+      if (
+        frameCaptureRequest?.kind === "archetype" &&
+        !archetypeExportPresentation
+      ) {
+        throw new Error("Archetype export result is unavailable");
+      }
+
       const exportElement = document.getElementById(exportCanvasId);
       if (!exportElement) {
         throw new Error("Export canvas element was not found");
@@ -2307,7 +2358,13 @@ export default function PickExperienceClient({
     } finally {
       window.getComputedStyle = originalGetComputedStyle;
     }
-  }, [exportCanvasId, frameSizePresetId, transparentBg]);
+  }, [
+    archetypeExportPresentation,
+    exportCanvasId,
+    frameCaptureRequest?.kind,
+    frameSizePresetId,
+    transparentBg,
+  ]);
 
   useEffect(() => {
     if (
@@ -2349,107 +2406,164 @@ export default function PickExperienceClient({
     };
   }, [captureExportCanvas, frameCaptureRequest, hydrated, isExportRealm]);
 
-  const handleGenerateImage = useCallback(async () => {
-    if (generatingRef.current) return;
-    if (!boardStorageWritable || !optionsStorageWritable) {
-      setBoardStatusMessage(t("boardLibrary.error.storage"));
-      return;
-    }
-
-    const filteredPicks = filterStoredPicksForExperience({
-      experience,
-      storedPicks,
-      contextId: effectiveContextId,
-    });
-    if (Object.keys(filteredPicks).length === 0) {
-      return;
-    }
-    if (!sameStoredPicks(filteredPicks, storedPicks)) {
-      if (!resetBoardWithoutHistory(filteredPicks)) {
-        window.alert(t("boardLibrary.error.storage"));
+  const generateImage = useCallback(
+    async (kind: ExportContentKind) => {
+      if (generatingRef.current) return;
+      if (!boardStorageWritable || !optionsStorageWritable) {
+        setBoardStatusMessage(t("boardLibrary.error.storage"));
         return;
       }
-    }
 
-    const generationId = ++previewGenerationIdRef.current;
-    const optionsKey = getPreviewOptionsKey(
-      showTitles,
-      transparentBg,
-      showQrCode,
-      templateId,
-    );
-    const captureController = new AbortController();
-    activePreviewCaptureAbortRef.current = captureController;
-    generatingRef.current = true;
-    setGenerating(true);
+      const archetypeForExport = kind === "archetype" ? archetypeResult : null;
+      if (kind === "archetype" && !archetypeForExport) return;
 
-    try {
-      const dataUrl = await captureExportImageInFrame(
-        {
-          experienceId: experience.id,
-          contextId: effectiveContextId,
-          picks: filteredPicks,
-          showTitles,
-          transparentBg,
-          showQrCode,
-          templateId,
-          sizePresetId: DEFAULT_EXPORT_SIZE_PRESET_ID,
-          selectedBy: exportNickname,
-          pageUrl,
-        },
-        { signal: captureController.signal },
-      );
-      if (generationId === previewGenerationIdRef.current) {
-        setPreview({
-          dataUrl,
-          optionsKey,
-          imageFileName: posterImageFileName,
-          pageUrl,
-          previewLabel,
-          shareText: uiCopy.shareText,
-          shareHashtags: experience.share.hashtags.slice(),
-          shareTitle: uiCopy.title,
-        });
+      const filteredPicks = filterStoredPicksForExperience({
+        experience,
+        storedPicks,
+        contextId: effectiveContextId,
+      });
+      if (Object.keys(filteredPicks).length === 0) {
+        return;
       }
-    } catch (error) {
-      if (!isAbortError(error)) {
-        console.error("Failed to generate image", error);
-        if (generationId === previewGenerationIdRef.current) {
-          window.alert(t("errors.imageGenerationFailed"));
+      if (!sameStoredPicks(filteredPicks, storedPicks)) {
+        if (!resetBoardWithoutHistory(filteredPicks)) {
+          window.alert(t("boardLibrary.error.storage"));
+          return;
         }
       }
-    } finally {
-      if (activePreviewCaptureAbortRef.current === captureController) {
-        activePreviewCaptureAbortRef.current = null;
+
+      const generationId = ++previewGenerationIdRef.current;
+      const optionsKey = getPreviewOptionsKey(
+        showTitles,
+        transparentBg,
+        showQrCode,
+        templateId,
+        kind,
+        archetypeForExport?.inputKey,
+      );
+      const captureController = new AbortController();
+      activePreviewCaptureAbortRef.current = captureController;
+      generatingRef.current = true;
+      setGenerating(true);
+      if (kind === "archetype") setOpenArchetypeInputKey(null);
+
+      try {
+        const characterNames = archetypeForExport
+          ? archetypeForExport.characters
+              .map((character) => character.displayName)
+              .join(" / ")
+          : "";
+        const sharePageUrl = archetypeForExport
+          ? await buildBoardShareUrl(
+              pageUrl,
+              createBoardSharePayload({
+                experience,
+                contextId: effectiveContextId,
+                storedPicks: filteredPicks,
+              }),
+            )
+          : pageUrl;
+        const dataUrl = await captureExportImageInFrame(
+          {
+            kind,
+            experienceId: experience.id,
+            contextId: effectiveContextId,
+            picks: filteredPicks,
+            showTitles,
+            transparentBg,
+            showQrCode,
+            templateId,
+            sizePresetId: DEFAULT_EXPORT_SIZE_PRESET_ID,
+            selectedBy: exportNickname,
+            pageUrl,
+          },
+          { signal: captureController.signal },
+        );
+        if (generationId === previewGenerationIdRef.current) {
+          setPreview({
+            kind,
+            archetypeInputKey: archetypeForExport?.inputKey,
+            dataUrl,
+            optionsKey,
+            imageFileName: archetypeForExport
+              ? getArchetypeImageFileName(archetypeForExport.characters)
+              : posterImageFileName,
+            pageUrl: sharePageUrl,
+            previewLabel: archetypeForExport
+              ? formatArchetypeTemplate(
+                  archetypeForExport.ui.export.previewLabel,
+                  { characterNames },
+                )
+              : previewLabel,
+            shareText: archetypeForExport
+              ? formatArchetypeTemplate(
+                  archetypeForExport.ui.export.shareText,
+                  {
+                    characterNames,
+                  },
+                )
+              : uiCopy.shareText,
+            shareHashtags: experience.share.hashtags.slice(),
+            shareTitle: archetypeForExport
+              ? archetypeForExport.ui.title
+              : uiCopy.title,
+          });
+        }
+      } catch (error) {
+        if (!isAbortError(error)) {
+          console.error("Failed to generate image", error);
+          if (generationId === previewGenerationIdRef.current) {
+            window.alert(t("errors.imageGenerationFailed"));
+          }
+        }
+      } finally {
+        if (activePreviewCaptureAbortRef.current === captureController) {
+          activePreviewCaptureAbortRef.current = null;
+        }
+        generatingRef.current = false;
+        setGenerating(false);
       }
-      generatingRef.current = false;
-      setGenerating(false);
-    }
-  }, [
-    boardStorageWritable,
-    effectiveContextId,
-    experience,
-    exportNickname,
-    optionsStorageWritable,
-    pageUrl,
-    posterImageFileName,
-    previewLabel,
-    resetBoardWithoutHistory,
-    showTitles,
-    showQrCode,
-    storedPicks,
-    t,
-    templateId,
-    transparentBg,
-    uiCopy.shareText,
-    uiCopy.title,
-  ]);
+    },
+    [
+      archetypeResult,
+      boardStorageWritable,
+      effectiveContextId,
+      experience,
+      exportNickname,
+      optionsStorageWritable,
+      pageUrl,
+      posterImageFileName,
+      previewLabel,
+      resetBoardWithoutHistory,
+      showTitles,
+      showQrCode,
+      storedPicks,
+      t,
+      templateId,
+      transparentBg,
+      uiCopy.shareText,
+      uiCopy.title,
+    ],
+  );
+
+  const handleGenerateImage = useCallback(
+    () => generateImage("picks"),
+    [generateImage],
+  );
+  const handleGenerateArchetypeImage = useCallback(
+    () => generateImage("archetype"),
+    [generateImage],
+  );
 
   const previewOptionsKey = getPreviewOptionsKey(
     showTitles,
     transparentBg,
     showQrCode,
     templateId,
+    preview?.kind ?? "picks",
+    preview?.kind === "archetype"
+      ? (archetypeResult?.inputKey ?? preview.archetypeInputKey)
+      : undefined,
   );
 
   useEffect(() => {
@@ -2457,10 +2571,10 @@ export default function PickExperienceClient({
       return;
     }
     const timer = window.setTimeout(() => {
-      void handleGenerateImage();
+      void generateImage(preview.kind);
     }, 100);
     return () => window.clearTimeout(timer);
-  }, [handleGenerateImage, preview, previewOptionsKey]);
+  }, [generateImage, preview, previewOptionsKey]);
 
   const handleClosePreview = () => {
     previewGenerationIdRef.current += 1;
@@ -2711,6 +2825,7 @@ export default function PickExperienceClient({
               <button
                 ref={archetypeTriggerRef}
                 type="button"
+                data-dialog-return-key={DIALOG_RETURN_KEYS.archetype}
                 onClick={() =>
                   setOpenArchetypeInputKey(archetypeResult.inputKey)
                 }
@@ -2934,6 +3049,10 @@ export default function PickExperienceClient({
               presenceState={presenceState}
               returnFocusRef={archetypeTriggerRef}
               returnFocusFallbackKey={DIALOG_RETURN_KEYS.globalSearch}
+              generatingImage={generating}
+              onGenerateImage={() => {
+                void handleGenerateArchetypeImage();
+              }}
               onClose={() => setOpenArchetypeInputKey(null)}
             />
           )}
@@ -2963,8 +3082,16 @@ export default function PickExperienceClient({
               shareHashtags={renderedPreview.shareHashtags}
               shareTitle={renderedPreview.shareTitle}
               presenceState={presenceState}
-              returnFocusRef={previewTriggerRef}
-              returnFocusKey={DIALOG_RETURN_KEYS.generateImage}
+              returnFocusRef={
+                renderedPreview.kind === "archetype"
+                  ? archetypeTriggerRef
+                  : previewTriggerRef
+              }
+              returnFocusKey={
+                renderedPreview.kind === "archetype"
+                  ? DIALOG_RETURN_KEYS.archetype
+                  : DIALOG_RETURN_KEYS.generateImage
+              }
               returnFocusFallbackKey={DIALOG_RETURN_KEYS.globalSearch}
             />
           )}
@@ -2993,6 +3120,7 @@ export default function PickExperienceClient({
             sizePresetId={frameSizePresetId}
             selectedBy={exportNickname}
             pageUrl={framePageUrl ?? pageUrl}
+            headerPresentation={archetypeExportPresentation}
           />
         </div>
       ) : null}
@@ -3124,6 +3252,16 @@ async function copyTextToClipboard(value: string) {
 }
 function normalizeNickname(nickname: string) {
   return nickname.trim().replace(/\s+/g, " ").slice(0, MAX_NICKNAME_LENGTH);
+}
+
+function getArchetypeImageFileName(
+  characters: readonly { displayName: string }[],
+) {
+  const names = characters
+    .map((character) => character.displayName.replace(/[^A-Za-z0-9]+/g, "_"))
+    .filter(Boolean)
+    .join("_");
+  return `EqualLove_AdventurePartner_${names || "Result"}.png`;
 }
 
 function isWritableStorageStatus(status: StorageLoadStatus) {

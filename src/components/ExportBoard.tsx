@@ -8,7 +8,11 @@ import {
 import { EXPORT_QR_CONFIG } from "../config/exportQr";
 import { MEMBERS } from "../data/songs";
 import type { ExperienceContext } from "../data/pickExperiences";
-import type { ExportSizePresetId, ExportTemplateId } from "../schema/export";
+import type {
+  ExportHeaderPresentation,
+  ExportSizePresetId,
+  ExportTemplateId,
+} from "../schema/export";
 import type { PickExperience } from "../schema/pick-experience";
 import type { PickSlot, Picks } from "../schema/music";
 import { getColorBackground, getMemberColors } from "../utils/memberColors";
@@ -27,6 +31,7 @@ interface ExportBoardProps {
   sizePresetId: ExportSizePresetId;
   selectedBy?: string;
   pageUrl: string;
+  headerPresentation?: ExportHeaderPresentation;
 }
 
 const EXPORT_FONT_FAMILY =
@@ -58,13 +63,16 @@ export default function ExportBoard({
   sizePresetId,
   selectedBy = "",
   pageUrl,
+  headerPresentation,
 }: ExportBoardProps) {
   const sortedSlots = slots.slice().sort((a, b) => a.sortOrder - b.sortOrder);
   const selectedByLabel = selectedBy.trim();
   const pageLabel = formatPageLabel(pageUrl);
-  const subtitle = [experience.export.subtitle, context?.exportLabel]
-    .filter(Boolean)
-    .join(" · ");
+  const subtitle =
+    headerPresentation?.subtitle ??
+    [experience.export.subtitle, context?.exportLabel]
+      .filter(Boolean)
+      .join(" · ");
   const baseComposition = resolveExportComposition(
     templateId,
     sizePresetId,
@@ -114,6 +122,7 @@ export default function ExportBoard({
 
       <header
         data-export-header="hasunosora-style"
+        data-export-content-kind={headerPresentation ? "archetype" : "picks"}
         data-export-boundary="header"
         style={{
           position: "relative",
@@ -137,7 +146,7 @@ export default function ExportBoard({
             textTransform: "uppercase",
           }}
         >
-          {experience.export.title}
+          {headerPresentation?.title ?? experience.export.title}
         </div>
         {selectedByLabel && (
           <div
@@ -168,34 +177,82 @@ export default function ExportBoard({
         >
           {subtitle}
         </div>
-        <div
-          data-member-color-strip="true"
-          style={{
-            marginTop: `${canvas.memberStripMarginTop}px`,
-            display: "flex",
-            justifyContent: visual.memberStripJustify,
-            gap: `${MEMBER_COLOR_STRIP_GAP}px`,
-          }}
-        >
-          {MEMBER_COLOR_STRIP.map((member) => (
-            <span
-              key={member.id}
-              title={member.label}
-              data-member-color={member.colors.join(" / ")}
-              style={{
-                width: `${MEMBER_COLOR_STRIP_WIDTH}px`,
-                height: "8px",
-                borderRadius: "999px",
-                border: "1px solid #d4d4d4",
-                boxSizing: "border-box",
-                background: getColorBackground(
-                  member.colors,
-                  PROJECT_THEME_COLOR,
-                ),
-              }}
-            />
-          ))}
-        </div>
+        {headerPresentation ? (
+          <div
+            data-archetype-highlights="true"
+            style={{
+              marginTop: `${canvas.memberStripMarginTop}px`,
+              display: "flex",
+              justifyContent: "center",
+              flexWrap: "wrap",
+              gap: "8px",
+            }}
+          >
+            {headerPresentation.highlights.map((highlight) => (
+              <span
+                key={highlight}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  boxSizing: "border-box",
+                  minHeight: `${Math.max(32, canvas.subtitleSize + 14)}px`,
+                  border: `2px solid ${PROJECT_THEME_COLOR}`,
+                  borderRadius: "999px",
+                  padding: "0 14px",
+                  color: PROJECT_THEME_COLOR,
+                  background: "#ffffff",
+                  fontSize: `${Math.max(14, canvas.subtitleSize - 2)}px`,
+                  fontWeight: 900,
+                  letterSpacing: "0.08em",
+                  lineHeight: 1,
+                  textTransform: "uppercase",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                <span
+                  data-archetype-highlight-text="true"
+                  style={{
+                    display: "inline-block",
+                    lineHeight: 1,
+                    transform: "translateY(-5px)",
+                  }}
+                >
+                  {highlight}
+                </span>
+              </span>
+            ))}
+          </div>
+        ) : (
+          <div
+            data-member-color-strip="true"
+            style={{
+              marginTop: `${canvas.memberStripMarginTop}px`,
+              display: "flex",
+              justifyContent: visual.memberStripJustify,
+              gap: `${MEMBER_COLOR_STRIP_GAP}px`,
+            }}
+          >
+            {MEMBER_COLOR_STRIP.map((member) => (
+              <span
+                key={member.id}
+                title={member.label}
+                data-member-color={member.colors.join(" / ")}
+                style={{
+                  width: `${MEMBER_COLOR_STRIP_WIDTH}px`,
+                  height: "8px",
+                  borderRadius: "999px",
+                  border: "1px solid #d4d4d4",
+                  boxSizing: "border-box",
+                  background: getColorBackground(
+                    member.colors,
+                    PROJECT_THEME_COLOR,
+                  ),
+                }}
+              />
+            ))}
+          </div>
+        )}
       </header>
 
       <ExportContent
@@ -234,14 +291,18 @@ export default function ExportBoard({
                 gap: "10px",
               }}
             >
-              <span>{PROJECT_CONFIG.appName}</span>
+              <span>
+                {headerPresentation?.footerLabel ?? PROJECT_CONFIG.appName}
+              </span>
               <span style={{ overflowWrap: "anywhere" }}>{pageLabel}</span>
             </div>
             <ExportQrCode pageUrl={pageUrl} />
           </>
         ) : (
           <>
-            <span>{PROJECT_CONFIG.appName}</span>
+            <span>
+              {headerPresentation?.footerLabel ?? PROJECT_CONFIG.appName}
+            </span>
             <span>{pageLabel}</span>
           </>
         )}

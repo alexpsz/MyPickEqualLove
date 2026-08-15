@@ -390,6 +390,7 @@ test("poster export request strictly validates its ephemeral payload", () => {
     type: EXPORT_REALM_RENDER_TYPE,
     version: EXPORT_CAPTURE_PROTOCOL_VERSION,
     requestId: "request-1",
+    kind: "picks",
     experienceId: "standard",
     picks: { "pick-1": "song-1" },
     showTitles: true,
@@ -407,6 +408,10 @@ test("poster export request strictly validates its ephemeral payload", () => {
     false,
   );
   assert.equal(
+    isExportRenderRequest({ ...request, kind: "profile" }, pageUrl),
+    false,
+  );
+  assert.equal(
     isExportRenderRequest({ ...request, pageUrl: `${pageUrl}?qr=1` }, pageUrl),
     false,
   );
@@ -417,6 +422,7 @@ test("poster export request strictly validates its ephemeral payload", () => {
 
   for (const requiredField of [
     "requestId",
+    "kind",
     "experienceId",
     "picks",
     "showTitles",

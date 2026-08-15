@@ -48,9 +48,13 @@ export interface EqualLoveArchetypeUiCopy {
     tieKicker: string;
     tieLead: string;
   };
+  export: {
+    button: string;
+    generating: string;
+    previewLabel: string;
+    shareText: string;
+  };
   explanation: {
-    singleSummary: string;
-    tieSummary: string;
     dimensionsHeading: string;
     songsHeading: string;
   };
@@ -301,6 +305,7 @@ function parseUiCopy(
   const localeCopy = asRecord(asRecord(root.locales)[locale]);
   const entry = asRecord(localeCopy.entry);
   const result = asRecord(localeCopy.result);
+  const exportCopy = asRecord(localeCopy.export);
   const explanation = asRecord(localeCopy.explanation);
   const labels = asRecord(localeCopy.labels);
   const traits = asRecord(localeCopy.traits);
@@ -315,19 +320,13 @@ function parseUiCopy(
       tieKicker: readString(result.tieKicker),
       tieLead: readTemplate(result.tieLead, ["characterNames"]),
     },
+    export: {
+      button: readString(exportCopy.button),
+      generating: readString(exportCopy.generating),
+      previewLabel: readTemplate(exportCopy.previewLabel, ["characterNames"]),
+      shareText: readTemplate(exportCopy.shareText, ["characterNames"]),
+    },
     explanation: {
-      singleSummary: readTemplate(explanation.singleSummary, [
-        "dimension1",
-        "dimension2",
-        "song1",
-        "song2",
-      ]),
-      tieSummary: readTemplate(explanation.tieSummary, [
-        "dimension1",
-        "dimension2",
-        "song1",
-        "song2",
-      ]),
       dimensionsHeading: readString(explanation.dimensionsHeading),
       songsHeading: readString(explanation.songsHeading),
     },
@@ -393,6 +392,20 @@ function readTemplate(value: unknown, expectedPlaceholders: readonly string[]) {
     throw new Error("Invalid archetype UI template placeholders");
   }
   return template;
+}
+
+export function formatArchetypeTemplate(
+  template: string,
+  values: Readonly<Record<string, string>>,
+) {
+  const rendered = template.replace(/\{\{(\w+)\}\}/g, (match, key: string) => {
+    const replacement = values[key];
+    return Object.hasOwn(values, key) && replacement ? replacement : match;
+  });
+  if (/\{\{\w+\}\}/.test(rendered)) {
+    throw new Error("Unresolved archetype UI template placeholder");
+  }
+  return rendered;
 }
 
 function readFiniteNumber(value: unknown) {

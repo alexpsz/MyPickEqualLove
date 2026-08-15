@@ -16,6 +16,7 @@ import {
   EXPORT_TEMPLATE_ORDER,
 } from "../../src/config/exportPresets";
 import type { PickExperience } from "../../src/schema/pick-experience";
+import type { ExportHeaderPresentation } from "../../src/schema/export";
 import type { Picks } from "../../src/schema/music";
 import {
   EXPORT_IMAGE_READY_TIMEOUT_MS,
@@ -120,6 +121,7 @@ function renderPoster(
   showTitles: boolean,
   templateId: (typeof EXPORT_TEMPLATE_ORDER)[number],
   sizePresetId: (typeof EXPORT_SIZE_PRESET_ORDER)[number],
+  headerPresentation?: ExportHeaderPresentation,
 ) {
   return renderToStaticMarkup(
     createElement(ExportBoard, {
@@ -131,6 +133,7 @@ function renderPoster(
       templateId,
       sizePresetId,
       pageUrl: "https://mypick.kozueginko.com/",
+      headerPresentation,
     }),
   );
 }
@@ -200,6 +203,35 @@ test("titleless standard cards become cover-priority while Live keeps slot seman
   assert.match(titledStandardMarkup, /border-left/);
   assert.ok(liveMarkup.includes(liveExperience.slots[0].label));
   assert.doesNotMatch(liveMarkup, /data-export-year-tag/);
+});
+
+test("archetype presentation changes only poster chrome and keeps all ten picks", () => {
+  const markup = renderPoster(
+    STANDARD_PICK_EXPERIENCE,
+    true,
+    "classic",
+    "portrait",
+    {
+      title: "MY ADVENTURE PARTNER",
+      subtitle: "HITOMI · THE SUN WHO DANCES GRACEFULLY",
+      highlights: ["BRIGHTNESS / AFFINITY", "CUTENESS / SWEETNESS"],
+      footerLabel: "MY PICK ARCHETYPE",
+    },
+  );
+
+  assert.match(markup, /data-export-content-kind="archetype"/);
+  assert.match(markup, /MY ADVENTURE PARTNER/);
+  assert.match(markup, /HITOMI · THE SUN WHO DANCES GRACEFULLY/);
+  assert.match(markup, /data-archetype-highlights="true"/);
+  assert.equal(
+    (markup.match(/data-archetype-highlight-text="true"/g) ?? []).length,
+    2,
+  );
+  assert.match(markup, /BRIGHTNESS \/ AFFINITY/);
+  assert.match(markup, /CUTENESS \/ SWEETNESS/);
+  assert.match(markup, /MY PICK ARCHETYPE/);
+  assert.doesNotMatch(markup, /data-member-color-strip="true"/);
+  assert.equal((markup.match(/data-export-song-metadata/g) ?? []).length, 10);
 });
 
 test("mobile preview collapses export options and keeps the image stage flexible", () => {

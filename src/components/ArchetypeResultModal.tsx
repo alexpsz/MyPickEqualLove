@@ -3,10 +3,11 @@
 import React, { useRef, type RefObject } from "react";
 import * as m from "motion/react-m";
 import { SONGS_BY_ID } from "../data/songs";
-import type {
-  EqualLoveArchetypeCharacterResult,
-  EqualLoveArchetypeResult,
-  EqualLoveArchetypeUiCopy,
+import {
+  formatArchetypeTemplate,
+  type EqualLoveArchetypeCharacterResult,
+  type EqualLoveArchetypeResult,
+  type EqualLoveArchetypeUiCopy,
 } from "../data/equalLoveArchetype";
 import { useDialogA11y } from "../utils/useDialogA11y";
 import AppIcon from "./AppIcon";
@@ -19,6 +20,8 @@ interface ArchetypeResultModalProps {
   presenceState: PresenceState;
   returnFocusRef: RefObject<HTMLElement | null>;
   returnFocusFallbackKey: string;
+  generatingImage: boolean;
+  onGenerateImage: () => void;
   onClose: () => void;
 }
 
@@ -37,6 +40,8 @@ export default function ArchetypeResultModal({
   presenceState,
   returnFocusRef,
   returnFocusFallbackKey,
+  generatingImage,
+  onGenerateImage,
   onClose,
 }: ArchetypeResultModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
@@ -45,7 +50,7 @@ export default function ArchetypeResultModal({
   const characterNames = result.characters
     .map((character) => character.displayName)
     .join(" / ");
-  const lead = formatTemplate(
+  const lead = formatArchetypeTemplate(
     result.isTie ? ui.result.tieLead : ui.result.singleLead,
     result.isTie
       ? { characterNames }
@@ -135,7 +140,6 @@ export default function ArchetypeResultModal({
                 key={character.roleId}
                 character={character}
                 ui={ui}
-                isTie={result.isTie}
               />
             ))}
           </div>
@@ -146,7 +150,15 @@ export default function ArchetypeResultModal({
           </div>
         </div>
 
-        <div className="flex justify-end border-t border-[var(--line)] bg-white p-3 pb-[max(.75rem,env(safe-area-inset-bottom))] sm:px-5">
+        <div className="flex justify-end gap-2 border-t border-[var(--line)] bg-white p-3 pb-[max(.75rem,env(safe-area-inset-bottom))] sm:px-5">
+          <button
+            type="button"
+            onClick={onGenerateImage}
+            disabled={generatingImage || presenceState === "exiting"}
+            className="official-button official-button-primary disabled:opacity-50"
+          >
+            {generatingImage ? ui.export.generating : ui.export.button}
+          </button>
           <button type="button" onClick={onClose} className="official-button">
             {ui.result.close}
           </button>
@@ -159,27 +171,15 @@ export default function ArchetypeResultModal({
 function CharacterResultCard({
   character,
   ui,
-  isTie,
 }: {
   character: EqualLoveArchetypeCharacterResult;
   ui: EqualLoveArchetypeUiCopy;
-  isTie: boolean;
 }) {
   const contributingSongs = character.contributingSongIds.map((songId) => {
     const song = SONGS_BY_ID[songId];
     if (!song) throw new Error(`Missing contributing song: ${songId}`);
     return song;
   });
-  const explanation = formatTemplate(
-    isTie ? ui.explanation.tieSummary : ui.explanation.singleSummary,
-    {
-      dimension1: ui.traits[character.overlapTraitIds[0]],
-      dimension2: ui.traits[character.overlapTraitIds[1]],
-      song1: contributingSongs[0].title.ja,
-      song2: contributingSongs[1].title.ja,
-    },
-  );
-
   return (
     <article className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--line)] bg-white">
       <div className="border-b border-[var(--line)] p-4 sm:p-5">
@@ -203,9 +203,6 @@ function CharacterResultCard({
           className="mt-3 text-[14px] leading-6 text-[var(--foreground)]"
         >
           {character.profile}
-        </p>
-        <p className="mt-3 rounded-[var(--radius-sm)] bg-[var(--project-primary-wash)] px-3 py-2.5 text-[13px] leading-relaxed text-[var(--foreground)]">
-          {explanation}
         </p>
       </div>
 
@@ -270,18 +267,4 @@ function CharacterResultCard({
       </div>
     </article>
   );
-}
-
-function formatTemplate(
-  template: string,
-  values: Readonly<Record<string, string>>,
-) {
-  const rendered = template.replace(/\{\{(\w+)\}\}/g, (match, key: string) => {
-    const replacement = values[key];
-    return Object.hasOwn(values, key) && replacement ? replacement : match;
-  });
-  if (/\{\{\w+\}\}/.test(rendered)) {
-    throw new Error("Unresolved archetype UI template placeholder");
-  }
-  return rendered;
 }

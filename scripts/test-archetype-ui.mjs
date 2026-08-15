@@ -13,6 +13,8 @@ const [
   approvedAffinitiesSource,
   sourceMapSource,
   songsSource,
+  exportBoardSource,
+  exportCaptureSource,
 ] = await Promise.all([
   read("../src/components/PickExperienceClient.tsx"),
   read("../src/components/Controls.tsx"),
@@ -24,6 +26,8 @@ const [
   read("../src/projects/equal-love/archetype-21/song-affinities.json"),
   read("./archetype/source-map.json"),
   read("../src/projects/equal-love/songs.json"),
+  read("../src/components/ExportBoard.tsx"),
+  read("../src/utils/exportCapture.ts"),
 ]);
 
 test("CTA is gated to a complete unique equal-love standard Top 10", () => {
@@ -94,7 +98,7 @@ test("CTA stays between Controls and PickBoard without changing mobile controls"
   assert.match(clientSource, /official-button-primary min-h-11 w-full/);
 });
 
-test("result is transient and isolated from storage, links, and image export", () => {
+test("result is transient and keeps persistence out of the modal and matcher", () => {
   assert.match(
     clientSource,
     /const \[openArchetypeInputKey, setOpenArchetypeInputKey\] = useState/,
@@ -106,9 +110,11 @@ test("result is transient and isolated from storage, links, and image export", (
   for (const source of [modalSource, registrySource, affinitySource]) {
     assert.doesNotMatch(
       source,
-      /localStorage|STORAGE_KEYS|boardShare|ExportBoard|PreviewModal|html2canvas/,
+      /localStorage|STORAGE_KEYS|boardShare|html2canvas/,
     );
   }
+  assert.match(modalSource, /onGenerateImage/);
+  assert.doesNotMatch(modalSource, /ExportBoard|PreviewModal|html2canvas/);
 });
 
 test("modal reuses the retained accessible dialog contract", () => {
@@ -124,7 +130,32 @@ test("modal reuses the retained accessible dialog contract", () => {
   assert.match(modalSource, /safe-area-inset-bottom/);
 });
 
-test("result omits similarity percentages and renders the required explanation", () => {
+test("partner image reuses the existing export realm without becoming a saved template", () => {
+  assert.match(modalSource, /ui\.export\.button/);
+  assert.match(modalSource, /onGenerateImage/);
+  assert.match(clientSource, /generateImage\("archetype"\)/);
+  assert.match(clientSource, /kind,[\s\S]*archetypeInputKey/);
+  assert.match(
+    clientSource,
+    /buildBoardShareUrl\([\s\S]*createBoardSharePayload/,
+  );
+  assert.match(
+    clientSource,
+    /headerPresentation=\{archetypeExportPresentation\}/,
+  );
+  assert.match(clientSource, /MY ADVENTURE PARTNER/);
+  assert.match(exportBoardSource, /data-export-content-kind/);
+  assert.match(exportBoardSource, /data-archetype-highlights/);
+  assert.match(exportBoardSource, /headerPresentation\?\.footerLabel/);
+  assert.match(exportCaptureSource, /EXPORT_CAPTURE_PROTOCOL_VERSION = 4/);
+  assert.match(
+    exportCaptureSource,
+    /value\.kind === "picks" \|\| value\.kind === "archetype"/,
+  );
+  assert.match(clientSource, /DIALOG_RETURN_KEYS\.archetype/);
+});
+
+test("result omits algorithm prose while keeping traits, songs, and official stats", () => {
   assert.doesNotMatch(modalSource, /similarity|percentage|percent|%/i);
   assert.doesNotMatch(modalSource, /adjustedScore/);
   assert.match(modalSource, /overlapTraitIds/);
@@ -134,22 +165,13 @@ test("result omits similarity percentages and renders the required explanation",
     modalSource,
     /"atk",[\s\S]*"def",[\s\S]*"spdMobility",[\s\S]*"sta",[\s\S]*"bearCharmResistance"/,
   );
-  assert.match(
-    registrySource,
-    /singleSummary: readTemplate\(explanation\.singleSummary/,
-  );
-  assert.match(
-    registrySource,
-    /tieSummary: readTemplate\(explanation\.tieSummary/,
-  );
-  assert.match(
-    modalSource,
-    /isTie \? ui\.explanation\.tieSummary : ui\.explanation\.singleSummary/,
-  );
-  for (const placeholder of ["dimension1", "dimension2", "song1", "song2"]) {
-    assert.match(modalSource, new RegExp(`${placeholder}:`));
+  assert.doesNotMatch(modalSource, /singleSummary|tieSummary/);
+  assert.doesNotMatch(registrySource, /singleSummary|tieSummary/);
+  const ui = JSON.parse(uiSource);
+  for (const locale of Object.values(ui.locales)) {
+    assert.equal("singleSummary" in locale.explanation, false);
+    assert.equal("tieSummary" in locale.explanation, false);
   }
-  assert.match(modalSource, /Unresolved archetype UI template placeholder/);
 });
 
 test("canonical character names lead the result while title stays separately labeled", () => {
@@ -182,9 +204,10 @@ test("canonical character names lead the result while title stays separately lab
 test("ui.json is the single four-locale UI copy source", () => {
   const ui = JSON.parse(uiSource);
   assert.deepEqual(Object.keys(ui.locales).sort(), ["en", "ja", "ko", "zh-CN"]);
+  assert.equal(ui.locales["zh-CN"].title, "你的冒险搭档");
   assert.equal(
     ui.locales["zh-CN"].metadata.entertainmentNotice,
-    "AI 选曲同频分析，仅供娱乐。",
+    "AI 选曲分析，仅供娱乐。",
   );
   assert.match(
     ui.locales["zh-CN"].metadata.sourceAttribution,
@@ -192,54 +215,35 @@ test("ui.json is the single four-locale UI copy source", () => {
   );
   assert.match(
     ui.locales.en.metadata.entertainmentNotice,
-    /AI song-sync analysis/,
+    /AI analysis of your song picks/,
   );
-  assert.match(
-    ui.locales.ja.metadata.entertainmentNotice,
-    /AIによる選曲シンクロ分析/,
-  );
-  assert.match(
-    ui.locales.ko.metadata.entertainmentNotice,
-    /AI 선곡 싱크로 분석/,
-  );
-  for (const [localeId, baselinePattern, rawPattern] of [
-    ["en", /full catalog/, /unadjusted card-profile overlap/],
-    ["zh-CN", /曲库整体的常见倾向/, /未经校正的卡面重合/],
-    ["ja", /楽曲カタログ全体で出やすい傾向/, /補正前のカード設定との重なり/],
-    ["ko", /전체 곡 목록에서 자주 나타나는 경향/, /보정 전 카드 설정과의 겹침/],
-  ]) {
-    const locale = ui.locales[localeId];
-    assert.match(locale.result.singleLead, baselinePattern);
-    assert.match(locale.result.tieLead, baselinePattern);
-    assert.match(locale.explanation.singleSummary, rawPattern);
-    assert.match(locale.explanation.tieSummary, rawPattern);
+  assert.match(ui.locales.ja.metadata.entertainmentNotice, /AIによる選曲分析/);
+  assert.match(ui.locales.ko.metadata.entertainmentNotice, /AI 선곡 분석/);
+  for (const locale of Object.values(ui.locales)) {
+    assert.match(locale.result.singleLead, /Top 10/);
+    assert.match(locale.result.tieLead, /Top 10/);
+    assert.doesNotMatch(
+      `${locale.title} ${locale.result.singleLead} ${locale.result.tieLead}`,
+      /adjust|校正|補正|보정|unadjusted|未经校正|補正前|보정 전/i,
+    );
   }
   assert.doesNotMatch(messagesSource, /"archetype\./);
   assert.match(registrySource, /import uiData from .*ui\.json/);
 
-  const templateValues = {
-    dimension1: "D1",
-    dimension2: "D2",
-    song1: "S1",
-    song2: "S2",
-  };
   for (const locale of Object.values(ui.locales)) {
-    for (const templateKey of ["singleSummary", "tieSummary"]) {
-      const template = locale.explanation[templateKey];
-      const placeholders = [...template.matchAll(/\{\{(\w+)\}\}/g)].map(
+    assert.deepEqual(
+      [...locale.result.singleLead.matchAll(/\{\{(\w+)\}\}/g)].map(
         (match) => match[1],
+      ),
+      ["characterName"],
+    );
+    for (const templateKey of ["previewLabel", "shareText"]) {
+      assert.deepEqual(
+        [...locale.export[templateKey].matchAll(/\{\{(\w+)\}\}/g)].map(
+          (match) => match[1],
+        ),
+        ["characterNames"],
       );
-      assert.deepEqual([...new Set(placeholders)].sort(), [
-        "dimension1",
-        "dimension2",
-        "song1",
-        "song2",
-      ]);
-      const rendered = template.replace(
-        /\{\{(\w+)\}\}/g,
-        (_, key) => templateValues[key],
-      );
-      assert.doesNotMatch(rendered, /\{\{\w+\}\}/);
     }
   }
 });
