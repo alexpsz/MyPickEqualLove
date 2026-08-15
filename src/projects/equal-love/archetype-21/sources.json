@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "campaignId": "equal-love-archetype-21",
+  "primarySource": {
+    "kind": "official-music-video",
+    "title": "＝LOVE 21st single official music video",
+    "url": "https://www.youtube.com/watch?v=ikFaEAlO5N0",
+    "language": "en",
+    "sourceNote": "Canonical profile content is transcribed from the English character cards shown in the official music video. A user-supplied 2×5 composite was used only as a transcription aid after its text was checked against those cards; the composite file is not an official release asset and is not included in this product."
+  },
+  "evidence": {
+    "archetype-21-shoko": {
+      "timecode": "01:10–01:14",
+      "cardHeading": "SHOKO"
+    },
+    "archetype-21-anna": {
+      "timecode": "01:15–01:19",
+      "cardHeading": "ANNA",
+      "sourceFlag": "displayed-total-does-not-equal-component-sum",
+      "sourceFlagNote": "The five displayed components sum to 2450, while the same card displays Total 2550. Both the components and displayed total are preserved verbatim."
+    },
+    "archetype-21-kiara": {
+      "timecode": "01:20–01:24",
+      "cardHeading": "KIARA"
+    },
+    "archetype-21-sana": {
+      "timecode": "01:25–01:29",
+      "cardHeading": "SANA"
+    },
+    "archetype-21-hitomi": {
+      "timecode": "01:30–01:34",
+      "cardHeading": "HITOMI"
+    },
+    "archetype-21-maika": {
+      "timecode": "01:35–01:39",
+      "cardHeading": "MAIKA"
+    },
+    "archetype-21-hana": {
+      "timecode": "01:40–01:44",
+      "cardHeading": "HANA"
+    },
+    "archetype-21-risa": {
+      "timecode": "01:45–01:49",
+      "cardHeading": "RISA"
+    },
+    "archetype-21-iori": {
+      "timecode": "01:50–01:54",
+      "cardHeading": "IORI"
+    },
+    "archetype-21-emiri": {
+      "timecode": "01:55–01:59",
+      "cardHeading": "EMIRI"
+    }
+  },
+  "editorialRules": [
+    "DATE OF JOINING is stored and localized as 加入日期, never as a member number.",
+    "Displayed RPG-style stats are source transcription only and never shape role fingerprints.",
+    "Each role fingerprint uses the frozen eight dimensions with exactly two scores of 2, one score of 1, and five scores of 0.",
+    "Fingerprint judgments use only the card title, class, profile, and weapon text; they do not claim to describe the real member's personality.",
+    "No card image or user-supplied composite is shipped as a product asset."
+  ]
+}

@@ -1,0 +1,339 @@
+{
+  "schemaVersion": 1,
+  "campaignId": "equal-love-archetype-21",
+  "locale": "en",
+  "roleProfileVersion": "v1",
+  "characters": [
+    {
+      "roleId": "archetype-21-shoko",
+      "memberId": "takiwaki-shoko",
+      "name": "SHOKO",
+      "fullName": "TAKIWAKI SHOKO",
+      "dateOfJoining": "0709",
+      "title": "The Breakthrough Squad Captain",
+      "className": "Athlete Chef",
+      "profile": "A physical monster boasting the squad's best stamina and discipline. She sprints through even the harshest dungeons like it's a casual marathon. Her camp-cooking skills are maxed out, and she single-handedly runs the party's entire buff-meal operation.",
+      "weapon": {
+        "name": "Hammer & Pipe",
+        "description": "An unfinished dual-wield set said to originate from Hephaestus's forge. The resonant frequency between the two weapons has yet to be analyzed — even the wielder herself doesn't understand how it works."
+      },
+      "stats": {
+        "atk": 200,
+        "def": 400,
+        "spdMobility": 700,
+        "sta": 900,
+        "bearCharmResistance": 350,
+        "displayedTotal": 2550
+      },
+      "roleFingerprint": {
+        "drive": 2,
+        "care": 1,
+        "rhythm": 0,
+        "growth": 2,
+        "drama": 0,
+        "ingenuity": 0,
+        "uplift": 0,
+        "cuteness": 0
+      },
+      "fingerprintBasis": ["title", "className", "profile", "weapon"]
+    },
+    {
+      "roleId": "archetype-21-anna",
+      "memberId": "yamamoto-anna",
+      "name": "ANNA",
+      "fullName": "YAMAMOTO ANNA",
+      "dateOfJoining": "1130",
+      "title": "The Small but Mighty Commander",
+      "className": "Small Commander",
+      "profile": "The absolute leader at the head of the whole army, overflowing with spirit and razor-sharp dance moves. Her tiny frame grants her the ultimate passive skill \"Enemy Physical Attacks Phase Right Through (Evasion Massively Up)\" — but step into slightly tall grass and she becomes completely invisible, even to the player. At a fixed time every single day, regardless of how the battle is going, she forcibly triggers her unique system: a mandatory live-streamed debrief session.",
+      "weapon": {
+        "name": "Megaphone",
+        "description": "A commander-exclusive device that reconstructs the squad's entire morale parameter via sound waves. Its output sound pressure is said to comply with Zeus's Theory of Thunder — though it just runs on ordinary AA batteries."
+      },
+      "stats": {
+        "atk": 150,
+        "def": 750,
+        "spdMobility": 800,
+        "sta": 500,
+        "bearCharmResistance": 250,
+        "displayedTotal": 2550,
+        "sourceFlag": "displayed-total-does-not-equal-component-sum"
+      },
+      "roleFingerprint": {
+        "drive": 2,
+        "care": 0,
+        "rhythm": 2,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 0,
+        "uplift": 1,
+        "cuteness": 0
+      },
+      "fingerprintBasis": ["title", "className", "profile", "weapon"]
+    },
+    {
+      "roleId": "archetype-21-kiara",
+      "memberId": "saito-kiara",
+      "name": "KIARA",
+      "fullName": "SAITO KIARA",
+      "dateOfJoining": "1126",
+      "title": "The Youngest, Sharpest Scout",
+      "className": "Gamer Baby",
+      "profile": "The youngest member, yet a hardcore gamer who has fully mastered the game's mechanics. Even the boss's most brutal attacks get coolly called out with a \"yep, this is that pattern.\" Her diction sometimes slips mid-command thanks to her tongue-tied moments, but she's so cute it mysteriously buffs the entire squad's attack power.",
+      "weapon": {
+        "name": "White Bouquet",
+        "description": "An anti-malevolence barrier device composed of pure-white crystalline petals. Its bloom coefficient reacts to final-boss-tier malice, instantaneously deploying a defensive field."
+      },
+      "stats": {
+        "atk": 1200,
+        "def": 150,
+        "spdMobility": 500,
+        "sta": 450,
+        "bearCharmResistance": 250,
+        "displayedTotal": 2550
+      },
+      "roleFingerprint": {
+        "drive": 0,
+        "care": 0,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 2,
+        "uplift": 1,
+        "cuteness": 2
+      },
+      "fingerprintBasis": ["title", "className", "profile", "weapon"]
+    },
+    {
+      "roleId": "archetype-21-sana",
+      "memberId": "morohashi-sana",
+      "name": "SANA",
+      "fullName": "MOROHASHI SANA",
+      "dateOfJoining": "0803",
+      "title": "The Watchful Elder Sister of the Squad",
+      "className": "Dramatic Diva",
+      "profile": "A maidenly big sister who watches even life-or-death situations like they're \"one scene from a grand romance.\" An area-wide buffer with a powerhouse singing voice, but her skill incantations are riddled with such uniquely bizarre mispronunciations that they frequently and accidentally inflict the whole squad with \"Paralyzed from Laughter\" and \"Confusion\" debuffs at once — a volatile wildcard who plunges friend and foe alike into chaos.",
+      "weapon": {
+        "name": "Giant Hammer",
+        "description": "A veteran piece of equipment that claims to rival the Three Sacred Treasures. Its measured performance remains unverified, though anecdotal data suggests the intimidation coefficient rises the moment it's raised."
+      },
+      "stats": {
+        "atk": 650,
+        "def": 650,
+        "spdMobility": 400,
+        "sta": 300,
+        "bearCharmResistance": 550,
+        "displayedTotal": 2550
+      },
+      "roleFingerprint": {
+        "drive": 0,
+        "care": 2,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 2,
+        "ingenuity": 0,
+        "uplift": 1,
+        "cuteness": 0
+      },
+      "fingerprintBasis": ["title", "className", "profile", "weapon"]
+    },
+    {
+      "roleId": "archetype-21-hitomi",
+      "memberId": "takamatsu-hitomi",
+      "name": "HITOMI",
+      "fullName": "TAKAMATSU HITOMI",
+      "dateOfJoining": "0119",
+      "title": "The Sun Who Dances Gracefully",
+      "className": "Sunshine Leader",
+      "profile": "An overwhelming protagonist who brightens the whole scene just by being on screen. Even against enemies who should excel at stealth missions, she can't help greeting them with her signature booming smile, forcibly dragging them into the spotlight — making any covert operation completely impossible.",
+      "weapon": {
+        "name": "Bow and Arrow",
+        "description": "A signature bow equipped with an Aphrodite-derived love-coordinate calculation system. Arrows fired from it disregard Newtonian mechanics entirely, converging solely on the quantum state of true love before striking."
+      },
+      "stats": {
+        "atk": 800,
+        "def": 400,
+        "spdMobility": 600,
+        "sta": 400,
+        "bearCharmResistance": 350,
+        "displayedTotal": 2550
+      },
+      "roleFingerprint": {
+        "drive": 0,
+        "care": 0,
+        "rhythm": 2,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 0,
+        "uplift": 2,
+        "cuteness": 1
+      },
+      "fingerprintBasis": ["title", "className", "profile", "weapon"]
+    },
+    {
+      "roleId": "archetype-21-maika",
+      "memberId": "sasaki-maika",
+      "name": "MAIKA",
+      "fullName": "SASAKI MAIKA",
+      "dateOfJoining": "0121",
+      "title": "The Quiet Secret Weapon",
+      "className": "Energy-Saving Legend Star",
+      "profile": "Carefree and unbothered by default — permanently running in power-save mode. The moment the squad faces near-total wipeout, she suddenly awakens, annihilates the enemy with overwhelming precision, and goes right back to sleep. Thanks to her passive skill \"Never Leaves Her Room on Days Off,\" she's the hardest member to mobilize from base.",
+      "weapon": {
+        "name": "White Bear Plush",
+        "description": "A sealed-type companion synchronized with the subconscious. An unexplained out-of-place artifact said to absorb only its owner's drowsiness, in flagrant defiance of the second law of thermodynamics."
+      },
+      "stats": {
+        "atk": 800,
+        "def": 300,
+        "spdMobility": 700,
+        "sta": 400,
+        "bearCharmResistance": 350,
+        "displayedTotal": 2550
+      },
+      "roleFingerprint": {
+        "drive": 1,
+        "care": 0,
+        "rhythm": 0,
+        "growth": 2,
+        "drama": 0,
+        "ingenuity": 2,
+        "uplift": 0,
+        "cuteness": 0
+      },
+      "fingerprintBasis": ["title", "className", "profile", "weapon"]
+    },
+    {
+      "roleId": "archetype-21-hana",
+      "memberId": "oba-hana",
+      "name": "HANA",
+      "fullName": "OBA HANA",
+      "dateOfJoining": "0204",
+      "title": "The Army's Flag Illustrator",
+      "className": "Sniper Illustrator",
+      "profile": "A sensitive, talented sharpshooter who documents the team's every moment with overwhelming artistic flair. She's supposed to specialize in precision long-range shooting, but the instant a cute animal (bears included) or a precious moment between members enters her scope, she mistakes it for a photo op and bursts into tears shouting \"precious!\" — losing all will to fight, which means her sniper duties almost never actually get carried out.",
+      "weapon": {
+        "name": "Rifle",
+        "description": "A sacred-beast-responsive rifle whose targeting system houses eight million compassion sensors. The instant a target is classified as \"cute,\" the trajectory automatically deflects — in direct violation of Zeus's Theory of the Thunderbolt."
+      },
+      "stats": {
+        "atk": 700,
+        "def": 250,
+        "spdMobility": 500,
+        "sta": 550,
+        "bearCharmResistance": 550,
+        "displayedTotal": 2550
+      },
+      "roleFingerprint": {
+        "drive": 0,
+        "care": 2,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 2,
+        "uplift": 0,
+        "cuteness": 1
+      },
+      "fingerprintBasis": ["title", "className", "profile", "weapon"]
+    },
+    {
+      "roleId": "archetype-21-risa",
+      "memberId": "otoshima-risa",
+      "name": "RISA",
+      "fullName": "OTOSHIMA RISA",
+      "dateOfJoining": "0811",
+      "title": "The Intelligence Officer Who Sees Through Hearts",
+      "className": "Ojou-sama Detective",
+      "profile": "The squad's self-proclaimed detective, boasting outstanding style and elegance. She looks like she's scanning the battlefield with a piercing gaze — but she's usually just wondering \"what's for dinner tonight.\" Her natural airheadedness leads to unpredictable, bizarre behavior that, somehow, miraculously dodges enemy traps every time.",
+      "weapon": {
+        "name": "White Bear Plush",
+        "description": "An observation artifact rumored to emit spiritual wavelengths on par with the Three Sacred Treasures. Said to enhance its owner's intuition via quantum entanglement — though this remains officially unverified."
+      },
+      "stats": {
+        "atk": 250,
+        "def": 950,
+        "spdMobility": 250,
+        "sta": 250,
+        "bearCharmResistance": 850,
+        "displayedTotal": 2550
+      },
+      "roleFingerprint": {
+        "drive": 0,
+        "care": 1,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 2,
+        "uplift": 0,
+        "cuteness": 2
+      },
+      "fingerprintBasis": ["title", "className", "profile", "weapon"]
+    },
+    {
+      "roleId": "archetype-21-iori",
+      "memberId": "noguchi-iori",
+      "name": "IORI",
+      "fullName": "NOGUCHI IORI",
+      "dateOfJoining": "0426",
+      "title": "The Strategist Who Reads the Battlefield",
+      "className": "2D Brain & Summoner",
+      "profile": "The squad's eccentric brain, whose mind is permanently occupied by 2D settings. The more hopeless the enemy's situation looks, the more her excitement climbs — she tends to spontaneously trigger her own \"this is... my true power...!\" awakening event, solo. Her expressiveness is so overwhelming that even enemies get disarmed and turned into allies (fans).",
+      "weapon": {
+        "name": "Chainsaw",
+        "description": "A forbidden blade said to have been summoned straight out of an isekai light novel's setting archive. Rumor claims ancient languages are woven into its engine roar — but the truth remains unknown."
+      },
+      "stats": {
+        "atk": 800,
+        "def": 300,
+        "spdMobility": 700,
+        "sta": 400,
+        "bearCharmResistance": 350,
+        "displayedTotal": 2550
+      },
+      "roleFingerprint": {
+        "drive": 1,
+        "care": 0,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 2,
+        "ingenuity": 2,
+        "uplift": 0,
+        "cuteness": 0
+      },
+      "fingerprintBasis": ["title", "className", "profile", "weapon"]
+    },
+    {
+      "roleId": "archetype-21-emiri",
+      "memberId": "otani-emiri",
+      "name": "EMIRI",
+      "fullName": "OTANI EMIRI",
+      "dateOfJoining": "0315",
+      "title": "The Beauty Commander Leading the Charge",
+      "className": "Beauty Berserker",
+      "profile": "The absolute deity of beauty, single-handedly keeping the entire army's visual motivation intact. Possesses the unique physiology of instantly regenerating HP by devouring ramen and an extra-large bowl of rice. Her morale crashes the moment she gets hungry.",
+      "weapon": {
+        "name": "Giant Hammer",
+        "description": "A singularity hammer wrapped in an invisible field of aesthetic gravity. Said to locally decrease entropy on impact, rewriting the causal laws of smiling itself — though she herself cannot perform the windup."
+      },
+      "stats": {
+        "atk": 300,
+        "def": 700,
+        "spdMobility": 500,
+        "sta": 450,
+        "bearCharmResistance": 600,
+        "displayedTotal": 2550
+      },
+      "roleFingerprint": {
+        "drive": 2,
+        "care": 0,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 0,
+        "uplift": 1,
+        "cuteness": 2
+      },
+      "fingerprintBasis": ["title", "className", "profile", "weapon"]
+    }
+  ]
+}
