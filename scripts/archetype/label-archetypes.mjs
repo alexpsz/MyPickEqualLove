@@ -5,9 +5,12 @@ import { mkdir, readFile, readdir, rename, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import {
+  API_REVISION,
   INTERACTIONS_ENDPOINT,
+  MAX_OUTPUT_TOKENS,
   MODEL_ID,
   RUBRIC_VERSION,
+  THINKING_LEVEL,
   YOUTUBE_PREVIEW_DAILY_SECONDS,
   buildInteractionBody,
   canonicalJson,
@@ -134,6 +137,9 @@ async function existingFrozenSongs(
       "schemaVersion",
       "sourceMapHash",
       "modelId",
+      "apiRevision",
+      "thinkingLevel",
+      "maxOutputTokens",
       "rubricVersion",
       "promptContractHash",
       "frozen",
@@ -145,6 +151,9 @@ async function existingFrozenSongs(
       checkpoint.schemaVersion !== 1 ||
       checkpoint.sourceMapHash !== expectedMetadata.sourceMapHash ||
       checkpoint.modelId !== MODEL_ID ||
+      checkpoint.apiRevision !== API_REVISION ||
+      checkpoint.thinkingLevel !== THINKING_LEVEL ||
+      checkpoint.maxOutputTokens !== MAX_OUTPUT_TOKENS ||
       checkpoint.rubricVersion !== RUBRIC_VERSION ||
       checkpoint.promptContractHash !== contracts.promptContractHash ||
       !checkpoint.frozen ||
@@ -231,6 +240,9 @@ export async function buildPlan(
   return {
     schemaVersion: 1,
     modelId: MODEL_ID,
+    apiRevision: API_REVISION,
+    thinkingLevel: THINKING_LEVEL,
+    maxOutputTokens: MAX_OUTPUT_TOKENS,
     rubricVersion: RUBRIC_VERSION,
     api: "interactions",
     endpoint: INTERACTIONS_ENDPOINT,
@@ -299,6 +311,7 @@ export async function callInteraction(
     response = await fetchImpl(INTERACTIONS_ENDPOINT, {
       method: "POST",
       headers: {
+        "Api-Revision": API_REVISION,
         "content-type": "application/json",
         "x-goog-api-key": apiKey,
       },
@@ -345,6 +358,9 @@ async function writeCheckpoint(outputDir, plan, frozen) {
     schemaVersion: 1,
     sourceMapHash: plan.sourceMapHash,
     modelId: MODEL_ID,
+    apiRevision: API_REVISION,
+    thinkingLevel: THINKING_LEVEL,
+    maxOutputTokens: MAX_OUTPUT_TOKENS,
     rubricVersion: RUBRIC_VERSION,
     promptContractHash: plan.promptContractHash,
     frozen: Object.fromEntries(

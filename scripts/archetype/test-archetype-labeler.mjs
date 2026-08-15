@@ -4,9 +4,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import {
+  API_REVISION,
+  MAX_OUTPUT_TOKENS,
   MODEL_ID,
   RUBRIC_VERSION,
   TEXT_ONLY_QA_FLAGS,
+  THINKING_LEVEL,
   YOUTUBE_PREVIEW_DAILY_SECONDS,
   buildInteractionBody,
   createEnvelope,
@@ -190,6 +193,18 @@ test("Interactions response_format is the exact single text object", async () =>
   const body = buildInteractionBody(entry, prompt, contracts.outputSchema);
   assert.equal(body.model, MODEL_ID);
   assert.equal(body.store, false);
+  assert.deepEqual(body.generation_config, {
+    thinking_level: "medium",
+    max_output_tokens: 2048,
+  });
+  assert.equal(
+    JSON.stringify(body.generation_config).includes("minimal"),
+    false,
+  );
+  assert.equal(JSON.stringify(body.generation_config).includes('"low"'), false);
+  assert.equal("temperature" in body.generation_config, false);
+  assert.equal("top_p" in body.generation_config, false);
+  assert.equal("top_k" in body.generation_config, false);
   assert.equal(body.input[0].type, "video");
   assert.equal(body.input[1].type, "text");
   assert.equal(Array.isArray(body.response_format), false);
@@ -270,7 +285,11 @@ test("dry-run plan reports calls, YouTube seconds, remaining gate, and estimates
   assert.equal(plan.estimatedVideoInputTokensDefault, 8 * 240 * 300);
   assert.equal(plan.store, false);
   assert.equal(plan.serverBatch, false);
-  assert.equal(plan.modelId, "gemini-3.6-flash");
+  assert.equal(plan.modelId, "gemini-3.7-flash");
+  assert.equal(plan.modelId.includes("latest"), false);
+  assert.equal(plan.apiRevision, "2026-05-20");
+  assert.equal(plan.thinkingLevel, THINKING_LEVEL);
+  assert.equal(plan.maxOutputTokens, MAX_OUTPUT_TOKENS);
   assert.equal(plan.rubricVersion, RUBRIC_VERSION);
 
   const largerMap = validateSourceMap(sourceMap(10));
@@ -311,6 +330,12 @@ test("provider key is sent only as a header and is redacted from errors", async 
       !error.message.includes(secret) && error.message.includes("[redacted]"),
   );
   assert.equal(captured.init.headers["x-goog-api-key"], secret);
+  assert.equal(captured.init.headers["Api-Revision"], API_REVISION);
+  assert.deepEqual(Object.keys(captured.init.headers).sort(), [
+    "Api-Revision",
+    "content-type",
+    "x-goog-api-key",
+  ]);
   assert.equal(captured.init.body.includes(secret), false);
 });
 
@@ -399,6 +424,8 @@ test("each successful response is frozen and recovered without another request",
   );
   const result = JSON.parse(resultText);
   assert.equal(result.modelId, MODEL_ID);
+  assert.equal(result.thinkingLevel, THINKING_LEVEL);
+  assert.equal(result.maxOutputTokens, MAX_OUTPUT_TOKENS);
   assert.equal(result.rubricVersion, RUBRIC_VERSION);
   assert.equal(result.status, "draft");
   assert.equal(result.confidence, "high");
@@ -415,6 +442,10 @@ test("each successful response is frozen and recovered without another request",
   const checkpoint = JSON.parse(
     await readFile(join(directory, "checkpoint.json"), "utf8"),
   );
+  assert.equal(checkpoint.modelId, MODEL_ID);
+  assert.equal(checkpoint.apiRevision, API_REVISION);
+  assert.equal(checkpoint.thinkingLevel, THINKING_LEVEL);
+  assert.equal(checkpoint.maxOutputTokens, MAX_OUTPUT_TOKENS);
   assert.equal(checkpoint.frozen["song-1"].resultSha256, sha256(resultText));
 });
 
@@ -460,6 +491,9 @@ test("checkpoint fails closed when the source map drifts", async () => {
       schemaVersion: 1,
       sourceMapHash: originalPlan.sourceMapHash,
       modelId: MODEL_ID,
+      apiRevision: API_REVISION,
+      thinkingLevel: THINKING_LEVEL,
+      maxOutputTokens: MAX_OUTPUT_TOKENS,
       rubricVersion: RUBRIC_VERSION,
       promptContractHash: contracts.promptContractHash,
       frozen: {},
@@ -472,4 +506,40 @@ test("checkpoint fails closed when the source map drifts", async () => {
     () => buildPlan(changed, changed.songs, contracts, directory),
     /checkpoint metadata does not match/,
   );
+});
+
+test("checkpoint fails closed when execution metadata drifts", async () => {
+  const contracts = await loadContracts();
+  const map = validateSourceMap(sourceMap(1));
+  const driftCases = [
+    { apiRevision: "2026-05-07" },
+    { thinkingLevel: "low" },
+    { maxOutputTokens: 128 },
+  ];
+  for (const drift of driftCases) {
+    const directory = await mkdtemp(
+      join(tmpdir(), "mypick-archetype-metadata-"),
+    );
+    const originalPlan = await buildPlan(map, map.songs, contracts, directory);
+    await writeFile(
+      join(directory, "checkpoint.json"),
+      `${JSON.stringify({
+        schemaVersion: 1,
+        sourceMapHash: originalPlan.sourceMapHash,
+        modelId: MODEL_ID,
+        apiRevision: API_REVISION,
+        thinkingLevel: THINKING_LEVEL,
+        maxOutputTokens: MAX_OUTPUT_TOKENS,
+        rubricVersion: RUBRIC_VERSION,
+        promptContractHash: contracts.promptContractHash,
+        frozen: {},
+        ...drift,
+      })}\n`,
+      "utf8",
+    );
+    await assert.rejects(
+      () => buildPlan(map, map.songs, contracts, directory),
+      /checkpoint metadata does not match/,
+    );
+  }
 });

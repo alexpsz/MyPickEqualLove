@@ -2,7 +2,10 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-export const MODEL_ID = "gemini-3.6-flash";
+export const MODEL_ID = "gemini-3.7-flash";
+export const API_REVISION = "2026-05-20";
+export const THINKING_LEVEL = "medium";
+export const MAX_OUTPUT_TOKENS = 2048;
 export const RUBRIC_VERSION = "gemini-video-v1";
 export const INTERACTIONS_ENDPOINT =
   "https://generativelanguage.googleapis.com/v1beta/interactions";
@@ -288,6 +291,10 @@ export function buildInteractionBody(song, prompt, outputSchema) {
     model: MODEL_ID,
     input,
     store: false,
+    generation_config: {
+      thinking_level: THINKING_LEVEL,
+      max_output_tokens: MAX_OUTPUT_TOKENS,
+    },
     response_format: {
       type: "text",
       mime_type: "application/json",
@@ -422,6 +429,8 @@ export function createEnvelope(song, assessment, promptHash, annotatedAt) {
     channelId: song.channelId,
     channelTitle: song.channelTitle,
     modelId: MODEL_ID,
+    thinkingLevel: THINKING_LEVEL,
+    maxOutputTokens: MAX_OUTPUT_TOKENS,
     promptHash,
     annotatedAt,
     scores: assessment.scores,
@@ -449,6 +458,8 @@ export function validateEnvelope(envelope, song, promptHash) {
       "channelId",
       "channelTitle",
       "modelId",
+      "thinkingLevel",
+      "maxOutputTokens",
       "promptHash",
       "annotatedAt",
       "scores",
@@ -473,6 +484,8 @@ export function validateEnvelope(envelope, song, promptHash) {
     envelope.channelId !== song.channelId ||
     envelope.channelTitle !== song.channelTitle ||
     envelope.modelId !== MODEL_ID ||
+    envelope.thinkingLevel !== THINKING_LEVEL ||
+    envelope.maxOutputTokens !== MAX_OUTPUT_TOKENS ||
     envelope.promptHash !== promptHash
   ) {
     fail(`annotation metadata mismatch for ${song.songId}`);

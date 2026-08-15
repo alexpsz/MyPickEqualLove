@@ -8,7 +8,15 @@ AI, backend, media downloader, or media cache.
 
 - API: Gemini Interactions API at `v1beta/interactions`, called with Node 22
   native `fetch`.
-- Model: `gemini-3.6-flash`.
+- Model: exact standard model ID `gemini-3.7-flash`; aliases such as
+  `gemini-flash-latest` and specialized EAP video models are not allowed.
+- REST schema revision: every request includes
+  `Api-Revision: 2026-05-20`.
+- Generation: every request fixes `thinking_level: "medium"` and
+  `max_output_tokens: 2048` for the 85-song production balance. `minimal` is
+  invalid for this model, `low` is not used for authoring, and `high` is reserved
+  for possible manual exception review rather than an automatic retry pipeline.
+  Sampling parameters (`temperature`, `top_p`, `top_k`) are never sent.
 - State: every song is an independent request with `store: false`. The request
   never includes `previous_interaction_id` or background execution.
 - Structured output: one top-level `response_format` object with
@@ -114,10 +122,30 @@ node scripts/archetype/label-archetypes.mjs `
 
 Each schema-valid song is atomically written under `results/`, then recorded in
 `checkpoint.json`. A restart validates and freezes existing results and only
-queues missing songs. Any source, model, prompt, result, timestamp, dimension,
-or checkpoint mismatch stops the run; previously frozen rows remain intact.
+queues missing songs. The plan, checkpoint, and result envelope pin `modelId`,
+`apiRevision`, `thinkingLevel`, and `maxOutputTokens`. Any source, model, API
+revision, generation setting, prompt, result, timestamp, dimension, or
+checkpoint mismatch stops the run; previously frozen rows remain intact.
 
 The official public-YouTube preview limit is eight hours per day on the free
 tier and may change. The source map is fully validated before smoke selection,
 and the actual video inputs are summed before any request. If that sum exceeds
 the gate, execution fails closed.
+
+## Contract audit and official references
+
+After changes, scan the contract for forbidden model drift and legacy API
+shapes:
+
+```powershell
+rg -n "gemini-3\.6|gemini-flash-latest|generateContent|response_mime_type|minimal|temperature|top_p|top_k|Api-Revision" scripts/archetype
+```
+
+The implementation follows Google's current [latest model
+guide](https://ai.google.dev/gemini-api/docs/latest-model), [Interactions API
+reference](https://ai.google.dev/static/api/interactions.md.txt), and [May 2026
+breaking-changes
+guide](https://ai.google.dev/gemini-api/docs/interactions-breaking-changes-may-2026).
+The latest-model guide identifies the standard `gemini-3.7-flash` model as GA;
+the breaking-changes guide defines the `2026-05-20` revision, `steps` response,
+and polymorphic `response_format` contract used here.
