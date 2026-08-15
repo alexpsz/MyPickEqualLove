@@ -175,6 +175,30 @@ A completed provider response must contain all four non-negative integer usage
 fields. Missing or malformed usage fails closed before the draft is written, so
 low/medium/high calibration outputs retain comparable cost and latency evidence.
 
+After the complete Medium run is frozen and reviewed, promote only the minimal
+runtime fields into the static web-app document. `--write` requires the exact
+85-song confirmation; `--check` deterministically replays the checkpoint,
+result hashes, prompt contract, source map, and repository song order:
+
+```powershell
+node scripts/archetype/consolidate-archetypes.mjs `
+  --source-map scripts/archetype/source-map.json `
+  --input-dir memory/archetype-runs/gemini-3.7-flash-medium-v1 `
+  --output src/projects/equal-love/archetype-21/song-affinities.json `
+  --write `
+  --confirm-count 85
+
+node scripts/archetype/consolidate-archetypes.mjs `
+  --source-map scripts/archetype/source-map.json `
+  --input-dir memory/archetype-runs/gemini-3.7-flash-medium-v1 `
+  --output src/projects/equal-love/archetype-21/song-affinities.json `
+  --check
+```
+
+The approved file contains no observations, timestamps, prompt text, API key,
+or usage data. The browser imports it as static build-time JSON; it never calls
+Gemini.
+
 The official public-YouTube preview limit is eight hours per day on the free
 tier and may change. The source map is fully validated before smoke selection,
 and the actual video inputs are summed before any request. If that sum exceeds

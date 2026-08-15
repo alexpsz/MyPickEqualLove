@@ -10,6 +10,9 @@ const [
   affinitySource,
   messagesSource,
   uiSource,
+  approvedAffinitiesSource,
+  sourceMapSource,
+  songsSource,
 ] = await Promise.all([
   read("../src/components/PickExperienceClient.tsx"),
   read("../src/components/Controls.tsx"),
@@ -18,6 +21,9 @@ const [
   read("../src/data/equalLoveArchetypeAffinities.ts"),
   read("../src/i18n/messages.ts"),
   read("../src/projects/equal-love/archetype-21/ui.json"),
+  read("../src/projects/equal-love/archetype-21/song-affinities.json"),
+  read("./archetype/source-map.json"),
+  read("../src/projects/equal-love/songs.json"),
 ]);
 
 test("CTA is gated to a complete unique equal-love standard Top 10", () => {
@@ -41,6 +47,42 @@ test("CTA is gated to a complete unique equal-love standard Top 10", () => {
   assert.match(eligibility, /new Set\(songIds\)\.size !== slots\.length/);
   assert.match(eligibility, /!hydrated/);
   assert.match(eligibility, /isExportRealm/);
+});
+
+test("the client uses the complete approved 85-song static document", () => {
+  assert.match(
+    clientSource,
+    /import equalLoveArchetypeAffinitiesData from .*song-affinities\.json/,
+  );
+  assert.match(
+    clientSource,
+    /resolveEqualLoveArchetype\([\s\S]*archetypeTopTenSongIds,[\s\S]*locale,[\s\S]*equalLoveArchetypeAffinitiesData,[\s\S]*\)/,
+  );
+
+  const document = JSON.parse(approvedAffinitiesSource);
+  const sourceMap = JSON.parse(sourceMapSource);
+  const catalog = JSON.parse(songsSource);
+  assert.equal(document.schemaVersion, 1);
+  assert.equal(document.campaignId, "equal-love-archetype-21");
+  assert.equal(document.projectId, "equal-love");
+  assert.equal(document.rubricVersion, "gemini-video-v1");
+  assert.equal(document.songAffinities.length, 85);
+  assert.deepEqual(
+    document.songAffinities.map(({ songId }) => songId),
+    sourceMap.songs.map(({ songId }) => songId),
+  );
+  assert.deepEqual(
+    document.songAffinities.map(({ songId }) => songId),
+    catalog.map(({ id }) => id),
+  );
+  for (const affinity of document.songAffinities) {
+    assert.equal(affinity.status, "approved");
+    assert.equal(affinity.rubricVersion, "gemini-video-v1");
+    const scores = Object.values(affinity.scores);
+    assert.equal(scores.filter((score) => score === 2).length, 2);
+    assert.equal(scores.filter((score) => score === 1).length, 1);
+    assert.equal(scores.filter((score) => score === 0).length, 5);
+  }
 });
 
 test("CTA stays between Controls and PickBoard without changing mobile controls", () => {
@@ -84,6 +126,7 @@ test("modal reuses the retained accessible dialog contract", () => {
 
 test("result omits similarity percentages and renders the required explanation", () => {
   assert.doesNotMatch(modalSource, /similarity|percentage|percent|%/i);
+  assert.doesNotMatch(modalSource, /adjustedScore/);
   assert.match(modalSource, /overlapTraitIds/);
   assert.match(modalSource, /contributingSongIds/);
   assert.match(modalSource, /STAT_KEYS\.map/);
@@ -159,6 +202,18 @@ test("ui.json is the single four-locale UI copy source", () => {
     ui.locales.ko.metadata.entertainmentNotice,
     /AI 선곡 싱크로 분석/,
   );
+  for (const [localeId, baselinePattern, rawPattern] of [
+    ["en", /full catalog/, /unadjusted card-profile overlap/],
+    ["zh-CN", /曲库整体的常见倾向/, /未经校正的卡面重合/],
+    ["ja", /楽曲カタログ全体で出やすい傾向/, /補正前のカード設定との重なり/],
+    ["ko", /전체 곡 목록에서 자주 나타나는 경향/, /보정 전 카드 설정과의 겹침/],
+  ]) {
+    const locale = ui.locales[localeId];
+    assert.match(locale.result.singleLead, baselinePattern);
+    assert.match(locale.result.tieLead, baselinePattern);
+    assert.match(locale.explanation.singleSummary, rawPattern);
+    assert.match(locale.explanation.tieSummary, rawPattern);
+  }
   assert.doesNotMatch(messagesSource, /"archetype\./);
   assert.match(registrySource, /import uiData from .*ui\.json/);
 
@@ -189,7 +244,7 @@ test("ui.json is the single four-locale UI copy source", () => {
   }
 });
 
-test("missing approved fingerprints leave the feature fail closed", () => {
+test("the matcher still fails closed for missing or invalid approved data", () => {
   assert.match(registrySource, /approvedAffinityDocument === undefined/);
   assert.doesNotMatch(affinitySource, /songAffinities:\s*\[/);
   assert.match(affinitySource, /parseEqualLoveArchetypeAffinityDocument/);

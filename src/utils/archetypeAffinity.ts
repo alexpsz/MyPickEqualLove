@@ -33,9 +33,7 @@ export class ArchetypeAffinityError extends Error {
 
 interface ScoredRole {
   profile: RoleAffinityProfile;
-  dotProduct: number;
-  roleNormSquared: number;
-  similarity: number;
+  adjustedScore: number;
 }
 
 /**
@@ -78,28 +76,26 @@ export function deriveAdventureAffinity(
   });
 
   const totals = aggregateTraitTotals(selectedAffinities);
-  const userNormSquared = ARCHETYPE_TRAIT_IDS.reduce(
-    (sum, traitId) => sum + totals[traitId] ** 2,
-    0,
-  );
   const userVector = mapTraits(
     (traitId) => totals[traitId] / ARCHETYPE_TOP_TEN_SIZE,
   );
+  const catalogTotals = aggregateTraitTotals(validatedCatalog.songAffinities);
   const scoredRoles = validatedCatalog.roleProfiles.map((profile) => {
-    const dotProduct = ARCHETYPE_TRAIT_IDS.reduce(
+    const selectedRawScore = ARCHETYPE_TRAIT_IDS.reduce(
       (sum, traitId) =>
         sum + totals[traitId] * (profile.affinities[traitId] ?? 0),
       0,
     );
-    const roleNormSquared = ARCHETYPE_TRAIT_IDS.reduce(
-      (sum, traitId) => sum + (profile.affinities[traitId] ?? 0) ** 2,
+    const catalogRawScore = ARCHETYPE_TRAIT_IDS.reduce(
+      (sum, traitId) =>
+        sum + catalogTotals[traitId] * (profile.affinities[traitId] ?? 0),
       0,
     );
     return {
       profile,
-      dotProduct,
-      roleNormSquared,
-      similarity: dotProduct / Math.sqrt(userNormSquared * roleNormSquared),
+      adjustedScore:
+        validatedCatalog.songAffinities.length * selectedRawScore -
+        ARCHETYPE_TOP_TEN_SIZE * catalogRawScore,
     };
   });
 
@@ -272,20 +268,20 @@ function findExactWinners(scoredRoles: readonly ScoredRole[]): ScoredRole[] {
       winners = [candidate];
       continue;
     }
-    const comparison = compareCosineExactly(candidate, winners[0]);
+    const comparison = compareAdjustedScores(candidate, winners[0]);
     if (comparison > 0) winners = [candidate];
     else if (comparison === 0) winners.push(candidate);
   }
   return winners;
 }
 
-function compareCosineExactly(left: ScoredRole, right: ScoredRole): number {
-  // With ten 0..2 song scores and 0..2 role weights, both cross-products
-  // stay below 3.3 million and are exact IEEE-754 integers.
-  const leftSide = left.dotProduct ** 2 * right.roleNormSquared;
-  const rightSide = right.dotProduct ** 2 * left.roleNormSquared;
-  if (leftSide === rightSide) return 0;
-  return leftSide > rightSide ? 1 : -1;
+function compareAdjustedScores(left: ScoredRole, right: ScoredRole): number {
+  // Every validated role has the same 2 + 2 + 1 norm. Comparing these signed
+  // integers therefore preserves the cosine order after subtracting the full
+  // catalog's expected Top 10 score. Do not square: adjusted scores may be
+  // negative.
+  if (left.adjustedScore === right.adjustedScore) return 0;
+  return left.adjustedScore > right.adjustedScore ? 1 : -1;
 }
 
 function buildWinner(
@@ -327,7 +323,7 @@ function buildWinner(
 
   return {
     roleId: scoredRole.profile.roleId,
-    similarity: scoredRole.similarity,
+    adjustedScore: scoredRole.adjustedScore,
     overlapTraits,
     contributingSongs,
   };

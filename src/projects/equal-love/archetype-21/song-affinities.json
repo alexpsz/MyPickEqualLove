@@ -1,0 +1,1368 @@
+{
+  "schemaVersion": 1,
+  "campaignId": "equal-love-archetype-21",
+  "projectId": "equal-love",
+  "rubricVersion": "gemini-video-v1",
+  "songAffinities": [
+    {
+      "songId": "equal-love",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 0,
+        "rhythm": 0,
+        "growth": 2,
+        "drama": 0,
+        "ingenuity": 0,
+        "uplift": 2,
+        "cuteness": 1
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "sutaato",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 1,
+        "care": 0,
+        "rhythm": 0,
+        "growth": 2,
+        "drama": 0,
+        "ingenuity": 0,
+        "uplift": 2,
+        "cuteness": 0
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "kioku-nodokokade",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 2,
+        "care": 0,
+        "rhythm": 1,
+        "growth": 0,
+        "drama": 2,
+        "ingenuity": 0,
+        "uplift": 0,
+        "cuteness": 0
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "bokura-no-seifuku-christmas",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 2,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 0,
+        "uplift": 1,
+        "cuteness": 2
+      },
+      "confidence": "medium"
+    },
+    {
+      "songId": "youkoso-ikorabu-numa",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 0,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 1,
+        "uplift": 2,
+        "cuteness": 2
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "todoi-te-love-you",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 0,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 1,
+        "uplift": 2,
+        "cuteness": 2
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "teokure-caution",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 2,
+        "care": 0,
+        "rhythm": 1,
+        "growth": 0,
+        "drama": 2,
+        "ingenuity": 0,
+        "uplift": 0,
+        "cuteness": 0
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "bukatsu-nakani-me-ga-au-natte-omotte-tanda",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 1,
+        "care": 0,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 0,
+        "uplift": 2,
+        "cuteness": 2
+      },
+      "confidence": "medium"
+    },
+    {
+      "songId": "ki-ai-ra-tasuke-ni-kita-zo",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 0,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 1,
+        "ingenuity": 2,
+        "uplift": 0,
+        "cuteness": 2
+      },
+      "confidence": "medium"
+    },
+    {
+      "songId": "want-you-want-you",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 0,
+        "rhythm": 1,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 0,
+        "uplift": 2,
+        "cuteness": 2
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "ima-kono-fune-ni-nore",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 1,
+        "care": 0,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 0,
+        "uplift": 2,
+        "cuteness": 2
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "aikatsuhappiiendo",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 1,
+        "rhythm": 0,
+        "growth": 2,
+        "drama": 0,
+        "ingenuity": 0,
+        "uplift": 2,
+        "cuteness": 0
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "sagase-diamond-lily",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 1,
+        "care": 2,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 2,
+        "ingenuity": 0,
+        "uplift": 0,
+        "cuteness": 0
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "iranai-tsuinteeru",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 2,
+        "care": 0,
+        "rhythm": 1,
+        "growth": 0,
+        "drama": 2,
+        "ingenuity": 0,
+        "uplift": 0,
+        "cuteness": 0
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "niji-no-moto",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 2,
+        "care": 0,
+        "rhythm": 0,
+        "growth": 1,
+        "drama": 2,
+        "ingenuity": 0,
+        "uplift": 0,
+        "cuteness": 0
+      },
+      "confidence": "medium"
+    },
+    {
+      "songId": "zuruiyo-zuruine",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 1,
+        "rhythm": 2,
+        "growth": 0,
+        "drama": 2,
+        "ingenuity": 0,
+        "uplift": 0,
+        "cuteness": 0
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "sweetest-girl",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 1,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 0,
+        "uplift": 2,
+        "cuteness": 2
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "oshi-noiru-sekai",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 0,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 1,
+        "uplift": 2,
+        "cuteness": 2
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "tsugini-ae-ta-toki-naniwo-hanaso-ukana",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 2,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 0,
+        "uplift": 2,
+        "cuteness": 1
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "cameo",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 0,
+        "rhythm": 2,
+        "growth": 0,
+        "drama": 1,
+        "ingenuity": 2,
+        "uplift": 0,
+        "cuteness": 0
+      },
+      "confidence": "medium"
+    },
+    {
+      "songId": "kun-to-watashi-no-uta",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 0,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 1,
+        "uplift": 2,
+        "cuteness": 2
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "my-voice-is-for-you",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 2,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 0,
+        "uplift": 2,
+        "cuteness": 1
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "seishun-subliminal",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 2,
+        "care": 0,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 0,
+        "uplift": 2,
+        "cuteness": 1
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "shukipi",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 0,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 2,
+        "ingenuity": 1,
+        "uplift": 0,
+        "cuteness": 2
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "ryuuseigun",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 2,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 0,
+        "uplift": 1,
+        "cuteness": 2
+      },
+      "confidence": "medium"
+    },
+    {
+      "songId": "sakura-no-saku-oto-gashita",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 2,
+        "rhythm": 0,
+        "growth": 1,
+        "drama": 0,
+        "ingenuity": 0,
+        "uplift": 2,
+        "cuteness": 0
+      },
+      "confidence": "medium"
+    },
+    {
+      "songId": "oh-darling",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 1,
+        "care": 0,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 0,
+        "uplift": 2,
+        "cuteness": 2
+      },
+      "confidence": "medium"
+    },
+    {
+      "songId": "senobiiinrabu",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 0,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 2,
+        "uplift": 1,
+        "cuteness": 2
+      },
+      "confidence": "medium"
+    },
+    {
+      "songId": "haikei-kihousama",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 2,
+        "care": 0,
+        "rhythm": 1,
+        "growth": 0,
+        "drama": 2,
+        "ingenuity": 0,
+        "uplift": 0,
+        "cuteness": 0
+      },
+      "confidence": "medium"
+    },
+    {
+      "songId": "gen-eki-aidoru-chu",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 0,
+        "rhythm": 1,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 0,
+        "uplift": 2,
+        "cuteness": 2
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "24-7",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 2,
+        "care": 0,
+        "rhythm": 2,
+        "growth": 0,
+        "drama": 1,
+        "ingenuity": 0,
+        "uplift": 0,
+        "cuteness": 0
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "o-neesan-ja-dame-desuka",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 0,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 2,
+        "uplift": 1,
+        "cuteness": 2
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "cinema",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 0,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 2,
+        "uplift": 1,
+        "cuteness": 2
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "866",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 2,
+        "rhythm": 0,
+        "growth": 1,
+        "drama": 2,
+        "ingenuity": 0,
+        "uplift": 0,
+        "cuteness": 0
+      },
+      "confidence": "medium"
+    },
+    {
+      "songId": "weekend-citron",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 0,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 1,
+        "uplift": 2,
+        "cuteness": 2
+      },
+      "confidence": "medium"
+    },
+    {
+      "songId": "zutsu-tomo-anken",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 1,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 0,
+        "uplift": 2,
+        "cuteness": 2
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "natsumatsuri-renbo-u",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 0,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 2,
+        "ingenuity": 0,
+        "uplift": 2,
+        "cuteness": 1
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "shukusai",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 0,
+        "rhythm": 2,
+        "growth": 0,
+        "drama": 2,
+        "ingenuity": 1,
+        "uplift": 0,
+        "cuteness": 0
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "the-5th",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 2,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 0,
+        "uplift": 1,
+        "cuteness": 2
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "o-himesama-nishiteyo",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 0,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 2,
+        "uplift": 1,
+        "cuteness": 2
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "poison-girl",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 0,
+        "rhythm": 1,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 2,
+        "uplift": 0,
+        "cuteness": 2
+      },
+      "confidence": "medium"
+    },
+    {
+      "songId": "bpm170-no-kun-he",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 0,
+        "rhythm": 2,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 0,
+        "uplift": 2,
+        "cuteness": 1
+      },
+      "confidence": "medium"
+    },
+    {
+      "songId": "ano-ko-complex",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 2,
+        "care": 0,
+        "rhythm": 1,
+        "growth": 0,
+        "drama": 2,
+        "ingenuity": 0,
+        "uplift": 0,
+        "cuteness": 0
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "boku-no-hiroin",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 1,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 0,
+        "uplift": 2,
+        "cuteness": 2
+      },
+      "confidence": "medium"
+    },
+    {
+      "songId": "shira-nkedo",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 0,
+        "rhythm": 2,
+        "growth": 0,
+        "drama": 2,
+        "ingenuity": 1,
+        "uplift": 0,
+        "cuteness": 0
+      },
+      "confidence": "medium"
+    },
+    {
+      "songId": "egao-no-reshipi",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 1,
+        "rhythm": 0,
+        "growth": 2,
+        "drama": 0,
+        "ingenuity": 0,
+        "uplift": 2,
+        "cuteness": 0
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "toripurudeeto",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 0,
+        "rhythm": 1,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 0,
+        "uplift": 2,
+        "cuteness": 2
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "be-selfish",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 0,
+        "rhythm": 2,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 0,
+        "uplift": 2,
+        "cuteness": 1
+      },
+      "confidence": "medium"
+    },
+    {
+      "songId": "suki-tte-ie-nakatta",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 2,
+        "rhythm": 0,
+        "growth": 1,
+        "drama": 2,
+        "ingenuity": 0,
+        "uplift": 0,
+        "cuteness": 0
+      },
+      "confidence": "medium"
+    },
+    {
+      "songId": "watashi-mahoutsukai",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 1,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 0,
+        "uplift": 2,
+        "cuteness": 2
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "mayonaka-maameido",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 2,
+        "rhythm": 0,
+        "growth": 1,
+        "drama": 2,
+        "ingenuity": 0,
+        "uplift": 0,
+        "cuteness": 0
+      },
+      "confidence": "medium"
+    },
+    {
+      "songId": "kono-sora-ga-trigger",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 2,
+        "care": 0,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 2,
+        "ingenuity": 0,
+        "uplift": 1,
+        "cuteness": 0
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "junkies",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 2,
+        "care": 0,
+        "rhythm": 2,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 0,
+        "uplift": 1,
+        "cuteness": 0
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "rabukurieito",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 0,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 1,
+        "uplift": 2,
+        "cuteness": 2
+      },
+      "confidence": "medium"
+    },
+    {
+      "songId": "kiara-tiara",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 1,
+        "care": 0,
+        "rhythm": 2,
+        "growth": 0,
+        "drama": 2,
+        "ingenuity": 0,
+        "uplift": 0,
+        "cuteness": 0
+      },
+      "confidence": "medium"
+    },
+    {
+      "songId": "natsumatope",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 0,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 1,
+        "uplift": 2,
+        "cuteness": 2
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "dakaratote",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 2,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 2,
+        "ingenuity": 0,
+        "uplift": 0,
+        "cuteness": 1
+      },
+      "confidence": "medium"
+    },
+    {
+      "songId": "hiroinzu",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 0,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 1,
+        "uplift": 2,
+        "cuteness": 2
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "raburoke",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 0,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 2,
+        "uplift": 1,
+        "cuteness": 2
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "last-note-shika-shiranai",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 2,
+        "rhythm": 1,
+        "growth": 0,
+        "drama": 2,
+        "ingenuity": 0,
+        "uplift": 0,
+        "cuteness": 0
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "doraibu-deeto-tonai",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 0,
+        "rhythm": 1,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 0,
+        "uplift": 2,
+        "cuteness": 2
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "kyousou-katasutorofi",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 2,
+        "care": 0,
+        "rhythm": 1,
+        "growth": 0,
+        "drama": 2,
+        "ingenuity": 0,
+        "uplift": 0,
+        "cuteness": 0
+      },
+      "confidence": "medium"
+    },
+    {
+      "songId": "dokoga-suki-ka-itte",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 1,
+        "rhythm": 2,
+        "growth": 0,
+        "drama": 2,
+        "ingenuity": 0,
+        "uplift": 0,
+        "cuteness": 0
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "norotte-norotte",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 1,
+        "care": 0,
+        "rhythm": 2,
+        "growth": 0,
+        "drama": 2,
+        "ingenuity": 0,
+        "uplift": 0,
+        "cuteness": 0
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "dare-nimo-bare-zuni",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 1,
+        "care": 0,
+        "rhythm": 0,
+        "growth": 2,
+        "drama": 2,
+        "ingenuity": 0,
+        "uplift": 0,
+        "cuteness": 0
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "kun-no-dai-3-botan",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 2,
+        "rhythm": 0,
+        "growth": 1,
+        "drama": 0,
+        "ingenuity": 0,
+        "uplift": 0,
+        "cuteness": 2
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "zettai-idol-yamenaide",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 0,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 2,
+        "ingenuity": 0,
+        "uplift": 2,
+        "cuteness": 1
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "nakanaori-shuukuriimu",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 0,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 2,
+        "uplift": 1,
+        "cuteness": 2
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "umi-to-remonteii",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 2,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 0,
+        "uplift": 1,
+        "cuteness": 2
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "tokubechu-shite",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 0,
+        "rhythm": 1,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 0,
+        "uplift": 2,
+        "cuteness": 2
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "koibito-ijo-suki-miman",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 1,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 0,
+        "uplift": 2,
+        "cuteness": 2
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "choutokkyuu-tousou-naka",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 0,
+        "rhythm": 1,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 0,
+        "uplift": 2,
+        "cuteness": 2
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "naisho-banashi",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 0,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 1,
+        "ingenuity": 0,
+        "uplift": 2,
+        "cuteness": 2
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "love-song-ni-osowareru",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 0,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 2,
+        "uplift": 1,
+        "cuteness": 2
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "queens",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 1,
+        "care": 0,
+        "rhythm": 2,
+        "growth": 0,
+        "drama": 2,
+        "ingenuity": 0,
+        "uplift": 0,
+        "cuteness": 0
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "ki-more-nichi-mezoforute",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 2,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 0,
+        "uplift": 1,
+        "cuteness": 2
+      },
+      "confidence": "medium"
+    },
+    {
+      "songId": "gekiyaku-chuudoku",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 1,
+        "care": 0,
+        "rhythm": 2,
+        "growth": 0,
+        "drama": 2,
+        "ingenuity": 0,
+        "uplift": 0,
+        "cuteness": 0
+      },
+      "confidence": "medium"
+    },
+    {
+      "songId": "moratoriamu",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 2,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 2,
+        "ingenuity": 0,
+        "uplift": 1,
+        "cuteness": 0
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "o-himesama-no-tsukurikata",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 0,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 2,
+        "uplift": 1,
+        "cuteness": 2
+      },
+      "confidence": "medium"
+    },
+    {
+      "songId": "koi-hajimemashita",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 0,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 1,
+        "uplift": 2,
+        "cuteness": 2
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "kimi-dake-no-hanamichi",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 2,
+        "rhythm": 0,
+        "growth": 1,
+        "drama": 2,
+        "ingenuity": 0,
+        "uplift": 0,
+        "cuteness": 0
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "okaeri-hanadayori",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 2,
+        "rhythm": 0,
+        "growth": 1,
+        "drama": 0,
+        "ingenuity": 0,
+        "uplift": 2,
+        "cuteness": 0
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "takaramono-wa-green",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 2,
+        "rhythm": 0,
+        "growth": 2,
+        "drama": 1,
+        "ingenuity": 0,
+        "uplift": 0,
+        "cuteness": 0
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "furajairu",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 2,
+        "rhythm": 0,
+        "growth": 1,
+        "drama": 2,
+        "ingenuity": 0,
+        "uplift": 0,
+        "cuteness": 0
+      },
+      "confidence": "high"
+    },
+    {
+      "songId": "madamada-minor-mainacard",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 0,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 2,
+        "uplift": 1,
+        "cuteness": 2
+      },
+      "confidence": "high"
+    }
+  ]
+}

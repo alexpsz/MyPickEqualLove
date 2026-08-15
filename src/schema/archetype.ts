@@ -52,8 +52,8 @@ export interface SongContribution {
 
 export interface AdventureAffinityWinner {
   roleId: string;
-  /** Raw cosine similarity. Consumers must not present it as a percentage. */
-  similarity: number;
+  /** Internal signed catalog-centered rank; never present it as user-facing similarity. */
+  adjustedScore: number;
   overlapTraits: readonly TraitOverlap[];
   contributingSongs: readonly SongContribution[];
 }

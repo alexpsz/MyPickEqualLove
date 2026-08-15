@@ -11,6 +11,8 @@
     "plugins": []
   },
   "include": [
+    "../src/projects/equal-love/archetype-21/characters.en.json",
+    "../src/projects/equal-love/archetype-21/song-affinities.json",
     "../src/schema/archetype.ts",
     "../src/utils/archetypeAffinity.ts",
     "./archetype-affinity.test.ts"

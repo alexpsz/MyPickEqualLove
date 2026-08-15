@@ -35,6 +35,7 @@ import {
   TRACK_TYPES,
 } from "../data/songs";
 import { resolveEqualLoveArchetype } from "../data/equalLoveArchetype";
+import equalLoveArchetypeAffinitiesData from "../projects/equal-love/archetype-21/song-affinities.json";
 import {
   createBoardSharePayload,
   resolveBoardSharePayload,
@@ -439,7 +440,11 @@ export default function PickExperienceClient({
   const archetypeResult = useMemo(
     () =>
       archetypeTopTenSongIds
-        ? resolveEqualLoveArchetype(archetypeTopTenSongIds, locale)
+        ? resolveEqualLoveArchetype(
+            archetypeTopTenSongIds,
+            locale,
+            equalLoveArchetypeAffinitiesData,
+          )
         : null,
     [archetypeTopTenSongIds, locale],
   );

@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import charactersEnData from "../src/projects/equal-love/archetype-21/characters.en.json";
+import approvedAffinitiesData from "../src/projects/equal-love/archetype-21/song-affinities.json";
 import {
   ARCHETYPE_TRAIT_IDS,
   type AdventureAffinityCatalog,
@@ -92,7 +94,7 @@ test("Top 10 aggregation is an equal arithmetic mean without per-song normalizat
   assert.equal(result.userVector.drive, 0.7);
 });
 
-test("cosine matching is deterministic and Top 10 order cannot change winners", () => {
+test("catalog-centered matching is deterministic and Top 10 order cannot change winners", () => {
   const catalog = createCatalog(songs, [
     role("care-role", { care: 2, uplift: 2, cuteness: 1 }),
     role("drive-role", { drive: 2, rhythm: 2, growth: 1 }),
@@ -115,11 +117,23 @@ test("identical MAIKA and IORI fingerprints return both co-winners regardless of
   ];
   const first = deriveAdventureAffinity(
     topTen,
-    createCatalog(songs, tiedRoles),
+    createCatalog(
+      [
+        ...songs,
+        song("tie-baseline", scores("drama", "ingenuity", "cuteness")),
+      ],
+      tiedRoles,
+    ),
   );
   const second = deriveAdventureAffinity(
     topTen,
-    createCatalog(songs, tiedRoles.toReversed()),
+    createCatalog(
+      [
+        ...songs,
+        song("tie-baseline", scores("drama", "ingenuity", "cuteness")),
+      ],
+      tiedRoles.toReversed(),
+    ),
   );
   assert.equal(first.isTie, true);
   assert.deepEqual(
@@ -168,20 +182,124 @@ test("similar but mathematically unequal roles are not treated as tied", () => {
   );
   const result = deriveAdventureAffinity(
     identical.map(({ songId }) => songId),
-    createCatalog(identical, [
-      role("exact", { drive: 2, care: 2, rhythm: 1 }),
-      role("different-accent", {
-        drive: 2,
-        care: 2,
-        growth: 1,
-      }),
-    ]),
+    createCatalog(
+      [
+        ...identical,
+        song("unequal-baseline", scores("growth", "drama", "ingenuity")),
+      ],
+      [
+        role("exact", { drive: 2, care: 2, rhythm: 1 }),
+        role("different-accent", {
+          drive: 2,
+          care: 2,
+          growth: 1,
+        }),
+      ],
+    ),
   );
   assert.equal(result.isTie, false);
   assert.deepEqual(
     result.winners.map(({ roleId }) => roleId),
     ["exact"],
   );
+});
+
+test("the 85-song baseline compares signed scores without squaring", () => {
+  const selected = Array.from({ length: 10 }, (_, index) =>
+    song(`signed-${index + 1}`, scores("drive", "care", "rhythm")),
+  );
+  const background = Array.from({ length: 75 }, (_, index) =>
+    song(`signed-baseline-${index + 1}`, scores("uplift", "cuteness", "drama")),
+  );
+  const result = deriveAdventureAffinity(
+    selected.map(({ songId }) => songId),
+    createCatalog(
+      [...selected, ...background],
+      [
+        role("preferred", { drive: 2, care: 2, rhythm: 1 }),
+        role("common", { uplift: 2, cuteness: 2, drama: 1 }),
+      ],
+    ),
+  );
+  assert.deepEqual(
+    result.winners.map(({ roleId }) => roleId),
+    ["preferred"],
+  );
+  assert.equal(result.winners[0].adjustedScore, 6750);
+});
+
+test("the production catalog keeps adjusted ranking and raw explanations semantically distinct", () => {
+  const productionTopTen = [
+    "o-himesama-nishiteyo",
+    "shira-nkedo",
+    "iranai-tsuinteeru",
+    "tsugini-ae-ta-toki-naniwo-hanaso-ukana",
+    "kyousou-katasutorofi",
+    "kiara-tiara",
+    "gen-eki-aidoru-chu",
+    "egao-no-reshipi",
+    "boku-no-hiroin",
+    "doraibu-deeto-tonai",
+  ];
+  const productionSongs = (
+    approvedAffinitiesData as unknown as {
+      songAffinities: readonly ApprovedSongAffinity[];
+    }
+  ).songAffinities;
+  const productionRoles = charactersEnData.characters.map<RoleAffinityProfile>(
+    (character) => ({
+      roleId: character.roleId,
+      profileVersion: "v1",
+      affinities:
+        character.roleFingerprint as RoleAffinityProfile["affinities"],
+    }),
+  );
+  const productionCatalog = createCatalog(productionSongs, productionRoles);
+  const result = deriveAdventureAffinity(productionTopTen, productionCatalog);
+
+  const songById = new Map(
+    productionSongs.map((affinity) => [affinity.songId, affinity]),
+  );
+  const selectedSongs = productionTopTen.map((songId) => {
+    const affinity = songById.get(songId);
+    assert.ok(affinity, `Missing production affinity for ${songId}`);
+    return affinity;
+  });
+  const rawRanking = productionRoles
+    .map((profile) => ({
+      roleId: profile.roleId,
+      score: selectedSongs.reduce(
+        (sum, affinity) =>
+          sum +
+          ARCHETYPE_TRAIT_IDS.reduce(
+            (songSum, traitId) =>
+              songSum +
+              affinity.scores[traitId] * (profile.affinities[traitId] ?? 0),
+            0,
+          ),
+        0,
+      ),
+    }))
+    .sort(
+      (left, right) =>
+        right.score - left.score || left.roleId.localeCompare(right.roleId),
+    );
+
+  assert.deepEqual(rawRanking.slice(0, 2), [
+    { roleId: "archetype-21-hitomi", score: 47 },
+    { roleId: "archetype-21-emiri", score: 39 },
+  ]);
+  assert.equal(result.isTie, false);
+  assert.equal(result.winners[0].roleId, "archetype-21-anna");
+  assert.equal(result.winners[0].adjustedScore, 795);
+  assert.deepEqual(result.winners[0].overlapTraits, [
+    { traitId: "rhythm", contribution: 1.6 },
+    { traitId: "uplift", contribution: 1.1 },
+  ]);
+  assert.deepEqual(result.winners[0].contributingSongs, [
+    { songId: "iranai-tsuinteeru", contribution: 6 },
+    { songId: "kyousou-katasutorofi", contribution: 6 },
+  ]);
 });
 
 test("the explanation returns the top two overlap traits", () => {
