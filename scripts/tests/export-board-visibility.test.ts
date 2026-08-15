@@ -307,6 +307,24 @@ test("single archetype export is a dedicated fixed dossier with radar and Top 10
     markup,
     /data-archetype-traits="true"[\s\S]*display:inline-flex;align-items:center;justify-content:center/,
   );
+  assert.match(
+    markup,
+    /data-archetype-trait-pill="true"[^>]*box-sizing:border-box;height:28px/,
+  );
+  assert.match(markup, /data-archetype-trait-pill="true"[^>]*padding:0 11px/);
+  assert.match(
+    markup,
+    /data-archetype-trait-pill="true"[\s\S]*data-archetype-trait-label="true"[^>]*line-height:1.2;text-align:center;transform:translateY\(1px\)/,
+  );
+  assert.match(
+    markup,
+    /data-archetype-footer-brand="true"[^>]*font-family:-apple-system[^>]*font-size:25px;font-weight:900;letter-spacing:0.12em;line-height:1.05/,
+  );
+  assert.match(
+    markup,
+    /data-archetype-footer-page="true"[^>]*height:52.5px;display:flex;flex-direction:column;justify-content:flex-end[\s\S]*font-family:-apple-system[^>]*font-size:25px;font-weight:900;letter-spacing:0.12em;line-height:1.05/,
+  );
+  assert.match(markup, /data-archetype-footer-page="true"[\s\S]*color:#111827/);
   assert.equal((markup.match(/data-archetype-song-rank=/g) ?? []).length, 10);
   assert.equal((markup.match(/data-archetype-song-title=/g) ?? []).length, 10);
   assert.equal(

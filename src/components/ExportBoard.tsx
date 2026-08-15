@@ -47,6 +47,13 @@ const EXPORT_FONT_FAMILY =
   '-apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans JP", sans-serif';
 const EXPORT_TITLE_FONT_FAMILY =
   '"Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+const ARCHETYPE_FOOTER_BRAND_TEXT_STYLE = {
+  fontFamily: EXPORT_FONT_FAMILY,
+  fontSize: "25px",
+  fontWeight: 900,
+  letterSpacing: "0.12em",
+  lineHeight: 1.05,
+} as const;
 
 const MEMBER_COLOR_STRIP = MEMBERS.slice()
   .filter((member) => member.active !== false)
@@ -666,6 +673,7 @@ export function ArchetypeDossierPoster({
           }}
         >
           <div
+            data-archetype-footer-brand="true"
             style={{
               flex: "0 0 auto",
               borderLeft: `5px solid ${primaryAccent}`,
@@ -673,16 +681,22 @@ export function ArchetypeDossierPoster({
                 ? `-1px 0 0 ${primaryAccentContrast.outlineColor}`
                 : undefined,
               paddingLeft: "18px",
-              fontSize: "25px",
-              fontWeight: 900,
-              letterSpacing: "0.12em",
-              lineHeight: 1.05,
+              ...ARCHETYPE_FOOTER_BRAND_TEXT_STYLE,
               whiteSpace: "pre-line",
             }}
           >
             {footerLabel.replace(" ", "\n")}
           </div>
-          <div style={{ minWidth: 0 }}>
+          <div
+            data-archetype-footer-page="true"
+            style={{
+              minWidth: 0,
+              height: "52.5px",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "flex-end",
+            }}
+          >
             {selectedByLabel ? (
               <div
                 style={{
@@ -697,12 +711,10 @@ export function ArchetypeDossierPoster({
             ) : null}
             <div
               style={{
-                marginTop: "5px",
-                color: "#6b7280",
-                fontSize: "11px",
-                fontWeight: 800,
-                letterSpacing: "0.08em",
+                color: "#111827",
+                ...ARCHETYPE_FOOTER_BRAND_TEXT_STYLE,
                 overflowWrap: "anywhere",
+                whiteSpace: "nowrap",
               }}
             >
               {pageLabel}
@@ -1037,24 +1049,36 @@ function TraitPills({
       {character.overlapTraitIds.map((traitId) => (
         <span
           key={traitId}
+          data-archetype-trait-pill="true"
           style={{
             display: "inline-flex",
             alignItems: "center",
             justifyContent: "center",
+            boxSizing: "border-box",
+            height: compact ? "22px" : "28px",
             border: `1px solid ${accent}`,
             boxShadow: accentContrast.outlineShadow,
-            padding: compact ? "5px 8px" : "7px 11px",
+            padding: compact ? "0 8px" : "0 11px",
             color: accent,
             textShadow: accentContrast.textShadow,
             fontSize: compact ? "10px" : "12px",
             fontWeight: 900,
             letterSpacing: "0.04em",
-            lineHeight: 1,
             textAlign: "center",
             whiteSpace: "nowrap",
           }}
         >
-          ＋ {result.ui.traits[traitId]}
+          <span
+            data-archetype-trait-label="true"
+            style={{
+              display: "block",
+              lineHeight: 1.2,
+              textAlign: "center",
+              transform: "translateY(1px)",
+            }}
+          >
+            ＋ {result.ui.traits[traitId]}
+          </span>
         </span>
       ))}
     </div>
