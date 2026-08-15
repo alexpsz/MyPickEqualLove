@@ -463,6 +463,14 @@ test("mobile preview collapses export options and keeps the image stage flexible
   );
   assert.doesNotMatch(templateSegmentedControlSource, /text-white/);
   assert.match(previewModalSource, /config\.shareHashtags\.join\("\\n"\)/);
+  assert.match(
+    previewModalSource,
+    /function buildXWebIntentUrl\(config: XShareConfig\) \{[\s\S]*buildXShareMessage\(config\)[\s\S]*\}/,
+  );
+  assert.doesNotMatch(
+    previewModalSource,
+    /\}&url=\$\{encodeURIComponent\(config\.pageUrl\)\}/,
+  );
   assert.match(previewModalSource, /role="group"[\s\S]*aria-label=\{label\}/);
   assert.match(
     previewModalSource,

@@ -500,10 +500,9 @@ function shareToX(config: XShareConfig) {
 }
 
 function buildXWebIntentUrl(config: XShareConfig) {
-  const shareText = buildXShareText(config);
   return `https://x.com/intent/post?text=${encodeURIComponent(
-    shareText,
-  )}&url=${encodeURIComponent(config.pageUrl)}`;
+    buildXShareMessage(config),
+  )}`;
 }
 
 function buildXCustomSchemeComposerUrl(config: XShareConfig) {
