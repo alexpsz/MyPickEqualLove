@@ -122,13 +122,15 @@ export function deriveAdventureAffinity(
 export function assertValidSongAffinity(affinity: ApprovedSongAffinity): void {
   if (
     !isNonEmptyString(affinity.songId) ||
-    affinity.rubricVersion !== "v1" ||
+    affinity.rubricVersion !== "gemini-video-v1" ||
     affinity.status !== "approved" ||
-    (affinity.confidence !== "medium" && affinity.confidence !== "high")
+    (affinity.confidence !== "low" &&
+      affinity.confidence !== "medium" &&
+      affinity.confidence !== "high")
   ) {
     throw invalidSongAffinity(
       affinity.songId,
-      "expected an approved v1 record with medium or high confidence",
+      "expected an approved gemini-video-v1 record with low, medium, or high confidence",
     );
   }
 
@@ -172,16 +174,22 @@ export function assertValidRoleProfile(profile: RoleAffinityProfile): void {
     );
   }
   const entries = Object.entries(profile.affinities ?? {});
+  const values = ARCHETYPE_TRAIT_IDS.map(
+    (traitId) => profile.affinities[traitId] ?? 0,
+  );
   if (
-    entries.length < 2 ||
     entries.some(
       ([traitId, affinity]) =>
-        !isTraitId(traitId) || (affinity !== 1 && affinity !== 2),
-    )
+        !isTraitId(traitId) ||
+        (affinity !== 0 && affinity !== 1 && affinity !== 2),
+    ) ||
+    values.filter((value) => value === 2).length !== 2 ||
+    values.filter((value) => value === 1).length !== 1 ||
+    values.filter((value) => value === 0).length !== 5
   ) {
     throw invalidRoleProfile(
       profile.roleId,
-      "affinities must contain at least two canonical traits weighted 1 or 2",
+      "fingerprint must contain exactly two dominant affinities of 2, one accent affinity of 1, and five omitted or explicit zeroes",
     );
   }
 }

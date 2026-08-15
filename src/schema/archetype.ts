@@ -17,20 +17,21 @@ export type SongTraitScores = Record<TraitId, SongTraitScore>;
 
 export type UserTraitVector = Record<TraitId, number>;
 
-export type RoleTraitAffinity = 1 | 2;
+export type RoleTraitAffinity = 0 | 1 | 2;
 
 export interface ApprovedSongAffinity {
   songId: string;
-  rubricVersion: "v1";
+  rubricVersion: "gemini-video-v1";
   status: "approved";
   scores: SongTraitScores;
   /** Editorial confidence is retained for provenance and never enters matching. */
-  confidence: "medium" | "high";
+  confidence: "low" | "medium" | "high";
 }
 
 export interface RoleAffinityProfile {
   roleId: string;
   profileVersion: "v1";
+  /** Missing traits are zero; explicit zeroes are also accepted. */
   affinities: Partial<Record<TraitId, RoleTraitAffinity>>;
 }
 

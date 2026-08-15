@@ -10,6 +10,7 @@ import {
 } from "../src/schema/archetype";
 import {
   ArchetypeAffinityError,
+  assertValidRoleProfile,
   assertValidSongAffinity,
   createAdventureAffinityMatcher,
   deriveAdventureAffinity,
@@ -48,6 +49,17 @@ test("the schema exposes the fixed eight-dimensional rubric", () => {
 
 test("strict validation accepts only an exact 2 + 2 + 1 fingerprint", () => {
   assert.doesNotThrow(() => assertValidSongAffinity(songs[0]));
+  assert.throws(
+    () =>
+      assertValidSongAffinity({
+        ...songs[0],
+        rubricVersion: "v1",
+      } as unknown as ApprovedSongAffinity),
+    (error) =>
+      error instanceof ArchetypeAffinityError &&
+      error.code === "INVALID_SONG_AFFINITY" &&
+      /gemini-video-v1/.test(error.message),
+  );
 
   for (const [label, invalidScores] of [
     ["third dominant", { ...fingerprints[0], care: 2 }],
@@ -69,7 +81,7 @@ test("strict validation accepts only an exact 2 + 2 + 1 fingerprint", () => {
 
 test("Top 10 aggregation is an equal arithmetic mean without per-song normalization", () => {
   const catalog = createCatalog(songs, [
-    role("drive-role", { drive: 2, growth: 1 }),
+    role("drive-role", { drive: 2, rhythm: 2, growth: 1 }),
   ]);
   const result = deriveAdventureAffinity(topTen, catalog);
   for (const traitId of ARCHETYPE_TRAIT_IDS) {
@@ -82,9 +94,9 @@ test("Top 10 aggregation is an equal arithmetic mean without per-song normalizat
 
 test("cosine matching is deterministic and Top 10 order cannot change winners", () => {
   const catalog = createCatalog(songs, [
-    role("care-role", { care: 2, cuteness: 1 }),
-    role("drive-role", { drive: 2, growth: 1 }),
-    role("drama-role", { drama: 2, ingenuity: 1 }),
+    role("care-role", { care: 2, uplift: 2, cuteness: 1 }),
+    role("drive-role", { drive: 2, rhythm: 2, growth: 1 }),
+    role("drama-role", { drama: 2, growth: 2, ingenuity: 1 }),
   ]);
   const forward = deriveAdventureAffinity(topTen, catalog);
   const reverse = deriveAdventureAffinity(topTen.toReversed(), catalog);
@@ -95,11 +107,11 @@ test("cosine matching is deterministic and Top 10 order cannot change winners", 
   assert.deepEqual(forward.userVector, reverse.userVector);
 });
 
-test("mathematically equal role scores return every co-winner regardless of role array order", () => {
+test("identical MAIKA and IORI fingerprints return both co-winners regardless of role array order", () => {
   const tiedRoles = [
-    role("role-z", { drive: 2, care: 2 }),
-    role("role-a", { drive: 2, care: 2 }),
-    role("different", { ingenuity: 2, cuteness: 1 }),
+    role("maika", { drive: 2, care: 2, rhythm: 1 }),
+    role("iori", { drive: 2, care: 2, rhythm: 1 }),
+    role("different", { ingenuity: 2, drama: 2, cuteness: 1 }),
   ];
   const first = deriveAdventureAffinity(
     topTen,
@@ -112,11 +124,41 @@ test("mathematically equal role scores return every co-winner regardless of role
   assert.equal(first.isTie, true);
   assert.deepEqual(
     first.winners.map(({ roleId }) => roleId),
-    ["role-a", "role-z"],
+    ["iori", "maika"],
   );
   assert.deepEqual(
     second.winners.map(({ roleId }) => roleId),
-    ["role-a", "role-z"],
+    ["iori", "maika"],
+  );
+});
+
+test("role fingerprints require the same strict 2 + 2 + 1 shape with implicit or explicit zeroes", () => {
+  assert.doesNotThrow(() =>
+    assertValidRoleProfile(
+      role("implicit-zeroes", { drive: 2, care: 2, rhythm: 1 }),
+    ),
+  );
+  assert.doesNotThrow(() =>
+    assertValidRoleProfile(
+      role("explicit-zeroes", {
+        drive: 2,
+        care: 2,
+        rhythm: 1,
+        growth: 0,
+        drama: 0,
+        ingenuity: 0,
+        uplift: 0,
+        cuteness: 0,
+      }),
+    ),
+  );
+  assert.throws(
+    () =>
+      assertValidRoleProfile(role("old-loose-contract", { drive: 2, care: 1 })),
+    (error) =>
+      error instanceof ArchetypeAffinityError &&
+      error.code === "INVALID_ROLE_PROFILE" &&
+      /exactly two dominant affinities of 2/.test(error.message),
   );
 });
 
@@ -128,10 +170,9 @@ test("similar but mathematically unequal roles are not treated as tied", () => {
     identical.map(({ songId }) => songId),
     createCatalog(identical, [
       role("exact", { drive: 2, care: 2, rhythm: 1 }),
-      role("extra-dimension", {
+      role("different-accent", {
         drive: 2,
         care: 2,
-        rhythm: 1,
         growth: 1,
       }),
     ]),
@@ -146,9 +187,7 @@ test("similar but mathematically unequal roles are not treated as tied", () => {
 test("the explanation returns the top two overlap traits", () => {
   const result = deriveAdventureAffinity(
     topTen,
-    createCatalog(songs, [
-      role("wide-role", { drive: 2, drama: 2, uplift: 1, care: 1 }),
-    ]),
+    createCatalog(songs, [role("wide-role", { drive: 2, drama: 2, care: 1 })]),
   );
   assert.deepEqual(
     result.winners[0].overlapTraits.map(({ traitId }) => traitId),
@@ -162,7 +201,7 @@ test("equally contributing songs use the user's Top 10 order as the only tie-bre
   );
   const orderedIds = identical.map(({ songId }) => songId);
   const catalog = createCatalog(identical, [
-    role("role", { drive: 2, care: 1 }),
+    role("role", { drive: 2, care: 2, rhythm: 1 }),
   ]);
   const forward = deriveAdventureAffinity(orderedIds, catalog);
   const swapped = deriveAdventureAffinity(
@@ -185,6 +224,10 @@ test("equally contributing songs use the user's Top 10 order as the only tie-bre
 });
 
 test("editorial confidence is validated but never enters the algorithm", () => {
+  const lowSongs = songs.map((affinity) => ({
+    ...affinity,
+    confidence: "low" as const,
+  }));
   const mediumSongs = songs.map((affinity) => ({
     ...affinity,
     confidence: "medium" as const,
@@ -194,17 +237,27 @@ test("editorial confidence is validated but never enters the algorithm", () => {
     confidence: "high" as const,
   }));
   const roles = [
-    role("role-1", { drive: 2, growth: 1 }),
-    role("role-2", { drama: 2, uplift: 1 }),
+    role("role-1", { drive: 2, rhythm: 2, growth: 1 }),
+    role("role-2", { drama: 2, uplift: 2, care: 1 }),
   ];
+  const lowResult = deriveAdventureAffinity(
+    topTen,
+    createCatalog(lowSongs, roles),
+  );
   assert.deepEqual(
+    lowResult,
     deriveAdventureAffinity(topTen, createCatalog(mediumSongs, roles)),
+  );
+  assert.deepEqual(
+    lowResult,
     deriveAdventureAffinity(topTen, createCatalog(highSongs, roles)),
   );
 });
 
 test("missing and duplicate Top 10 songs fail with explicit error codes and IDs", () => {
-  const catalog = createCatalog(songs, [role("role", { drive: 2, care: 1 })]);
+  const catalog = createCatalog(songs, [
+    role("role", { drive: 2, care: 2, rhythm: 1 }),
+  ]);
   assertAffinityError(
     () =>
       deriveAdventureAffinity(
@@ -237,7 +290,7 @@ test("duplicate role and catalog song IDs fail closed", () => {
         topTen,
         createCatalog(
           [...songs, songs[0]],
-          [role("role", { drive: 2, care: 1 })],
+          [role("role", { drive: 2, care: 2, rhythm: 1 })],
         ),
       ),
     "DUPLICATE_CATALOG_SONG_ID",
@@ -248,8 +301,8 @@ test("duplicate role and catalog song IDs fail closed", () => {
       deriveAdventureAffinity(
         topTen,
         createCatalog(songs, [
-          role("same", { drive: 2, care: 1 }),
-          role("same", { drama: 2, growth: 1 }),
+          role("same", { drive: 2, care: 2, rhythm: 1 }),
+          role("same", { drama: 2, growth: 2, ingenuity: 1 }),
         ]),
       ),
     "DUPLICATE_ROLE_ID",
@@ -262,7 +315,7 @@ test("the static matcher snapshots data and stays deterministic after caller mut
     ...affinity,
     scores: { ...affinity.scores },
   }));
-  const mutableRoles = [role("role", { drive: 2, care: 1 })];
+  const mutableRoles = [role("role", { drive: 2, care: 2, rhythm: 1 })];
   const matcher = createAdventureAffinityMatcher(
     createCatalog(mutableSongs, mutableRoles),
   );
@@ -292,7 +345,7 @@ function song(
 ): ApprovedSongAffinity {
   return {
     songId,
-    rubricVersion: "v1",
+    rubricVersion: "gemini-video-v1",
     status: "approved",
     scores: songScores,
     confidence: "high",
