@@ -30,7 +30,7 @@ const [
   read("../src/utils/exportCapture.ts"),
 ]);
 
-test("CTA is gated to a complete unique equal-love standard Top 10", () => {
+test("result matching is gated to a complete unique equal-love standard Top 10", () => {
   const eligibilityStart = clientSource.indexOf(
     "const archetypeTopTenSongIds = useMemo",
   );
@@ -51,6 +51,136 @@ test("CTA is gated to a complete unique equal-love standard Top 10", () => {
   assert.match(eligibility, /new Set\(songIds\)\.size !== slots\.length/);
   assert.match(eligibility, /!hydrated/);
   assert.match(eligibility, /isExportRealm/);
+});
+
+test("entry stays visible for equal-love standard and has exact 0/1/9/10 states", () => {
+  const entryScopeStart = clientSource.indexOf("const showArchetypeEntry =");
+  const entryScopeEnd = clientSource.indexOf(
+    "const archetypeTopTenSongIds = useMemo",
+    entryScopeStart,
+  );
+  const entryScope = clientSource.slice(entryScopeStart, entryScopeEnd);
+  const entryRenderStart = clientSource.indexOf("{archetypeEntryUi ? (");
+  const entryRenderEnd = clientSource.indexOf(
+    '<main className="app-content-shell',
+    entryRenderStart,
+  );
+  const entryRender = clientSource.slice(entryRenderStart, entryRenderEnd);
+
+  assert.match(entryScope, /hydrated/);
+  assert.match(entryScope, /!isExportRealm/);
+  assert.match(entryScope, /PROJECT_ID === "equal-love"/);
+  assert.match(entryScope, /isStandard/);
+  assert.match(entryScope, /slots\.length === 10/);
+  assert.doesNotMatch(entryScope, /archetypeResult/);
+  assert.match(entryScope, /new Set\(archetypeSelectedSongIds\)\.size/);
+  assert.match(entryRender, /data-archetype-entry-state/);
+  assert.match(entryRender, /archetypeSelectedCount === 0/);
+  assert.match(entryRender, /archetypeRemainingCount === 0/);
+  assert.match(entryRender, /entry\.emptyTitle/);
+  assert.match(entryRender, /entry\.incompleteTitle/);
+  assert.match(entryRender, /entry\.readyTitle/);
+  assert.match(entryRender, /entry\.incompleteRemaining/);
+  assert.match(entryRender, /remaining: String\(archetypeRemainingCount\)/);
+  assert.doesNotMatch(entryRender, /\{archetypeSelectedCount\}\s*\/\s*10/);
+
+  const ui = JSON.parse(uiSource);
+  const zh = ui.locales["zh-CN"].entry;
+  assert.equal(zh.campaignLabel, "21单 MV 特别企划");
+  assert.equal(zh.emptyTitle, "选出 Top 10，找到你的冒险搭档");
+  assert.equal(
+    zh.emptyDescription,
+    "看看在 21 单 MV 的冒险世界里，谁与你最合拍。",
+  );
+  assert.equal(zh.incompleteTitle, "找到你的冒险搭档");
+  assert.equal(zh.incompleteRemaining, "再选 {{remaining}} 首，即可查看结果。");
+  assert.equal(zh.readyTitle, "你的冒险搭档已就绪");
+  assert.equal(zh.readyCta, "查看我的冒险搭档");
+
+  const getState = (selectedCount) => {
+    if (selectedCount === 0) return "empty";
+    if (selectedCount === 10) return "ready";
+    return `incomplete:${10 - selectedCount}`;
+  };
+  assert.deepEqual([0, 1, 9, 10].map(getState), [
+    "empty",
+    "incomplete:9",
+    "incomplete:1",
+    "ready",
+  ]);
+
+  const entryIsVisible = ({ projectId, kind, slotCount, exportRealm }) =>
+    !exportRealm &&
+    projectId === "equal-love" &&
+    kind === "standard" &&
+    slotCount === 10;
+  assert.equal(
+    entryIsVisible({
+      projectId: "equal-love",
+      kind: "standard",
+      slotCount: 10,
+      exportRealm: false,
+    }),
+    true,
+  );
+  for (const scenario of [
+    {
+      projectId: "equal-love",
+      kind: "live-afterglow",
+      slotCount: 6,
+      exportRealm: false,
+    },
+    {
+      projectId: "nearly-equal-joy",
+      kind: "standard",
+      slotCount: 10,
+      exportRealm: false,
+    },
+    {
+      projectId: "not-equal-me",
+      kind: "standard",
+      slotCount: 10,
+      exportRealm: false,
+    },
+    {
+      projectId: "equal-love",
+      kind: "standard",
+      slotCount: 10,
+      exportRealm: true,
+    },
+  ]) {
+    assert.equal(entryIsVisible(scenario), false);
+  }
+});
+
+test("pre-completion entry action opens the existing song-selection path", () => {
+  const handlerStart = clientSource.indexOf(
+    "const handleArchetypeEntryClick =",
+  );
+  const handlerEnd = clientSource.indexOf(
+    "const handleNicknameChange =",
+    handlerStart,
+  );
+  const handler = clientSource.slice(handlerStart, handlerEnd);
+
+  assert.match(handler, /archetypeResult && archetypeRemainingCount === 0/);
+  assert.match(
+    handler,
+    /setOpenArchetypeInputKey\(archetypeResult\.inputKey\)/,
+  );
+  assert.match(handler, /handleSlotClick\(archetypeFirstEmptySlotId\)/);
+  assert.match(handler, /handleGlobalSearchClick\(\)/);
+  assert.doesNotMatch(handler, /resolveEqualLoveArchetype/);
+
+  const entryRenderStart = clientSource.indexOf("{archetypeEntryUi ? (");
+  const entryRenderEnd = clientSource.indexOf(
+    '<main className="app-content-shell',
+    entryRenderStart,
+  );
+  const entryRender = clientSource.slice(entryRenderStart, entryRenderEnd);
+  assert.match(entryRender, /onClick=\{handleArchetypeEntryClick\}/);
+  assert.doesNotMatch(entryRender, /disabled=/);
+  assert.match(entryRender, /official-button-primary/);
 });
 
 test("the client uses the complete approved 85-song static document", () => {
@@ -91,7 +221,10 @@ test("the client uses the complete approved 85-song static document", () => {
 
 test("CTA stays between Controls and PickBoard without changing mobile controls", () => {
   const controlsEnd = clientSource.indexOf("</Controls>");
-  const cta = clientSource.indexOf("archetypeResult.ui.entry.cta", controlsEnd);
+  const cta = clientSource.indexOf(
+    "archetypeEntryUi.entry.readyCta",
+    controlsEnd,
+  );
   const pickBoard = clientSource.indexOf("<PickBoard", controlsEnd);
   assert.ok(controlsEnd >= 0 && cta > controlsEnd && pickBoard > cta);
   assert.doesNotMatch(controlsSource, /archetype\./);
@@ -232,6 +365,25 @@ test("ui.json is the single four-locale UI copy source", () => {
 
   for (const locale of Object.values(ui.locales)) {
     assert.deepEqual(
+      [...locale.entry.incompleteRemaining.matchAll(/\{\{(\w+)\}\}/g)].map(
+        (match) => match[1],
+      ),
+      ["remaining"],
+    );
+    for (const key of [
+      "campaignLabel",
+      "emptyTitle",
+      "emptyDescription",
+      "incompleteTitle",
+      "readyTitle",
+      "startCta",
+      "continueCta",
+      "readyCta",
+    ]) {
+      assert.equal(typeof locale.entry[key], "string");
+      assert.ok(locale.entry[key].trim().length > 0);
+    }
+    assert.deepEqual(
       [...locale.result.singleLead.matchAll(/\{\{(\w+)\}\}/g)].map(
         (match) => match[1],
       ),
@@ -263,7 +415,10 @@ test("the matcher still fails closed for missing or invalid approved data", () =
     /localizedCatalog\.characters\.size !== EXPECTED_CHARACTER_COUNT/,
   );
   assert.match(registrySource, /catch \{[\s\S]*return null;/);
-  assert.match(clientSource, /\{archetypeResult \? \(/);
+  assert.match(
+    clientSource,
+    /openArchetypeInputKey === archetypeResult\?\.inputKey[\s\S]*\? archetypeResult[\s\S]*: null/,
+  );
 });
 
 async function read(relativePath) {

@@ -40,7 +40,17 @@ export interface EqualLoveArchetypeCharacterResult {
 
 export interface EqualLoveArchetypeUiCopy {
   title: string;
-  entry: { cta: string };
+  entry: {
+    campaignLabel: string;
+    emptyTitle: string;
+    emptyDescription: string;
+    incompleteTitle: string;
+    incompleteRemaining: string;
+    readyTitle: string;
+    startCta: string;
+    continueCta: string;
+    readyCta: string;
+  };
   result: {
     close: string;
     singleKicker: string;
@@ -99,6 +109,16 @@ interface CharacterPresentation {
   className: string;
   weaponName: string;
   profile: string;
+}
+
+export function getEqualLoveArchetypeUiCopy(
+  locale: AppLocale,
+): EqualLoveArchetypeUiCopy | null {
+  try {
+    return parseUiCopy(uiData, locale);
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -312,7 +332,19 @@ function parseUiCopy(
   const metadata = asRecord(localeCopy.metadata);
   return {
     title: readString(localeCopy.title),
-    entry: { cta: readString(entry.cta) },
+    entry: {
+      campaignLabel: readString(entry.campaignLabel),
+      emptyTitle: readString(entry.emptyTitle),
+      emptyDescription: readString(entry.emptyDescription),
+      incompleteTitle: readString(entry.incompleteTitle),
+      incompleteRemaining: readTemplate(entry.incompleteRemaining, [
+        "remaining",
+      ]),
+      readyTitle: readString(entry.readyTitle),
+      startCta: readString(entry.startCta),
+      continueCta: readString(entry.continueCta),
+      readyCta: readString(entry.readyCta),
+    },
     result: {
       close: readString(result.close),
       singleKicker: readString(result.singleKicker),

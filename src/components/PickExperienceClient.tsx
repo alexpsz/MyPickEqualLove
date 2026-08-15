@@ -36,6 +36,7 @@ import {
 } from "../data/songs";
 import {
   formatArchetypeTemplate,
+  getEqualLoveArchetypeUiCopy,
   resolveEqualLoveArchetype,
 } from "../data/equalLoveArchetype";
 import equalLoveArchetypeAffinitiesData from "../projects/equal-love/archetype-21/song-affinities.json";
@@ -429,6 +430,27 @@ export default function PickExperienceClient({
 
     return Object.fromEntries(entries);
   }, [storedPicks]);
+  const showArchetypeEntry =
+    hydrated &&
+    !isExportRealm &&
+    PROJECT_ID === "equal-love" &&
+    isStandard &&
+    slots.length === 10;
+  const archetypeEntryUi = useMemo(
+    () => (showArchetypeEntry ? getEqualLoveArchetypeUiCopy(locale) : null),
+    [locale, showArchetypeEntry],
+  );
+  const archetypeSelectedSongIds = showArchetypeEntry
+    ? slots.flatMap((slot) => {
+        const songId = picks[slot.id]?.id;
+        return songId ? [songId] : [];
+      })
+    : [];
+  const archetypeSelectedCount = new Set(archetypeSelectedSongIds).size;
+  const archetypeRemainingCount = slots.length - archetypeSelectedCount;
+  const archetypeFirstEmptySlotId = showArchetypeEntry
+    ? slots.find((slot) => !picks[slot.id])?.id
+    : undefined;
   const archetypeTopTenSongIds = useMemo(() => {
     if (
       !hydrated ||
@@ -1418,6 +1440,18 @@ export default function PickExperienceClient({
     setDetailSongId(null);
     setActiveSlotId(null);
     setShowModal(true);
+  };
+
+  const handleArchetypeEntryClick = () => {
+    if (archetypeResult && archetypeRemainingCount === 0) {
+      setOpenArchetypeInputKey(archetypeResult.inputKey);
+      return;
+    }
+    if (archetypeFirstEmptySlotId) {
+      handleSlotClick(archetypeFirstEmptySlotId);
+      return;
+    }
+    handleGlobalSearchClick();
   };
 
   const handleNicknameChange = (nickname: string) => {
@@ -2816,24 +2850,61 @@ export default function PickExperienceClient({
           ) : null}
         </Controls>
 
-        {archetypeResult ? (
+        {archetypeEntryUi ? (
           <div
             data-page-reveal
             className="app-content-shell relative z-10 mb-4 px-4 [--reveal-delay:140ms] sm:mb-5 sm:px-6 md:px-8"
           >
-            <div className="official-panel-soft flex justify-center p-3 sm:p-4">
+            <section
+              aria-labelledby="archetype-entry-title"
+              data-archetype-entry-state={
+                archetypeResult && archetypeRemainingCount === 0
+                  ? "ready"
+                  : archetypeSelectedCount === 0
+                    ? "empty"
+                    : "incomplete"
+              }
+              className="official-panel-soft flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:px-5"
+            >
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold tracking-[0.08em] text-[var(--project-primary)] uppercase">
+                  {archetypeEntryUi.entry.campaignLabel}
+                </p>
+                <h2
+                  id="archetype-entry-title"
+                  className="mt-1 text-base font-semibold tracking-[-0.01em] text-[var(--foreground)] sm:text-lg"
+                >
+                  {archetypeResult && archetypeRemainingCount === 0
+                    ? archetypeEntryUi.entry.readyTitle
+                    : archetypeSelectedCount === 0
+                      ? archetypeEntryUi.entry.emptyTitle
+                      : archetypeEntryUi.entry.incompleteTitle}
+                </h2>
+                {archetypeResult && archetypeRemainingCount === 0 ? null : (
+                  <p className="mt-1 text-[13px] leading-relaxed text-[var(--muted)] sm:text-sm">
+                    {archetypeSelectedCount === 0
+                      ? archetypeEntryUi.entry.emptyDescription
+                      : formatArchetypeTemplate(
+                          archetypeEntryUi.entry.incompleteRemaining,
+                          { remaining: String(archetypeRemainingCount) },
+                        )}
+                  </p>
+                )}
+              </div>
               <button
                 ref={archetypeTriggerRef}
                 type="button"
                 data-dialog-return-key={DIALOG_RETURN_KEYS.archetype}
-                onClick={() =>
-                  setOpenArchetypeInputKey(archetypeResult.inputKey)
-                }
-                className="official-button official-button-primary min-h-11 w-full sm:w-auto sm:min-w-[320px]"
+                onClick={handleArchetypeEntryClick}
+                className="official-button official-button-primary min-h-11 w-full shrink-0 sm:w-auto sm:min-w-[220px]"
               >
-                {archetypeResult.ui.entry.cta}
+                {archetypeResult && archetypeRemainingCount === 0
+                  ? archetypeEntryUi.entry.readyCta
+                  : archetypeSelectedCount === 0
+                    ? archetypeEntryUi.entry.startCta
+                    : archetypeEntryUi.entry.continueCta}
               </button>
-            </div>
+            </section>
           </div>
         ) : null}
 

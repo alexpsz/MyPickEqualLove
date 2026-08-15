@@ -6,8 +6,15 @@
       "productName": "MyPick Archetype",
       "title": "Your Adventure Partner",
       "entry": {
-        "requirement": "Complete your Top 10 to find your song-sync partner.",
-        "cta": "View my song-sync partner"
+        "campaignLabel": "21st Single MV Special Project",
+        "emptyTitle": "Pick your Top 10 and find your adventure partner",
+        "emptyDescription": "See who matches you best in the adventure world of the 21st single MV.",
+        "incompleteTitle": "Find your adventure partner",
+        "incompleteRemaining": "Pick {{remaining}} more to reveal your result.",
+        "readyTitle": "Your adventure partner is ready",
+        "startCta": "Start picking songs",
+        "continueCta": "Continue picking songs",
+        "readyCta": "View my adventure partner"
       },
       "result": {
         "loading": "Analyzing your Top 10…",
@@ -58,8 +65,15 @@
       "productName": "MyPick Archetype",
       "title": "你的冒险搭档",
       "entry": {
-        "requirement": "完成 Top 10 后，即可查看你的选曲同频搭档。",
-        "cta": "查看我的同频搭档"
+        "campaignLabel": "21单 MV 特别企划",
+        "emptyTitle": "选出 Top 10，找到你的冒险搭档",
+        "emptyDescription": "看看在 21 单 MV 的冒险世界里，谁与你最合拍。",
+        "incompleteTitle": "找到你的冒险搭档",
+        "incompleteRemaining": "再选 {{remaining}} 首，即可查看结果。",
+        "readyTitle": "你的冒险搭档已就绪",
+        "startCta": "开始选歌",
+        "continueCta": "继续选歌",
+        "readyCta": "查看我的冒险搭档"
       },
       "result": {
         "loading": "正在分析你的 Top 10…",
@@ -110,8 +124,15 @@
       "productName": "MyPick Archetype",
       "title": "あなたの冒険パートナー",
       "entry": {
-        "requirement": "Top 10を完成させると、選曲シンクロ・パートナーを確認できます。",
-        "cta": "選曲シンクロ・パートナーを見る"
+        "campaignLabel": "21stシングルMV特別企画",
+        "emptyTitle": "Top 10を選んで、あなたの冒険パートナーを見つけよう",
+        "emptyDescription": "21stシングルMVの冒険世界で、誰があなたと一番相性がいいのか見てみよう。",
+        "incompleteTitle": "冒険パートナーを見つけよう",
+        "incompleteRemaining": "あと{{remaining}}曲選ぶと、結果を確認できます。",
+        "readyTitle": "あなたの冒険パートナーの準備ができました",
+        "startCta": "曲を選び始める",
+        "continueCta": "選曲を続ける",
+        "readyCta": "冒険パートナーを見る"
       },
       "result": {
         "loading": "あなたのTop 10を分析しています…",
@@ -162,8 +183,15 @@
       "productName": "MyPick Archetype",
       "title": "나의 모험 파트너",
       "entry": {
-        "requirement": "Top 10을 완성하면 나의 선곡 싱크로 파트너를 확인할 수 있어요.",
-        "cta": "내 선곡 싱크로 파트너 보기"
+        "campaignLabel": "21번째 싱글 MV 특별 기획",
+        "emptyTitle": "Top 10을 고르고 나의 모험 파트너를 찾아보세요",
+        "emptyDescription": "21번째 싱글 MV의 모험 세계에서 누가 나와 가장 잘 맞는지 확인해 보세요.",
+        "incompleteTitle": "나의 모험 파트너 찾기",
+        "incompleteRemaining": "{{remaining}}곡을 더 고르면 결과를 확인할 수 있어요.",
+        "readyTitle": "나의 모험 파트너가 준비됐어요",
+        "startCta": "선곡 시작하기",
+        "continueCta": "선곡 계속하기",
+        "readyCta": "나의 모험 파트너 보기"
       },
       "result": {
         "loading": "나의 Top 10을 분석하고 있어요…",
