@@ -19,9 +19,7 @@
       "result": {
         "loading": "Analyzing your Top 10…",
         "close": "Close",
-        "singleKicker": "Your song-sync partner",
         "singleLead": "Based on your Top 10, your best match for the 21st single MV adventure is—{{characterName}}.",
-        "tieKicker": "Your joint song-sync partners",
         "tieLead": "Based on your Top 10, your best matches for the 21st single MV adventure are—{{characterNames}}.",
         "dataUnavailable": "Match data is not yet available for this selection."
       },
@@ -39,7 +37,6 @@
       },
       "labels": {
         "dateOfJoining": "Joining date",
-        "title": "Title",
         "className": "Class",
         "weapon": "Weapon",
         "stats": "Stats"
@@ -78,9 +75,7 @@
       "result": {
         "loading": "正在分析你的 Top 10…",
         "close": "关闭",
-        "singleKicker": "你的同频搭档",
         "singleLead": "根据你的 Top 10，你在 21 单 MV 冒险世界里最合拍的搭档是——{{characterName}}。",
-        "tieKicker": "你的共同同频搭档",
         "tieLead": "根据你的 Top 10，你在 21 单 MV 冒险世界里最合拍的搭档是——{{characterNames}}。",
         "dataUnavailable": "本期匹配数据尚未覆盖这份选曲。"
       },
@@ -98,7 +93,6 @@
       },
       "labels": {
         "dateOfJoining": "加入日期",
-        "title": "称号",
         "className": "职业",
         "weapon": "武器",
         "stats": "属性"
@@ -137,9 +131,7 @@
       "result": {
         "loading": "あなたのTop 10を分析しています…",
         "close": "閉じる",
-        "singleKicker": "あなたの選曲シンクロ・パートナー",
         "singleLead": "あなたのTop 10をもとに、21stシングルMVの冒険世界で最も相性のいいパートナーは——{{characterName}}。",
-        "tieKicker": "あなたの共同シンクロ・パートナー",
         "tieLead": "あなたのTop 10をもとに、21stシングルMVの冒険世界で最も相性のいいパートナーは——{{characterNames}}。",
         "dataUnavailable": "今回の選曲は、まだマッチングデータの対象になっていません。"
       },
@@ -157,7 +149,6 @@
       },
       "labels": {
         "dateOfJoining": "加入日",
-        "title": "称号",
         "className": "クラス",
         "weapon": "武器",
         "stats": "ステータス"
@@ -196,9 +187,7 @@
       "result": {
         "loading": "나의 Top 10을 분석하고 있어요…",
         "close": "닫기",
-        "singleKicker": "나의 선곡 싱크로 파트너",
         "singleLead": "나의 Top 10을 바탕으로, 21번째 싱글 MV 모험 세계에서 가장 잘 맞는 파트너는 {{characterName}}입니다.",
-        "tieKicker": "나의 공동 싱크로 파트너",
         "tieLead": "나의 Top 10을 바탕으로, 21번째 싱글 MV 모험 세계에서 가장 잘 맞는 파트너는 {{characterNames}}입니다.",
         "dataUnavailable": "이번 선곡은 아직 매칭 데이터 지원 대상이 아닙니다."
       },
@@ -216,7 +205,6 @@
       },
       "labels": {
         "dateOfJoining": "합류일",
-        "title": "칭호",
         "className": "클래스",
         "weapon": "무기",
         "stats": "능력치"

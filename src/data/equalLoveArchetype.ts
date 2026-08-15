@@ -55,9 +55,7 @@ export interface EqualLoveArchetypeUiCopy {
   };
   result: {
     close: string;
-    singleKicker: string;
     singleLead: string;
-    tieKicker: string;
     tieLead: string;
   };
   export: {
@@ -71,7 +69,6 @@ export interface EqualLoveArchetypeUiCopy {
     songsHeading: string;
   };
   labels: {
-    title: string;
     className: string;
     weapon: string;
     stats: string;
@@ -366,9 +363,7 @@ function parseUiCopy(
     },
     result: {
       close: readString(result.close),
-      singleKicker: readString(result.singleKicker),
       singleLead: readTemplate(result.singleLead, ["characterName"]),
-      tieKicker: readString(result.tieKicker),
       tieLead: readTemplate(result.tieLead, ["characterNames"]),
     },
     export: {
@@ -382,7 +377,6 @@ function parseUiCopy(
       songsHeading: readString(explanation.songsHeading),
     },
     labels: {
-      title: readString(labels.title),
       className: readString(labels.className),
       weapon: readString(labels.weapon),
       stats: readString(labels.stats),

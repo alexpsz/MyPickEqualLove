@@ -438,7 +438,7 @@ test("result omits algorithm prose while keeping traits, songs, and official sta
   }
 });
 
-test("canonical character names lead the result while title stays separately labeled", () => {
+test("canonical character names lead the result while title body stays visible without a field label", () => {
   assert.match(registrySource, /displayName: readString\(character\.name\)/);
   assert.match(registrySource, /weaponName: readString\(weapon\.name\)/);
 
@@ -459,7 +459,7 @@ test("canonical character names lead the result while title stays separately lab
   );
   assert.match(cardHeading, /character\.displayName/);
   assert.doesNotMatch(cardHeading, /character\.title/);
-  assert.match(modalSource, /ui\.labels\.title/);
+  assert.doesNotMatch(modalSource, /ui\.labels\.title/);
   assert.match(modalSource, /character\.title/);
   assert.match(modalSource, /ui\.labels\.weapon/);
   assert.match(modalSource, /character\.weaponName/);
@@ -484,6 +484,9 @@ test("ui.json is the single four-locale UI copy source", () => {
   assert.match(ui.locales.ja.metadata.entertainmentNotice, /AIによる選曲分析/);
   assert.match(ui.locales.ko.metadata.entertainmentNotice, /AI 선곡 분석/);
   for (const locale of Object.values(ui.locales)) {
+    assert.equal("singleKicker" in locale.result, false);
+    assert.equal("tieKicker" in locale.result, false);
+    assert.equal("title" in locale.labels, false);
     assert.match(locale.result.singleLead, /Top 10/);
     assert.match(locale.result.tieLead, /Top 10/);
     assert.doesNotMatch(
@@ -493,6 +496,8 @@ test("ui.json is the single four-locale UI copy source", () => {
   }
   assert.doesNotMatch(messagesSource, /"archetype\./);
   assert.match(registrySource, /import uiData from .*ui\.json/);
+  assert.doesNotMatch(registrySource, /singleKicker|tieKicker|labels\.title/);
+  assert.doesNotMatch(modalSource, /singleKicker|tieKicker|ui\.labels\.title/);
 
   for (const locale of Object.values(ui.locales)) {
     assert.deepEqual(

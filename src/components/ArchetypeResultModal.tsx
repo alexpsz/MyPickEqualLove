@@ -109,12 +109,9 @@ export default function ArchetypeResultModal({
       >
         <div className="flex items-start gap-3 border-b border-[var(--line)] px-4 py-4 sm:px-6">
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold tracking-[0.08em] text-[var(--project-primary)] uppercase">
-              {result.isTie ? ui.result.tieKicker : ui.result.singleKicker}
-            </p>
             <h2
               id="archetype-result-title"
-              className="mt-1 text-[22px] font-semibold tracking-[-0.035em] text-[var(--foreground)] sm:text-[26px]"
+              className="text-[22px] font-semibold tracking-[-0.035em] text-[var(--foreground)] sm:text-[26px]"
             >
               {ui.title}
             </h2>
@@ -199,13 +196,7 @@ function CharacterResultCard({
         className="border-b border-[var(--line)] p-4 sm:p-5"
         style={{ backgroundColor: `${accentColor}0d` }}
       >
-        <p
-          className="text-[11px] font-semibold tracking-[0.08em] uppercase"
-          style={{ color: accentColor }}
-        >
-          {ui.labels.title}
-        </p>
-        <h3 className="mt-1 text-[24px] font-semibold tracking-[-0.04em] text-[var(--foreground)] sm:text-[28px]">
+        <h3 className="text-[24px] font-semibold tracking-[-0.04em] text-[var(--foreground)] sm:text-[28px]">
           {character.displayName}
         </h3>
         <p
