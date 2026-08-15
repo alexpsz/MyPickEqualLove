@@ -34,6 +34,7 @@ import {
   SONGS_BY_ID,
   TRACK_TYPES,
 } from "../data/songs";
+import { resolveEqualLoveArchetype } from "../data/equalLoveArchetype";
 import {
   createBoardSharePayload,
   resolveBoardSharePayload,
@@ -180,6 +181,10 @@ const PickAssistantModal = dynamic(() => import("./PickAssistantModal"), {
   ssr: false,
 });
 
+const ArchetypeResultModal = dynamic(() => import("./ArchetypeResultModal"), {
+  ssr: false,
+});
+
 type PickAssistantStorageIssue =
   import("./PickAssistantModal").PickAssistantStorageIssue;
 
@@ -310,6 +315,9 @@ export default function PickExperienceClient({
   const [pendingReplacementSong, setPendingReplacementSong] =
     useState<Song | null>(null);
   const [preview, setPreview] = useState<PreviewSnapshot | null>(null);
+  const [openArchetypeInputKey, setOpenArchetypeInputKey] = useState<
+    string | null
+  >(null);
   const [generating, setGenerating] = useState(false);
   const [showTitles, setShowTitles] = useState(
     DEFAULT_EXPORT_OPTIONS.showTitles,
@@ -362,6 +370,7 @@ export default function PickExperienceClient({
   const capturedFrameRequestIdRef = useRef<string | null>(null);
   const previewTriggerRef = useRef<HTMLButtonElement>(null);
   const pickAssistantTriggerRef = useRef<HTMLButtonElement>(null);
+  const archetypeTriggerRef = useRef<HTMLButtonElement>(null);
   const pickAssistantSnapshotRef = useRef(pickAssistantSnapshot);
   const pickAssistantStorageKeyRef = useRef(storageKeys.assistant);
   const assistantMutationPendingRef = useRef(false);
@@ -408,6 +417,38 @@ export default function PickExperienceClient({
 
     return Object.fromEntries(entries);
   }, [storedPicks]);
+  const archetypeTopTenSongIds = useMemo(() => {
+    if (
+      !hydrated ||
+      isExportRealm ||
+      PROJECT_ID !== "equal-love" ||
+      !isStandard ||
+      slots.length !== 10
+    ) {
+      return null;
+    }
+    const songIds = slots.map((slot) => picks[slot.id]?.id);
+    if (
+      songIds.some((songId) => !songId) ||
+      new Set(songIds).size !== slots.length
+    ) {
+      return null;
+    }
+    return songIds as string[];
+  }, [hydrated, isExportRealm, isStandard, picks, slots]);
+  const archetypeResult = useMemo(
+    () =>
+      archetypeTopTenSongIds
+        ? resolveEqualLoveArchetype(archetypeTopTenSongIds, locale)
+        : null,
+    [archetypeTopTenSongIds, locale],
+  );
+
+  useEffect(() => {
+    setOpenArchetypeInputKey((current) =>
+      current && current !== archetypeResult?.inputKey ? null : current,
+    );
+  }, [archetypeResult?.inputKey]);
   const assistantShortlistIds = pickAssistantSnapshot.shortlistIds;
   const candidateSongIds = useMemo(
     () => new Set(assistantShortlistIds),
@@ -2656,6 +2697,26 @@ export default function PickExperienceClient({
           ) : null}
         </Controls>
 
+        {archetypeResult ? (
+          <div
+            data-page-reveal
+            className="app-content-shell relative z-10 mb-4 px-4 [--reveal-delay:140ms] sm:mb-5 sm:px-6 md:px-8"
+          >
+            <div className="official-panel-soft flex justify-center p-3 sm:p-4">
+              <button
+                ref={archetypeTriggerRef}
+                type="button"
+                onClick={() =>
+                  setOpenArchetypeInputKey(archetypeResult.inputKey)
+                }
+                className="official-button official-button-primary min-h-11 w-full sm:w-auto sm:min-w-[320px]"
+              >
+                {archetypeResult.ui.entry.cta}
+              </button>
+            </div>
+          </div>
+        ) : null}
+
         <main className="app-content-shell flex flex-1 flex-col px-4 sm:px-6 md:px-8">
           <PickBoard
             slots={uiSlots}
@@ -2851,6 +2912,24 @@ export default function PickExperienceClient({
                 void handleApplyAssistantResult();
               }}
               onResetStorage={handleResetPickAssistantStorage}
+            />
+          )}
+        </MotionPresence>
+
+        <MotionPresence
+          value={
+            openArchetypeInputKey === archetypeResult?.inputKey
+              ? archetypeResult
+              : null
+          }
+        >
+          {(result, presenceState) => (
+            <ArchetypeResultModal
+              result={result}
+              presenceState={presenceState}
+              returnFocusRef={archetypeTriggerRef}
+              returnFocusFallbackKey={DIALOG_RETURN_KEYS.globalSearch}
+              onClose={() => setOpenArchetypeInputKey(null)}
             />
           )}
         </MotionPresence>
