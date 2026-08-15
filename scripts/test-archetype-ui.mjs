@@ -285,6 +285,10 @@ test("partner image reuses the existing export realm without becoming a saved te
   assert.match(clientSource, /const sharePageUrl = pageUrl;/);
   assert.match(
     clientSource,
+    /shareHashtags: archetypeForExport[\s\S]*\[\.\.\.experience\.share\.hashtags, "#恋はじめました"\][\s\S]*: experience\.share\.hashtags\.slice\(\)/,
+  );
+  assert.match(
+    clientSource,
     /headerPresentation=\{archetypeExportPresentation\}/,
   );
   assert.match(clientSource, /MY ADVENTURE PARTNER/);
@@ -505,6 +509,19 @@ test("ui.json is the single four-locale UI copy source", () => {
   );
   assert.match(ui.locales.ja.metadata.entertainmentNotice, /AIによる選曲分析/);
   assert.match(ui.locales.ko.metadata.entertainmentNotice, /AI 선곡 분석/);
+  assert.match(
+    ui.locales.en.export.shareText,
+    /Please attach the downloaded image\./,
+  );
+  assert.match(ui.locales["zh-CN"].export.shareText, /※请附上已下载的图片。/);
+  assert.match(
+    ui.locales.ja.export.shareText,
+    /※ダウンロードした画像を添付してください。/,
+  );
+  assert.match(
+    ui.locales.ko.export.shareText,
+    /※다운로드한 이미지를 첨부해 주세요\./,
+  );
   for (const locale of Object.values(ui.locales)) {
     assert.equal("singleKicker" in locale.result, false);
     assert.equal("tieKicker" in locale.result, false);

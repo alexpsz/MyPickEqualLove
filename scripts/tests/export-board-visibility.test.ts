@@ -299,6 +299,14 @@ test("single archetype export is a dedicated fixed dossier with radar and Top 10
   assert.ok(markup.includes(character.exportSummary));
   assert.equal((markup.match(/data-archetype-radar="true"/g) ?? []).length, 1);
   assert.match(markup, /data-archetype-radar-max="1200"/);
+  assert.doesNotMatch(
+    markup,
+    /AI song-pick analysis, for entertainment only\./,
+  );
+  assert.match(
+    markup,
+    /data-archetype-traits="true"[\s\S]*display:inline-flex;align-items:center;justify-content:center/,
+  );
   assert.equal((markup.match(/data-archetype-song-rank=/g) ?? []).length, 10);
   assert.equal((markup.match(/data-archetype-song-title=/g) ?? []).length, 10);
   assert.equal(
@@ -441,7 +449,20 @@ test("mobile preview collapses export options and keeps the image stage flexible
     templateSegmentedControlSource,
     /bg-\[var\(--project-primary\)\] text-\[var\(--project-contrast\)\]/,
   );
+  assert.match(
+    previewModalSource,
+    /locale === "zh-CN" \? "sm:w-44" : "sm:w-60"/,
+  );
+  assert.match(
+    previewModalSource,
+    /data-preview-option="template"[\s\S]*col-span-2 min-w-0 sm:col-auto/,
+  );
+  assert.match(
+    templateSegmentedControlSource,
+    /compactLabels \? "sm:text-\[12px\]" : "sm:text-\[13px\]"/,
+  );
   assert.doesNotMatch(templateSegmentedControlSource, /text-white/);
+  assert.match(previewModalSource, /config\.shareHashtags\.join\("\\n"\)/);
   assert.match(previewModalSource, /role="group"[\s\S]*aria-label=\{label\}/);
   assert.match(
     previewModalSource,

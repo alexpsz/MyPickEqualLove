@@ -697,16 +697,6 @@ export function ArchetypeDossierPoster({
             ) : null}
             <div
               style={{
-                color: "#4b5563",
-                fontSize: "13px",
-                fontWeight: 800,
-                lineHeight: 1.35,
-              }}
-            >
-              AI song-pick analysis, for entertainment only.
-            </div>
-            <div
-              style={{
                 marginTop: "5px",
                 color: "#6b7280",
                 fontSize: "11px",
@@ -1048,6 +1038,9 @@ function TraitPills({
         <span
           key={traitId}
           style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
             border: `1px solid ${accent}`,
             boxShadow: accentContrast.outlineShadow,
             padding: compact ? "5px 8px" : "7px 11px",
@@ -1057,6 +1050,7 @@ function TraitPills({
             fontWeight: 900,
             letterSpacing: "0.04em",
             lineHeight: 1,
+            textAlign: "center",
             whiteSpace: "nowrap",
           }}
         >

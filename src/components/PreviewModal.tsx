@@ -70,7 +70,7 @@ export default function PreviewModal({
   returnFocusKey,
   returnFocusFallbackKey,
 }: PreviewModalProps) {
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
   const panelRef = useRef<HTMLDivElement>(null);
   const footerCloseButtonRef = useRef<HTMLButtonElement>(null);
   const actionRunIdRef = useRef(0);
@@ -295,7 +295,9 @@ export default function PreviewModal({
               >
                 <div
                   data-preview-option="template"
-                  className="order-1 min-w-0 sm:w-44"
+                  className={`order-1 col-span-2 min-w-0 sm:col-auto ${
+                    locale === "zh-CN" ? "sm:w-44" : "sm:w-60"
+                  }`}
                 >
                   <TemplateSegmentedControl
                     label={t("preview.templateLabel")}
@@ -303,6 +305,7 @@ export default function PreviewModal({
                     disabled={generating}
                     onValueChange={onTemplateChange}
                     getOptionLabel={(id) => t(getExportTemplateMessageKey(id))}
+                    compactLabels={locale !== "zh-CN"}
                   />
                 </div>
                 <div
@@ -516,7 +519,7 @@ function buildXAndroidIntentUrl(fallbackUrl: string, config: XShareConfig) {
 }
 
 function buildXShareText(config: XShareConfig) {
-  return `${config.shareText}\n${config.shareHashtags.join(" ")}`;
+  return `${config.shareText}\n${config.shareHashtags.join("\n")}`;
 }
 
 function buildXShareMessage(config: XShareConfig) {
@@ -572,12 +575,14 @@ function TemplateSegmentedControl({
   disabled,
   onValueChange,
   getOptionLabel,
+  compactLabels,
 }: {
   label: string;
   value: ExportTemplateId;
   disabled: boolean;
   onValueChange: (value: ExportTemplateId) => void;
   getOptionLabel: (value: ExportTemplateId) => string;
+  compactLabels: boolean;
 }) {
   return (
     <div
@@ -596,7 +601,7 @@ function TemplateSegmentedControl({
             aria-pressed={selected}
             disabled={disabled}
             onClick={() => onValueChange(option)}
-            className={`flex min-h-11 min-w-0 items-center justify-center gap-1 rounded-[calc(var(--radius-sm)-2px)] px-1.5 text-[12px] font-semibold outline-none transition-[background-color,color,box-shadow] duration-150 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:opacity-50 sm:text-[13px] ${
+            className={`flex min-h-11 min-w-0 items-center justify-center gap-1 rounded-[calc(var(--radius-sm)-2px)] px-1.5 text-[12px] font-semibold outline-none transition-[background-color,color,box-shadow] duration-150 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:opacity-50 ${
               selected
                 ? "bg-[var(--project-primary)] text-[var(--project-contrast)] shadow-sm"
                 : "text-[var(--foreground)] hover:bg-[var(--background)]"
@@ -610,7 +615,13 @@ function TemplateSegmentedControl({
                 <AppIcon name="check" size={14} strokeWidth={2.25} />
               ) : null}
             </span>
-            <span className="truncate">{getOptionLabel(option)}</span>
+            <span
+              className={`truncate ${
+                compactLabels ? "sm:text-[12px]" : "sm:text-[13px]"
+              }`}
+            >
+              {getOptionLabel(option)}
+            </span>
           </button>
         );
       })}

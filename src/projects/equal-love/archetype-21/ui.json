@@ -27,7 +27,7 @@
         "button": "Generate partner image",
         "generating": "Generating…",
         "previewLabel": "Your adventure partner: {{characterNames}}",
-        "shareText": "My 21st single MV adventure partner is {{characterNames}}!"
+        "shareText": "My 21st single MV adventure partner is {{characterNames}}!\nPlease attach the downloaded image."
       },
       "explanation": {
         "dimensionsHeading": "Why you click",
@@ -83,7 +83,7 @@
         "button": "生成搭档图片",
         "generating": "正在生成…",
         "previewLabel": "你的冒险搭档：{{characterNames}}",
-        "shareText": "我的 21 单 MV 冒险搭档是 {{characterNames}}！"
+        "shareText": "我的 21 单 MV 冒险搭档是 {{characterNames}}！\n※请附上已下载的图片。"
       },
       "explanation": {
         "dimensionsHeading": "你们的契合特点",
@@ -139,7 +139,7 @@
         "button": "パートナー画像を生成",
         "generating": "生成中…",
         "previewLabel": "あなたの冒険パートナー：{{characterNames}}",
-        "shareText": "私の21stシングルMV冒険パートナーは{{characterNames}}！"
+        "shareText": "私の21stシングルMV冒険パートナーは{{characterNames}}！\n※ダウンロードした画像を添付してください。"
       },
       "explanation": {
         "dimensionsHeading": "相性のいいポイント",
@@ -195,7 +195,7 @@
         "button": "파트너 이미지 만들기",
         "generating": "생성 중…",
         "previewLabel": "나의 모험 파트너: {{characterNames}}",
-        "shareText": "나의 21번째 싱글 MV 모험 파트너는 {{characterNames}}!"
+        "shareText": "나의 21번째 싱글 MV 모험 파트너는 {{characterNames}}!\n※다운로드한 이미지를 첨부해 주세요."
       },
       "explanation": {
         "dimensionsHeading": "잘 맞는 포인트",

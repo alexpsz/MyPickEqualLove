@@ -2528,7 +2528,9 @@ export default function PickExperienceClient({
                   },
                 )
               : uiCopy.shareText,
-            shareHashtags: experience.share.hashtags.slice(),
+            shareHashtags: archetypeForExport
+              ? [...experience.share.hashtags, "#恋はじめました"]
+              : experience.share.hashtags.slice(),
             shareTitle: archetypeForExport
               ? archetypeForExport.ui.title
               : uiCopy.title,
