@@ -2,16 +2,19 @@
 
 import React, { useRef, type RefObject } from "react";
 import * as m from "motion/react-m";
-import { SONGS_BY_ID } from "../data/songs";
+import { PROJECT_THEME_COLOR } from "../config/project";
+import { MEMBERS_BY_ID, SONGS_BY_ID } from "../data/songs";
 import {
   formatArchetypeTemplate,
   type EqualLoveArchetypeCharacterResult,
   type EqualLoveArchetypeResult,
   type EqualLoveArchetypeUiCopy,
 } from "../data/equalLoveArchetype";
+import { getMemberColors } from "../utils/memberColors";
 import { useDialogA11y } from "../utils/useDialogA11y";
 import AppIcon from "./AppIcon";
 import { APPLE_OPACITY, APPLE_SPRING_GENTLE } from "./AppleMotion";
+import ArchetypeRadarChart from "./ArchetypeRadarChart";
 import JapaneseContent from "./JapaneseContent";
 import type { PresenceState } from "./MotionPresence";
 
@@ -150,16 +153,20 @@ export default function ArchetypeResultModal({
           </div>
         </div>
 
-        <div className="flex justify-end gap-2 border-t border-[var(--line)] bg-white p-3 pb-[max(.75rem,env(safe-area-inset-bottom))] sm:px-5">
+        <div className="grid grid-cols-2 gap-2 border-t border-[var(--line)] bg-white p-3 pb-[max(.75rem,env(safe-area-inset-bottom))] sm:flex sm:justify-end sm:px-5">
           <button
             type="button"
             onClick={onGenerateImage}
             disabled={generatingImage || presenceState === "exiting"}
-            className="official-button official-button-primary disabled:opacity-50"
+            className="official-button min-w-0 disabled:opacity-50"
           >
             {generatingImage ? ui.export.generating : ui.export.button}
           </button>
-          <button type="button" onClick={onClose} className="official-button">
+          <button
+            type="button"
+            onClick={onClose}
+            className="official-button official-button-primary min-w-0"
+          >
             {ui.result.close}
           </button>
         </div>
@@ -180,73 +187,143 @@ function CharacterResultCard({
     if (!song) throw new Error(`Missing contributing song: ${songId}`);
     return song;
   });
+  const accentColor = resolveArchetypeAccent(character);
+  const radarAriaLabel = buildRadarAriaLabel(character, ui);
+
   return (
-    <article className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--line)] bg-white">
-      <div className="border-b border-[var(--line)] p-4 sm:p-5">
-        <h3 className="mt-1 text-[20px] font-semibold tracking-[-0.03em] text-[var(--foreground)] sm:text-[23px]">
+    <article
+      data-archetype-character-card={character.roleId}
+      className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--line)] bg-white"
+    >
+      <div
+        className="border-b border-[var(--line)] p-4 sm:p-5"
+        style={{ backgroundColor: `${accentColor}0d` }}
+      >
+        <p
+          className="text-[11px] font-semibold tracking-[0.08em] uppercase"
+          style={{ color: accentColor }}
+        >
+          {ui.labels.title}
+        </p>
+        <h3 className="mt-1 text-[24px] font-semibold tracking-[-0.04em] text-[var(--foreground)] sm:text-[28px]">
           {character.displayName}
         </h3>
-        <p className="mt-1 text-[13px] font-semibold text-[var(--project-primary)]">
-          {ui.labels.title}:{" "}
-          <span lang={character.contentLocale}>{character.title}</span>
-        </p>
-        <p className="mt-1 text-[13px] font-semibold text-[var(--project-primary)]">
-          {ui.labels.className}:{" "}
-          <span lang={character.contentLocale}>{character.className}</span>
-        </p>
-        <p className="mt-1 text-[13px] font-semibold text-[var(--project-primary)]">
-          {ui.labels.weapon}:{" "}
-          <span lang={character.contentLocale}>{character.weaponName}</span>
-        </p>
         <p
           lang={character.contentLocale}
-          className="mt-3 text-[14px] leading-6 text-[var(--foreground)]"
+          className="mt-1 text-[15px] font-semibold leading-snug text-[var(--foreground)]"
+        >
+          {character.title}
+        </p>
+
+        <dl className="mt-4 grid gap-x-5 gap-y-3 border-y border-[var(--line)] py-3 sm:grid-cols-2">
+          <div className="grid min-w-0 grid-cols-[5.5rem_minmax(0,1fr)] items-baseline gap-2">
+            <dt
+              className="text-[11px] font-semibold tracking-[0.06em] uppercase"
+              style={{ color: accentColor }}
+            >
+              {ui.labels.className}
+            </dt>
+            <dd
+              lang={character.contentLocale}
+              className="min-w-0 text-[13px] font-semibold text-[var(--foreground)]"
+            >
+              {character.className}
+            </dd>
+          </div>
+          <div className="grid min-w-0 grid-cols-[5.5rem_minmax(0,1fr)] items-baseline gap-2">
+            <dt
+              className="text-[11px] font-semibold tracking-[0.06em] uppercase"
+              style={{ color: accentColor }}
+            >
+              {ui.labels.weapon}
+            </dt>
+            <dd
+              lang={character.contentLocale}
+              className="min-w-0 text-[13px] font-semibold text-[var(--foreground)]"
+            >
+              {character.weaponName}
+            </dd>
+          </div>
+        </dl>
+
+        <p
+          lang={character.contentLocale}
+          className="mt-4 text-[14px] leading-6 text-[var(--foreground)]"
         >
           {character.profile}
         </p>
       </div>
 
-      <div className="grid gap-5 p-4 sm:p-5 lg:grid-cols-[1.15fr_.85fr]">
-        <div>
-          <h4 className="text-xs font-semibold tracking-[0.06em] text-[var(--muted)] uppercase">
-            {ui.labels.stats}
-          </h4>
-          <dl className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-5">
-            {STAT_KEYS.map((statId) => (
-              <div
-                key={statId}
-                className="rounded-[var(--radius-sm)] bg-[var(--background)] px-3 py-2.5"
-              >
-                <dt className="text-[11px] leading-tight text-[var(--muted)]">
-                  {character.statLabels[statId]}
-                </dt>
-                <dd className="mt-1 text-[17px] font-semibold tabular-nums text-[var(--foreground)]">
-                  {character.stats[statId]}
-                </dd>
-              </div>
-            ))}
-          </dl>
+      <div className="grid gap-5 p-4 sm:p-5 lg:grid-cols-[minmax(0,1.12fr)_minmax(17rem,.88fr)] lg:items-center">
+        <div
+          className="flex min-w-0 justify-center overflow-hidden rounded-[var(--radius-sm)] p-1 sm:p-2"
+          style={{ backgroundColor: `${accentColor}0a` }}
+        >
+          <div className="w-full max-w-[400px] [&>svg]:h-auto [&>svg]:w-full [&>svg]:max-w-full">
+            <ArchetypeRadarChart
+              stats={character.stats}
+              labels={character.statLabels}
+              accentColor={accentColor}
+              ariaLabel={radarAriaLabel}
+              size={400}
+            />
+          </div>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-          <div>
-            <h4 className="text-xs font-semibold tracking-[0.06em] text-[var(--muted)] uppercase">
+        <div className="grid min-w-0 gap-5">
+          <section>
+            <h4
+              className="text-xs font-semibold tracking-[0.06em] uppercase"
+              style={{ color: accentColor }}
+            >
+              {ui.labels.stats}
+            </h4>
+            <dl className="mt-2 grid grid-cols-2 gap-2">
+              {STAT_KEYS.map((statId) => (
+                <div
+                  key={statId}
+                  className="min-w-0 rounded-[var(--radius-sm)] bg-[var(--background)] px-3 py-2.5"
+                >
+                  <dt className="text-[12px] leading-snug text-[var(--muted)]">
+                    {character.statLabels[statId]}
+                  </dt>
+                  <dd className="mt-1 text-[17px] font-semibold tabular-nums text-[var(--foreground)]">
+                    {character.stats[statId]}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+
+          <section>
+            <h4
+              className="text-xs font-semibold tracking-[0.06em] uppercase"
+              style={{ color: accentColor }}
+            >
               {ui.explanation.dimensionsHeading}
             </h4>
             <ul className="mt-2 flex flex-wrap gap-2">
               {character.overlapTraitIds.map((traitId) => (
                 <li
                   key={traitId}
-                  className="rounded-full bg-[var(--project-primary-wash)] px-3 py-1.5 text-[12px] font-semibold text-[var(--foreground)]"
+                  className="flex items-center gap-2 rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-[12px] font-semibold text-[var(--foreground)]"
                 >
+                  <span
+                    aria-hidden="true"
+                    className="h-1.5 w-1.5 shrink-0 rounded-full"
+                    style={{ backgroundColor: accentColor }}
+                  />
                   {ui.traits[traitId]}
                 </li>
               ))}
             </ul>
-          </div>
+          </section>
 
-          <div>
-            <h4 className="text-xs font-semibold tracking-[0.06em] text-[var(--muted)] uppercase">
+          <section>
+            <h4
+              className="text-xs font-semibold tracking-[0.06em] uppercase"
+              style={{ color: accentColor }}
+            >
               {ui.explanation.songsHeading}
             </h4>
             <ol className="mt-2 grid gap-1.5">
@@ -262,9 +339,34 @@ function CharacterResultCard({
                 </li>
               ))}
             </ol>
-          </div>
+          </section>
         </div>
       </div>
     </article>
   );
+}
+
+function resolveArchetypeAccent(character: EqualLoveArchetypeCharacterResult) {
+  const fallback = isHexColor(PROJECT_THEME_COLOR)
+    ? PROJECT_THEME_COLOR
+    : "#6b7280";
+  const member = MEMBERS_BY_ID[character.memberId];
+  if (!member) return fallback;
+  return getMemberColors(member, fallback).find(isHexColor) ?? fallback;
+}
+
+function isHexColor(value: string) {
+  return /^#[\da-f]{6}$/i.test(value);
+}
+
+function buildRadarAriaLabel(
+  character: EqualLoveArchetypeCharacterResult,
+  ui: EqualLoveArchetypeUiCopy,
+) {
+  return [
+    `${character.displayName} — ${ui.labels.stats}`,
+    ...STAT_KEYS.map(
+      (statId) => `${character.statLabels[statId]}: ${character.stats[statId]}`,
+    ),
+  ].join(". ");
 }

@@ -316,6 +316,68 @@ test("radar is pure fixed SVG with a shared 1200 maximum and accessible labeling
   assert.doesNotMatch(radarSource, /animate|transition|filter:|backdrop/i);
 });
 
+test("every single or tied result card renders a localized member-color radar and compact values", () => {
+  const characterCards = modalSource.slice(
+    modalSource.indexOf("{result.characters.map"),
+    modalSource.indexOf("ui.metadata.entertainmentNotice"),
+  );
+  const cardSource = modalSource.slice(
+    modalSource.indexOf("function CharacterResultCard"),
+  );
+
+  assert.match(characterCards, /result\.characters\.map\(\(character\)/);
+  assert.match(characterCards, /key=\{character\.roleId\}/);
+  assert.match(characterCards, /<CharacterResultCard/);
+  assert.match(
+    cardSource,
+    /data-archetype-character-card=\{character\.roleId\}/,
+  );
+  assert.match(cardSource, /<ArchetypeRadarChart/);
+  assert.match(cardSource, /stats=\{character\.stats\}/);
+  assert.match(cardSource, /labels=\{character\.statLabels\}/);
+  assert.match(cardSource, /accentColor=\{accentColor\}/);
+  assert.match(cardSource, /ariaLabel=\{radarAriaLabel\}/);
+  assert.doesNotMatch(cardSource, /maxValue=/);
+  assert.match(cardSource, /MEMBERS_BY_ID\[character\.memberId\]/);
+  assert.match(cardSource, /getMemberColors\(member, fallback\)/);
+  assert.match(cardSource, /isHexColor\(PROJECT_THEME_COLOR\)/);
+  assert.match(cardSource, /"#6b7280"/);
+  assert.match(cardSource, /<dl[\s\S]*STAT_KEYS\.map/);
+  assert.match(cardSource, /character\.statLabels\[statId\]/);
+  assert.match(cardSource, /character\.stats\[statId\]/);
+  assert.doesNotMatch(cardSource, /roleId[\s\S]{0,80}#[\da-f]{6}/i);
+
+  const members = new Map(
+    JSON.parse(membersSource).map((member) => [member.id, member]),
+  );
+  for (const character of JSON.parse(charactersEnSource).characters) {
+    const member = members.get(character.memberId);
+    assert.ok(member);
+    const colors = member.colors ?? [member.color];
+    assert.ok(colors.some((color) => /^#[\da-f]{6}$/i.test(color)));
+  }
+});
+
+test("the result keeps scrolling and makes image generation a secondary action", () => {
+  assert.match(modalSource, /max-h-\[92dvh\]/);
+  assert.match(modalSource, /min-h-0 flex-1 overflow-y-auto/);
+  assert.match(modalSource, /safe-area-inset-bottom/);
+  const footer = modalSource.slice(
+    modalSource.indexOf('className="grid grid-cols-2 gap-2 border-t'),
+    modalSource.indexOf("</m.div>"),
+  );
+  const generateButton = footer.slice(
+    footer.indexOf("onClick={onGenerateImage}"),
+    footer.indexOf("</button>"),
+  );
+  const closeButton = footer.slice(
+    footer.indexOf("onClick={onClose}", footer.indexOf("</button>")),
+  );
+  assert.match(generateButton, /className="official-button min-w-0/);
+  assert.doesNotMatch(generateButton, /official-button-primary/);
+  assert.match(closeButton, /official-button-primary/);
+});
+
 test("four locale catalogs provide reviewed export summaries and canonical member ids", () => {
   const members = new Set(JSON.parse(membersSource).map(({ id }) => id));
   const catalogs = {
