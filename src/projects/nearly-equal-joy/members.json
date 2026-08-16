@@ -8,7 +8,7 @@
     "profileUrl": "https://nearly-equal-joy.jp/feature/profile_aida_jurii",
     "active": true,
     "sortOrder": 1,
-    "color": "#800020",
+    "color": "#7E2E2D",
     "colorName": "Bordeaux (ボルドー)"
   },
   {
@@ -20,7 +20,7 @@
     "profileUrl": "https://nearly-equal-joy.jp/feature/profile_amano_konoa",
     "active": true,
     "sortOrder": 2,
-    "color": "#f8a7c5",
+    "color": "#F79AB9",
     "colorName": "Light Pink (薄ピンク)"
   },
   {
@@ -32,7 +32,7 @@
     "profileUrl": "https://nearly-equal-joy.jp/feature/profile_ichihara_ayumi",
     "active": true,
     "sortOrder": 3,
-    "color": "#8e44ad",
+    "color": "#83438D",
     "colorName": "Purple (紫)"
   },
   {
@@ -44,7 +44,7 @@
     "profileUrl": "https://nearly-equal-joy.jp/feature/profile_esumi_renon",
     "active": true,
     "sortOrder": 4,
-    "color": "#1976d2",
+    "color": "#014A8F",
     "colorName": "Blue (青)"
   },
   {
@@ -56,7 +56,7 @@
     "profileUrl": "https://nearly-equal-joy.jp/feature/profile_oshida_mitsuki",
     "active": true,
     "sortOrder": 5,
-    "color": "#73c7e8",
+    "color": "#1D9ADD",
     "colorName": "Light Blue (水色)"
   },
   {
@@ -68,7 +68,7 @@
     "profileUrl": "https://nearly-equal-joy.jp/feature/profile_onishi_aoi",
     "active": true,
     "sortOrder": 6,
-    "color": "#ffffff",
+    "color": "#FFFFFF",
     "colorName": "White (白)"
   },
   {
@@ -80,7 +80,7 @@
     "profileUrl": "https://nearly-equal-joy.jp/feature/profile_ozawa_aimi",
     "active": true,
     "sortOrder": 7,
-    "color": "#f6c443",
+    "color": "#E7BD19",
     "colorName": "Yellow (黄色)"
   },
   {
@@ -92,7 +92,7 @@
     "profileUrl": "https://nearly-equal-joy.jp/feature/profile_takahashi_mai",
     "active": true,
     "sortOrder": 8,
-    "color": "#f57c00",
+    "color": "#E19D54",
     "colorName": "Orange (オレンジ)"
   },
   {
@@ -104,7 +104,7 @@
     "profileUrl": "https://nearly-equal-joy.jp/feature/profile_fujisawa_riko",
     "active": true,
     "sortOrder": 9,
-    "color": "#43a047",
+    "color": "#08843C",
     "colorName": "Green (緑)"
   },
   {
@@ -116,7 +116,7 @@
     "profileUrl": "https://nearly-equal-joy.jp/feature/profile_murayama_yuuka",
     "active": true,
     "sortOrder": 10,
-    "color": "#e53935",
+    "color": "#C0292E",
     "colorName": "Red (赤)"
   },
   {
@@ -128,7 +128,7 @@
     "profileUrl": "https://nearly-equal-joy.jp/feature/profile_yamada_momoka",
     "active": true,
     "sortOrder": 11,
-    "color": "#f06292",
+    "color": "#D4447F",
     "colorName": "Pink (ピンク)"
   },
   {
@@ -140,7 +140,7 @@
     "profileUrl": "https://nearly-equal-joy.jp/feature/profile_yamano_arisu",
     "active": true,
     "sortOrder": 12,
-    "color": "#9adfd9",
+    "color": "#76BFB4",
     "colorName": "Ice Green (アイスグリーン)"
   },
   {

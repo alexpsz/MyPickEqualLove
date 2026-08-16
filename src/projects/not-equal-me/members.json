@@ -8,9 +8,9 @@
     "profileUrl": "https://not-equal-me.jp/feature/profile_ogi_hana",
     "active": true,
     "sortOrder": 1,
-    "color": "#1976d2",
-    "colors": ["#1976d2", "#ffffff"],
-    "colorName": "Blue x White (青×白)"
+    "color": "#278EC7",
+    "colors": ["#278EC7"],
+    "colorName": "Blue (青)"
   },
   {
     "id": "ochiai-kirari",
@@ -21,9 +21,9 @@
     "profileUrl": "https://not-equal-me.jp/feature/profile_ochiai_kirari",
     "active": true,
     "sortOrder": 2,
-    "color": "#f6c443",
-    "colors": ["#f6c443", "#f6c443"],
-    "colorName": "Yellow x Yellow (黄×黄)"
+    "color": "#EBCF27",
+    "colors": ["#EBCF27"],
+    "colorName": "Yellow (黄)"
   },
   {
     "id": "kanisawa-moeko",
@@ -34,9 +34,9 @@
     "profileUrl": "https://not-equal-me.jp/feature/profile_kanisawa_moeko",
     "active": true,
     "sortOrder": 3,
-    "color": "#73c7e8",
-    "colors": ["#73c7e8", "#e53935"],
-    "colorName": "Light Blue x Red (水色×赤)"
+    "color": "#C80930",
+    "colors": ["#C80930"],
+    "colorName": "Red (赤)"
   },
   {
     "id": "kawaguchi-natsune",
@@ -47,9 +47,9 @@
     "profileUrl": "https://not-equal-me.jp/feature/profile_kawaguchi_natsune",
     "active": true,
     "sortOrder": 4,
-    "color": "#f57c00",
-    "colors": ["#f57c00", "#ffffff"],
-    "colorName": "Orange x White (オレンジ×白)"
+    "color": "#EA8A28",
+    "colors": ["#EA8A28"],
+    "colorName": "Orange (オレンジ)"
   },
   {
     "id": "kawanago-natsumi",
@@ -60,9 +60,9 @@
     "profileUrl": "https://not-equal-me.jp/feature/profile_kawanago_natsumi",
     "active": true,
     "sortOrder": 5,
-    "color": "#111827",
-    "colors": ["#111827", "#79d8b2"],
-    "colorName": "Black x Mint Green (黒×ミントグリーン)"
+    "color": "#29261F",
+    "colors": ["#29261F"],
+    "colorName": "Black (黒)"
   },
   {
     "id": "sakurai-momo",
@@ -73,9 +73,9 @@
     "profileUrl": "https://not-equal-me.jp/feature/profile_sakurai_momo",
     "active": true,
     "sortOrder": 6,
-    "color": "#f06292",
-    "colors": ["#f06292", "#f8a7c5"],
-    "colorName": "Pink x Light Pink (ピンク×薄ピンク)"
+    "color": "#DA4E8D",
+    "colors": ["#DA4E8D"],
+    "colorName": "Pink (ピンク)"
   },
   {
     "id": "suzuki-hitomi",
@@ -86,9 +86,9 @@
     "profileUrl": "https://not-equal-me.jp/feature/profile_suzuki_hitomi",
     "active": true,
     "sortOrder": 7,
-    "color": "#f8a7c5",
-    "colors": ["#f8a7c5", "#f8a7c5"],
-    "colorName": "Light Pink x Light Pink (薄ピンク×薄ピンク)"
+    "color": "#ED98BE",
+    "colors": ["#ED98BE"],
+    "colorName": "Light Pink (薄ピンク)"
   },
   {
     "id": "tanizaki-saya",
@@ -99,9 +99,9 @@
     "profileUrl": "https://not-equal-me.jp/feature/profile_tanizaki_saya",
     "active": true,
     "sortOrder": 8,
-    "color": "#f06292",
-    "colors": ["#f06292", "#ffffff"],
-    "colorName": "Pink x White (ピンク×白)"
+    "color": "#FFFFFF",
+    "colors": ["#FFFFFF"],
+    "colorName": "White (白)"
   },
   {
     "id": "tomita-nanaka",
@@ -112,9 +112,9 @@
     "profileUrl": "https://not-equal-me.jp/feature/profile_tomita_nanaka",
     "active": true,
     "sortOrder": 9,
-    "color": "#f6c443",
-    "colors": ["#f6c443", "#43a047"],
-    "colorName": "Yellow x Green (黄×緑)"
+    "color": "#258D5B",
+    "colors": ["#258D5B"],
+    "colorName": "Green (緑)"
   },
   {
     "id": "nagata-shiori",
@@ -125,9 +125,9 @@
     "profileUrl": "https://not-equal-me.jp/feature/profile_nagata_shiori",
     "active": true,
     "sortOrder": 10,
-    "color": "#1976d2",
-    "colors": ["#1976d2", "#1976d2"],
-    "colorName": "Blue x Blue (青×青)"
+    "color": "#1952A1",
+    "colors": ["#1952A1"],
+    "colorName": "Deep Blue (濃青)"
   },
   {
     "id": "honda-miyuki",
@@ -138,9 +138,9 @@
     "profileUrl": "https://not-equal-me.jp/feature/profile_honda_miyuki",
     "active": true,
     "sortOrder": 11,
-    "color": "#b39ddb",
-    "colors": ["#b39ddb", "#73c7e8"],
-    "colorName": "Light Purple x Light Blue (薄紫×水色)"
+    "color": "#D2C3DC",
+    "colors": ["#D2C3DC"],
+    "colorName": "Light Purple (薄紫)"
   },
   {
     "id": "suganami-mirei",
@@ -151,9 +151,9 @@
     "profileUrl": "https://not-equal-me.jp/feature/profile_suganami_mirei",
     "active": false,
     "sortOrder": 101,
-    "color": "#73c7e8",
-    "colors": ["#73c7e8", "#73c7e8"],
-    "colorName": "Light Blue x Light Blue (水色×水色)",
+    "color": "#86BCDB",
+    "colors": ["#86BCDB"],
+    "colorName": "Light Blue (水色)",
     "graduated": true,
     "status": "graduated",
     "graduationDate": "2026-06-12"
