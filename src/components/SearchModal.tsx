@@ -17,6 +17,7 @@ import {
   TRACK_TYPE_MESSAGE_KEYS,
 } from "../utils/songMetadata";
 import {
+  filterSongsForSearch,
   getFirstSearchResultForEnter,
   isGraduatedMemberVisibilityFilterActive,
   normalizeSongSearchText,
@@ -87,15 +88,6 @@ const TRACK_FILTER_MESSAGE_KEYS: Record<TrackFilter, MessageKey> = {
   all: "search.trackType.all",
   ...TRACK_TYPE_MESSAGE_KEYS,
 };
-
-const GRADUATED_MEMBER_FEATURE_TAGS = new Set([
-  "graduated_member",
-  "graduation_solo",
-  "graduation_unit",
-]);
-
-const isGraduatedMemberFeature = (song: Song) =>
-  (song.tags ?? []).some((tag) => GRADUATED_MEMBER_FEATURE_TAGS.has(tag));
 
 const formatSongMeta = (song: Song, t: Translate) =>
   [
@@ -258,40 +250,15 @@ export default function SearchModal({
   }, [selectionMode]);
 
   const filteredSongs = useMemo(() => {
-    const filterMatches = songs.filter((song) => {
-      if (
-        !normalizedSearchQuery &&
-        !showGraduatedMembers &&
-        isGraduatedMemberFeature(song)
-      ) {
-        return false;
-      }
-      if (hideSelected && selectedRanksBySongId[song.id] !== undefined) {
-        return false;
-      }
-      if (
-        releaseTypeFilter !== "all" &&
-        song.releaseType !== releaseTypeFilter
-      ) {
-        return false;
-      }
-      if (trackTypeFilter !== "all" && song.trackType !== trackTypeFilter) {
-        return false;
-      }
-      if (yearFilter !== "all" && !song.releaseDate?.startsWith(yearFilter)) {
-        return false;
-      }
-      if (
-        memberFilters.length > 0 &&
-        !memberFilters.some(
-          (memberId) =>
-            song.memberIds?.includes(memberId) ||
-            song.centerMemberIds?.includes(memberId),
-        )
-      ) {
-        return false;
-      }
-      return true;
+    const filterMatches = filterSongsForSearch(songs, {
+      normalizedQuery: normalizedSearchQuery,
+      releaseTypeFilter,
+      trackTypeFilter,
+      yearFilter,
+      memberFilters,
+      showGraduatedMembers,
+      hideSelected,
+      selectedRanksBySongId,
     });
 
     return rankSongsByQuery(

@@ -49,6 +49,7 @@ const compiled = ts
   .outputText.replace('"./songCredits"', JSON.stringify(creditsModuleUrl));
 const moduleUrl = `data:text/javascript;base64,${Buffer.from(compiled).toString("base64")}`;
 const {
+  filterSongsForSearch,
   getFirstSearchResultForEnter,
   isGraduatedMemberVisibilityFilterActive,
   normalizeSongSearchText,
@@ -99,6 +100,73 @@ const songs = [
   createSong("stable-a", "同じ曲 A", "Stable Song A"),
   createSong("stable-b", "同じ曲 B", "Stable Song B"),
 ];
+
+const graduatedFeatureSongs = [
+  createSong("regular", "通常曲", "Regular", {
+    releaseType: "single",
+    releaseDate: "2026-01-01",
+    trackType: "title",
+    memberIds: ["active"],
+  }),
+  createSong("ordinary-graduate", "卒業生参加の通常曲", "Ordinary Graduate", {
+    releaseType: "single",
+    releaseDate: "2025-01-01",
+    trackType: "coupling",
+    memberIds: ["graduated"],
+  }),
+  createSong("graduated-member", "卒業企画曲", "Graduated Member", {
+    releaseType: "single",
+    releaseDate: "2024-01-01",
+    trackType: "coupling",
+    memberIds: ["graduated"],
+    tags: ["graduated_member"],
+  }),
+  createSong("graduation-solo", "卒業ソロ", "Graduation Solo", {
+    releaseType: "digital",
+    releaseDate: "2023-01-01",
+    trackType: "digital",
+    memberIds: ["graduated"],
+    tags: ["graduation_solo"],
+  }),
+  createSong("graduation-unit", "卒業ユニット", "Graduation Unit", {
+    releaseType: "album",
+    releaseDate: "2022-01-01",
+    trackType: "album",
+    centerMemberIds: ["graduated"],
+    tags: ["graduation_unit"],
+  }),
+];
+
+const defaultSongFilters = {
+  normalizedQuery: "",
+  releaseTypeFilter: "all",
+  trackTypeFilter: "all",
+  yearFilter: "all",
+  memberFilters: [],
+  showGraduatedMembers: false,
+  hideSelected: false,
+  selectedRanksBySongId: {},
+};
+
+function getFilteredSongIds(overrides = {}) {
+  return filterSongsForSearch(graduatedFeatureSongs, {
+    ...defaultSongFilters,
+    ...overrides,
+  }).map((song) => song.id);
+}
+
+function getRankedFilteredSongIds(sourceSongs, queryValue, overrides = {}) {
+  const normalizedQuery = normalizeSongSearchText(queryValue);
+  const filteredSongs = filterSongsForSearch(sourceSongs, {
+    ...defaultSongFilters,
+    ...overrides,
+    normalizedQuery,
+  });
+
+  return rankSongsByQuery(filteredSongs, normalizedQuery, membersById).map(
+    ({ song }) => song.id,
+  );
+}
 
 test("normalizes NFKC, kana, case, whitespace, and symbols", () => {
   assert.equal(normalizeSongSearchText(" ＬＯＶＥ！ "), "love");
@@ -214,6 +282,93 @@ test("only the dedicated Assistant search shows the complete graduated-member fe
     searchModalSource,
     /isGraduatedMemberVisibilityFilterActive\(\s*selectionMode,\s*showGraduatedMembers/,
     "the active-filter badge must count deviations from the current mode default",
+  );
+});
+
+test("board defaults hide only explicitly tagged graduated-member features", () => {
+  assert.deepEqual(getFilteredSongIds(), ["regular", "ordinary-graduate"]);
+});
+
+test("a query restores matching graduated-member features", () => {
+  assert.deepEqual(
+    getRankedFilteredSongIds(graduatedFeatureSongs, "Graduation Solo"),
+    ["graduation-solo"],
+  );
+});
+
+test("board and Assistant defaults expose different graduated-member sets", () => {
+  assert.deepEqual(
+    getFilteredSongIds({
+      showGraduatedMembers: shouldShowGraduatedMemberFeaturesByDefault("board"),
+    }),
+    ["regular", "ordinary-graduate"],
+  );
+  assert.deepEqual(
+    getFilteredSongIds({
+      showGraduatedMembers: shouldShowGraduatedMemberFeaturesByDefault(
+        "assistant-shortlist",
+      ),
+    }),
+    graduatedFeatureSongs.map((song) => song.id),
+  );
+});
+
+test("release, track, year, and member filters compose without changing OR member semantics", () => {
+  assert.deepEqual(
+    getFilteredSongIds({
+      showGraduatedMembers: true,
+      releaseTypeFilter: "single",
+    }),
+    ["regular", "ordinary-graduate", "graduated-member"],
+  );
+  assert.deepEqual(
+    getFilteredSongIds({
+      showGraduatedMembers: true,
+      trackTypeFilter: "coupling",
+      yearFilter: "2024",
+      memberFilters: ["graduated"],
+    }),
+    ["graduated-member"],
+  );
+  assert.deepEqual(
+    getFilteredSongIds({
+      showGraduatedMembers: true,
+      memberFilters: ["graduated"],
+    }),
+    [
+      "ordinary-graduate",
+      "graduated-member",
+      "graduation-solo",
+      "graduation-unit",
+    ],
+  );
+  assert.deepEqual(
+    getFilteredSongIds({
+      showGraduatedMembers: true,
+      memberFilters: ["missing", "active"],
+    }),
+    ["regular"],
+  );
+});
+
+test("hide selected excludes every song with a recorded rank", () => {
+  assert.deepEqual(
+    getFilteredSongIds({
+      showGraduatedMembers: true,
+      hideSelected: true,
+      selectedRanksBySongId: { regular: 1, "graduation-unit": 0 },
+    }),
+    ["ordinary-graduate", "graduated-member", "graduation-solo"],
+  );
+});
+
+test("filtering before ranking preserves the existing relevance and source-order contract", () => {
+  assert.deepEqual(
+    getRankedFilteredSongIds(songs, "love", {
+      hideSelected: true,
+      selectedRanksBySongId: { contains: 2 },
+    }),
+    ["exact", "prefix", "secondary"],
   );
 });
 
