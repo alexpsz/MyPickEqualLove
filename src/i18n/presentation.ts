@@ -667,6 +667,8 @@ export function localizeLiveExperiencePresentation(
     );
   }
 
+  validateLiveExperienceIdentityClosure(experience, keys);
+
   const contextLabels = keys.contexts
     ? localizeContextLabels(keys.contexts, translateCommon)
     : undefined;
@@ -702,6 +704,65 @@ export function localizeLiveExperiencePresentation(
       ? getPresentationMessage(locale, keys.catalogOnlyBadge)
       : undefined,
   };
+}
+
+function validateLiveExperienceIdentityClosure(
+  experience: PickExperience,
+  keys: LiveExperienceMessageKeys,
+) {
+  assertExactIdentitySet(
+    experience.id,
+    "slot",
+    Object.keys(keys.slots),
+    experience.slots.map((slot) => slot.id),
+  );
+
+  const expectedContextIds = Object.keys(keys.contexts ?? {});
+  const performanceContextIds = (experience.performances ?? []).map(
+    (performance) => performance.id,
+  );
+  const actualContextIds = [...performanceContextIds];
+
+  if (
+    experience.includeCombinedPerformance &&
+    performanceContextIds.length > 1
+  ) {
+    const performanceContextSet = new Set(performanceContextIds);
+    const combinedContextCandidates = expectedContextIds.filter(
+      (contextId) => !performanceContextSet.has(contextId),
+    );
+    if (combinedContextCandidates.length === 1) {
+      actualContextIds.push(combinedContextCandidates[0]);
+    }
+  }
+
+  assertExactIdentitySet(
+    experience.id,
+    "context",
+    expectedContextIds,
+    actualContextIds,
+  );
+}
+
+function assertExactIdentitySet(
+  experienceId: string,
+  identityKind: "slot" | "context",
+  expectedIds: readonly string[],
+  actualIds: readonly string[],
+) {
+  const expectedSet = new Set(expectedIds);
+  const actualSet = new Set(actualIds);
+  const missing = expectedIds.filter((id) => !actualSet.has(id));
+  const unexpected = actualIds.filter((id) => !expectedSet.has(id));
+  const duplicates = actualIds.filter(
+    (id, index) => actualIds.indexOf(id) !== index,
+  );
+
+  if (missing.length || unexpected.length || duplicates.length) {
+    throw new Error(
+      `[i18n] ${identityKind} identity closure mismatch for live experience "${experienceId}" (missing: ${missing.join(", ") || "none"}; unexpected: ${unexpected.join(", ") || "none"}; duplicate: ${duplicates.join(", ") || "none"}).`,
+    );
+  }
 }
 
 function localizeContextLabels(

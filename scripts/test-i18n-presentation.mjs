@@ -145,6 +145,13 @@ test("presentation catalogs have one complete typed non-Japanese owner", () => {
     "live.kokuritsu2026.badge.wayHomeOnly",
     "live.kokuritsu2026.hint",
   ]);
+  for (const key of Object.keys(presentationMessages.ja)) {
+    assert.deepEqual(
+      placeholders(presentationMessages.ja[key]),
+      placeholders(presentationMessages.en[key]),
+      `ja override placeholder drift for ${key}`,
+    );
+  }
 });
 
 test("project presentation stays synchronous and Japanese stays canonical", () => {
@@ -282,7 +289,7 @@ test("four-locale Live presentation preserves canonical Japanese and overlays", 
   assert.equal(jaCopy.catalogOnlyBadge, "帰り道枠のみ");
 });
 
-test("unknown experiences and non-Japanese slot drift fail closed", () => {
+test("unknown experiences and slot identity drift fail closed in every locale", () => {
   const source = liveExperiences[0];
 
   assert.throws(
@@ -308,9 +315,73 @@ test("unknown experiences and non-Japanese slot drift fail closed", () => {
             },
           ],
         },
+        "ja",
+        translateCommon("ja"),
+      ),
+    /slot identity closure mismatch.*unexpected: unknown-slot/,
+  );
+
+  assert.throws(
+    () =>
+      localizeLiveExperiencePresentation(
+        {
+          ...source,
+          slots: source.slots.slice(0, -1),
+        },
         "en",
         translateCommon("en"),
       ),
-    /Missing slot presentation mapping/,
+    /slot identity closure mismatch.*missing: free-pick/,
+  );
+});
+
+test("performance and combined context identity drift fail closed", () => {
+  const source = liveExperiences.find(
+    (experience) => experience.id === "kokuritsu_2026",
+  );
+
+  assert.throws(
+    () =>
+      localizeLiveExperiencePresentation(
+        {
+          ...source,
+          performances: source.performances.slice(0, -1),
+        },
+        "ja",
+        translateCommon("ja"),
+      ),
+    /context identity closure mismatch.*missing: day2, both/,
+  );
+
+  assert.throws(
+    () =>
+      localizeLiveExperiencePresentation(
+        {
+          ...source,
+          performances: [
+            ...source.performances,
+            {
+              ...source.performances[0],
+              id: "unexpected-performance",
+            },
+          ],
+        },
+        "en",
+        translateCommon("en"),
+      ),
+    /context identity closure mismatch.*unexpected: unexpected-performance/,
+  );
+
+  assert.throws(
+    () =>
+      localizeLiveExperiencePresentation(
+        {
+          ...source,
+          includeCombinedPerformance: false,
+        },
+        "ko",
+        translateCommon("ko"),
+      ),
+    /context identity closure mismatch.*missing: both/,
   );
 });
