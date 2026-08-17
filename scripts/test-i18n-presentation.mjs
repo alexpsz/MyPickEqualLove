@@ -1,14 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import path from "node:path";
 import test from "node:test";
-import { fileURLToPath } from "node:url";
 import { importDataOnlyTypeScript } from "./lib/import-data-only-typescript.mjs";
-
-const repositoryRoot = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "..",
-);
 
 const [messageModule, presentationModule, projectSchemaModule] =
   await Promise.all([
@@ -41,7 +34,7 @@ const liveExperiences = (
   await Promise.all(
     liveDataPaths.map(async (relativePath) =>
       JSON.parse(
-        await readFile(path.join(repositoryRoot, relativePath), "utf8"),
+        await readFile(new URL(`../${relativePath}`, import.meta.url), "utf8"),
       ),
     ),
   )
@@ -67,7 +60,13 @@ function translateCommon(locale) {
   };
 }
 
-test("common catalog retains its four-locale key and placeholder closure", () => {
+test("common catalog retains its four-locale key and placeholder closure", async () => {
+  await assert.rejects(
+    importDataOnlyTypeScript("src/i18n/messages.ts", {
+      "context.both": "src/schema/project.ts",
+    }),
+    /Expected one static import/,
+  );
   const expectedKeys = sorted(Object.keys(messages.en));
   assert.equal(expectedKeys.length, 304);
 

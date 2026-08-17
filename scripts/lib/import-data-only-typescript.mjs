@@ -35,14 +35,17 @@ export async function importDataOnlyTypeScript(
   let outputText = await transpile(relativePath);
   for (const [specifier, dependencyPath] of Object.entries(importSpecifiers)) {
     const dependencyUrl = toDataModuleUrl(await transpile(dependencyPath));
-    const importPattern = RegExp(`(["'])${escapeRegExp(specifier)}\\1`, "g");
+    const importPattern = RegExp(
+      `(\\bimport\\s+[^;]*?\\sfrom\\s+)(["'])${escapeRegExp(specifier)}\\2`,
+      "g",
+    );
     if ((outputText.match(importPattern) ?? []).length !== 1)
       throw new Error(
-        `Expected one \"${specifier}\" import in ${relativePath}`,
+        `Expected one static import for \"${specifier}\" in ${relativePath}`,
       );
     outputText = outputText.replace(
       importPattern,
-      JSON.stringify(dependencyUrl),
+      "$1" + JSON.stringify(dependencyUrl),
     );
   }
 

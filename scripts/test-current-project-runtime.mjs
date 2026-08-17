@@ -5,9 +5,7 @@ import { importDataOnlyTypeScript } from "./lib/import-data-only-typescript.mjs"
 
 const projectIds = ["equal-love", "nearly-equal-joy", "not-equal-me"];
 
-async function read(relativePath) {
-  return readFile(new URL(`../${relativePath}`, import.meta.url), "utf8");
-}
+const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
 test("Next selects one fail-closed current-project runtime for both bundlers", async () => {
   const [nextConfigSource, projectSchemaSource] = await Promise.all([
