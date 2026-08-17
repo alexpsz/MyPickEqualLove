@@ -1,11 +1,35 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import ts from "typescript";
 
 const projectIds = ["equal-love", "nearly-equal-joy", "not-equal-me"];
 
 async function read(relativePath) {
   return readFile(new URL(`../${relativePath}`, import.meta.url), "utf8");
+}
+
+async function importDataOnlyTypeScript(relativePath) {
+  const source = await read(relativePath);
+  const { outputText, diagnostics = [] } = ts.transpileModule(source, {
+    compilerOptions: {
+      module: ts.ModuleKind.ESNext,
+      target: ts.ScriptTarget.ES2022,
+    },
+    fileName: relativePath,
+    reportDiagnostics: true,
+  });
+  assert.deepEqual(
+    diagnostics.filter(
+      (diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error,
+    ),
+    [],
+    `failed to transpile ${relativePath}`,
+  );
+
+  return import(
+    `data:text/javascript;base64,${Buffer.from(outputText).toString("base64")}`
+  );
 }
 
 test("Next selects one fail-closed current-project runtime for both bundlers", async () => {
@@ -122,22 +146,18 @@ test("the share-validation manifest closes over authoritative data", async () =>
 });
 
 test("repository-wide live i18n mappings cover authoritative routable data", async () => {
-  const contentSource = await read("src/i18n/content.ts");
-  assert.doesNotMatch(
-    contentSource,
-    /assertLiveExperienceMessageCoverage\(\)/u,
-  );
-
-  const mappingObject = extractObjectAfter(
-    contentSource,
-    "const LIVE_EXPERIENCE_MESSAGE_KEYS",
-  );
-  const actualExperienceIds = [
-    ...mappingObject.matchAll(/^  (?:(?:"([^"]+)")|([A-Za-z0-9_]+)): \{$/gmu),
-  ].map((match) => match[1] ?? match[2]);
+  const [presentationModule, messageModule] = await Promise.all([
+    importDataOnlyTypeScript("src/i18n/presentation.ts"),
+    importDataOnlyTypeScript("src/i18n/messages.ts"),
+  ]);
+  const {
+    LIVE_EXPERIENCE_PRESENTATION_KEYS,
+    localizeLiveExperiencePresentation,
+    presentationMessages,
+  } = presentationModule;
+  const { messages } = messageModule;
   const expectedExperienceIds = [];
-
-  assert.equal(new Set(actualExperienceIds).size, actualExperienceIds.length);
+  const authoritativeExperiences = [];
 
   for (const projectId of projectIds) {
     const experiences = JSON.parse(
@@ -147,82 +167,64 @@ test("repository-wide live i18n mappings cover authoritative routable data", asy
       (candidate) => candidate.status !== "draft",
     )) {
       expectedExperienceIds.push(experience.id);
-      const mapping = extractObjectAfter(
-        mappingObject,
-        mappingKey(experience.id),
-      );
+      authoritativeExperiences.push(experience);
+      const mapping = LIVE_EXPERIENCE_PRESENTATION_KEYS[experience.id];
       assert.ok(
         mapping,
         `missing i18n mapping for ${projectId}/${experience.id}`,
       );
-      const slotMapping = extractObjectAfter(mapping, "slots:");
-      for (const slot of experience.slots) {
-        assert.match(
-          slotMapping,
-          new RegExp(`(?:^|\\n)\\s+${escapeKey(slot.id)}: \\{`, "u"),
-          `missing i18n slot mapping for ${projectId}/${experience.id}/${slot.id}`,
-        );
-      }
+      assert.deepEqual(
+        Object.keys(mapping.slots).sort(),
+        experience.slots.map((slot) => slot.id).sort(),
+        `slot mapping drift for ${projectId}/${experience.id}`,
+      );
       const contextIds = (experience.performances ?? []).map(
         (performance) => performance.id,
       );
       if (experience.includeCombinedPerformance && contextIds.length > 1) {
         contextIds.push("both");
       }
-      const contextMapping = mapping.includes("contexts:")
-        ? extractObjectAfter(mapping, "contexts:")
-        : "";
-      for (const contextId of contextIds) {
-        assert.match(
-          contextMapping,
-          new RegExp(`(?:^|\\n)\\s+${escapeKey(contextId)}:`, "u"),
-          `missing i18n context mapping for ${projectId}/${experience.id}/${contextId}`,
+      assert.deepEqual(
+        Object.keys(mapping.contexts ?? {}).sort(),
+        contextIds.sort(),
+        `context mapping drift for ${projectId}/${experience.id}`,
+      );
+    }
+  }
+
+  assert.deepEqual(
+    Object.keys(LIVE_EXPERIENCE_PRESENTATION_KEYS).sort(),
+    expectedExperienceIds.sort(),
+  );
+
+  for (const experience of authoritativeExperiences) {
+    const mapping = LIVE_EXPERIENCE_PRESENTATION_KEYS[experience.id];
+    for (const locale of ["en", "ja", "zh-CN", "ko"]) {
+      const localized = localizeLiveExperiencePresentation(
+        experience,
+        locale,
+        (key) => messages[locale][key],
+      );
+      assert.equal(localized instanceof Promise, false);
+      if (locale === "ja") {
+        assert.equal(localized.title, experience.title);
+        assert.equal(localized.description, experience.description);
+        assert.equal(localized.shareText, experience.share.text);
+        assert.deepEqual(localized.slots, experience.slots);
+      } else {
+        assert.equal(
+          localized.title,
+          presentationMessages[locale][mapping.title],
+        );
+        assert.equal(
+          localized.description,
+          presentationMessages[locale][mapping.description],
+        );
+        assert.equal(
+          localized.shareText,
+          presentationMessages[locale][mapping.shareText],
         );
       }
     }
   }
-
-  assert.deepEqual(actualExperienceIds.sort(), expectedExperienceIds.sort());
 });
-
-function mappingKey(value) {
-  return /^[A-Za-z_$][A-Za-z0-9_$]*$/u.test(value)
-    ? `${value}:`
-    : `${JSON.stringify(value)}:`;
-}
-
-function escapeKey(value) {
-  return /^[A-Za-z_$][A-Za-z0-9_$]*$/u.test(value)
-    ? value
-    : JSON.stringify(value).replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
-}
-
-function extractObjectAfter(source, marker) {
-  const markerIndex = source.indexOf(marker);
-  assert.notEqual(markerIndex, -1, `missing source marker: ${marker}`);
-  const start = source.indexOf("{", markerIndex + marker.length);
-  assert.notEqual(start, -1, `missing object after source marker: ${marker}`);
-
-  let depth = 0;
-  let quote = null;
-  let escaped = false;
-  for (let index = start; index < source.length; index += 1) {
-    const character = source[index];
-    if (quote) {
-      if (escaped) escaped = false;
-      else if (character === "\\") escaped = true;
-      else if (character === quote) quote = null;
-      continue;
-    }
-    if (character === '"' || character === "'" || character === "`") {
-      quote = character;
-    } else if (character === "{") {
-      depth += 1;
-    } else if (character === "}") {
-      depth -= 1;
-      if (depth === 0) return source.slice(start, index + 1);
-    }
-  }
-
-  throw new Error(`unterminated object after source marker: ${marker}`);
-}
