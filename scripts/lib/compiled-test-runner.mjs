@@ -132,16 +132,6 @@ function installModuleAliases(
   }
 }
 
-export function mergeNodePath(
-  repositoryNodeModules,
-  existingNodePath,
-  pathDelimiter = delimiter,
-) {
-  return [repositoryNodeModules, existingNodePath]
-    .filter(Boolean)
-    .join(pathDelimiter);
-}
-
 export function runCompiledTestSuite(
   {
     repositoryRoot,

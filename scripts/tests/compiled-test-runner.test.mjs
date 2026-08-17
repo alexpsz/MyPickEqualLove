@@ -11,10 +11,7 @@ import { tmpdir } from "node:os";
 import { delimiter, dirname, join } from "node:path";
 import test from "node:test";
 
-import {
-  mergeNodePath,
-  runCompiledTestSuite,
-} from "../lib/compiled-test-runner.mjs";
+import { runCompiledTestSuite } from "../lib/compiled-test-runner.mjs";
 
 function createFixture() {
   const root = mkdtempSync(join(tmpdir(), "mypick-runner-fixture-"));
@@ -160,11 +157,6 @@ test("an invalid checked-in compiler path fails before spawning", () => {
 });
 
 test("NODE_PATH prepends repository modules and preserves the existing value", () => {
-  assert.equal(
-    mergeNodePath("repo-modules", "existing-modules", delimiter),
-    ["repo-modules", "existing-modules"].join(delimiter),
-  );
-
   const root = createFixture();
   try {
     const result = runFixture(
