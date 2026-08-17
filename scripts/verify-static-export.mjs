@@ -28,7 +28,7 @@ const FRAMEWORK_ERROR_MARKERS = [
   "Application error: a client-side exception has occurred",
   '"page":"/_error"',
 ];
-const ASSET_PATH_PREFIXES = ["/_next/", "/covers/", "/icons/"];
+const ASSET_PATH_PREFIXES = ["/_next/static/", "/covers/", "/icons/"];
 const ASSET_EXTENSIONS = new Set([
   ".avif",
   ".css",
@@ -73,9 +73,11 @@ export async function verifyStaticExport({
     verifyCanonical(rootHtml, `${contract.siteUrl}/`, "index.html", violations);
     verifyNoFrameworkError(rootHtml, "index.html", violations);
   }
+  await verifyRscArtifact(path.join(out, "index.txt"), "index.txt", violations);
 
   for (const experience of expectedExperiences) {
-    const relativePath = path.join("live", experience.slug, "index.html");
+    const routeDirectory = path.join("live", experience.slug);
+    const relativePath = path.join(routeDirectory, "index.html");
     const routeHtmlPath = path.join(out, relativePath);
     const routeHtml = await readRequiredText(routeHtmlPath, violations);
     if (routeHtml !== null) {
@@ -88,6 +90,12 @@ export async function verifyStaticExport({
       );
       verifyNoFrameworkError(routeHtml, relativePath, violations);
     }
+    const rscRelativePath = path.join(routeDirectory, "index.txt");
+    await verifyRscArtifact(
+      path.join(out, rscRelativePath),
+      rscRelativePath,
+      violations,
+    );
     verifyAbsent(
       path.join(out, "live", `${experience.slug}.html`),
       `live/${experience.slug}.html must not replace the trailing-slash route`,
@@ -129,6 +137,15 @@ export async function verifyStaticExport({
     projectId,
     routes: 1 + expectedExperiences.length,
   };
+}
+
+async function verifyRscArtifact(filePath, label, violations) {
+  const rsc = await readRequiredText(filePath, violations);
+  if (rsc === null) return;
+  if (!rsc.trimStart().startsWith('1:"$Sreact.fragment"')) {
+    violations.push(`${label} is not a valid static RSC payload`);
+  }
+  verifyNoFrameworkErrorMarkers(rsc, label, violations);
 }
 
 async function loadProjectExperiences(repositoryRoot) {
@@ -207,14 +224,18 @@ function verifyCanonical(html, expected, label, violations) {
 }
 
 function verifyNoFrameworkError(html, label, violations) {
-  for (const marker of FRAMEWORK_ERROR_MARKERS) {
-    if (html.includes(marker)) {
-      violations.push(`${label} contains framework error marker ${marker}`);
-    }
-  }
+  verifyNoFrameworkErrorMarkers(html, label, violations);
   const robots = extractMetaContent(html, "name", "robots");
   if (robots?.split(/\s*,\s*/).includes("noindex")) {
     violations.push(`${label} is unexpectedly marked noindex`);
+  }
+}
+
+function verifyNoFrameworkErrorMarkers(content, label, violations) {
+  for (const marker of FRAMEWORK_ERROR_MARKERS) {
+    if (content.includes(marker)) {
+      violations.push(`${label} contains framework error marker ${marker}`);
+    }
   }
 }
 
@@ -246,6 +267,11 @@ async function verifyReferencedAssets(out, siteUrl, violations) {
   const files = await walkFiles(out);
   const htmlFiles = files.filter((file) => file.endsWith(".html"));
   const cssFiles = files.filter((file) => file.endsWith(".css"));
+  const literalReferenceFiles = files.filter((file) =>
+    [".css", ".html", ".js", ".mjs", ".txt"].includes(
+      path.extname(file).toLowerCase(),
+    ),
+  );
   const references = [];
 
   for (const htmlPath of htmlFiles) {
@@ -283,6 +309,19 @@ async function verifyReferencedAssets(out, siteUrl, violations) {
         basePath: cssPath,
         source: path.relative(out, cssPath),
         value: match[2],
+      });
+    }
+  }
+
+  for (const sourcePath of literalReferenceFiles) {
+    const content = await readFile(sourcePath, "utf8");
+    for (const match of content.matchAll(
+      /\/(?:_next\/static|covers|icons)\/[^\s"'`<>()[\]{}\\]+/g,
+    )) {
+      references.push({
+        basePath: sourcePath,
+        source: path.relative(out, sourcePath),
+        value: match[0],
       });
     }
   }

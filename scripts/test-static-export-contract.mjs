@@ -7,7 +7,10 @@ import {
   PROJECT_CONTRACTS,
   verifyStaticExport,
 } from "./verify-static-export.mjs";
-import { createStaticExportServer } from "./run-project-command.mjs";
+import {
+  createStaticExportServer,
+  runNpmCommand,
+} from "./run-project-command.mjs";
 
 const PROJECT_ID = "equal-love";
 const CONTRACT = PROJECT_CONTRACTS[PROJECT_ID];
@@ -44,6 +47,20 @@ for (const scenario of [
     expected: /missing required artifact/,
   },
   {
+    name: "missing Live RSC artifact fails",
+    mutate: ({ rootHtml }) => rootHtml,
+    afterWrite: async ({ out }) =>
+      rm(path.join(out, "live", LIVE.slug, "index.txt")),
+    expected: /missing required artifact.*index\.txt/s,
+  },
+  {
+    name: "corrupted root RSC artifact fails",
+    mutate: ({ rootHtml }) => rootHtml,
+    afterWrite: async ({ out }) =>
+      writeFile(path.join(out, "index.txt"), "corrupted RSC\n"),
+    expected: /not a valid static RSC payload/,
+  },
+  {
     name: "foreign Live route fails",
     mutate: ({ rootHtml }) => rootHtml,
     afterWrite: async ({ out }) => {
@@ -74,6 +91,16 @@ for (const scenario of [
     mutate: ({ rootHtml }) =>
       rootHtml.replace("/covers/example.jpg", "/covers/missing.jpg"),
     expected: /references missing asset/,
+  },
+  {
+    name: "missing asset referenced from RSC fails",
+    mutate: ({ rootHtml }) => rootHtml,
+    afterWrite: async ({ out }) =>
+      writeFile(
+        path.join(out, "index.txt"),
+        createRsc(["/_next/static/app.js", "/icons/missing.svg"]),
+      ),
+    expected: /index\.txt references missing asset \/icons\/missing\.svg/,
   },
   {
     name: "framework error artifact fails",
@@ -134,6 +161,12 @@ test("dependency-free static server serves directory routes and assets", async (
   });
 });
 
+test("Windows-compatible npm invocation spawns a harmless command", async () => {
+  const result = await runNpmCommand(["--version"], { stdio: "pipe" });
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout.trim(), /^\d+\.\d+\.\d+/);
+});
+
 async function withFixture(callback) {
   const root = await mkdtemp(path.join(os.tmpdir(), "mypick-static-export-"));
   const out = path.join(root, "out");
@@ -146,6 +179,10 @@ async function withFixture(callback) {
     await createRepositorySources(root);
     await writeFixtureFile(path.join(out, "index.html"), rootHtml);
     await writeFixtureFile(
+      path.join(out, "index.txt"),
+      createRsc(["/_next/static/app.js", "/icons/equal-love.svg"]),
+    );
+    await writeFixtureFile(
       path.join(out, "live", LIVE.slug, "index.html"),
       createHtml({
         canonical: `${CONTRACT.siteUrl}${LIVE.canonicalPath}`,
@@ -153,6 +190,10 @@ async function withFixture(callback) {
         openGraphTitle: LIVE.title,
         title: `${LIVE.title} | ${CONTRACT.displayName}`,
       }),
+    );
+    await writeFixtureFile(
+      path.join(out, "live", LIVE.slug, "index.txt"),
+      createRsc(["/_next/static/app.js", "/covers/example.jpg"]),
     );
     await writeFixtureFile(
       path.join(out, "sitemap.xml"),
@@ -175,6 +216,10 @@ async function withFixture(callback) {
   } finally {
     await rm(root, { force: true, recursive: true });
   }
+}
+
+function createRsc(references) {
+  return `1:"$Sreact.fragment"\n2:${JSON.stringify(references)}\n`;
 }
 
 async function createRepositorySources(root) {

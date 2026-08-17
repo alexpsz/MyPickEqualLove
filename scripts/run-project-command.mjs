@@ -135,20 +135,39 @@ async function run() {
   }
 }
 
-function runNpmScript(scriptName, projectId) {
-  const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
+export function runNpmCommand(args, options = {}) {
+  const { env = getSpawnEnv(), stdio = "inherit" } = options;
   return new Promise((resolve, reject) => {
-    const child = spawn(npmCommand, ["run", scriptName], {
-      env: {
-        ...getSpawnEnv(),
-        NEXT_PUBLIC_PROJECT_ID: projectId,
-      },
-      stdio: "inherit",
+    const child = spawn("npm", args, {
+      env,
+      shell: process.platform === "win32",
+      stdio,
+    });
+    let stdout = "";
+    let stderr = "";
+
+    child.stdout?.setEncoding("utf8");
+    child.stdout?.on("data", (chunk) => {
+      stdout += chunk;
+    });
+    child.stderr?.setEncoding("utf8");
+    child.stderr?.on("data", (chunk) => {
+      stderr += chunk;
     });
 
     child.on("error", reject);
-    child.on("exit", (code) => resolve(code ?? 1));
+    child.on("exit", (code) => resolve({ code: code ?? 1, stderr, stdout }));
   });
+}
+
+async function runNpmScript(scriptName, projectId) {
+  const result = await runNpmCommand(["run", scriptName], {
+    env: {
+      ...getSpawnEnv(),
+      NEXT_PUBLIC_PROJECT_ID: projectId,
+    },
+  });
+  return result.code;
 }
 
 function parsePort(value) {
