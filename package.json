@@ -41,6 +41,7 @@
     "test:export-board": "node scripts/run-export-board-tests.mjs",
     "test:pick-assistant": "node scripts/run-pick-assistant-tests.mjs",
     "test:image-actions": "node scripts/run-image-action-tests.mjs",
+    "test:compiled-runner": "node --test scripts/tests/compiled-test-runner.test.mjs",
     "test:controls-layout": "node scripts/test-controls-layout.mjs",
     "test:colors": "node scripts/run-color-tests.mjs",
     "test:project-identity": "node scripts/test-project-identity.mjs",
