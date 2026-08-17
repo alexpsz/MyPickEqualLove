@@ -67,6 +67,7 @@ jobs:
               --report-json "$report_dir/$project.json" || status=1
           done
           npm run format:data:songs
+          npm run generate:share-validation
           exit "$status"
 
       - name: Reject destructive, unreported, or unexpected generated changes
@@ -189,6 +190,7 @@ jobs:
           node scripts/check-discography-update.mjs \
             --enforce-allowlist \
             --source-report-dir "$bundle_dir/reports"
+          node scripts/generate-share-validation-manifest.mjs --check
           node scripts/validate-project-data.mjs
           git diff --cached --check
 

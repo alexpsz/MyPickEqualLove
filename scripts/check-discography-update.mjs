@@ -104,6 +104,8 @@ const addedCoverPaths = new Set();
 const correctedCoverPaths = new Set();
 const allowedSongDataPath =
   /^src\/projects\/(equal-love|nearly-equal-joy|not-equal-me)\/songs\.json$/;
+const shareValidationManifestPath =
+  "src/projects/share-validation-manifest.json";
 const allowedProjectCoverPath =
   /^public\/covers\/(equal-love|nearly-equal-joy|not-equal-me)\/[a-z0-9][a-z0-9-]*\.jpg$/;
 const headSongsCache = new Map();
@@ -950,6 +952,7 @@ function isAllowedTrackedGeneratedChange(status, changedPath) {
   if (status === "M") {
     return (
       allowedSongDataPath.test(changedPath) ||
+      changedPath === shareValidationManifestPath ||
       correctedCoverPaths.has(changedPath)
     );
   }
@@ -1569,6 +1572,63 @@ function runSelfTests() {
   }
   addedCoverPaths.delete(stagedAddedCoverPath);
 
+  if (
+    !isAllowedTrackedGeneratedChange("M", shareValidationManifestPath) ||
+    isAllowedTrackedGeneratedChange("A", shareValidationManifestPath) ||
+    isAllowedTrackedGeneratedChange("D", shareValidationManifestPath) ||
+    isAllowedTrackedGeneratedChange(
+      "M",
+      "src/projects/unrelated-derived-file.json",
+    )
+  ) {
+    throw new Error(
+      "publish staging must allow only a tracked manifest modification",
+    );
+  }
+
+  const packageJson = JSON.parse(
+    fs.readFileSync(path.join(root, "package.json"), "utf8"),
+  );
+  const singleProjectSyncCommands = [
+    "sync:data",
+    "sync:data:equal-love",
+    "sync:data:nearly-equal-joy",
+    "sync:data:not-equal-me",
+    "sync:songs:equal-love",
+    "sync:songs:nearly-equal-joy",
+    "sync:songs:not-equal-me",
+  ];
+  for (const command of singleProjectSyncCommands) {
+    if (
+      !packageJson.scripts[command]?.endsWith(
+        "&& npm run generate:share-validation",
+      )
+    ) {
+      throw new Error(`${command} must regenerate the share manifest`);
+    }
+  }
+  for (const command of ["sync:data:all", "sync:songs:all"]) {
+    if (
+      packageJson.scripts[command]?.match(/npm run generate:share-validation/gu)
+        ?.length !== 1
+    ) {
+      throw new Error(`${command} must regenerate the share manifest once`);
+    }
+  }
+  if (
+    !packageJson.scripts["validate:data"]?.includes(
+      "npm run check:share-validation",
+    ) ||
+    !packageJson.scripts["test:current-project-runtime"]?.includes(
+      "npm run check:share-validation",
+    ) ||
+    !packageJson.scripts.test?.includes("npm run test:current-project-runtime")
+  ) {
+    throw new Error(
+      "data validation and the standard test chain must check the share manifest",
+    );
+  }
+
   const localizedCredit = { ja: "credit", romaji: "Credit" };
   const creditedBefore = {
     ...pendingBefore,
@@ -1638,6 +1698,15 @@ function runSelfTests() {
     "utf8",
   );
   const finalBuildIndex = workflow.indexOf("Build MyPickNotEqualMe");
+  const manifestGenerationIndex = workflow.indexOf(
+    "npm run generate:share-validation",
+  );
+  const firstGeneratedDataValidationIndex = workflow.indexOf(
+    "Reject destructive, unreported, or unexpected generated changes",
+  );
+  const publishManifestCheckIndex = workflow.indexOf(
+    "node scripts/generate-share-validation-manifest.mjs --check",
+  );
   const restoreIndex = workflow.indexOf(
     "git restore --source=HEAD --worktree -- next-env.d.ts",
   );
@@ -1645,6 +1714,9 @@ function runSelfTests() {
     "Recheck generated data after all builds",
   );
   if (
+    manifestGenerationIndex < 0 ||
+    firstGeneratedDataValidationIndex <= manifestGenerationIndex ||
+    publishManifestCheckIndex < 0 ||
     finalBuildIndex < 0 ||
     restoreIndex <= finalBuildIndex ||
     finalGateIndex <= restoreIndex
