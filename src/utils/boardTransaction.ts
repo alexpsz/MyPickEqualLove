@@ -56,6 +56,32 @@ export type BoardTransactionResult =
 
 export type BoardStorageEventAction = "context" | "board" | "clear" | "ignore";
 
+export interface BoardTransactionPublishEffects {
+  invalidatePreview: () => void;
+  publishHistory: (history: BoardHistoryState) => void;
+  resetHistory: (picks: StoredPicks) => void;
+  setStorageWritable: (writable: boolean) => void;
+  onExternalBoardReset: () => void;
+}
+
+export function publishBoardTransactionResult(
+  result: BoardTransactionResult,
+  effects: BoardTransactionPublishEffects,
+) {
+  if (result.status === "committed") {
+    effects.invalidatePreview();
+    effects.publishHistory(result.history);
+  } else if (result.status === "conflict") {
+    effects.setStorageWritable(true);
+    effects.invalidatePreview();
+    effects.resetHistory(result.latestPicks);
+    effects.onExternalBoardReset();
+  } else if (result.status === "blocked") {
+    effects.setStorageWritable(false);
+  }
+  return result.status;
+}
+
 export function commitBoardTransaction({
   target,
   expectedPicks,

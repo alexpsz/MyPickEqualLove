@@ -32,6 +32,7 @@ import {
   createEphemeralBoardReset,
   getBoardStorageEventAction,
   importBoardTransaction,
+  publishBoardTransactionResult,
   resetStoredBoardTransaction,
 } from "../../src/utils/boardTransaction";
 
@@ -226,6 +227,37 @@ test("board transactions distinguish write failure and stale conflicts", () => {
     latestPicks: { "slot-1": "song-1" },
     storageStatus: "loaded",
   });
+});
+
+test("conflict publication resets history before notifying external consumers", () => {
+  const latestPicks = { "slot-2": "song-2" };
+  const calls: string[] = [];
+  const status = publishBoardTransactionResult(
+    {
+      status: "conflict",
+      latestPicks,
+      storageStatus: "loaded",
+    },
+    {
+      invalidatePreview: () => calls.push("invalidate-preview"),
+      publishHistory: () => calls.push("publish-history"),
+      resetHistory: (picks) => {
+        assert.deepEqual(picks, latestPicks);
+        calls.push("reset-history");
+      },
+      setStorageWritable: (writable) =>
+        calls.push(`storage-writable:${writable}`),
+      onExternalBoardReset: () => calls.push("external-reset"),
+    },
+  );
+
+  assert.equal(status, "conflict");
+  assert.deepEqual(calls, [
+    "storage-writable:true",
+    "invalidate-preview",
+    "reset-history",
+    "external-reset",
+  ]);
 });
 
 test("immediate history snapshots preserve same-tick A to B to A commits", () => {

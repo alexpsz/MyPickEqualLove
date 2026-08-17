@@ -23,6 +23,7 @@ import {
   getBoardStorageEventAction,
   importBoardTransaction,
   isWritableBoardStorageStatus,
+  publishBoardTransactionResult,
   resetStoredBoardTransaction,
   type BoardTransactionResult,
 } from "../utils/boardTransaction";
@@ -305,19 +306,14 @@ export function useExperienceBoardSession({
   );
 
   const publishTransaction = useCallback(
-    (result: BoardTransactionResult) => {
-      if (result.status === "committed") {
-        callbacksRef.current.onInvalidatePreview();
-        publishHistory(result.history);
-      } else if (result.status === "conflict") {
-        setBoardStorageWritable(true);
-        callbacksRef.current.onInvalidatePreview();
-        resetHistory(result.latestPicks);
-      } else if (result.status === "blocked") {
-        setBoardStorageWritable(false);
-      }
-      return result.status;
-    },
+    (result: BoardTransactionResult) =>
+      publishBoardTransactionResult(result, {
+        invalidatePreview: () => callbacksRef.current.onInvalidatePreview(),
+        publishHistory,
+        resetHistory,
+        setStorageWritable: setBoardStorageWritable,
+        onExternalBoardReset: () => callbacksRef.current.onExternalBoardReset(),
+      }),
     [publishHistory, resetHistory],
   );
 
