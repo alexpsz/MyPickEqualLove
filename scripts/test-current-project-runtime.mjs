@@ -1,52 +1,12 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import ts from "typescript";
+import { importDataOnlyTypeScript } from "./lib/import-data-only-typescript.mjs";
 
 const projectIds = ["equal-love", "nearly-equal-joy", "not-equal-me"];
 
 async function read(relativePath) {
   return readFile(new URL(`../${relativePath}`, import.meta.url), "utf8");
-}
-
-function toDataModuleUrl(outputText) {
-  return `data:text/javascript;base64,${Buffer.from(outputText).toString("base64")}`;
-}
-
-async function transpileDataOnlyTypeScript(relativePath) {
-  const source = await read(relativePath);
-  const { outputText, diagnostics = [] } = ts.transpileModule(source, {
-    compilerOptions: {
-      module: ts.ModuleKind.ESNext,
-      target: ts.ScriptTarget.ES2022,
-    },
-    fileName: relativePath,
-    reportDiagnostics: true,
-  });
-  assert.deepEqual(
-    diagnostics.filter(
-      (diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error,
-    ),
-    [],
-    `failed to transpile ${relativePath}`,
-  );
-
-  return outputText;
-}
-
-async function importDataOnlyTypeScript(relativePath) {
-  let outputText = await transpileDataOnlyTypeScript(relativePath);
-  if (relativePath === "src/i18n/presentation.ts") {
-    const projectSchemaUrl = toDataModuleUrl(
-      await transpileDataOnlyTypeScript("src/schema/project.ts"),
-    );
-    outputText = outputText.replace(
-      '"../schema/project"',
-      JSON.stringify(projectSchemaUrl),
-    );
-  }
-
-  return import(toDataModuleUrl(outputText));
 }
 
 test("Next selects one fail-closed current-project runtime for both bundlers", async () => {
@@ -163,16 +123,21 @@ test("the share-validation manifest closes over authoritative data", async () =>
 });
 
 test("repository-wide live i18n mappings cover authoritative routable data", async () => {
-  const [presentationModule, messageModule] = await Promise.all([
-    importDataOnlyTypeScript("src/i18n/presentation.ts"),
-    importDataOnlyTypeScript("src/i18n/messages.ts"),
-  ]);
+  const [presentationModule, messageModule, projectSchemaModule] =
+    await Promise.all([
+      importDataOnlyTypeScript("src/i18n/presentation.ts", {
+        "../schema/project": "src/schema/project.ts",
+      }),
+      importDataOnlyTypeScript("src/i18n/messages.ts"),
+      importDataOnlyTypeScript("src/schema/project.ts"),
+    ]);
   const {
     LIVE_EXPERIENCE_PRESENTATION_KEYS,
     localizeLiveExperiencePresentation,
     presentationMessages,
   } = presentationModule;
   const { messages } = messageModule;
+  const { COMBINED_CONTEXT_ID } = projectSchemaModule;
   const expectedExperienceIds = [];
   const authoritativeExperiences = [];
 
@@ -195,11 +160,10 @@ test("repository-wide live i18n mappings cover authoritative routable data", asy
         experience.slots.map((slot) => slot.id).sort(),
         `slot mapping drift for ${projectId}/${experience.id}`,
       );
-      const contextIds = (experience.performances ?? []).map(
-        (performance) => performance.id,
-      );
-      if (experience.includeCombinedPerformance && contextIds.length > 1) {
-        contextIds.push("both");
+      const performances = experience.performances ?? [];
+      const contextIds = performances.map(({ id }) => id);
+      if (experience.includeCombinedPerformance && performances.length > 1) {
+        contextIds.push(COMBINED_CONTEXT_ID);
       }
       assert.deepEqual(
         Object.keys(mapping.contexts ?? {}).sort(),

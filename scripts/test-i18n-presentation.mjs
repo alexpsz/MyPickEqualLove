@@ -3,58 +3,24 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import ts from "typescript";
+import { importDataOnlyTypeScript } from "./lib/import-data-only-typescript.mjs";
 
 const repositoryRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "..",
 );
 
-function toDataModuleUrl(outputText) {
-  return `data:text/javascript;base64,${Buffer.from(outputText).toString("base64")}`;
-}
-
-async function transpileDataOnlyTypeScript(relativePath) {
-  const absolutePath = path.join(repositoryRoot, relativePath);
-  const source = await readFile(absolutePath, "utf8");
-  const { outputText, diagnostics = [] } = ts.transpileModule(source, {
-    compilerOptions: {
-      module: ts.ModuleKind.ESNext,
-      target: ts.ScriptTarget.ES2022,
-    },
-    fileName: absolutePath,
-    reportDiagnostics: true,
-  });
-
-  const errors = diagnostics.filter(
-    (diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error,
-  );
-  assert.deepEqual(errors, [], `Failed to transpile ${relativePath}`);
-
-  return outputText;
-}
-
-async function importDataOnlyTypeScript(relativePath) {
-  let outputText = await transpileDataOnlyTypeScript(relativePath);
-  if (relativePath === "src/i18n/presentation.ts") {
-    const projectSchemaUrl = toDataModuleUrl(
-      await transpileDataOnlyTypeScript("src/schema/project.ts"),
-    );
-    outputText = outputText.replace(
-      '"../schema/project"',
-      JSON.stringify(projectSchemaUrl),
-    );
-  }
-
-  return import(toDataModuleUrl(outputText));
-}
-
-const [messageModule, presentationModule] = await Promise.all([
-  importDataOnlyTypeScript("src/i18n/messages.ts"),
-  importDataOnlyTypeScript("src/i18n/presentation.ts"),
-]);
+const [messageModule, presentationModule, projectSchemaModule] =
+  await Promise.all([
+    importDataOnlyTypeScript("src/i18n/messages.ts"),
+    importDataOnlyTypeScript("src/i18n/presentation.ts", {
+      "../schema/project": "src/schema/project.ts",
+    }),
+    importDataOnlyTypeScript("src/schema/project.ts"),
+  ]);
 
 const { messages } = messageModule;
+const { COMBINED_CONTEXT_ID } = projectSchemaModule;
 const {
   LIVE_EXPERIENCE_PRESENTATION_KEYS,
   PROJECT_PRESENTATION_KEYS,
@@ -219,9 +185,12 @@ test("repository Live JSON and presentation mappings have deterministic closure"
       `${experience.id} slot closure`,
     );
 
+    const performances = experience.performances ?? [];
     const expectedContexts = [
-      ...(experience.performances ?? []).map((performance) => performance.id),
-      ...(experience.includeCombinedPerformance ? ["both"] : []),
+      ...performances.map((performance) => performance.id),
+      ...(experience.includeCombinedPerformance && performances.length > 1
+        ? [COMBINED_CONTEXT_ID]
+        : []),
     ];
     assert.deepEqual(
       sorted(Object.keys(keys.contexts ?? {})),
@@ -343,6 +312,19 @@ test("unknown experiences and slot identity drift fail closed in every locale", 
       localizeLiveExperiencePresentation(
         {
           ...source,
+          slots: [...source.slots, source.slots[0]],
+        },
+        "en",
+        translateCommon("en"),
+      ),
+    /slot identity closure mismatch.*duplicate:/,
+  );
+
+  assert.throws(
+    () =>
+      localizeLiveExperiencePresentation(
+        {
+          ...source,
           slots: source.slots.slice(0, -1),
         },
         "en",
@@ -367,7 +349,9 @@ test("performance and combined context identity drift fail closed", () => {
         "ja",
         translateCommon("ja"),
       ),
-    /context identity closure mismatch.*missing: day2, both/,
+    new RegExp(
+      `context identity closure mismatch.*missing: day2, ${COMBINED_CONTEXT_ID}`,
+    ),
   );
 
   assert.throws(
@@ -399,6 +383,8 @@ test("performance and combined context identity drift fail closed", () => {
         "ko",
         translateCommon("ko"),
       ),
-    /context identity closure mismatch.*missing: both/,
+    new RegExp(
+      `context identity closure mismatch.*missing: ${COMBINED_CONTEXT_ID}`,
+    ),
   );
 });
