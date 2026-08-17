@@ -8,4 +8,5 @@ process.exitCode = runCompiledTestSuite({
   tempPrefix: "mypick-board-tests-",
   project: "scripts/tsconfig.board-tests.json",
   emittedTestFiles: ["scripts/tests/board-state.test.js"],
+  testStdio: "inherit",
 }).exitCode;

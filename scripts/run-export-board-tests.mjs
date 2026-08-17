@@ -25,4 +25,5 @@ process.exitCode = runCompiledTestSuite({
   sourceFiles: ["scripts/tests/export-board-visibility.test.ts"],
   emittedTestFiles: ["scripts/tests/export-board-visibility.test.js"],
   includeRepositoryNodePath: true,
+  testStdio: "inherit",
 }).exitCode;

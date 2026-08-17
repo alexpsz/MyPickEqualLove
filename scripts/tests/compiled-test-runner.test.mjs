@@ -178,6 +178,25 @@ test("NODE_PATH prepends repository modules and preserves the existing value", (
         .filter(Boolean)
         .join(delimiter),
     );
+    assert.equal(result.calls[1].options.stdio, "pipe");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("test stdio can inherit from the parent process", () => {
+  const root = createFixture();
+  try {
+    const result = runFixture(
+      root,
+      [
+        { status: 0, signal: null, stdout: "", stderr: "" },
+        { status: 0, signal: null, stdout: null, stderr: null },
+      ],
+      { testStdio: "inherit" },
+    );
+    assert.equal(result.outcome.exitCode, 0);
+    assert.equal(result.calls[1].options.stdio, "inherit");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

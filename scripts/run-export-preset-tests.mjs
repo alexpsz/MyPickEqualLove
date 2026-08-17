@@ -28,4 +28,5 @@ process.exitCode = runCompiledTestSuite({
     "src/utils/exportQr.ts",
   ],
   emittedTestFiles: ["scripts/test-export-presets.js"],
+  testStdio: "inherit",
 }).exitCode;

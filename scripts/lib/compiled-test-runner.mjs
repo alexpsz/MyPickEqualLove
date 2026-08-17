@@ -78,6 +78,7 @@ export function runCompiledTestSuite(
     sourceFiles = [],
     emittedTestFiles,
     includeRepositoryNodePath = false,
+    testStdio = "pipe",
     successMessage,
   },
   {
@@ -100,6 +101,9 @@ export function runCompiledTestSuite(
   }
   if (project && sourceFiles.length > 0) {
     throw new TypeError("project and sourceFiles cannot be combined");
+  }
+  if (testStdio !== "pipe" && testStdio !== "inherit") {
+    throw new TypeError('testStdio must be either "pipe" or "inherit"');
   }
 
   const resolvedRepositoryRoot = resolve(repositoryRoot);
@@ -169,6 +173,7 @@ export function runCompiledTestSuite(
           cwd: resolvedRepositoryRoot,
           encoding: "utf8",
           env: testEnvironment,
+          stdio: testStdio,
         });
       } catch (error) {
         test = {
