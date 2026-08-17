@@ -10,7 +10,11 @@ const repositoryRoot = path.resolve(
   "..",
 );
 
-async function importDataOnlyTypeScript(relativePath) {
+function toDataModuleUrl(outputText) {
+  return `data:text/javascript;base64,${Buffer.from(outputText).toString("base64")}`;
+}
+
+async function transpileDataOnlyTypeScript(relativePath) {
   const absolutePath = path.join(repositoryRoot, relativePath);
   const source = await readFile(absolutePath, "utf8");
   const { outputText, diagnostics = [] } = ts.transpileModule(source, {
@@ -27,9 +31,22 @@ async function importDataOnlyTypeScript(relativePath) {
   );
   assert.deepEqual(errors, [], `Failed to transpile ${relativePath}`);
 
-  return import(
-    `data:text/javascript;base64,${Buffer.from(outputText).toString("base64")}`
-  );
+  return outputText;
+}
+
+async function importDataOnlyTypeScript(relativePath) {
+  let outputText = await transpileDataOnlyTypeScript(relativePath);
+  if (relativePath === "src/i18n/presentation.ts") {
+    const projectSchemaUrl = toDataModuleUrl(
+      await transpileDataOnlyTypeScript("src/schema/project.ts"),
+    );
+    outputText = outputText.replace(
+      '"../schema/project"',
+      JSON.stringify(projectSchemaUrl),
+    );
+  }
+
+  return import(toDataModuleUrl(outputText));
 }
 
 const [messageModule, presentationModule] = await Promise.all([

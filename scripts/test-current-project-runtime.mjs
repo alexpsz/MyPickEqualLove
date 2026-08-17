@@ -9,7 +9,11 @@ async function read(relativePath) {
   return readFile(new URL(`../${relativePath}`, import.meta.url), "utf8");
 }
 
-async function importDataOnlyTypeScript(relativePath) {
+function toDataModuleUrl(outputText) {
+  return `data:text/javascript;base64,${Buffer.from(outputText).toString("base64")}`;
+}
+
+async function transpileDataOnlyTypeScript(relativePath) {
   const source = await read(relativePath);
   const { outputText, diagnostics = [] } = ts.transpileModule(source, {
     compilerOptions: {
@@ -27,9 +31,22 @@ async function importDataOnlyTypeScript(relativePath) {
     `failed to transpile ${relativePath}`,
   );
 
-  return import(
-    `data:text/javascript;base64,${Buffer.from(outputText).toString("base64")}`
-  );
+  return outputText;
+}
+
+async function importDataOnlyTypeScript(relativePath) {
+  let outputText = await transpileDataOnlyTypeScript(relativePath);
+  if (relativePath === "src/i18n/presentation.ts") {
+    const projectSchemaUrl = toDataModuleUrl(
+      await transpileDataOnlyTypeScript("src/schema/project.ts"),
+    );
+    outputText = outputText.replace(
+      '"../schema/project"',
+      JSON.stringify(projectSchemaUrl),
+    );
+  }
+
+  return import(toDataModuleUrl(outputText));
 }
 
 test("Next selects one fail-closed current-project runtime for both bundlers", async () => {

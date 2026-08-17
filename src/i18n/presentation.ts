@@ -1,5 +1,5 @@
 import type { ProjectConfig } from "../projects/registry";
-import type { ProjectId } from "../schema/project";
+import { COMBINED_CONTEXT_ID, type ProjectId } from "../schema/project";
 import type {
   ExperiencePickSlot,
   PickExperience,
@@ -727,13 +727,7 @@ function validateLiveExperienceIdentityClosure(
     experience.includeCombinedPerformance &&
     performanceContextIds.length > 1
   ) {
-    const performanceContextSet = new Set(performanceContextIds);
-    const combinedContextCandidates = expectedContextIds.filter(
-      (contextId) => !performanceContextSet.has(contextId),
-    );
-    if (combinedContextCandidates.length === 1) {
-      actualContextIds.push(combinedContextCandidates[0]);
-    }
+    actualContextIds.push(COMBINED_CONTEXT_ID);
   }
 
   assertExactIdentitySet(
