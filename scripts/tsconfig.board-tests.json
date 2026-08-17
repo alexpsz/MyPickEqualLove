@@ -17,6 +17,7 @@
     "../src/config/exportPresets.ts",
     "../src/utils/boardHistory.ts",
     "../src/utils/boardStorage.ts",
+    "../src/utils/boardTransaction.ts",
     "../src/utils/exportOptions.ts",
     "./tests/board-state.test.ts"
   ]

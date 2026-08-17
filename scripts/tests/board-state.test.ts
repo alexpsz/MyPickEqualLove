@@ -26,6 +26,14 @@ import {
   type MutableStorageLike,
 } from "../../src/utils/boardStorage";
 import type { StoredPicks } from "../../src/schema/music";
+import {
+  applyBoardHistoryTransaction,
+  commitBoardTransaction,
+  createEphemeralBoardReset,
+  getBoardStorageEventAction,
+  importBoardTransaction,
+  resetStoredBoardTransaction,
+} from "../../src/utils/boardTransaction";
 
 class MemoryStorage implements MutableStorageLike {
   readonly values = new Map<string, string>();
@@ -124,6 +132,340 @@ test("reset and no-op commits never create history and a new commit clears redo"
     present: { "slot-2": "song-2" },
     future: [],
   });
+});
+
+test("board transactions publish a commit result only after durable storage succeeds", () => {
+  const storage = new MemoryStorage();
+  storage.values.set(
+    "picks-v2",
+    JSON.stringify({ schemaVersion: 2, picks: { "slot-1": "song-1" } }),
+  );
+  const history = createBoardHistoryState({ "slot-1": "song-1" });
+  const result = commitBoardTransaction({
+    target: {
+      storage,
+      versionedKey: "picks-v2",
+      legacyKey: "picks-v1",
+      sanitize,
+    },
+    expectedPicks: history.present,
+    history,
+    mutation: { kind: "pick", nextPicks: { "slot-2": "song-2" } },
+  });
+
+  assert.equal(result.status, "committed");
+  assert.deepEqual(history, createBoardHistoryState({ "slot-1": "song-1" }));
+  assert.deepEqual(JSON.parse(storage.values.get("picks-v2") ?? ""), {
+    schemaVersion: 2,
+    picks: { "slot-2": "song-2" },
+  });
+  if (result.status === "committed") {
+    assert.deepEqual(result.history.present, { "slot-2": "song-2" });
+    assert.deepEqual(result.history.past, [{ "slot-1": "song-1" }]);
+  }
+});
+
+test("board transactions suppress no-ops and leave storage untouched", () => {
+  const storage = new MemoryStorage();
+  const serialized = JSON.stringify({
+    schemaVersion: 2,
+    picks: { "slot-1": "song-1" },
+  });
+  storage.values.set("picks-v2", serialized);
+  const history = createBoardHistoryState({ "slot-1": "song-1" });
+  const result = commitBoardTransaction({
+    target: {
+      storage,
+      versionedKey: "picks-v2",
+      legacyKey: "picks-v1",
+      sanitize,
+    },
+    expectedPicks: history.present,
+    history,
+    mutation: { kind: "sort", nextPicks: { "slot-1": "song-1" } },
+  });
+
+  assert.equal(result.status, "noop");
+  assert.equal(storage.values.get("picks-v2"), serialized);
+  assert.equal(storage.writes.length, 0);
+});
+
+test("board transactions distinguish write failure and stale conflicts", () => {
+  const storage = new MemoryStorage();
+  storage.values.set(
+    "picks-v2",
+    JSON.stringify({ schemaVersion: 2, picks: { "slot-1": "song-1" } }),
+  );
+  const target = {
+    storage,
+    versionedKey: "picks-v2",
+    legacyKey: "picks-v1",
+    sanitize,
+  };
+  const history = createBoardHistoryState({ "slot-1": "song-1" });
+
+  storage.throwOnSet = true;
+  const failed = commitBoardTransaction({
+    target,
+    expectedPicks: history.present,
+    history,
+    mutation: { kind: "pick", nextPicks: { "slot-2": "song-2" } },
+  });
+  assert.deepEqual(failed, { status: "write-failed" });
+  assert.deepEqual(history.present, { "slot-1": "song-1" });
+
+  storage.throwOnSet = false;
+  const conflict = commitBoardTransaction({
+    target,
+    expectedPicks: { "slot-2": "song-2" },
+    history,
+    mutation: { kind: "pick", nextPicks: { "slot-1": "song-1" } },
+  });
+  assert.deepEqual(conflict, {
+    status: "conflict",
+    latestPicks: { "slot-1": "song-1" },
+    storageStatus: "loaded",
+  });
+});
+
+test("immediate history snapshots preserve same-tick A to B to A commits", () => {
+  const storage = new MemoryStorage();
+  const first = { "slot-1": "song-1" };
+  storage.values.set(
+    "picks-v2",
+    JSON.stringify({ schemaVersion: 2, picks: first }),
+  );
+  const target = {
+    storage,
+    versionedKey: "picks-v2",
+    legacyKey: "picks-v1",
+    sanitize,
+  };
+  let history = createBoardHistoryState(first);
+  let expectedPicks: StoredPicks = first;
+
+  const toB = commitBoardTransaction({
+    target,
+    expectedPicks,
+    history,
+    mutation: { kind: "pick", nextPicks: { "slot-2": "song-2" } },
+  });
+  assert.equal(toB.status, "committed");
+  if (toB.status !== "committed") return;
+  history = toB.history;
+  expectedPicks = toB.picks;
+
+  const backToA = commitBoardTransaction({
+    target,
+    expectedPicks,
+    history,
+    mutation: { kind: "replace", nextPicks: first },
+  });
+  assert.equal(backToA.status, "committed");
+  if (backToA.status !== "committed") return;
+  assert.deepEqual(backToA.history.present, first);
+  assert.deepEqual(backToA.history.past, [first, { "slot-2": "song-2" }]);
+});
+
+test("undo and redo history move only when their durable write succeeds", () => {
+  const storage = new MemoryStorage();
+  const before = { "slot-1": "song-1" };
+  const after = { "slot-2": "song-2" };
+  storage.values.set(
+    "picks-v2",
+    JSON.stringify({ schemaVersion: 2, picks: after }),
+  );
+  const target = {
+    storage,
+    versionedKey: "picks-v2",
+    legacyKey: "picks-v1",
+    sanitize,
+  };
+  const history = boardHistoryReducer(createBoardHistoryState(before), {
+    type: "commit",
+    mutation: { kind: "pick", nextPicks: after },
+  });
+
+  storage.throwOnSet = true;
+  const failedUndo = applyBoardHistoryTransaction({
+    target,
+    expectedPicks: after,
+    history,
+    action: { type: "undo" },
+  });
+  assert.deepEqual(failedUndo, { status: "write-failed" });
+  assert.deepEqual(history.present, after);
+
+  storage.throwOnSet = false;
+  const undo = applyBoardHistoryTransaction({
+    target,
+    expectedPicks: after,
+    history,
+    action: { type: "undo" },
+  });
+  assert.equal(undo.status, "committed");
+  if (undo.status !== "committed") return;
+  const redo = applyBoardHistoryTransaction({
+    target,
+    expectedPicks: undo.picks,
+    history: undo.history,
+    action: { type: "redo" },
+  });
+  assert.equal(redo.status, "committed");
+  if (redo.status === "committed") assert.deepEqual(redo.picks, after);
+});
+
+test("canonicalization resets history only after a durable write", () => {
+  const storage = new MemoryStorage();
+  const current = { "slot-1": "song-1" };
+  storage.values.set(
+    "picks-v2",
+    JSON.stringify({ schemaVersion: 2, picks: current }),
+  );
+  const history = boardHistoryReducer(createBoardHistoryState(), {
+    type: "commit",
+    mutation: { kind: "pick", nextPicks: { "slot-1": "song-1" } },
+  });
+  const result = resetStoredBoardTransaction({
+    target: {
+      storage,
+      versionedKey: "picks-v2",
+      legacyKey: "picks-v1",
+      sanitize,
+    },
+    expectedPicks: current,
+    history,
+    nextPicks: { "slot-2": "song-2" },
+  });
+
+  assert.equal(result.status, "committed");
+  assert.deepEqual(history.past, [{}]);
+  if (result.status === "committed") {
+    assert.deepEqual(result.history, createBoardHistoryState(result.picks));
+  }
+
+  storage.throwOnSet = true;
+  const failed = resetStoredBoardTransaction({
+    target: {
+      storage,
+      versionedKey: "picks-v2",
+      legacyKey: "picks-v1",
+      sanitize,
+    },
+    expectedPicks: { "slot-2": "song-2" },
+    history: result.status === "committed" ? result.history : history,
+    nextPicks: { "slot-1": "song-1" },
+  });
+  assert.deepEqual(failed, { status: "write-failed" });
+});
+
+test("same-board reset durably clears non-canonical undo and redo history", () => {
+  const storage = new MemoryStorage();
+  const first = { "slot-1": "song-1" };
+  const current = { "slot-2": "song-2" };
+  storage.values.set(
+    "picks-v2",
+    JSON.stringify({ schemaVersion: 2, picks: current }),
+  );
+  let history = boardHistoryReducer(createBoardHistoryState(first), {
+    type: "commit",
+    mutation: { kind: "pick", nextPicks: current },
+  });
+  history = boardHistoryReducer(history, {
+    type: "commit",
+    mutation: { kind: "pick", nextPicks: { "slot-3": "song-3" } },
+  });
+  history = boardHistoryReducer(history, { type: "undo" });
+  assert.deepEqual(history.present, current);
+  assert.equal(history.past.length, 1);
+  assert.equal(history.future.length, 1);
+
+  const result = resetStoredBoardTransaction({
+    target: {
+      storage,
+      versionedKey: "picks-v2",
+      legacyKey: "picks-v1",
+      sanitize,
+    },
+    expectedPicks: current,
+    history,
+    nextPicks: current,
+  });
+
+  assert.equal(result.status, "committed");
+  assert.equal(storage.writes.length, 1);
+  if (result.status === "committed") {
+    assert.deepEqual(result.history, createBoardHistoryState(current));
+  }
+});
+
+test("transactional import preserves atomic rollback and blocks future boards", () => {
+  const storage = new MemoryStorage();
+  const previous = { "slot-1": "song-1" };
+  storage.values.set(
+    "picks-v2",
+    JSON.stringify({ schemaVersion: 2, picks: previous }),
+  );
+  storage.values.set("context", "day1");
+  storage.failOnSetCalls.add(2);
+
+  const failed = importBoardTransaction({
+    storage,
+    versionedKey: "picks-v2",
+    legacyKey: "picks-v1",
+    sanitize,
+    expectedPicks: previous,
+    picks: { "slot-2": "song-2" },
+    context: { key: "context", value: "day2" },
+  });
+  assert.deepEqual(failed, {
+    status: "write-failed",
+    rollbackComplete: true,
+  });
+  assert.deepEqual(
+    JSON.parse(storage.values.get("picks-v2") ?? "").picks,
+    previous,
+  );
+  assert.equal(storage.values.get("context"), "day1");
+
+  storage.failOnSetCalls.clear();
+  storage.setCalls = 0;
+  storage.values.set(
+    "picks-v2",
+    JSON.stringify({ schemaVersion: 99, picks: previous }),
+  );
+  const blocked = importBoardTransaction({
+    storage,
+    versionedKey: "picks-v2",
+    legacyKey: "picks-v1",
+    sanitize,
+    expectedPicks: previous,
+    picks: { "slot-2": "song-2" },
+  });
+  assert.deepEqual(blocked, {
+    status: "blocked",
+    storageStatus: "unsupported",
+  });
+});
+
+test("storage events classify context, board, clear, and unrelated keys", () => {
+  const keys = { context: "context", picksV2: "picks-v2" };
+  assert.equal(getBoardStorageEventAction("context", keys), "context");
+  assert.equal(getBoardStorageEventAction("picks-v2", keys), "board");
+  assert.equal(getBoardStorageEventAction(null, keys), "clear");
+  assert.equal(getBoardStorageEventAction("options-v2", keys), "ignore");
+});
+
+test("ephemeral export resets sanitize without touching user storage", () => {
+  const storage = new MemoryStorage();
+  const result = createEphemeralBoardReset(
+    { "slot-1": "song-1", invalid: "unknown" },
+    sanitize,
+  );
+  assert.deepEqual(result.picks, { "slot-1": "song-1" });
+  assert.deepEqual(result.history, createBoardHistoryState(result.picks));
+  assert.equal(storage.reads.length, 0);
+  assert.equal(storage.writes.length, 0);
 });
 
 test("legacy board and options migrate without deleting the legacy payload", () => {
