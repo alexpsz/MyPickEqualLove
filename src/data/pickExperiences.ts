@@ -10,7 +10,7 @@ import {
   PROJECT_ID,
   STANDARD_EXPERIENCE_ID,
 } from "../config/project";
-import { CURRENT_PROJECT } from "../projects/registry";
+import { CURRENT_PROJECT_RUNTIME } from "@current-project/runtime";
 import type {
   ExperiencePickSlot,
   LivePerformance,
@@ -89,7 +89,7 @@ export const STANDARD_PICK_EXPERIENCE: PickExperience = {
   },
 };
 
-export const LIVE_EXPERIENCES = CURRENT_PROJECT.liveExperiences;
+export const LIVE_EXPERIENCES = CURRENT_PROJECT_RUNTIME.liveExperiences;
 export const PICK_EXPERIENCES = [STANDARD_PICK_EXPERIENCE, ...LIVE_EXPERIENCES];
 export const ROUTABLE_LIVE_EXPERIENCES = LIVE_EXPERIENCES.filter(
   (experience) =>

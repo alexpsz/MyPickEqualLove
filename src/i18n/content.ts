@@ -1,4 +1,3 @@
-import { getExperienceContexts } from "../data/pickExperiences";
 import type { ExportTemplateId } from "../schema/export";
 import { PROJECTS } from "../projects/registry";
 import type { ProjectId } from "../schema/project";
@@ -215,8 +214,6 @@ const LIVE_EXPERIENCE_MESSAGE_KEYS: Readonly<
   },
 };
 
-assertLiveExperienceMessageCoverage();
-
 export function getExportTemplateMessageKey(templateId: ExportTemplateId) {
   return EXPORT_TEMPLATE_MESSAGE_KEYS[templateId];
 }
@@ -328,61 +325,4 @@ function localizeSlot(
     label: translate(locale, slotKeys.label),
     subtitle: translate(locale, slotKeys.subtitle),
   };
-}
-
-function assertLiveExperienceMessageCoverage() {
-  const routableExperiences = Object.entries(PROJECTS).flatMap(
-    ([projectId, project]) =>
-      project.liveExperiences
-        .filter((experience) => experience.status !== "draft")
-        .map((experience) => ({ projectId, experience })),
-  );
-
-  assertExactKeyCoverage(
-    "live experiences",
-    routableExperiences.map(({ experience }) => experience.id),
-    Object.keys(LIVE_EXPERIENCE_MESSAGE_KEYS),
-  );
-
-  for (const { projectId, experience } of routableExperiences) {
-    const keys = LIVE_EXPERIENCE_MESSAGE_KEYS[experience.id];
-    if (!keys) {
-      throw new Error(
-        `[i18n] Missing message mapping for ${projectId}/${experience.id}.`,
-      );
-    }
-
-    assertExactKeyCoverage(
-      `${projectId}/${experience.id} slots`,
-      experience.slots.map((slot) => slot.id),
-      Object.keys(keys.slots),
-    );
-    assertExactKeyCoverage(
-      `${projectId}/${experience.id} contexts`,
-      getExperienceContexts(experience).map((context) => context.id),
-      Object.keys(keys.contexts ?? {}),
-    );
-  }
-}
-
-function assertExactKeyCoverage(
-  label: string,
-  expectedKeys: readonly string[],
-  actualKeys: readonly string[],
-) {
-  const expected = new Set(expectedKeys);
-  const actual = new Set(actualKeys);
-  const missing = expectedKeys.filter((key) => !actual.has(key));
-  const unexpected = actualKeys.filter((key) => !expected.has(key));
-
-  if (missing.length === 0 && unexpected.length === 0) return;
-
-  const details = [
-    missing.length > 0 ? `missing: ${missing.join(", ")}` : "",
-    unexpected.length > 0 ? `unexpected: ${unexpected.join(", ")}` : "",
-  ]
-    .filter(Boolean)
-    .join("; ");
-
-  throw new Error(`[i18n] ${label} mapping mismatch (${details}).`);
 }

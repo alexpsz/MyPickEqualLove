@@ -22,6 +22,13 @@ const EXPORT_REALM_HASH = exportCaptureSource.match(
 )?.[1];
 assert.ok(EXPORT_REALM_HASH, "export realm hash constant must be discoverable");
 
+const shareValidationManifest = JSON.parse(
+  await readFile(
+    new URL("../src/projects/share-validation-manifest.json", import.meta.url),
+    "utf8",
+  ),
+);
+
 const standardPayload = {
   v: BOARD_SHARE_PROTOCOL_VERSION,
   p: "equal-love",
@@ -234,6 +241,75 @@ test("semantic import validation accepts catalog eligibility and exact context",
       ],
     }),
     { ok: true, picks: { "way-home": "day2-only-song" } },
+  );
+});
+
+test("generated cross-project rules preserve strict context and eligibility", () => {
+  const project = shareValidationManifest.projects["equal-love"];
+  const experience = project.experiences.kokuritsu_2026;
+  const day1 = experience.performances.find(
+    (performance) => performance.id === "day1",
+  );
+  const day2 = experience.performances.find(
+    (performance) => performance.id === "day2",
+  );
+  assert.ok(day1 && day2);
+  const day2OnlySong = day2.songIds.find(
+    (songId) => !day1.songIds.includes(songId),
+  );
+  assert.ok(day2OnlySong, "fixture must retain at least one day-2-only song");
+
+  const songIds = new Set(project.songIds);
+  const day1SongIds = new Set(day1.songIds);
+  const eventSongIds = new Set(
+    experience.performances.flatMap((performance) => performance.songIds),
+  );
+  const target = {
+    projectId: "equal-love",
+    experienceId: "kokuritsu_2026",
+    contextIds: ["day1", "day2", "both"],
+    requiresContext: true,
+    songIds,
+    slots: experience.slots.map((slot) => ({
+      id: slot.id,
+      eligibleSongIds:
+        slot.eligibility === "catalog"
+          ? songIds
+          : slot.eligibility === "event-union"
+            ? eventSongIds
+            : day1SongIds,
+    })),
+  };
+  const selectedPerformanceSlot = experience.slots.find(
+    (slot) => slot.eligibility === "selected-performance",
+  );
+  assert.ok(selectedPerformanceSlot);
+
+  assert.deepEqual(
+    validateBoardShareImport(
+      {
+        v: BOARD_SHARE_PROTOCOL_VERSION,
+        p: "equal-love",
+        e: "kokuritsu_2026",
+        c: null,
+        s: [],
+      },
+      target,
+    ),
+    { ok: false, reason: "invalid-context" },
+  );
+  assert.deepEqual(
+    validateBoardShareImport(
+      {
+        v: BOARD_SHARE_PROTOCOL_VERSION,
+        p: "equal-love",
+        e: "kokuritsu_2026",
+        c: "day1",
+        s: [[selectedPerformanceSlot.id, day2OnlySong]],
+      },
+      target,
+    ),
+    { ok: false, reason: "ineligible-song" },
   );
 });
 

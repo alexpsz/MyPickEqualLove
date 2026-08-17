@@ -1,15 +1,17 @@
 import type { Member, ReleaseType, Song, TrackType } from "../schema/music";
-import { CURRENT_PROJECT } from "../projects/registry";
+import { CURRENT_PROJECT_RUNTIME } from "@current-project/runtime";
 
-export const MEMBERS: Member[] = CURRENT_PROJECT.members;
+export const MEMBERS: Member[] = CURRENT_PROJECT_RUNTIME.members;
 
-export const SONGS: Song[] = CURRENT_PROJECT.songs.slice().sort((a, b) => {
-  const dateA = a.releaseDate ?? "";
-  const dateB = b.releaseDate ?? "";
-  return (
-    dateB.localeCompare(dateA) || a.title.romaji.localeCompare(b.title.romaji)
-  );
-});
+export const SONGS: Song[] = CURRENT_PROJECT_RUNTIME.songs
+  .slice()
+  .sort((a, b) => {
+    const dateA = a.releaseDate ?? "";
+    const dateB = b.releaseDate ?? "";
+    return (
+      dateB.localeCompare(dateA) || a.title.romaji.localeCompare(b.title.romaji)
+    );
+  });
 
 export const SONGS_BY_ID: Record<string, Song> = Object.fromEntries(
   SONGS.map((song) => [song.id, song]),
