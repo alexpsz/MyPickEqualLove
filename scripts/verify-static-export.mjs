@@ -2,10 +2,6 @@ import { existsSync } from "node:fs";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  loadCoverManifest,
-  verifyCoverClosure,
-} from "./copy-public-assets.mjs";
 
 export const PROJECT_CONTRACTS = Object.freeze({
   "equal-love": Object.freeze({
@@ -128,12 +124,6 @@ export async function verifyStaticExport({
 
   await verifySitemap(out, contract, expectedExperiences, violations);
   await verifyReferencedAssets(out, contract.siteUrl, violations);
-  try {
-    const manifest = loadCoverManifest({ projectId, root });
-    verifyCoverClosure({ manifest, outDirectory: out });
-  } catch (error) {
-    violations.push(`cover artifact closure failed: ${error.message}`);
-  }
 
   if (violations.length > 0) {
     throw new Error(

@@ -14,7 +14,6 @@ import {
 
 const PROJECT_ID = "equal-love";
 const CONTRACT = PROJECT_CONTRACTS[PROJECT_ID];
-const ARTIFACTS_ONLY = process.env.STATIC_EXPORT_ARTIFACTS_ONLY === "1";
 const LIVE = {
   status: "published",
   slug: "kokuritsu-2026",
@@ -90,38 +89,8 @@ for (const scenario of [
   {
     name: "missing referenced asset fails",
     mutate: ({ rootHtml }) =>
-      rootHtml.replace(
-        "/covers/equal-love/example.jpg",
-        "/covers/equal-love/missing.jpg",
-      ),
+      rootHtml.replace("/covers/example.jpg", "/covers/missing.jpg"),
     expected: /references missing asset/,
-  },
-  {
-    name: "missing current catalog cover fails closure",
-    mutate: ({ rootHtml }) => rootHtml,
-    afterWrite: async ({ out }) =>
-      rm(path.join(out, "covers", "equal-love", "example.jpg")),
-    expected: /cover artifact closure failed: missing expected output cover/,
-  },
-  {
-    name: "foreign catalog cover fails exact set closure",
-    mutate: ({ rootHtml }) => rootHtml,
-    afterWrite: async ({ out }) =>
-      writeFixtureFile(
-        path.join(out, "covers", "not-equal-me", "foreign.jpg"),
-        "foreign",
-      ),
-    expected: /out\/covers exact set mismatch:.*foreign\.jpg/s,
-  },
-  {
-    name: "cover content drift fails hash closure",
-    mutate: ({ rootHtml }) => rootHtml,
-    afterWrite: async ({ out }) =>
-      writeFile(
-        path.join(out, "covers", "equal-love", "example.jpg"),
-        "drift!",
-      ),
-    expected: /output cover (?:size|hash) differs from source/,
   },
   {
     name: "missing asset referenced from RSC fails",
@@ -158,55 +127,45 @@ for (const scenario of [
   });
 }
 
-test(
-  "dependency-free static server serves directory routes and assets",
-  { skip: ARTIFACTS_ONLY },
-  async () => {
-    await withFixture(async ({ out }) => {
-      const server = createStaticExportServer(out);
-      await listen(server);
-      const address = server.address();
-      assert.equal(typeof address, "object");
-      const origin = `http://127.0.0.1:${address.port}`;
-      try {
-        const rootResponse = await fetch(`${origin}/`);
-        assert.equal(rootResponse.status, 200);
-        assert.match(await rootResponse.text(), /MY PICK =LOVE/);
+test("dependency-free static server serves directory routes and assets", async () => {
+  await withFixture(async ({ out }) => {
+    const server = createStaticExportServer(out);
+    await listen(server);
+    const address = server.address();
+    assert.equal(typeof address, "object");
+    const origin = `http://127.0.0.1:${address.port}`;
+    try {
+      const rootResponse = await fetch(`${origin}/`);
+      assert.equal(rootResponse.status, 200);
+      assert.match(await rootResponse.text(), /MY PICK =LOVE/);
 
-        const redirect = await fetch(`${origin}/live/${LIVE.slug}`, {
-          redirect: "manual",
-        });
-        assert.equal(redirect.status, 308);
-        assert.equal(redirect.headers.get("location"), `/live/${LIVE.slug}/`);
+      const redirect = await fetch(`${origin}/live/${LIVE.slug}`, {
+        redirect: "manual",
+      });
+      assert.equal(redirect.status, 308);
+      assert.equal(redirect.headers.get("location"), `/live/${LIVE.slug}/`);
 
-        const liveResponse = await fetch(`${origin}/live/${LIVE.slug}/`);
-        assert.equal(liveResponse.status, 200);
-        assert.match(await liveResponse.text(), new RegExp(LIVE.title));
+      const liveResponse = await fetch(`${origin}/live/${LIVE.slug}/`);
+      assert.equal(liveResponse.status, 200);
+      assert.match(await liveResponse.text(), new RegExp(LIVE.title));
 
-        const assetResponse = await fetch(
-          `${origin}/covers/equal-love/example.jpg`,
-        );
-        assert.equal(assetResponse.status, 200);
-        assert.equal(await assetResponse.text(), "cover");
+      const assetResponse = await fetch(`${origin}/covers/example.jpg`);
+      assert.equal(assetResponse.status, 200);
+      assert.equal(await assetResponse.text(), "cover");
 
-        const missingResponse = await fetch(`${origin}/missing`);
-        assert.equal(missingResponse.status, 404);
-      } finally {
-        await close(server);
-      }
-    });
-  },
-);
+      const missingResponse = await fetch(`${origin}/missing`);
+      assert.equal(missingResponse.status, 404);
+    } finally {
+      await close(server);
+    }
+  });
+});
 
-test(
-  "Windows-compatible npm invocation spawns a harmless command",
-  { skip: ARTIFACTS_ONLY },
-  async () => {
-    const result = await runNpmCommand(["--version"], { stdio: "pipe" });
-    assert.equal(result.code, 0, result.stderr);
-    assert.match(result.stdout.trim(), /^\d+\.\d+\.\d+/);
-  },
-);
+test("Windows-compatible npm invocation spawns a harmless command", async () => {
+  const result = await runNpmCommand(["--version"], { stdio: "pipe" });
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout.trim(), /^\d+\.\d+\.\d+/);
+});
 
 async function withFixture(callback) {
   const root = await mkdtemp(path.join(os.tmpdir(), "mypick-static-export-"));
@@ -234,7 +193,7 @@ async function withFixture(callback) {
     );
     await writeFixtureFile(
       path.join(out, "live", LIVE.slug, "index.txt"),
-      createRsc(["/_next/static/app.js", "/covers/equal-love/example.jpg"]),
+      createRsc(["/_next/static/app.js", "/covers/example.jpg"]),
     );
     await writeFixtureFile(
       path.join(out, "sitemap.xml"),
@@ -248,14 +207,7 @@ async function withFixture(callback) {
       path.join(out, "_next", "static", "app.js"),
       "export {};\n",
     );
-    await writeFixtureFile(
-      path.join(root, "public", "covers", "equal-love", "example.jpg"),
-      "cover",
-    );
-    await writeFixtureFile(
-      path.join(out, "covers", "equal-love", "example.jpg"),
-      "cover",
-    );
+    await writeFixtureFile(path.join(out, "covers", "example.jpg"), "cover");
     await writeFixtureFile(
       path.join(out, "icons", "equal-love.svg"),
       "<svg/>\n",
@@ -295,19 +247,6 @@ async function createRepositorySources(root) {
       path.join(root, "src", "projects", projectId, "live-experiences.json"),
       JSON.stringify(projectExperiences),
     );
-    await writeFixtureFile(
-      path.join(root, "src", "projects", projectId, "songs.json"),
-      JSON.stringify(
-        projectId === PROJECT_ID
-          ? [
-              {
-                id: "example",
-                coverUrl: "/covers/equal-love/example.jpg",
-              },
-            ]
-          : [],
-      ),
-    );
   }
 }
 
@@ -315,7 +254,7 @@ function createHtml({ canonical, identity, openGraphTitle, title }) {
   const titleMeta = openGraphTitle
     ? `<meta property="og:title" content="${openGraphTitle}">`
     : "";
-  return `<!doctype html><html><head><title>${title}</title><link rel="canonical" href="${canonical}"><meta property="og:site_name" content="${identity}">${titleMeta}<link rel="icon" href="/icons/equal-love.svg"><link rel="stylesheet" href="/_next/static/app.css"><script src="/_next/static/app.js"></script></head><body><h1>${identity}</h1><img src="/covers/equal-love/example.jpg"></body></html>`;
+  return `<!doctype html><html><head><title>${title}</title><link rel="canonical" href="${canonical}"><meta property="og:site_name" content="${identity}">${titleMeta}<link rel="icon" href="/icons/equal-love.svg"><link rel="stylesheet" href="/_next/static/app.css"><script src="/_next/static/app.js"></script></head><body><h1>${identity}</h1><img src="/covers/example.jpg"></body></html>`;
 }
 
 async function writeFixtureFile(filePath, content) {
