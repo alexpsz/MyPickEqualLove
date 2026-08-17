@@ -33,6 +33,16 @@ Fan-made static web apps for creating shareable Top 10 song boards for =LOVE, â‰
 
 Each build writes a static export to `out/`.
 
+To preview the most recently built static export locally:
+
+```bash
+npm run build:equal-love
+npm start
+```
+
+`npm run verify` runs the repository boundary, lint, type check, data and
+contract tests, then builds and verifies all three static exports in sequence.
+
 ## Local Development
 
 Requires Node.js 20.9 or newer; `.node-version` selects Node.js 22 for local and Cloudflare builds that support it.

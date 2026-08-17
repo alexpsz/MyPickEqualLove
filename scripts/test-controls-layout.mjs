@@ -208,9 +208,29 @@ test("special activity details collapse only on mobile", () => {
     /official-button[\s\S]*header\.showActivityDetails/,
     "activity details must not reintroduce a separately visible disclosure label",
   );
+  const previewModalStart = clientSource.indexOf("<PreviewModal");
+  const previewModalEnd = clientSource.indexOf("/>", previewModalStart);
+  const previewModalProps = clientSource.slice(
+    previewModalStart,
+    previewModalEnd,
+  );
+  assert.ok(
+    previewModalStart >= 0 && previewModalEnd > previewModalStart,
+    "the preview dialog must remain mounted through its production component",
+  );
   assert.match(
-    clientSource,
-    /returnFocusKey=\{DIALOG_RETURN_KEYS\.generateImage\}[\s\S]*returnFocusFallbackKey=\{DIALOG_RETURN_KEYS\.globalSearch\}/,
-    "responsive duplicate action markup must retain a visible keyed focus fallback",
+    previewModalProps,
+    /returnFocusRef=\{[\s\S]*renderedPreview\.kind === "archetype"[\s\S]*archetypeTriggerRef[\s\S]*previewTriggerRef[\s\S]*\}/,
+    "each preview variant must retain its visible trigger reference",
+  );
+  assert.match(
+    previewModalProps,
+    /returnFocusKey=\{[\s\S]*renderedPreview\.kind === "archetype"[\s\S]*DIALOG_RETURN_KEYS\.archetype[\s\S]*DIALOG_RETURN_KEYS\.generateImage[\s\S]*\}/,
+    "each preview variant must retain its stable return-focus key",
+  );
+  assert.match(
+    previewModalProps,
+    /returnFocusFallbackKey=\{DIALOG_RETURN_KEYS\.globalSearch\}/,
+    "responsive duplicate actions must retain a visible global-search fallback",
   );
 });
