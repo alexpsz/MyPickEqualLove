@@ -22,8 +22,15 @@ process.exitCode = runCompiledTestSuite({
     "--esModuleInterop",
     "--skipLibCheck",
   ],
-  sourceFiles: ["scripts/tests/export-board-visibility.test.ts"],
+  sourceFiles: [
+    "src/projects/current-runtime.d.ts",
+    "src/projects/equal-love/runtime.ts",
+    "scripts/tests/export-board-visibility.test.ts",
+  ],
   emittedTestFiles: ["scripts/tests/export-board-visibility.test.js"],
   includeRepositoryNodePath: true,
+  moduleAliases: {
+    "@current-project/runtime": "src/projects/equal-love/runtime.js",
+  },
   testStdio: "inherit",
 }).exitCode;

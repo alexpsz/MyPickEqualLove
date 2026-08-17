@@ -12,6 +12,8 @@
   },
   "include": [
     "../src/config/project.ts",
+    "../src/projects/current-runtime.d.ts",
+    "../src/projects/equal-love/runtime.ts",
     "../src/schema/pick-experience.ts",
     "../src/utils/boardHistory.ts",
     "../src/utils/experienceEligibility.ts",

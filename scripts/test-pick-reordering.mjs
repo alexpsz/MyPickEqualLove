@@ -1,9 +1,23 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { createRequire } from "node:module";
+import Module, { createRequire } from "node:module";
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import ts from "typescript";
 
 const require = createRequire(import.meta.url);
+const repositoryRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
+const currentProjectRuntimePath = resolve(
+  repositoryRoot,
+  "src/projects/equal-love/runtime.ts",
+);
+const resolveFilename = Module._resolveFilename;
+Module._resolveFilename = function (request, parent, isMain, options) {
+  if (request === "@current-project/runtime") {
+    return currentProjectRuntimePath;
+  }
+  return resolveFilename.call(this, request, parent, isMain, options);
+};
 
 for (const extension of [".ts", ".tsx"]) {
   require.extensions[extension] = (module, filename) => {

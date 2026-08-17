@@ -1,8 +1,17 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { constants as osConstants } from "node:os";
-import { delimiter, join, resolve } from "node:path";
+import { delimiter, isAbsolute, join, relative, resolve, sep } from "node:path";
+
+const BARE_PACKAGE_SPECIFIER =
+  /^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/i;
 
 function write(output, value) {
   if (value) output.write(value);
@@ -59,6 +68,70 @@ function childOutcome(result, phase, stdout, stderr) {
   };
 }
 
+function normalizeModuleAliases(moduleAliases) {
+  if (
+    moduleAliases === null ||
+    Array.isArray(moduleAliases) ||
+    typeof moduleAliases !== "object"
+  ) {
+    throw new TypeError("moduleAliases must be an object");
+  }
+
+  return Object.entries(moduleAliases).map(([specifier, emittedPath]) => {
+    if (!BARE_PACKAGE_SPECIFIER.test(specifier)) {
+      throw new TypeError(`Invalid bare module alias specifier: ${specifier}`);
+    }
+    if (
+      typeof emittedPath !== "string" ||
+      emittedPath.length === 0 ||
+      isAbsolute(emittedPath)
+    ) {
+      throw new TypeError(
+        `Module alias target must be a relative emitted path: ${specifier}`,
+      );
+    }
+    return { emittedPath, specifier };
+  });
+}
+
+function installModuleAliases(
+  outputDirectory,
+  aliases,
+  { existsSyncImpl, mkdirSyncImpl, writeFileSyncImpl },
+) {
+  for (const { emittedPath, specifier } of aliases) {
+    const targetPath = resolve(outputDirectory, emittedPath);
+    const targetRelativePath = relative(outputDirectory, targetPath);
+    if (
+      targetRelativePath === "" ||
+      targetRelativePath.startsWith(`..${sep}`) ||
+      targetRelativePath === ".." ||
+      isAbsolute(targetRelativePath)
+    ) {
+      throw new Error(
+        `Module alias target escapes temporary output: ${specifier}`,
+      );
+    }
+    if (!existsSyncImpl(targetPath)) {
+      throw new Error(
+        `Emitted module alias target not found for ${specifier}: ${emittedPath}`,
+      );
+    }
+
+    const packageDirectory = resolve(
+      outputDirectory,
+      "node_modules",
+      ...specifier.split("/"),
+    );
+    mkdirSyncImpl(packageDirectory, { recursive: true });
+    const main = relative(packageDirectory, targetPath).replaceAll("\\", "/");
+    writeFileSyncImpl(
+      join(packageDirectory, "package.json"),
+      `${JSON.stringify({ private: true, main })}\n`,
+    );
+  }
+}
+
 export function mergeNodePath(
   repositoryNodeModules,
   existingNodePath,
@@ -78,14 +151,17 @@ export function runCompiledTestSuite(
     sourceFiles = [],
     emittedTestFiles,
     includeRepositoryNodePath = false,
+    moduleAliases = {},
     testStdio = "pipe",
     successMessage,
   },
   {
     spawnSyncImpl = spawnSync,
     existsSyncImpl = existsSync,
+    mkdirSyncImpl = mkdirSync,
     mkdtempSyncImpl = mkdtempSync,
     rmSyncImpl = rmSync,
+    writeFileSyncImpl = writeFileSync,
     tmpdirImpl = tmpdir,
     stdout = process.stdout,
     stderr = process.stderr,
@@ -105,6 +181,7 @@ export function runCompiledTestSuite(
   if (testStdio !== "pipe" && testStdio !== "inherit") {
     throw new TypeError('testStdio must be either "pipe" or "inherit"');
   }
+  const aliases = normalizeModuleAliases(moduleAliases);
 
   const resolvedRepositoryRoot = resolve(repositoryRoot);
   const tscPath = resolve(
@@ -150,14 +227,39 @@ export function runCompiledTestSuite(
     }
     outcome = childOutcome(compile, "TypeScript compile", stdout, stderr);
     if (outcome.exitCode === 0) {
-      const testEnvironment = includeRepositoryNodePath
+      try {
+        installModuleAliases(outputDirectory, aliases, {
+          existsSyncImpl,
+          mkdirSyncImpl,
+          writeFileSyncImpl,
+        });
+      } catch (error) {
+        write(stderr, `Module alias setup failed: ${error.message}\n`);
+        outcome = {
+          exitCode: 1,
+          phase: "module-alias",
+          signal: null,
+          status: null,
+          spawnError: error,
+        };
+      }
+    }
+    if (outcome.exitCode === 0) {
+      const needsNodePath = aliases.length > 0 || includeRepositoryNodePath;
+      const testEnvironment = needsNodePath
         ? {
             ...environment,
-            NODE_PATH: mergeNodePath(
-              resolve(resolvedRepositoryRoot, "node_modules"),
+            NODE_PATH: [
+              aliases.length > 0
+                ? resolve(outputDirectory, "node_modules")
+                : null,
+              includeRepositoryNodePath
+                ? resolve(resolvedRepositoryRoot, "node_modules")
+                : null,
               environment.NODE_PATH,
-              pathDelimiter,
-            ),
+            ]
+              .filter(Boolean)
+              .join(pathDelimiter),
           }
         : environment;
       const testArguments = [

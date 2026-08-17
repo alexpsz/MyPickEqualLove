@@ -3,11 +3,12 @@ import {
   existsSync,
   mkdtempSync,
   mkdirSync,
+  readFileSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { delimiter, join } from "node:path";
+import { delimiter, dirname, join } from "node:path";
 import test from "node:test";
 
 import {
@@ -53,7 +54,10 @@ function runFixture(root, results, overrides = {}) {
     {
       spawnSyncImpl(command, args, options) {
         calls.push({ command, args, options });
-        return results[calls.length - 1];
+        const result = results[calls.length - 1];
+        return typeof result === "function"
+          ? result({ args, command, options })
+          : result;
       },
       stdout: stdout.output,
       stderr: stderr.output,
@@ -197,6 +201,113 @@ test("test stdio can inherit from the parent process", () => {
     );
     assert.equal(result.outcome.exitCode, 0);
     assert.equal(result.calls[1].options.stdio, "inherit");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("module aliases create a package adapter and prepend temporary NODE_PATH", () => {
+  const root = createFixture();
+  try {
+    let packageAdapter;
+    let resultDirectory;
+    let testNodePath;
+    const result = runFixture(
+      root,
+      [
+        ({ args }) => {
+          resultDirectory = args[args.indexOf("--outDir") + 1];
+          const emittedRuntime = join(
+            resultDirectory,
+            "src",
+            "projects",
+            "equal-love",
+            "runtime.js",
+          );
+          mkdirSync(dirname(emittedRuntime), { recursive: true });
+          writeFileSync(emittedRuntime, "module.exports = {};\n");
+          return { status: 0, signal: null, stdout: "", stderr: "" };
+        },
+        ({ options }) => {
+          testNodePath = options.env.NODE_PATH;
+          packageAdapter = JSON.parse(
+            readFileSync(
+              join(
+                resultDirectory,
+                "node_modules",
+                "@current-project",
+                "runtime",
+                "package.json",
+              ),
+              "utf8",
+            ),
+          );
+          return { status: 0, signal: null, stdout: "", stderr: "" };
+        },
+      ],
+      {
+        includeRepositoryNodePath: true,
+        moduleAliases: {
+          "@current-project/runtime": "src/projects/equal-love/runtime.js",
+        },
+      },
+    );
+    assert.equal(result.outcome.exitCode, 0);
+    assert.equal(
+      testNodePath,
+      [
+        join(resultDirectory, "node_modules"),
+        join(root, "node_modules"),
+        process.env.NODE_PATH,
+      ]
+        .filter(Boolean)
+        .join(delimiter),
+    );
+    assert.equal(
+      packageAdapter.main,
+      "../../../src/projects/equal-love/runtime.js",
+    );
+    assert.equal(existsSync(resultDirectory), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("a missing emitted alias target fails closed before tests and cleans output", () => {
+  const root = createFixture();
+  try {
+    const result = runFixture(
+      root,
+      [{ status: 0, signal: null, stdout: "", stderr: "" }],
+      {
+        moduleAliases: {
+          "@current-project/runtime": "src/projects/equal-love/runtime.js",
+        },
+      },
+    );
+    assert.equal(result.calls.length, 1);
+    assert.equal(result.outcome.exitCode, 1);
+    assert.equal(result.outcome.phase, "module-alias");
+    assert.match(result.stderr, /Emitted module alias target not found/);
+    assert.equal(existsSync(result.outcome.outputDirectory), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("an emitted alias target cannot escape temporary output", () => {
+  const root = createFixture();
+  try {
+    const result = runFixture(
+      root,
+      [{ status: 0, signal: null, stdout: "", stderr: "" }],
+      { moduleAliases: { "fixture-runtime": "../outside.js" } },
+    );
+    assert.equal(result.calls.length, 1);
+    assert.equal(result.outcome.exitCode, 1);
+    assert.equal(result.outcome.phase, "module-alias");
+    assert.match(result.stderr, /target escapes temporary output/);
+    assert.equal(existsSync(result.outcome.outputDirectory), false);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
