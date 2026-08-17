@@ -1,6 +1,10 @@
 import { DEFAULT_PICK_SLOTS, STANDARD_EXPERIENCE_ID } from "../config/project";
-import { COMBINED_CONTEXT_ID } from "./pickExperiences";
-import { PROJECT_IDS, PROJECTS, type ProjectId } from "../projects/registry";
+import { PROJECTS } from "../projects/registry";
+import {
+  COMBINED_CONTEXT_ID,
+  PROJECT_IDS,
+  type ProjectId,
+} from "../schema/project";
 import type {
   ExperiencePickSlot,
   PickExperience,

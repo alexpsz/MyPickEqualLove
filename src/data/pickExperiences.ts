@@ -19,6 +19,7 @@ import type {
 } from "../schema/pick-experience";
 import type { ExportSizePresetId, ExportTemplateId } from "../schema/export";
 import type { PickSlotId, Song, StoredPicks } from "../schema/music";
+import { COMBINED_CONTEXT_ID } from "../schema/project";
 import { buildExportImageFileName } from "../utils/exportFileName";
 import { getAssistantEligibleSongIds } from "../utils/experienceEligibility";
 import { SONGS, SONGS_BY_ID } from "./songs";
@@ -59,7 +60,7 @@ export type RelocatePickResult =
       toSlotId: PickSlotId;
     };
 
-export const COMBINED_CONTEXT_ID = "both";
+export { COMBINED_CONTEXT_ID } from "../schema/project";
 export const EMPTY_LIVE_EXPERIENCE_SLUG = "__empty-live__";
 
 export const STANDARD_PICK_EXPERIENCE: PickExperience = {

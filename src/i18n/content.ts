@@ -1,6 +1,7 @@
 import { getExperienceContexts } from "../data/pickExperiences";
 import type { ExportTemplateId } from "../schema/export";
-import { PROJECTS, type ProjectId } from "../projects/registry";
+import { PROJECTS } from "../projects/registry";
+import type { ProjectId } from "../schema/project";
 import type {
   ExperiencePickSlot,
   PickExperience,

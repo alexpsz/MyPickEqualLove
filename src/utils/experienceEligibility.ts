@@ -4,8 +4,9 @@ import type {
   PickExperience,
   SongEligibilityScope,
 } from "../schema/pick-experience";
+import { COMBINED_CONTEXT_ID } from "../schema/project";
 
-export const COMBINED_EXPERIENCE_CONTEXT_ID = "both";
+export { COMBINED_CONTEXT_ID as COMBINED_EXPERIENCE_CONTEXT_ID } from "../schema/project";
 
 export function getAssistantEligibleSongIds({
   experience,
@@ -77,7 +78,7 @@ export function getStrictContextPerformanceIds(
   }
 
   if (
-    contextId === COMBINED_EXPERIENCE_CONTEXT_ID &&
+    contextId === COMBINED_CONTEXT_ID &&
     experience.includeCombinedPerformance &&
     performances.length > 1
   ) {

@@ -1,6 +1,6 @@
-import type { ProjectId } from "../projects/registry";
 import type { ExportExperienceLayout } from "./export";
 import type { PickSlot } from "./music";
+import type { ProjectId } from "./project";
 
 export type PickExperienceKind =
   | "standard"

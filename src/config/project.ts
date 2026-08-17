@@ -4,7 +4,7 @@ import {
   CURRENT_PROJECT_ID,
   PROJECTS,
 } from "../projects/registry";
-import type { ProjectId } from "../projects/registry";
+import type { ProjectId } from "../schema/project";
 import {
   EXPORT_BACKGROUND,
   EXPORT_SCALE,
