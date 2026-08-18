@@ -94,7 +94,10 @@ import {
   useExperienceBoardSession,
 } from "../hooks/useExperienceBoardSession";
 import { centerExportYearInk } from "../utils/centerExportYearInk";
-import { convertColorString } from "../utils/colors";
+import {
+  installExportStyleAdapter,
+  type ExportStyleWindowLike,
+} from "../utils/exportStyleProxy";
 import { assertExportLayoutFits } from "../utils/assertExportLayoutFits";
 import {
   buildBoardShareUrl,
@@ -2092,32 +2095,10 @@ export default function PickExperienceClient({
   ]);
 
   const captureExportCanvas = useCallback(async () => {
-    const originalGetComputedStyle = window.getComputedStyle;
+    const restoreExportStyles = installExportStyleAdapter(
+      window as unknown as ExportStyleWindowLike,
+    );
     try {
-      window.getComputedStyle = ((element, pseudoElement) => {
-        const styleDecl = originalGetComputedStyle.call(
-          window,
-          element,
-          pseudoElement,
-        );
-        return new Proxy(styleDecl, {
-          get(target, prop) {
-            if (prop === "getPropertyValue") {
-              return (propertyName: string) =>
-                convertColorString(target.getPropertyValue(propertyName));
-            }
-            const value = Reflect.get(target, prop) as unknown;
-            if (typeof value === "function") {
-              return value.bind(target);
-            }
-            if (typeof value === "string") {
-              return convertColorString(value);
-            }
-            return value;
-          },
-        });
-      }) as typeof window.getComputedStyle;
-
       if (
         frameCaptureRequest?.kind === "archetype" &&
         !archetypeExportPresentation
@@ -2154,7 +2135,7 @@ export default function PickExperienceClient({
       centerExportYearInk(canvas, exportElement);
       return canvas.toDataURL("image/png");
     } finally {
-      window.getComputedStyle = originalGetComputedStyle;
+      restoreExportStyles();
     }
   }, [
     archetypeExportPresentation,
