@@ -20,7 +20,6 @@ import {
   STORAGE_KEYS,
 } from "../config/project";
 import {
-  DEFAULT_EXPORT_OPTIONS,
   DEFAULT_EXPORT_SIZE_PRESET_ID,
   EXPORT_BACKGROUND,
   EXPORT_SCALE,
@@ -75,8 +74,6 @@ import type { PickSlotId, Picks, Song, StoredPicks } from "../schema/music";
 import { sameStoredPicks, type BoardMutationKind } from "../utils/boardHistory";
 import {
   loadStoredBoard,
-  loadStoredOptions,
-  mutateStoredOptions,
   type BoardScope,
   type BoardSnapshot,
   type StorageLoadStatus,
@@ -108,10 +105,10 @@ import {
   type BoardLibraryActionResult,
 } from "../hooks/useBoardLibrary";
 import { useSongDiscovery } from "../hooks/useSongDiscovery";
+import { useExportOptions } from "../hooks/useExportOptions";
 import {
   planAssistantSnapshotSync,
   resolveStorageSyncAction,
-  shouldResyncStorage,
 } from "../utils/storageSyncPolicy";
 import {
   EXPORT_CAPTURE_PROTOCOL_VERSION,
@@ -362,18 +359,6 @@ export default function PickExperienceClient({
     string | null
   >(null);
   const [generating, setGenerating] = useState(false);
-  const [showTitles, setShowTitles] = useState(
-    DEFAULT_EXPORT_OPTIONS.showTitles,
-  );
-  const [transparentBg, setTransparentBg] = useState(
-    DEFAULT_EXPORT_OPTIONS.transparentBg,
-  );
-  const [showQrCode, setShowQrCode] = useState(
-    DEFAULT_EXPORT_OPTIONS.showQrCode,
-  );
-  const [templateId, setTemplateId] = useState<ExportTemplateId>(
-    DEFAULT_EXPORT_OPTIONS.templateId,
-  );
   const [frameSizePresetId, setFrameSizePresetId] =
     useState<ExportSizePresetId>(DEFAULT_EXPORT_SIZE_PRESET_ID);
   const [nicknameDraft, setNicknameDraft] = useState("");
@@ -392,7 +377,6 @@ export default function PickExperienceClient({
   const [assistantMutationPending, setAssistantMutationPending] =
     useState(false);
   const [boardStatusMessage, setBoardStatusMessage] = useState("");
-  const [optionsStorageWritable, setOptionsStorageWritable] = useState(false);
   const [boardLinkCopied, setBoardLinkCopied] = useState(false);
   const [boardShareDialog, setBoardShareDialog] =
     useState<BoardShareDialogState | null>(null);
@@ -721,6 +705,19 @@ export default function PickExperienceClient({
           context: activeUiContextDescription,
         })
       : uiCopy.title;
+  const {
+    options: exportOptions,
+    writable: optionsStorageWritable,
+    hydrateFrom: hydrateExportOptions,
+    adopt: adoptExportOptions,
+    update: persistExportOptions,
+  } = useExportOptions({
+    storageKeys,
+    active: hydrated && !isExportRealm,
+    onStorageUnavailable: () =>
+      setBoardStatusMessage(t("boardLibrary.error.storage")),
+  });
+  const { showTitles, transparentBg, showQrCode, templateId } = exportOptions;
   const posterImageFileName = getExperienceImageFileName(
     experience,
     activeContext,
@@ -883,18 +880,7 @@ export default function PickExperienceClient({
 
   boardSessionCallbacksRef.current = {
     onBeforeHydrated: (initialStorageKeys) => {
-      const optionsResult = loadStoredOptions({
-        storage: localStorage,
-        versionedKey: initialStorageKeys.optionsV2,
-        legacyKey: initialStorageKeys.options,
-      });
-      if (optionsResult.options) {
-        setShowTitles(optionsResult.options.showTitles);
-        setTransparentBg(optionsResult.options.transparentBg);
-        setShowQrCode(optionsResult.options.showQrCode);
-        setTemplateId(optionsResult.options.templateId);
-      }
-      setOptionsStorageWritable(isWritableStorageStatus(optionsResult.status));
+      hydrateExportOptions(initialStorageKeys);
     },
     onContextWillActivate: () => {
       setActiveSlotId(null);
@@ -924,40 +910,6 @@ export default function PickExperienceClient({
       }
     },
   };
-
-  useEffect(() => {
-    if (!hydrated || isExportRealm) return;
-    const syncExportOptions = () => {
-      const result = loadStoredOptions({
-        storage: localStorage,
-        versionedKey: storageKeys.optionsV2,
-        legacyKey: storageKeys.options,
-      });
-      setOptionsStorageWritable(isWritableStorageStatus(result.status));
-      if (!isWritableStorageStatus(result.status)) {
-        setBoardStatusMessage(t("boardLibrary.error.storage"));
-        return;
-      }
-      const options = result.options ?? DEFAULT_EXPORT_OPTIONS;
-      setShowTitles(options.showTitles);
-      setTransparentBg(options.transparentBg);
-      setShowQrCode(options.showQrCode);
-      setTemplateId(options.templateId);
-    };
-    const handleStorage = (event: StorageEvent) => {
-      if (
-        shouldResyncStorage(event, {
-          storage: localStorage,
-          watchedKey: storageKeys.optionsV2,
-        })
-      ) {
-        syncExportOptions();
-      }
-    };
-
-    window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
-  }, [hydrated, isExportRealm, storageKeys.options, storageKeys.optionsV2, t]);
 
   useEffect(
     () => () => {
@@ -1946,10 +1898,13 @@ export default function PickExperienceClient({
       activeFrameRequestIdRef.current = request.requestId;
       injectEphemeralBoard(nextContextId, nextPicks);
       setNicknameDraft(request.selectedBy.slice(0, MAX_NICKNAME_LENGTH));
-      setShowTitles(request.showTitles);
-      setTransparentBg(request.transparentBg);
-      setShowQrCode(request.showQrCode);
-      setTemplateId(request.templateId);
+      adoptExportOptions({
+        showTitles: request.showTitles,
+        transparentBg: request.transparentBg,
+        showQrCode: request.showQrCode,
+        templateId: request.templateId,
+        sizePresetId: request.sizePresetId,
+      });
       setFrameSizePresetId(request.sizePresetId);
       setFramePageUrl(request.pageUrl);
       setFrameCaptureRequest(request);
@@ -2238,44 +2193,10 @@ export default function PickExperienceClient({
 
   const updateExportOptions = useCallback(
     async (update: (current: ExportOptions) => ExportOptions) => {
-      if (!optionsStorageWritable) {
-        setBoardStatusMessage(t("boardLibrary.error.storage"));
-        return;
-      }
-
-      const runMutation = () =>
-        mutateStoredOptions({
-          storage: localStorage,
-          versionedKey: storageKeys.optionsV2,
-          legacyKey: storageKeys.options,
-          update,
-        });
-
-      try {
-        const result = navigator.locks
-          ? await navigator.locks.request(
-              `mypick-options:${storageKeys.optionsV2}`,
-              runMutation,
-            )
-          : runMutation();
-        if (!result.ok) {
-          setOptionsStorageWritable(isWritableStorageStatus(result.status));
-          setBoardStatusMessage(t("boardLibrary.error.storage"));
-          return;
-        }
-
-        setOptionsStorageWritable(true);
-        setShowTitles(result.options.showTitles);
-        setTransparentBg(result.options.transparentBg);
-        setShowQrCode(result.options.showQrCode);
-        setTemplateId(result.options.templateId);
-        setBoardStatusMessage("");
-      } catch {
-        setOptionsStorageWritable(false);
-        setBoardStatusMessage(t("boardLibrary.error.storage"));
-      }
+      const result = await persistExportOptions(update);
+      setBoardStatusMessage(result.ok ? "" : t("boardLibrary.error.storage"));
     },
-    [optionsStorageWritable, storageKeys.options, storageKeys.optionsV2, t],
+    [persistExportOptions, t],
   );
 
   const handleShowTitlesChange = (value: boolean) => {
