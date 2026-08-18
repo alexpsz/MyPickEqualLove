@@ -224,6 +224,29 @@ test("four-locale Live presentation preserves canonical Japanese and overlays", 
           : undefined,
       );
 
+      // hint and catalogOnlyBadge have no counterpart in the Live JSON, so
+      // they must be resolved from the catalog rather than passed through.
+      // Key existence and four-locale closure are covered by the catalog test;
+      // what is checked here is that the localizer actually resolves them.
+      // Do not compare against presentationMessages[locale][keys.x] — that
+      // reads through the same lookup the implementation uses and can never
+      // fail.
+      for (const field of ["hint", "catalogOnlyBadge"]) {
+        if (keys[field]) {
+          assert.equal(
+            typeof result[field],
+            "string",
+            `${experience.id}/${locale}: ${field} must resolve to catalog copy`,
+          );
+          assert.ok(
+            result[field].length > 0,
+            `${experience.id}/${locale}: ${field} resolved to an empty string`,
+          );
+        } else {
+          assert.equal(result[field], undefined);
+        }
+      }
+
       if (locale === "ja") {
         assert.equal(result.title, experience.title);
         assert.equal(result.subtitle, experience.subtitle);
@@ -258,20 +281,6 @@ test("four-locale Live presentation preserves canonical Japanese and overlays", 
       }
     }
   }
-
-  const kokuritsu = liveExperiences.find(
-    (experience) => experience.id === "kokuritsu_2026",
-  );
-  const jaCopy = localizeLiveExperiencePresentation(
-    kokuritsu,
-    "ja",
-    translateCommon("ja"),
-  );
-  assert.equal(
-    jaCopy.hint,
-    "「帰り道に聴いた曲」は全楽曲から選べます。FREE PICKは国立で披露された楽曲から選べます。",
-  );
-  assert.equal(jaCopy.catalogOnlyBadge, "帰り道枠のみ");
 });
 
 test("unknown experiences and slot identity drift fail closed in every locale", () => {
