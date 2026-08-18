@@ -14,14 +14,11 @@ const [
   sourceMapSource,
   songsSource,
   exportBoardSource,
-  exportCaptureSource,
-  radarSource,
   membersSource,
   charactersEnSource,
   charactersZhCnSource,
   charactersJaSource,
   charactersKoSource,
-  archetypeAccentSource,
 ] = await Promise.all([
   read("../src/components/PickExperienceClient.tsx"),
   read("../src/components/Controls.tsx"),
@@ -34,14 +31,11 @@ const [
   read("./archetype/source-map.json"),
   read("../src/projects/equal-love/songs.json"),
   read("../src/components/ExportBoard.tsx"),
-  read("../src/utils/exportCapture.ts"),
-  read("../src/components/ArchetypeRadarChart.tsx"),
   read("../src/projects/equal-love/members.json"),
   read("../src/projects/equal-love/archetype-21/characters.en.json"),
   read("../src/projects/equal-love/archetype-21/characters.zh-CN.json"),
   read("../src/projects/equal-love/archetype-21/characters.ja.json"),
   read("../src/projects/equal-love/archetype-21/characters.ko.json"),
-  read("../src/utils/archetypeAccent.ts"),
 ]);
 
 test("result matching is gated to a complete unique equal-love standard Top 10", () => {
