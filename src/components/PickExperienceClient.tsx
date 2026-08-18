@@ -106,10 +106,8 @@ import {
 } from "../hooks/useBoardLibrary";
 import { useSongDiscovery } from "../hooks/useSongDiscovery";
 import { useExportOptions } from "../hooks/useExportOptions";
-import {
-  planAssistantSnapshotSync,
-  resolveStorageSyncAction,
-} from "../utils/storageSyncPolicy";
+import { useAssistantSnapshot } from "../hooks/useAssistantSnapshot";
+import {} from "../utils/storageSyncPolicy";
 import {
   EXPORT_CAPTURE_PROTOCOL_VERSION,
   EXPORT_REALM_READY_TYPE,
@@ -125,7 +123,6 @@ import {
   createPickAssistantSession,
   deriveTournament,
   getBoardCandidateIds,
-  parsePickAssistantSnapshot,
   planRankedPicks,
   recordComparison,
   samePickAssistantApplicationInputs,
@@ -133,17 +130,12 @@ import {
   skipComparison,
   togglePickAssistantShortlistSong,
   undoComparison,
-  updatePickAssistantSnapshot,
   type ComparisonOutcome,
   type PickAssistantSession,
-  type PickAssistantSnapshot,
 } from "../utils/pickAssistant";
 import {
-  createEmptyPickAssistantSnapshot,
-  createMutationId,
   loadPickAssistantSnapshot,
   resetPickAssistantStorageSafely,
-  savePickAssistantSnapshotSafely,
 } from "../utils/pickAssistantStorage";
 import {
   DIALOG_RETURN_KEYS,
@@ -181,9 +173,6 @@ const PickAssistantModal = dynamic(() => import("./PickAssistantModal"), {
 const ArchetypeResultModal = dynamic(() => import("./ArchetypeResultModal"), {
   ssr: false,
 });
-
-type PickAssistantStorageIssue =
-  import("./PickAssistantModal").PickAssistantStorageIssue;
 
 interface PickExperienceClientProps {
   experience: PickExperience;
@@ -366,16 +355,8 @@ export default function PickExperienceClient({
     useState<ExportRenderRequest | null>(null);
   const [framePageUrl, setFramePageUrl] = useState<string | null>(null);
   const [showPickAssistant, setShowPickAssistant] = useState(false);
-  const [pickAssistantSnapshot, setPickAssistantSnapshot] =
-    useState<PickAssistantSnapshot>(() =>
-      createEmptyPickAssistantSnapshot(PICK_ASSISTANT_CONFIG.schemaVersion),
-    );
-  const [pickAssistantStorageIssue, setPickAssistantStorageIssue] =
-    useState<PickAssistantStorageIssue | null>(null);
   const [assistantNeedsReview, setAssistantNeedsReview] = useState(false);
   const [assistantReviewNotice, setAssistantReviewNotice] = useState(false);
-  const [assistantMutationPending, setAssistantMutationPending] =
-    useState(false);
   const [boardStatusMessage, setBoardStatusMessage] = useState("");
   const [boardLinkCopied, setBoardLinkCopied] = useState(false);
   const [boardShareDialog, setBoardShareDialog] =
@@ -388,9 +369,6 @@ export default function PickExperienceClient({
   const previewTriggerRef = useRef<HTMLButtonElement>(null);
   const pickAssistantTriggerRef = useRef<HTMLButtonElement>(null);
   const archetypeTriggerRef = useRef<HTMLButtonElement>(null);
-  const pickAssistantSnapshotRef = useRef(pickAssistantSnapshot);
-  const pickAssistantStorageKeyRef = useRef(storageKeys.assistant);
-  const assistantMutationPendingRef = useRef(false);
   const assistantApplyBaselineRef = useRef<AssistantApplyBaseline | null>(null);
   const assistantResultVisibleRef = useRef(false);
   const searchReturnFocusKeyRef = useRef<string>(
@@ -417,15 +395,6 @@ export default function PickExperienceClient({
     uiSlots,
     uiContextOptions,
   };
-  pickAssistantStorageKeyRef.current = storageKeys.assistant;
-
-  const setCurrentPickAssistantSnapshot = useCallback(
-    (snapshot: PickAssistantSnapshot) => {
-      pickAssistantSnapshotRef.current = snapshot;
-      setPickAssistantSnapshot(snapshot);
-    },
-    [],
-  );
 
   const picks = useMemo<Picks>(() => {
     const entries = Object.entries(storedPicks)
@@ -524,6 +493,34 @@ export default function PickExperienceClient({
       current && current !== archetypeResult?.inputKey ? null : current,
     );
   }, [archetypeResult?.inputKey]);
+  const {
+    snapshot: pickAssistantSnapshot,
+    storageIssue: pickAssistantStorageIssue,
+    mutationPending: assistantMutationPending,
+    commit: commitAssistantSnapshot,
+    getSnapshot: getAssistantSnapshot,
+    adopt: adoptAssistantSnapshot,
+    reset: resetAssistantSnapshot,
+    isCurrentKey: isCurrentAssistantKey,
+  } = useAssistantSnapshot({
+    storageKey: storageKeys.assistant,
+    schemaVersion: PICK_ASSISTANT_CONFIG.schemaVersion,
+    storageOptions: pickAssistantStorageOptions,
+    active: hydrated && !isExportRealm,
+    isResultVisible: () => assistantResultVisibleRef.current,
+    onReload: () => {
+      assistantApplyBaselineRef.current = null;
+      setAssistantNeedsReview(false);
+      setAssistantReviewNotice(false);
+    },
+    onExternalChange: ({ flagReview }) => {
+      assistantApplyBaselineRef.current = null;
+      if (!flagReview) return;
+      setAssistantNeedsReview(true);
+      setAssistantReviewNotice(true);
+      setBoardStatusMessage(t("assistant.previewRefreshed"));
+    },
+  });
   const assistantShortlistIds = pickAssistantSnapshot.shortlistIds;
   const candidateSongIds = useMemo(
     () => new Set(assistantShortlistIds),
@@ -761,99 +758,6 @@ export default function PickExperienceClient({
     sanitizePicks: sanitizeBoardPicks,
     active: hydrated && !isExportRealm,
   });
-
-  useEffect(() => {
-    if (!hydrated || isExportRealm) return;
-
-    assistantApplyBaselineRef.current = null;
-    setAssistantNeedsReview(false);
-    setAssistantReviewNotice(false);
-    const result = loadPickAssistantSnapshot(
-      localStorage,
-      storageKeys.assistant,
-      pickAssistantStorageOptions,
-    );
-    if (result.status === "valid") {
-      setCurrentPickAssistantSnapshot(result.snapshot);
-      setPickAssistantStorageIssue(null);
-      return;
-    }
-
-    setCurrentPickAssistantSnapshot(
-      createEmptyPickAssistantSnapshot(PICK_ASSISTANT_CONFIG.schemaVersion),
-    );
-    setPickAssistantStorageIssue(
-      result.status === "missing" ? null : result.status,
-    );
-  }, [
-    hydrated,
-    isExportRealm,
-    pickAssistantStorageOptions,
-    setCurrentPickAssistantSnapshot,
-    storageKeys.assistant,
-  ]);
-
-  useEffect(() => {
-    if (!hydrated || isExportRealm) return;
-
-    const handleAssistantStorage = (event: StorageEvent) => {
-      const sync = resolveStorageSyncAction(event, {
-        storage: localStorage,
-        watchedKey: storageKeys.assistant,
-      });
-      if (sync.kind === "ignore") return;
-
-      // A cleared area carries no per-key value, so re-read storage instead of
-      // trusting the event payload.
-      const incoming =
-        sync.kind === "apply"
-          ? parsePickAssistantSnapshot(sync.value, {
-              ...pickAssistantStorageOptions,
-              now: Date.now(),
-            })
-          : loadPickAssistantSnapshot(
-              localStorage,
-              storageKeys.assistant,
-              pickAssistantStorageOptions,
-            );
-
-      // Another tab touched the document, so any pending apply baseline is
-      // stale regardless of what the plan decides below.
-      assistantApplyBaselineRef.current = null;
-
-      const plan = planAssistantSnapshotSync({
-        incoming,
-        current: pickAssistantSnapshotRef.current,
-        resultVisible: assistantResultVisibleRef.current,
-        isSameSnapshot: samePickAssistantSnapshots,
-      });
-      if (plan.action === "none") return;
-
-      setCurrentPickAssistantSnapshot(
-        plan.action === "adopt"
-          ? plan.snapshot
-          : createEmptyPickAssistantSnapshot(
-              PICK_ASSISTANT_CONFIG.schemaVersion,
-            ),
-      );
-      setPickAssistantStorageIssue(plan.storageIssue);
-      if (plan.flagReview) {
-        setAssistantNeedsReview(true);
-        setAssistantReviewNotice(true);
-        setBoardStatusMessage(t("assistant.previewRefreshed"));
-      }
-    };
-
-    window.addEventListener("storage", handleAssistantStorage);
-    return () => window.removeEventListener("storage", handleAssistantStorage);
-  }, [
-    hydrated,
-    isExportRealm,
-    pickAssistantStorageOptions,
-    setCurrentPickAssistantSnapshot,
-    storageKeys.assistant,
-    t,
-  ]);
 
   useEffect(() => {
     if (
@@ -1131,51 +1035,11 @@ export default function PickExperienceClient({
 
   const commitPickAssistantUpdate = useCallback(
     async (shortlistIds: string[], session: PickAssistantSession | null) => {
-      if (pickAssistantStorageIssue || assistantMutationPendingRef.current) {
-        return false;
-      }
-
-      const storageKey = storageKeys.assistant;
-      const expected = pickAssistantSnapshotRef.current;
-      const next = updatePickAssistantSnapshot(
-        expected,
-        { shortlistIds, session },
-        Date.now(),
-        createMutationId(),
-      );
-      assistantMutationPendingRef.current = true;
-      setAssistantMutationPending(true);
-      try {
-        const result = await savePickAssistantSnapshotSafely(
-          localStorage,
-          storageKey,
-          expected,
-          next,
-          pickAssistantStorageOptions,
-          navigator.locks,
-        );
-        if (pickAssistantStorageKeyRef.current !== storageKey) return false;
-        if (result.status === "saved") {
-          setCurrentPickAssistantSnapshot(next);
-          setPickAssistantStorageIssue(null);
-          setAssistantReviewNotice(false);
-          return true;
-        }
-        setPickAssistantStorageIssue(
-          result.status === "blocked" ? result.reason : result.status,
-        );
-        return false;
-      } finally {
-        assistantMutationPendingRef.current = false;
-        setAssistantMutationPending(false);
-      }
+      const saved = await commitAssistantSnapshot(shortlistIds, session);
+      if (saved) setAssistantReviewNotice(false);
+      return saved;
     },
-    [
-      pickAssistantStorageIssue,
-      pickAssistantStorageOptions,
-      setCurrentPickAssistantSnapshot,
-      storageKeys.assistant,
-    ],
+    [commitAssistantSnapshot],
   );
 
   const handleToggleCandidate = useCallback(
@@ -1307,17 +1171,14 @@ export default function PickExperienceClient({
       storageKey,
       navigator.locks,
     ).then((result) => {
-      if (pickAssistantStorageKeyRef.current !== storageKey) return;
+      if (!isCurrentAssistantKey(storageKey)) return;
       if (result !== "reset") {
-        setPickAssistantStorageIssue(
+        resetAssistantSnapshot(
           result === "conflict" ? "conflict" : "unavailable",
         );
         return;
       }
-      setCurrentPickAssistantSnapshot(
-        createEmptyPickAssistantSnapshot(PICK_ASSISTANT_CONFIG.schemaVersion),
-      );
-      setPickAssistantStorageIssue(null);
+      resetAssistantSnapshot(null);
       setAssistantNeedsReview(false);
       setAssistantReviewNotice(false);
       assistantApplyBaselineRef.current = null;
@@ -1352,7 +1213,7 @@ export default function PickExperienceClient({
   const handleApplyAssistantResult = async () => {
     if (!assistantApplicationPlan || !assistantSession) return;
     if (assistantNeedsReview) {
-      const currentAssistant = pickAssistantSnapshotRef.current;
+      const currentAssistant = getAssistantSnapshot();
       assistantApplyBaselineRef.current = {
         storageKey: storageKeys.assistant,
         contextId: effectiveContextId,
@@ -1399,10 +1260,7 @@ export default function PickExperienceClient({
       return;
     }
     if (latestAssistant.status !== "valid") {
-      setCurrentPickAssistantSnapshot(
-        createEmptyPickAssistantSnapshot(PICK_ASSISTANT_CONFIG.schemaVersion),
-      );
-      setPickAssistantStorageIssue(
+      resetAssistantSnapshot(
         latestAssistant.status === "missing"
           ? "conflict"
           : latestAssistant.status,
@@ -1413,7 +1271,7 @@ export default function PickExperienceClient({
     const baseline = assistantApplyBaselineRef.current;
     const assistantMatches = samePickAssistantSnapshots(
       latestAssistant.snapshot,
-      pickAssistantSnapshotRef.current,
+      getAssistantSnapshot(),
     );
     const boardMatches = sameStoredPicks(
       latestBoard.picks,
@@ -1428,7 +1286,7 @@ export default function PickExperienceClient({
       sameStoredPicks(baseline.boardPicks, latestBoard.picks),
     );
     if (!assistantMatches || !boardMatches || !baselineMatches) {
-      setCurrentPickAssistantSnapshot(latestAssistant.snapshot);
+      adoptAssistantSnapshot(latestAssistant.snapshot);
       resetFromFreshness(latestBoard.picks);
       assistantApplyBaselineRef.current = {
         storageKey: storageKeys.assistant,
@@ -1491,10 +1349,7 @@ export default function PickExperienceClient({
       return;
     }
     if (confirmedAssistant.status !== "valid") {
-      setCurrentPickAssistantSnapshot(
-        createEmptyPickAssistantSnapshot(PICK_ASSISTANT_CONFIG.schemaVersion),
-      );
-      setPickAssistantStorageIssue(
+      resetAssistantSnapshot(
         confirmedAssistant.status === "missing"
           ? "conflict"
           : confirmedAssistant.status,
@@ -1510,7 +1365,7 @@ export default function PickExperienceClient({
     if (
       !samePickAssistantApplicationInputs(preConfirmInputs, confirmedInputs)
     ) {
-      setCurrentPickAssistantSnapshot(confirmedAssistant.snapshot);
+      adoptAssistantSnapshot(confirmedAssistant.snapshot);
       resetFromFreshness(confirmedBoard.picks);
       assistantApplyBaselineRef.current = {
         storageKey: storageKeys.assistant,
