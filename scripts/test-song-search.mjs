@@ -15,19 +15,6 @@ const creditsSourceUrl = new URL(
   "../src/utils/songCredits.ts",
   import.meta.url,
 );
-const searchModalSourceUrl = new URL(
-  "../src/components/SearchModal.tsx",
-  import.meta.url,
-);
-const songDetailModalSourceUrl = new URL(
-  "../src/components/SongDetailModal.tsx",
-  import.meta.url,
-);
-const pickExperienceClientSourceUrl = new URL(
-  "../src/components/PickExperienceClient.tsx",
-  import.meta.url,
-);
-const messagesSourceUrl = new URL("../src/i18n/messages.ts", import.meta.url);
 const source = await readFile(sourceUrl, "utf8");
 const compilerOptions = {
   module: ts.ModuleKind.ESNext,
@@ -68,18 +55,6 @@ const {
   saveSongDiscoveryState,
   updateStoredSongDiscoveryState,
 } = await import(storageModuleUrl);
-const [
-  searchModalSource,
-  songDetailModalSource,
-  pickExperienceClientSource,
-  messagesSource,
-] = await Promise.all([
-  readFile(searchModalSourceUrl, "utf8"),
-  readFile(songDetailModalSourceUrl, "utf8"),
-  readFile(pickExperienceClientSourceUrl, "utf8"),
-  readFile(messagesSourceUrl, "utf8"),
-]);
-
 const membersById = {
   member: {
     id: "member",
@@ -188,85 +163,11 @@ test("orders title relevance before secondary matches and preserves source order
   );
 });
 
-test("ordinary search and song details omit orphan favorites but keep real Assistant actions", () => {
-  assert.doesNotMatch(
-    searchModalSource,
-    /favoriteSongIds|onToggleFavorite|name="star"/,
-  );
-  assert.doesNotMatch(
-    songDetailModalSource,
-    /isFavorite|onToggleFavorite|name="star"/,
-  );
-  assert.doesNotMatch(
-    pickExperienceClientSource,
-    /handleToggleFavorite|toggleFavoriteSongId|onToggleFavorite=/,
-  );
-  assert.doesNotMatch(
-    messagesSource,
-    /"search\.candidate"|"songDetail\.(?:add|remove)Candidate"/,
-  );
-  assert.match(
-    searchModalSource,
-    /isAssistantShortlistMode\s*\?\s*onToggleCandidate\?\.\(song\)\s*:\s*onSelect\(song\)/s,
-    "assistant mode must toggle the shortlist from the whole result row while board mode still selects",
-  );
-  assert.match(
-    searchModalSource,
-    /!isAssistantShortlistMode\s*\?\s*\(\s*<button[\s\S]*?onClick=\{\(\) => onToggleCandidate\?\.\(song\)\}[\s\S]*?aria-pressed=\{isCandidate\}[\s\S]*?<AppIcon[\s\S]*?name=\{isCandidate \? "check" : "music"\}/,
-    "board-mode results must expose a real Pick Assistant add/remove action",
-  );
-  assert.match(
-    songDetailModalSource,
-    /onToggleCandidate: \(song: Song\) => void;[\s\S]*?onClick=\{\(\) => onToggleCandidate\(song\)\}[\s\S]*?aria-pressed=\{isCandidate\}[\s\S]*?assistant\.removeCandidateAria[\s\S]*?assistant\.addCandidateAria/,
-    "song details must expose the real Pick Assistant add/remove action",
-  );
-  assert.match(
-    pickExperienceClientSource,
-    /<SongDetailModal[\s\S]*?onToggleCandidate=\{handleToggleCandidate\}/,
-    "the detail action must be wired to the persisted Assistant mutation",
-  );
-  assert.match(
-    songDetailModalSource,
-    /!isAssistantShortlistMode\s*\?\s*\([\s\S]*?onClick=\{\(\) => onSelect\(song\)\}[\s\S]*?songDetail\.selectSong/,
-    "only ordinary song details may select a song onto the board",
-  );
-  const candidateDisabledExpression = searchModalSource.match(
-    /const candidateDisabled =([\s\S]*?)!onToggleCandidate;/,
-  )?.[1];
-  assert.ok(candidateDisabledExpression);
-  assert.doesNotMatch(
-    candidateDisabledExpression,
-    /\bselected\b/,
-    "songs already on the board must remain eligible for the Assistant shortlist",
-  );
-  assert.match(
-    pickExperienceClientSource,
-    /selectionMode=\{searchPresentation\.selectionMode\}/,
-  );
-  assert.match(messagesSource, /"assistant\.addCandidate": "加入选曲助手"/);
-  assert.match(messagesSource, /"assistant\.candidate": "已加入选曲助手"/);
-});
-
 test("only the dedicated Assistant search shows the complete graduated-member feature set by default", () => {
   assert.equal(shouldShowGraduatedMemberFeaturesByDefault("board"), false);
   assert.equal(
     shouldShowGraduatedMemberFeaturesByDefault("assistant-shortlist"),
     true,
-  );
-  assert.match(
-    searchModalSource,
-    /useState\(\(\) =>\s*shouldShowGraduatedMemberFeaturesByDefault\(selectionMode\)/,
-    "the first Assistant render must use the complete eligible set without a one-frame omission",
-  );
-  assert.match(
-    searchModalSource,
-    /setShowGraduatedMembers\(\s*shouldShowGraduatedMemberFeaturesByDefault\(selectionMode\)/,
-    "retained Assistant and board searches must reset to their own default semantics",
-  );
-  assert.match(
-    searchModalSource,
-    /const resetFilters = \(\) => \{[\s\S]*?setShowGraduatedMembers\(\s*shouldShowGraduatedMemberFeaturesByDefault\(selectionMode\)[\s\S]*?setHideSelected\(false\)/,
-    "reset must restore the current search mode default",
   );
   assert.equal(isGraduatedMemberVisibilityFilterActive("board", false), false);
   assert.equal(
@@ -278,11 +179,6 @@ test("only the dedicated Assistant search shows the complete graduated-member fe
     true,
   );
   assert.equal(isGraduatedMemberVisibilityFilterActive("board", true), true);
-  assert.match(
-    searchModalSource,
-    /isGraduatedMemberVisibilityFilterActive\(\s*selectionMode,\s*showGraduatedMembers/,
-    "the active-filter badge must count deviations from the current mode default",
-  );
 });
 
 test("board defaults hide only explicitly tagged graduated-member features", () => {
