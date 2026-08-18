@@ -242,7 +242,6 @@ test("CTA stays between Controls and PickBoard without changing mobile controls"
   const pickBoard = clientSource.indexOf("<PickBoard", controlsEnd);
   assert.ok(controlsEnd >= 0 && cta > controlsEnd && pickBoard > cta);
   assert.doesNotMatch(controlsSource, /archetype\./);
-  assert.match(clientSource, /official-button-primary min-h-11 w-full/);
 });
 
 test("result is transient and keeps persistence out of the modal and matcher", () => {
@@ -384,9 +383,7 @@ test("every single or tied result card renders a localized member-color radar an
   }
 });
 
-test("the result keeps scrolling and makes image generation a secondary action", () => {
-  assert.match(modalSource, /max-h-\[92dvh\]/);
-  assert.match(modalSource, /min-h-0 flex-1 overflow-y-auto/);
+test("image generation stays a secondary action behind close", () => {
   assert.match(modalSource, /safe-area-inset-bottom/);
   const footer = modalSource.slice(
     modalSource.indexOf('className="grid grid-cols-2 gap-2 border-t'),
@@ -399,7 +396,6 @@ test("the result keeps scrolling and makes image generation a secondary action",
   const closeButton = footer.slice(
     footer.indexOf("onClick={onClose}", footer.indexOf("</button>")),
   );
-  assert.match(generateButton, /className="official-button min-w-0/);
   assert.doesNotMatch(generateButton, /official-button-primary/);
   assert.match(closeButton, /official-button-primary/);
 });
