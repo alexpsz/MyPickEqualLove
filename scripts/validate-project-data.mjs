@@ -68,7 +68,9 @@ function readJson(filePath, errors, prefix) {
   try {
     return JSON.parse(fs.readFileSync(filePath, "utf8"));
   } catch (error) {
-    errors.push(`${prefix} could not parse ${path.basename(filePath)}: ${error.message}`);
+    errors.push(
+      `${prefix} could not parse ${path.basename(filePath)}: ${error.message}`,
+    );
     return null;
   }
 }
@@ -208,7 +210,9 @@ function validateSongs(prefix, songs, memberIds, songIds, errors) {
     songIds.add(song.id);
 
     if (!song.title?.ja || !song.title?.romaji) {
-      errors.push(`${prefix} ${song.id}: title.ja and title.romaji are required`);
+      errors.push(
+        `${prefix} ${song.id}: title.ja and title.romaji are required`,
+      );
     } else if (songTitles.has(song.title.ja)) {
       errors.push(`${prefix} duplicate song title.ja: ${song.title.ja}`);
     } else {
@@ -277,7 +281,12 @@ function validateSongs(prefix, songs, memberIds, songIds, errors) {
  * cross-check worth keeping is that its song references still resolve; a sync
  * that drops a song would otherwise leave a live page pointing at nothing.
  */
-function validateLiveExperienceReferences(prefix, liveExperiences, songIds, errors) {
+function validateLiveExperienceReferences(
+  prefix,
+  liveExperiences,
+  songIds,
+  errors,
+) {
   for (const experience of liveExperiences) {
     if (!experience.id) {
       errors.push(`${prefix} live experience is missing id`);
@@ -301,7 +310,10 @@ function validateProject(projectId) {
   const projectDir = path.join(projectsDir, projectId);
 
   if (!fs.existsSync(projectDir)) {
-    return { errors: [`${prefix} project directory is missing`], summary: `${prefix} missing` };
+    return {
+      errors: [`${prefix} project directory is missing`],
+      summary: `${prefix} missing`,
+    };
   }
 
   const paths = {
