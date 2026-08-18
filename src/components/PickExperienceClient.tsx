@@ -74,17 +74,9 @@ import type {
 import type { PickSlotId, Picks, Song, StoredPicks } from "../schema/music";
 import { sameStoredPicks, type BoardMutationKind } from "../utils/boardHistory";
 import {
-  addBoardSnapshot,
-  createEmptyBoardLibrary,
-  deleteBoardSnapshot,
-  getSnapshotsForScope,
-  loadBoardLibrary,
   loadStoredBoard,
   loadStoredOptions,
-  mutateStoredBoardLibrary,
   mutateStoredOptions,
-  renameBoardSnapshot,
-  type BoardLibraryDocument,
   type BoardScope,
   type BoardSnapshot,
   type StorageLoadStatus,
@@ -111,6 +103,10 @@ import {
   type BoardShareDialogPlan,
 } from "../utils/boardShareImport";
 import { resolveExportRealmRequest } from "../utils/exportRealmRequest";
+import {
+  useBoardLibrary,
+  type BoardLibraryActionResult,
+} from "../hooks/useBoardLibrary";
 import {
   planAssistantSnapshotSync,
   resolveStorageSyncAction,
@@ -165,9 +161,7 @@ import {
 } from "../utils/useDialogA11y";
 import AppTopBar from "./AppTopBar";
 import AppleMotion from "./AppleMotion";
-import BoardLibraryModal, {
-  type BoardLibraryActionResult,
-} from "./BoardLibraryModal";
+import BoardLibraryModal from "./BoardLibraryModal";
 import BoardShareImportModal, {
   type BoardShareDialogState,
 } from "./BoardShareImportModal";
@@ -405,12 +399,6 @@ export default function PickExperienceClient({
   const [assistantReviewNotice, setAssistantReviewNotice] = useState(false);
   const [assistantMutationPending, setAssistantMutationPending] =
     useState(false);
-  const [boardLibrary, setBoardLibrary] = useState<BoardLibraryDocument>(() =>
-    createEmptyBoardLibrary(),
-  );
-  const [boardLibraryStatus, setBoardLibraryStatus] =
-    useState<StorageLoadStatus>("empty");
-  const [boardLibraryLoaded, setBoardLibraryLoaded] = useState(false);
   const [boardStatusMessage, setBoardStatusMessage] = useState("");
   const [optionsStorageWritable, setOptionsStorageWritable] = useState(false);
   const [boardLinkCopied, setBoardLinkCopied] = useState(false);
@@ -764,13 +752,19 @@ export default function PickExperienceClient({
       }),
     [effectiveContextId, experience],
   );
-  const scopedSnapshots = useMemo(
-    () => getSnapshotsForScope(boardLibrary, boardScope, sanitizeBoardPicks),
-    [boardLibrary, boardScope, sanitizeBoardPicks],
-  );
-  const boardLibraryWritable =
-    boardLibraryLoaded &&
-    (boardLibraryStatus === "empty" || boardLibraryStatus === "loaded");
+  const {
+    snapshots: scopedSnapshots,
+    writable: boardLibraryWritable,
+    saveBoard,
+    renameBoard,
+    deleteBoard,
+  } = useBoardLibrary({
+    storageKey: storageKeys.boardLibrary,
+    projectId: PROJECT_ID,
+    scope: boardScope,
+    sanitizePicks: sanitizeBoardPicks,
+    active: hydrated && !isExportRealm,
+  });
 
   useEffect(() => {
     if (!hydrated || isExportRealm) return;
@@ -931,34 +925,6 @@ export default function PickExperienceClient({
       }
     },
   };
-
-  useEffect(() => {
-    if (!hydrated || isExportRealm) return;
-    const syncBoardLibrary = () => {
-      const result = loadBoardLibrary(
-        localStorage,
-        storageKeys.boardLibrary,
-        PROJECT_ID,
-      );
-      setBoardLibrary(result.document);
-      setBoardLibraryStatus(result.status);
-      setBoardLibraryLoaded(true);
-    };
-    const handleStorage = (event: StorageEvent) => {
-      if (
-        shouldResyncStorage(event, {
-          storage: localStorage,
-          watchedKey: storageKeys.boardLibrary,
-        })
-      ) {
-        syncBoardLibrary();
-      }
-    };
-
-    syncBoardLibrary();
-    window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
-  }, [hydrated, isExportRealm, storageKeys.boardLibrary]);
 
   useEffect(() => {
     if (!hydrated || isExportRealm) return;
@@ -2382,60 +2348,16 @@ export default function PickExperienceClient({
     }));
   };
 
-  const handleSaveBoard = (name: string): BoardLibraryActionResult => {
-    if (!boardLibraryWritable) return { ok: false, error: "storage" };
-    const result = mutateStoredBoardLibrary(
-      localStorage,
-      storageKeys.boardLibrary,
-      PROJECT_ID,
-      (latestDocument) =>
-        addBoardSnapshot(latestDocument, {
-          id: window.crypto.randomUUID(),
-          name,
-          now: new Date().toISOString(),
-          scope: boardScope,
-          picks: sanitizeBoardPicks(storedPicks),
-        }),
-    );
-    if (!result.ok) return result;
-    setBoardLibrary(result.document);
-    setBoardLibraryStatus("loaded");
-    return { ok: true, name: result.snapshot.name };
-  };
+  const handleSaveBoard = (name: string): BoardLibraryActionResult =>
+    saveBoard(name, storedPicks);
 
   const handleRenameBoard = (
     snapshotId: string,
     name: string,
-  ): BoardLibraryActionResult => {
-    if (!boardLibraryWritable) return { ok: false, error: "storage" };
-    const result = mutateStoredBoardLibrary(
-      localStorage,
-      storageKeys.boardLibrary,
-      PROJECT_ID,
-      (latestDocument) =>
-        renameBoardSnapshot(latestDocument, {
-          snapshotId,
-          name,
-          now: new Date().toISOString(),
-        }),
-    );
-    if (!result.ok) return result;
-    setBoardLibrary(result.document);
-    return { ok: true, name: result.snapshot.name };
-  };
+  ): BoardLibraryActionResult => renameBoard(snapshotId, name);
 
-  const handleDeleteBoard = (snapshotId: string): BoardLibraryActionResult => {
-    if (!boardLibraryWritable) return { ok: false, error: "storage" };
-    const result = mutateStoredBoardLibrary(
-      localStorage,
-      storageKeys.boardLibrary,
-      PROJECT_ID,
-      (latestDocument) => deleteBoardSnapshot(latestDocument, snapshotId),
-    );
-    if (!result.ok) return result;
-    setBoardLibrary(result.document);
-    return { ok: true, name: result.snapshot.name };
-  };
+  const handleDeleteBoard = (snapshotId: string): BoardLibraryActionResult =>
+    deleteBoard(snapshotId);
 
   const handleRestoreBoard = (
     snapshot: BoardSnapshot,
