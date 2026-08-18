@@ -112,6 +112,11 @@ import {
 } from "../utils/boardShareImport";
 import { resolveExportRealmRequest } from "../utils/exportRealmRequest";
 import {
+  planAssistantSnapshotSync,
+  resolveStorageSyncAction,
+  shouldResyncStorage,
+} from "../utils/storageSyncPolicy";
+import {
   EXPORT_CAPTURE_PROTOCOL_VERSION,
   EXPORT_REALM_READY_TYPE,
   EXPORT_REALM_RESULT_TYPE,
@@ -802,16 +807,17 @@ export default function PickExperienceClient({
     if (!hydrated || isExportRealm) return;
 
     const handleAssistantStorage = (event: StorageEvent) => {
-      if (
-        event.storageArea !== localStorage ||
-        (event.key !== storageKeys.assistant && event.key !== null)
-      ) {
-        return;
-      }
+      const sync = resolveStorageSyncAction(event, {
+        storage: localStorage,
+        watchedKey: storageKeys.assistant,
+      });
+      if (sync.kind === "ignore") return;
 
+      // A cleared area carries no per-key value, so re-read storage instead of
+      // trusting the event payload.
       const incoming =
-        event.key === storageKeys.assistant
-          ? parsePickAssistantSnapshot(event.newValue, {
+        sync.kind === "apply"
+          ? parsePickAssistantSnapshot(sync.value, {
               ...pickAssistantStorageOptions,
               now: Date.now(),
             })
@@ -821,34 +827,27 @@ export default function PickExperienceClient({
               pickAssistantStorageOptions,
             );
 
+      // Another tab touched the document, so any pending apply baseline is
+      // stale regardless of what the plan decides below.
       assistantApplyBaselineRef.current = null;
-      if (incoming.status === "missing") {
-        setCurrentPickAssistantSnapshot(
-          createEmptyPickAssistantSnapshot(PICK_ASSISTANT_CONFIG.schemaVersion),
-        );
-        setPickAssistantStorageIssue(null);
-        if (assistantResultVisibleRef.current) {
-          setAssistantNeedsReview(true);
-          setAssistantReviewNotice(true);
-          setBoardStatusMessage(t("assistant.previewRefreshed"));
-        }
-        return;
-      }
-      if (incoming.status !== "valid") {
-        setCurrentPickAssistantSnapshot(
-          createEmptyPickAssistantSnapshot(PICK_ASSISTANT_CONFIG.schemaVersion),
-        );
-        setPickAssistantStorageIssue(incoming.status);
-        return;
-      }
 
-      const current = pickAssistantSnapshotRef.current;
-      if (samePickAssistantSnapshots(incoming.snapshot, current)) return;
-      setCurrentPickAssistantSnapshot(incoming.snapshot);
-      const conflictingRevision =
-        incoming.snapshot.revision <= current.revision;
-      setPickAssistantStorageIssue(conflictingRevision ? "conflict" : null);
-      if (assistantResultVisibleRef.current) {
+      const plan = planAssistantSnapshotSync({
+        incoming,
+        current: pickAssistantSnapshotRef.current,
+        resultVisible: assistantResultVisibleRef.current,
+        isSameSnapshot: samePickAssistantSnapshots,
+      });
+      if (plan.action === "none") return;
+
+      setCurrentPickAssistantSnapshot(
+        plan.action === "adopt"
+          ? plan.snapshot
+          : createEmptyPickAssistantSnapshot(
+              PICK_ASSISTANT_CONFIG.schemaVersion,
+            ),
+      );
+      setPickAssistantStorageIssue(plan.storageIssue);
+      if (plan.flagReview) {
         setAssistantNeedsReview(true);
         setAssistantReviewNotice(true);
         setBoardStatusMessage(t("assistant.previewRefreshed"));
@@ -947,8 +946,10 @@ export default function PickExperienceClient({
     };
     const handleStorage = (event: StorageEvent) => {
       if (
-        event.storageArea === localStorage &&
-        (event.key === storageKeys.boardLibrary || event.key === null)
+        shouldResyncStorage(event, {
+          storage: localStorage,
+          watchedKey: storageKeys.boardLibrary,
+        })
       ) {
         syncBoardLibrary();
       }
@@ -967,8 +968,10 @@ export default function PickExperienceClient({
       );
     const handleStorage = (event: StorageEvent) => {
       if (
-        event.storageArea === localStorage &&
-        (event.key === STORAGE_KEYS.songDiscovery || event.key === null)
+        shouldResyncStorage(event, {
+          storage: localStorage,
+          watchedKey: STORAGE_KEYS.songDiscovery,
+        })
       ) {
         syncSongDiscovery();
       }
@@ -999,12 +1002,12 @@ export default function PickExperienceClient({
       setTemplateId(options.templateId);
     };
     const handleStorage = (event: StorageEvent) => {
-      if (event.storageArea !== localStorage) return;
-      if (event.key === null) {
-        syncExportOptions();
-        return;
-      }
-      if (event.key === storageKeys.optionsV2) {
+      if (
+        shouldResyncStorage(event, {
+          storage: localStorage,
+          watchedKey: storageKeys.optionsV2,
+        })
+      ) {
         syncExportOptions();
       }
     };

@@ -17,6 +17,8 @@
     "../src/utils/boardShareImport.ts",
     "../src/utils/exportRealmRequest.ts",
     "./tests/board-share-import.test.ts",
-    "./tests/export-realm-request.test.ts"
+    "./tests/export-realm-request.test.ts",
+    "../src/utils/storageSyncPolicy.ts",
+    "./tests/storage-sync-policy.test.ts"
   ]
 }
