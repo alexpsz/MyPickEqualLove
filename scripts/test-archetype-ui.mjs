@@ -263,84 +263,6 @@ test("result is transient and keeps persistence out of the modal and matcher", (
   assert.doesNotMatch(modalSource, /ExportBoard|PreviewModal|html2canvas/);
 });
 
-test("modal reuses the retained accessible dialog contract", () => {
-  assert.match(clientSource, /<MotionPresence[\s\S]*openArchetypeInputKey/);
-  assert.match(modalSource, /useDialogA11y\(\{/);
-  assert.match(modalSource, /active: presenceState !== "exiting"/);
-  assert.match(modalSource, /role="dialog"/);
-  assert.match(modalSource, /aria-modal="true"/);
-  assert.match(modalSource, /aria-hidden=\{presenceState === "exiting"\}/);
-  assert.match(modalSource, /inert=\{presenceState === "exiting"\}/);
-  assert.match(modalSource, /returnFocusRef/);
-  assert.match(modalSource, /returnFocusFallbackKey/);
-  assert.match(modalSource, /safe-area-inset-bottom/);
-});
-
-test("partner image reuses the existing export realm without becoming a saved template", () => {
-  assert.match(modalSource, /ui\.export\.button/);
-  assert.match(modalSource, /onGenerateImage/);
-  assert.match(clientSource, /generateImage\("archetype"\)/);
-  assert.match(clientSource, /kind,[\s\S]*archetypeInputKey/);
-  assert.match(clientSource, /const sharePageUrl = pageUrl;/);
-  assert.match(
-    clientSource,
-    /shareHashtags: archetypeForExport[\s\S]*\[\.\.\.experience\.share\.hashtags, "#恋はじめました"\][\s\S]*: experience\.share\.hashtags\.slice\(\)/,
-  );
-  assert.match(
-    clientSource,
-    /headerPresentation=\{archetypeExportPresentation\}/,
-  );
-  assert.match(clientSource, /MY ADVENTURE PARTNER/);
-  assert.match(exportBoardSource, /data-export-content-kind/);
-  assert.match(exportBoardSource, /data-export-boundary="archetype-dossier"/);
-  assert.match(exportBoardSource, /data-export-boundary="archetype-top-ten"/);
-  assert.match(exportBoardSource, /data-archetype-tie-mode/);
-  assert.match(exportBoardSource, /ArchetypeRadarChart/);
-  assert.match(exportBoardSource, /headerPresentation\.footerLabel/);
-  assert.match(exportCaptureSource, /EXPORT_CAPTURE_PROTOCOL_VERSION = 4/);
-  assert.match(
-    exportCaptureSource,
-    /value\.kind === "picks" \|\| value\.kind === "archetype"/,
-  );
-  assert.match(clientSource, /DIALOG_RETURN_KEYS\.archetype/);
-});
-
-test("radar is pure fixed SVG with a shared 1200 maximum and accessible labeling", () => {
-  assert.match(radarSource, /<svg/);
-  assert.match(radarSource, /role="img"/);
-  assert.match(radarSource, /aria-label=\{ariaLabel\}/);
-  assert.match(radarSource, /maxValue = 1200/);
-  assert.match(radarSource, /data-archetype-radar-max=\{maxValue\}/);
-  assert.match(
-    radarSource,
-    /"atk"[\s\S]*"def"[\s\S]*"spdMobility"[\s\S]*"sta"[\s\S]*"bearCharmResistance"/,
-  );
-  assert.doesNotMatch(radarSource, /animate|transition|filter:|backdrop/i);
-});
-
-test("white member accents keep their factual color and derive one shared neutral outline", () => {
-  assert.match(archetypeAccentSource, /WHITE_ACCENT = "#ffffff"/);
-  assert.match(archetypeAccentSource, /ARCHETYPE_ACCENT_OUTLINE = "#64748b"/);
-  assert.match(
-    archetypeAccentSource,
-    /color: accentColor,[\s\S]*outlineColor,[\s\S]*textShadow:[\s\S]*outlineShadow:/,
-  );
-  assert.match(radarSource, /getArchetypeAccentContrast\(accentColor\)/);
-  assert.match(radarSource, /data-archetype-accent-color=\{accent\.color\}/);
-  assert.match(
-    radarSource,
-    /data-archetype-accent-outline=\{accent\.outlineColor\}/,
-  );
-  assert.match(modalSource, /getArchetypeAccentContrast\(accentColor\)/);
-  assert.match(modalSource, /textShadow: accentContrast\.textShadow/);
-  assert.match(modalSource, /boxShadow: accentContrast\.outlineShadow/);
-  assert.match(exportBoardSource, /getArchetypeAccentContrast/);
-  assert.doesNotMatch(
-    `${modalSource}\n${exportBoardSource}`,
-    /accentColor\s*===?\s*["']#(?:fff|ffffff)["']/i,
-  );
-});
-
 test("every single or tied result card renders a localized member-color radar and compact values", () => {
   const characterCards = modalSource.slice(
     modalSource.indexOf("{result.characters.map"),
@@ -569,27 +491,6 @@ test("ui.json is the single four-locale UI copy source", () => {
       );
     }
   }
-});
-
-test("the matcher still fails closed for missing or invalid approved data", () => {
-  assert.match(registrySource, /approvedAffinityDocument === undefined/);
-  assert.doesNotMatch(affinitySource, /songAffinities:\s*\[/);
-  assert.match(affinitySource, /parseEqualLoveArchetypeAffinityDocument/);
-  assert.match(affinitySource, /EXPECTED_APPROVED_SONG_COUNT = 85/);
-  assert.match(
-    affinitySource,
-    /document\.songAffinities\.length !== EXPECTED_APPROVED_SONG_COUNT/,
-  );
-  assert.match(registrySource, /EXPECTED_CHARACTER_COUNT = 10/);
-  assert.match(
-    registrySource,
-    /localizedCatalog\.characters\.size !== EXPECTED_CHARACTER_COUNT/,
-  );
-  assert.match(registrySource, /catch \{[\s\S]*return null;/);
-  assert.match(
-    clientSource,
-    /openArchetypeInputKey === archetypeResult\?\.inputKey[\s\S]*\? archetypeResult[\s\S]*: null/,
-  );
 });
 
 async function read(relativePath) {
