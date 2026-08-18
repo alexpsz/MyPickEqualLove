@@ -107,12 +107,12 @@ import {
 import { useSongDiscovery } from "../hooks/useSongDiscovery";
 import { useExportOptions } from "../hooks/useExportOptions";
 import { useAssistantSnapshot } from "../hooks/useAssistantSnapshot";
+import { useExportPreview } from "../hooks/useExportPreview";
 import {} from "../utils/storageSyncPolicy";
 import {
   EXPORT_CAPTURE_PROTOCOL_VERSION,
   EXPORT_REALM_READY_TYPE,
   EXPORT_REALM_RESULT_TYPE,
-  captureExportImageInFrame,
   isExportRenderRequest,
   type ExportRenderRequest,
   type ExportRenderResult,
@@ -234,6 +234,12 @@ export default function PickExperienceClient({
     () => localizeExperienceUi(experience, locale),
     [experience, locale],
   );
+  const {
+    preview,
+    generating,
+    runCapture,
+    cancel: cancelPreview,
+  } = useExportPreview<PreviewSnapshot>();
   const boardSessionCallbacksRef = useRef<{
     onBeforeHydrated: (
       storageKeys: ReturnType<typeof getStorageKeysForExperience>,
@@ -343,11 +349,9 @@ export default function PickExperienceClient({
   const [detailLayerActive, setDetailLayerActive] = useState(false);
   const [pendingReplacementSong, setPendingReplacementSong] =
     useState<Song | null>(null);
-  const [preview, setPreview] = useState<PreviewSnapshot | null>(null);
   const [openArchetypeInputKey, setOpenArchetypeInputKey] = useState<
     string | null
   >(null);
-  const [generating, setGenerating] = useState(false);
   const [frameSizePresetId, setFrameSizePresetId] =
     useState<ExportSizePresetId>(DEFAULT_EXPORT_SIZE_PRESET_ID);
   const [nicknameDraft, setNicknameDraft] = useState("");
@@ -363,7 +367,6 @@ export default function PickExperienceClient({
     useState<BoardShareDialogState | null>(null);
   const [pendingBoardShareImport, setPendingBoardShareImport] =
     useState<PendingBoardShareImport | null>(null);
-  const generatingRef = useRef(false);
   const activeFrameRequestIdRef = useRef<string | null>(null);
   const capturedFrameRequestIdRef = useRef<string | null>(null);
   const previewTriggerRef = useRef<HTMLButtonElement>(null);
@@ -375,8 +378,6 @@ export default function PickExperienceClient({
     DIALOG_RETURN_KEYS.globalSearch,
   );
   const detailTriggerRef = useRef<HTMLElement>(null);
-  const previewGenerationIdRef = useRef(0);
-  const activePreviewCaptureAbortRef = useRef<AbortController | null>(null);
   const boardShareConsumedRef = useRef(false);
   const boardLinkCopiedTimerRef = useRef<number | null>(null);
   const boardSharePreviewSnapshotRef = useRef({
@@ -775,13 +776,6 @@ export default function PickExperienceClient({
     t,
   ]);
 
-  const cancelStalePreview = useCallback(() => {
-    previewGenerationIdRef.current += 1;
-    activePreviewCaptureAbortRef.current?.abort();
-    activePreviewCaptureAbortRef.current = null;
-    setPreview(null);
-  }, []);
-
   boardSessionCallbacksRef.current = {
     onBeforeHydrated: (initialStorageKeys) => {
       hydrateExportOptions(initialStorageKeys);
@@ -801,7 +795,7 @@ export default function PickExperienceClient({
       setPendingBoardShareImport(null);
       setBoardShareDialog(null);
     },
-    onInvalidatePreview: cancelStalePreview,
+    onInvalidatePreview: cancelPreview,
     onStorageUnavailable: () => {
       setBoardStatusMessage(t("boardLibrary.error.storage"));
     },
@@ -817,8 +811,6 @@ export default function PickExperienceClient({
 
   useEffect(
     () => () => {
-      activePreviewCaptureAbortRef.current?.abort();
-      activePreviewCaptureAbortRef.current = null;
       if (boardLinkCopiedTimerRef.current !== null) {
         window.clearTimeout(boardLinkCopiedTimerRef.current);
       }
@@ -831,7 +823,7 @@ export default function PickExperienceClient({
       dialog: BoardShareDialogState,
       pendingImport: PendingBoardShareImport | null = null,
     ) => {
-      cancelStalePreview();
+      cancelPreview();
       setShowBoardLibrary(false);
       setShowPickAssistant(false);
       setAssistantNeedsReview(false);
@@ -844,7 +836,7 @@ export default function PickExperienceClient({
       setPendingBoardShareImport(pendingImport);
       setBoardShareDialog(dialog);
     },
-    [cancelStalePreview],
+    [cancelPreview],
   );
 
   const resetBoardWithoutHistory = useCallback(
@@ -1878,7 +1870,6 @@ export default function PickExperienceClient({
 
   const generateImage = useCallback(
     async (kind: ExportContentKind) => {
-      if (generatingRef.current) return;
       if (!boardStorageWritable || !optionsStorageWritable) {
         setBoardStatusMessage(t("boardLibrary.error.storage"));
         return;
@@ -1902,7 +1893,6 @@ export default function PickExperienceClient({
         }
       }
 
-      const generationId = ++previewGenerationIdRef.current;
       const optionsKey = getPreviewOptionsKey(
         showTitles,
         transparentBg,
@@ -1911,81 +1901,60 @@ export default function PickExperienceClient({
         kind,
         archetypeForExport?.inputKey,
       );
-      const captureController = new AbortController();
-      activePreviewCaptureAbortRef.current = captureController;
-      generatingRef.current = true;
-      setGenerating(true);
       if (kind === "archetype") setOpenArchetypeInputKey(null);
 
-      try {
-        const characterNames = archetypeForExport
-          ? archetypeForExport.characters
-              .map((character) => character.displayName)
-              .join(" / ")
-          : "";
-        const sharePageUrl = pageUrl;
-        const dataUrl = await captureExportImageInFrame(
-          {
-            kind,
-            experienceId: experience.id,
-            contextId: effectiveContextId,
-            picks: filteredPicks,
-            showTitles,
-            transparentBg,
-            showQrCode,
-            templateId,
-            sizePresetId: DEFAULT_EXPORT_SIZE_PRESET_ID,
-            selectedBy: exportNickname,
-            pageUrl,
-          },
-          { signal: captureController.signal },
-        );
-        if (generationId === previewGenerationIdRef.current) {
-          setPreview({
-            kind,
-            archetypeInputKey: archetypeForExport?.inputKey,
-            dataUrl,
-            optionsKey,
-            imageFileName: archetypeForExport
-              ? getArchetypeImageFileName(archetypeForExport.characters)
-              : posterImageFileName,
-            pageUrl: sharePageUrl,
-            previewLabel: archetypeForExport
-              ? formatArchetypeTemplate(
-                  archetypeForExport.ui.export.previewLabel,
-                  { characterNames },
-                )
-              : previewLabel,
-            shareText: archetypeForExport
-              ? formatArchetypeTemplate(
-                  archetypeForExport.ui.export.shareText,
-                  {
-                    characterNames,
-                  },
-                )
-              : uiCopy.shareText,
-            shareHashtags: archetypeForExport
-              ? [...experience.share.hashtags, "#恋はじめました"]
-              : experience.share.hashtags.slice(),
-            shareTitle: archetypeForExport
-              ? archetypeForExport.ui.title
-              : uiCopy.title,
-          });
-        }
-      } catch (error) {
-        if (!isAbortError(error)) {
+      const characterNames = archetypeForExport
+        ? archetypeForExport.characters
+            .map((character) => character.displayName)
+            .join(" / ")
+        : "";
+
+      await runCapture({
+        payload: {
+          kind,
+          experienceId: experience.id,
+          contextId: effectiveContextId,
+          picks: filteredPicks,
+          showTitles,
+          transparentBg,
+          showQrCode,
+          templateId,
+          sizePresetId: DEFAULT_EXPORT_SIZE_PRESET_ID,
+          selectedBy: exportNickname,
+          pageUrl,
+        },
+        buildSnapshot: (dataUrl) => ({
+          kind,
+          archetypeInputKey: archetypeForExport?.inputKey,
+          dataUrl,
+          optionsKey,
+          imageFileName: archetypeForExport
+            ? getArchetypeImageFileName(archetypeForExport.characters)
+            : posterImageFileName,
+          pageUrl,
+          previewLabel: archetypeForExport
+            ? formatArchetypeTemplate(
+                archetypeForExport.ui.export.previewLabel,
+                { characterNames },
+              )
+            : previewLabel,
+          shareText: archetypeForExport
+            ? formatArchetypeTemplate(archetypeForExport.ui.export.shareText, {
+                characterNames,
+              })
+            : uiCopy.shareText,
+          shareHashtags: archetypeForExport
+            ? [...experience.share.hashtags, "#恋はじめました"]
+            : experience.share.hashtags.slice(),
+          shareTitle: archetypeForExport
+            ? archetypeForExport.ui.title
+            : uiCopy.title,
+        }),
+        onError: (error) => {
           console.error("Failed to generate image", error);
-          if (generationId === previewGenerationIdRef.current) {
-            window.alert(t("errors.imageGenerationFailed"));
-          }
-        }
-      } finally {
-        if (activePreviewCaptureAbortRef.current === captureController) {
-          activePreviewCaptureAbortRef.current = null;
-        }
-        generatingRef.current = false;
-        setGenerating(false);
-      }
+          window.alert(t("errors.imageGenerationFailed"));
+        },
+      });
     },
     [
       archetypeResult,
@@ -1998,6 +1967,7 @@ export default function PickExperienceClient({
       posterImageFileName,
       previewLabel,
       resetBoardWithoutHistory,
+      runCapture,
       showTitles,
       showQrCode,
       storedPicks,
@@ -2039,12 +2009,7 @@ export default function PickExperienceClient({
     return () => window.clearTimeout(timer);
   }, [generateImage, preview, previewOptionsKey]);
 
-  const handleClosePreview = () => {
-    previewGenerationIdRef.current += 1;
-    activePreviewCaptureAbortRef.current?.abort();
-    activePreviewCaptureAbortRef.current = null;
-    setPreview(null);
-  };
+  const handleClosePreview = () => cancelPreview();
 
   const updateExportOptions = useCallback(
     async (update: (current: ExportOptions) => ExportOptions) => {
@@ -2631,15 +2596,6 @@ function getArchetypeImageFileName(
 
 function isWritableStorageStatus(status: StorageLoadStatus) {
   return status === "empty" || status === "loaded" || status === "migrated";
-}
-
-function isAbortError(error: unknown) {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "name" in error &&
-    error.name === "AbortError"
-  );
 }
 
 function createExportRenderResult(
