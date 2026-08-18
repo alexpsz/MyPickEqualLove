@@ -14,9 +14,9 @@ const headerSource = await readFile(
   new URL("../src/components/Header.tsx", import.meta.url),
   "utf8",
 );
-const contextSelectorSource = clientSource.slice(
-  clientSource.indexOf("function ContextSelector("),
-  clientSource.indexOf("const ACTIVE_MEMBERS_BY_SORT_ORDER"),
+const contextSelectorSource = await readFile(
+  new URL("../src/components/ContextSelector.tsx", import.meta.url),
+  "utf8",
 );
 
 test("control actions cannot consume the context selector's desktop column", () => {
