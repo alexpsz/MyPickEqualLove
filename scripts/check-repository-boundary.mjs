@@ -4,7 +4,9 @@ import { readFileSync } from "node:fs";
 
 const ALLOWED_ROOT_FILES = new Set([
   ".env.example",
+  ".gitattributes",
   ".gitignore",
+  ".prettierignore",
   ".node-version",
   ".npmrc",
   ".prettierrc.json",
