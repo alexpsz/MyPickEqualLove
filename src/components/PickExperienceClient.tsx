@@ -107,6 +107,7 @@ import {
   useBoardLibrary,
   type BoardLibraryActionResult,
 } from "../hooks/useBoardLibrary";
+import { useSongDiscovery } from "../hooks/useSongDiscovery";
 import {
   planAssistantSnapshotSync,
   resolveStorageSyncAction,
@@ -147,13 +148,6 @@ import {
   resetPickAssistantStorageSafely,
   savePickAssistantSnapshotSafely,
 } from "../utils/pickAssistantStorage";
-import {
-  createEmptySongDiscoveryState,
-  loadSongDiscoveryState,
-  recordRecentSongId,
-  updateStoredSongDiscoveryState,
-  type SongDiscoveryState,
-} from "../utils/songDiscoveryStorage";
 import {
   DIALOG_RETURN_KEYS,
   getPickSlotReturnKey,
@@ -361,8 +355,6 @@ export default function PickExperienceClient({
   const [showBoardLibrary, setShowBoardLibrary] = useState(false);
   const [detailSongId, setDetailSongId] = useState<string | null>(null);
   const [detailLayerActive, setDetailLayerActive] = useState(false);
-  const [songDiscoveryState, setSongDiscoveryState] =
-    useState<SongDiscoveryState>(createEmptySongDiscoveryState);
   const [pendingReplacementSong, setPendingReplacementSong] =
     useState<Song | null>(null);
   const [preview, setPreview] = useState<PreviewSnapshot | null>(null);
@@ -752,6 +744,13 @@ export default function PickExperienceClient({
       }),
     [effectiveContextId, experience],
   );
+  const { recentSongIds, isRecentlyViewed, recordRecentlyViewed } =
+    useSongDiscovery({
+      storageKey: STORAGE_KEYS.songDiscovery,
+      validSongIds: VALID_SONG_IDS,
+      recentLimit: SONG_DISCOVERY_CONFIG.recentLimit,
+      active: hydrated && !isExportRealm,
+    });
   const {
     snapshots: scopedSnapshots,
     writable: boardLibraryWritable,
@@ -925,28 +924,6 @@ export default function PickExperienceClient({
       }
     },
   };
-
-  useEffect(() => {
-    if (!hydrated || isExportRealm) return;
-    const syncSongDiscovery = () =>
-      setSongDiscoveryState(
-        loadSongDiscoveryState(STORAGE_KEYS.songDiscovery, VALID_SONG_IDS),
-      );
-    const handleStorage = (event: StorageEvent) => {
-      if (
-        shouldResyncStorage(event, {
-          storage: localStorage,
-          watchedKey: STORAGE_KEYS.songDiscovery,
-        })
-      ) {
-        syncSongDiscovery();
-      }
-    };
-
-    syncSongDiscovery();
-    window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
-  }, [hydrated, isExportRealm]);
 
   useEffect(() => {
     if (!hydrated || isExportRealm) return;
@@ -1188,35 +1165,16 @@ export default function PickExperienceClient({
     setNicknameDraft(nickname.slice(0, MAX_NICKNAME_LENGTH));
   };
 
-  const updateSongDiscoveryState = useCallback(
-    (update: (current: SongDiscoveryState) => SongDiscoveryState) => {
-      const result = updateStoredSongDiscoveryState(
-        STORAGE_KEYS.songDiscovery,
-        VALID_SONG_IDS,
-        update,
-      );
-      if (!result.ok) {
-        setBoardStatusMessage(t("boardLibrary.error.storage"));
-        return false;
-      }
-
-      setSongDiscoveryState(result.state);
-      setBoardStatusMessage("");
-      return true;
-    },
-    [t],
-  );
-
   const handleOpenSongDetail = useCallback(
     (song: Song, trigger: HTMLButtonElement) => {
       detailTriggerRef.current = trigger;
-      updateSongDiscoveryState((current) =>
-        recordRecentSongId(current, song.id, SONG_DISCOVERY_CONFIG.recentLimit),
-      );
+      if (!recordRecentlyViewed(song.id)) {
+        setBoardStatusMessage(t("boardLibrary.error.storage"));
+      }
       setDetailLayerActive(true);
       setDetailSongId(song.id);
     },
-    [updateSongDiscoveryState],
+    [recordRecentlyViewed, t],
   );
 
   const commitPickAssistantUpdate = useCallback(
@@ -2585,7 +2543,7 @@ export default function PickExperienceClient({
               selectedSongsById={selectedSongsById}
               emptyMessage={t("search.noEligibleMatches")}
               selectedRanksBySongId={selectedRanksBySongId}
-              recentSongIds={songDiscoveryState.recentSongIds}
+              recentSongIds={recentSongIds}
               candidateSongIds={candidateSongIds}
               candidateEligibleSongIds={assistantEligibleSongIds}
               selectionMode={searchPresentation.selectionMode}
@@ -2623,9 +2581,7 @@ export default function PickExperienceClient({
             <SongDetailModal
               song={song}
               members={MEMBERS}
-              isRecentlyViewed={songDiscoveryState.recentSongIds.includes(
-                song.id,
-              )}
+              isRecentlyViewed={isRecentlyViewed(song.id)}
               selectionMode={searchSelectionMode}
               isCandidate={candidateSongIds.has(song.id)}
               candidateDisabled={
