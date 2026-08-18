@@ -107,6 +107,11 @@ import {
   type BoardSharePayload,
 } from "../utils/boardShareProtocol.mjs";
 import {
+  planBoardShareDialog,
+  type BoardShareDialogPlan,
+} from "../utils/boardShareImport";
+import { resolveExportRealmRequest } from "../utils/exportRealmRequest";
+import {
   EXPORT_CAPTURE_PROTOCOL_VERSION,
   EXPORT_REALM_READY_TYPE,
   EXPORT_REALM_RESULT_TYPE,
@@ -1110,22 +1115,23 @@ export default function PickExperienceClient({
         payload: parsed.payload,
         currentExperience: snapshot.experience,
       });
-      if (resolved.status === "invalid") {
-        presentBoardShareDialog({
-          kind: "invalid",
-          unsupportedVersion: resolved.reason === "unsupported-version",
-        });
-        return;
-      }
 
-      if (resolved.status === "mismatch") {
-        const targetUrl = new URL(resolved.canonicalUrl);
-        targetUrl.hash = originalHash.slice(1);
-        presentBoardShareDialog({
-          kind: "mismatch",
-          targetName: resolved.displayName,
-          targetUrl: targetUrl.toString(),
-        });
+      // Invalid and mismatch need no stored board, so decide them before the
+      // localStorage read below.
+      if (resolved.status !== "import") {
+        presentBoardShareDialog(
+          planBoardShareDialog({
+            resolved,
+            originalHash,
+            slots: snapshot.slots,
+            uiSlots: snapshot.uiSlots,
+            uiContextOptions: snapshot.uiContextOptions,
+            currentPicks: {},
+            effectiveContextId: snapshot.effectiveContextId,
+            getSongTitle: (songId) => SONGS_BY_ID[songId]?.title.ja,
+            createPreviewDiff: createBoardSharePreviewDiff,
+          }) as Exclude<BoardShareDialogPlan, { kind: "import" }>,
+        );
         return;
       }
 
@@ -1147,41 +1153,18 @@ export default function PickExperienceClient({
                   contextId: resolved.contextId,
                 }),
             }).picks;
-      const previewDiff = createBoardSharePreviewDiff({
-        slotIds: snapshot.slots.map((slot) => slot.id),
-        currentPicks: currentTargetPicks,
-        importedPicks: resolved.picks,
-        currentContextId: snapshot.effectiveContextId ?? null,
-        importedContextId: resolved.contextId ?? null,
-      });
-      const uiSlotsById = new Map(
-        snapshot.uiSlots.map((slot) => [slot.id, slot]),
-      );
-      const slotsById = new Map(snapshot.slots.map((slot) => [slot.id, slot]));
-      const changes = previewDiff.changes.map(
-        ({ slotId, currentSongId, importedSongId }) => ({
-          slotId,
-          slotLabel:
-            uiSlotsById.get(slotId)?.label ??
-            slotsById.get(slotId)?.label ??
-            slotId,
-          currentTitle: currentSongId
-            ? SONGS_BY_ID[currentSongId]?.title.ja
-            : undefined,
-          importedTitle: importedSongId
-            ? SONGS_BY_ID[importedSongId]?.title.ja
-            : undefined,
-        }),
-      );
-      const contextLabel =
-        resolved.contextId && previewDiff.contextChanged
-          ? snapshot.uiContextOptions.find(
-              (context) => context.id === resolved.contextId,
-            )?.label
-          : undefined;
-
       presentBoardShareDialog(
-        { kind: "import", changes, contextLabel },
+        planBoardShareDialog({
+          resolved,
+          originalHash,
+          slots: snapshot.slots,
+          uiSlots: snapshot.uiSlots,
+          uiContextOptions: snapshot.uiContextOptions,
+          currentPicks: currentTargetPicks,
+          effectiveContextId: snapshot.effectiveContextId,
+          getSongTitle: (songId) => SONGS_BY_ID[songId]?.title.ja,
+          createPreviewDiff: createBoardSharePreviewDiff,
+        }),
         { payload: parsed.payload, baselinePicks: currentTargetPicks },
       );
     };
@@ -2006,57 +1989,28 @@ export default function PickExperienceClient({
       }
 
       const request = event.data;
-      if (activeFrameRequestIdRef.current) {
-        if (activeFrameRequestIdRef.current !== request.requestId) {
-          postResult(
-            createExportRenderResult(
-              request.requestId,
-              undefined,
-              "Export frame is already rendering",
-            ),
-          );
-        }
-        return;
-      }
+      const verdict = resolveExportRealmRequest({
+        request,
+        activeRequestId: activeFrameRequestIdRef.current,
+        experienceId: experience.id,
+        pageUrl,
+        contextIds: contextOptions.map((context) => context.id),
+        defaultContextId,
+      });
 
-      if (request.experienceId !== experience.id) {
+      if (verdict.status === "ignore") return;
+      if (verdict.status === "reject") {
         postResult(
           createExportRenderResult(
             request.requestId,
             undefined,
-            "Export experience does not match the current route",
+            verdict.reason,
           ),
         );
         return;
       }
 
-      if (request.pageUrl !== pageUrl) {
-        postResult(
-          createExportRenderResult(
-            request.requestId,
-            undefined,
-            "Export page URL does not match the current route",
-          ),
-        );
-        return;
-      }
-
-      if (
-        request.contextId !== undefined &&
-        !contextOptions.some((context) => context.id === request.contextId)
-      ) {
-        postResult(
-          createExportRenderResult(
-            request.requestId,
-            undefined,
-            "Export context does not match the current experience",
-          ),
-        );
-        return;
-      }
-
-      const nextContextId =
-        request.contextId !== undefined ? request.contextId : defaultContextId;
+      const nextContextId = verdict.contextId;
       const nextPicks = filterStoredPicksForExperience({
         experience,
         storedPicks: request.picks,
