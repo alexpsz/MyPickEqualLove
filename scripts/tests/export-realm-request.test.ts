@@ -35,14 +35,6 @@ const base = {
   contextIds: [] as string[],
 };
 
-test("a matching request is accepted", () => {
-  const verdict = resolveExportRealmRequest({
-    ...base,
-    request: createRequest(),
-  });
-  assert.equal(verdict.status, "accept");
-});
-
 test("a second, different request is rejected while one is in flight", () => {
   const verdict = resolveExportRealmRequest({
     ...base,

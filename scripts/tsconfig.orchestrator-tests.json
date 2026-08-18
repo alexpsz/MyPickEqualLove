@@ -19,6 +19,9 @@
     "./tests/board-share-import.test.ts",
     "./tests/export-realm-request.test.ts",
     "../src/utils/storageSyncPolicy.ts",
-    "./tests/storage-sync-policy.test.ts"
+    "./tests/storage-sync-policy.test.ts",
+    "../src/utils/colors.ts",
+    "../src/utils/exportStyleProxy.ts",
+    "./tests/export-style-proxy.test.ts"
   ]
 }

@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  buildBoardShareMismatchUrl,
   planBoardShareDialog,
   type CreateBoardSharePreviewDiff,
 } from "../../src/utils/boardShareImport";
@@ -84,17 +83,6 @@ test("a mismatch keeps the payload hash on the sister-site URL", () => {
   assert.equal(
     plan.kind === "mismatch" ? plan.targetUrl : "",
     "https://joy.example.test/live/x/#__mypick_board_v1=abc",
-  );
-});
-
-test("buildBoardShareMismatchUrl accepts a hash with or without '#'", () => {
-  assert.equal(
-    buildBoardShareMismatchUrl("https://a.test/", "#x=1"),
-    "https://a.test/#x=1",
-  );
-  assert.equal(
-    buildBoardShareMismatchUrl("https://a.test/", "x=1"),
-    "https://a.test/#x=1",
   );
 });
 

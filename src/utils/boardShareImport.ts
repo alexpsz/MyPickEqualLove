@@ -76,7 +76,7 @@ export interface BoardShareDialogInput {
  * Rebuilds the canonical sister-site URL for a mismatched share, preserving
  * the original payload hash so the target site can consume it.
  */
-export function buildBoardShareMismatchUrl(
+function buildBoardShareMismatchUrl(
   canonicalUrl: string,
   originalHash: string,
 ) {

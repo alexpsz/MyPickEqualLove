@@ -11,6 +11,7 @@ process.exitCode = runCompiledTestSuite({
     "scripts/tests/board-share-import.test.js",
     "scripts/tests/export-realm-request.test.js",
     "scripts/tests/storage-sync-policy.test.js",
+    "scripts/tests/export-style-proxy.test.js",
   ],
   testStdio: "inherit",
 }).exitCode;

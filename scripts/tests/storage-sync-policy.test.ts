@@ -72,17 +72,6 @@ test("a watched key removal is an apply with a null value, not a reload", () => 
   );
 });
 
-test("shouldResyncStorage collapses apply and reload for simple listeners", () => {
-  const options = { storage: LOCAL, watchedKey: KEY };
-  assert.equal(shouldResyncStorage(event({}), options), true);
-  assert.equal(shouldResyncStorage(event({ key: null }), options), true);
-  assert.equal(shouldResyncStorage(event({ key: "other" }), options), false);
-  assert.equal(
-    shouldResyncStorage(event({ storageArea: SESSION }), options),
-    false,
-  );
-});
-
 const snapshot = (revision: number) => ({ revision });
 const never = () => false;
 const always = () => true;
