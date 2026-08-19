@@ -71,9 +71,11 @@ npm run sync:data:all
 npm run validate:data
 ```
 
-`npm run sync:songs:all` is the catalog-only variant used by automation. It discovers releases from the three official discography sites and their release-news feeds; Uta-Net only enriches official candidates with credits. Public song data is written only after the release identity, cover, ownership, participants, and lyricist/composer/arranger are complete. Incomplete or ambiguous announcements remain review candidates instead of becoming placeholder catalog records.
+`npm run sync:songs:all` is the catalog-only variant. It discovers releases from the three official discography sites and their release-news feeds; Uta-Net only enriches official candidates with credits. Public song data is written only after the release identity, cover, ownership, participants, and lyricist/composer/arranger are complete. Incomplete or ambiguous announcements remain review candidates instead of becoming placeholder catalog records.
 
-`.github/workflows/daily-discography-sync.yml` runs every day at 05:17 JST. A read-only scan produces source receipts and a review artifact; only a fully closed candidate passes the data gate, lint, type-check, and all three static builds. A separate least-privilege publish job verifies the exact base commit and artifact hashes before pushing the catalog-only patch to `main`, where the connected Cloudflare Pages projects deploy it. Uta-Net access failures are reported as degraded and never create incomplete credits. Canonical `releaseDate` normally means the earliest verified commercial CD or digital release. For a verified advance-digital/primary-release campaign, it uses the advance date until the primary release occurs and then switches the entire release bundle atomically; unrelated later reissues never overwrite it. An MV, preview, news post, or live performance does not count.
+The catalog is updated by hand. Run the sync, run `npm run validate:data`, review the diff, and commit; the connected Cloudflare Pages projects deploy from `main`. Releases are infrequent enough that this does not need to be automated, and a reviewed diff is a stronger gate than an unattended one.
+
+Canonical `releaseDate` normally means the earliest verified commercial CD or digital release. For a verified advance-digital/primary-release campaign, it uses the advance date until the primary release occurs and then switches the entire release bundle atomically; unrelated later reissues never overwrite it. An MV, preview, news post, or live performance does not count.
 
 ## Stack
 
