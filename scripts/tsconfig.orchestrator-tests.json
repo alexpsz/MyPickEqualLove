@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "Node16",
+    "moduleResolution": "Node16",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "lib": ["ES2022", "DOM"],
+    "types": ["node"],
+    "rootDir": "..",
+    "noEmit": false,
+    "incremental": false,
+    "allowJs": true
+  },
+  "include": [
+    "../src/utils/boardShareImport.ts",
+    "../src/utils/exportRealmRequest.ts",
+    "./tests/board-share-import.test.ts",
+    "./tests/export-realm-request.test.ts",
+    "../src/utils/storageSyncPolicy.ts",
+    "./tests/storage-sync-policy.test.ts",
+    "../src/utils/colors.ts",
+    "../src/utils/exportStyleProxy.ts",
+    "./tests/export-style-proxy.test.ts",
+    "./color-conversion.test.ts"
+  ]
+}

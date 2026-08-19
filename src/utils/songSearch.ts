@@ -1,4 +1,4 @@
-import type { Member, Song } from "../schema/music";
+import type { Member, ReleaseType, Song, TrackType } from "../schema/music";
 import { getConfirmedSongCredits } from "./songCredits";
 
 export interface SearchKeyInput {
@@ -18,12 +18,28 @@ export interface RankedSong {
 
 export type SearchSelectionMode = "board" | "assistant-shortlist";
 
+export interface SongSearchFilterState {
+  normalizedQuery: string;
+  releaseTypeFilter: "all" | ReleaseType;
+  trackTypeFilter: "all" | TrackType;
+  yearFilter: string;
+  memberFilters: readonly string[];
+  showGraduatedMembers: boolean;
+  hideSelected: boolean;
+  selectedRanksBySongId: Readonly<Record<string, number>>;
+}
+
 const KATAKANA_START = 0x30a1;
 const KATAKANA_END = 0x30f6;
 const KATAKANA_TO_HIRAGANA_OFFSET = 0x60;
 const MAX_TYPO_DISTANCE = 1;
 const MIN_TYPO_QUERY_LENGTH = 5;
 const LATIN_QUERY_PATTERN = /^[a-z0-9]+$/;
+const GRADUATED_MEMBER_FEATURE_TAGS = new Set([
+  "graduated_member",
+  "graduation_solo",
+  "graduation_unit",
+]);
 
 export function shouldShowGraduatedMemberFeaturesByDefault(
   selectionMode: SearchSelectionMode,
@@ -39,6 +55,56 @@ export function isGraduatedMemberVisibilityFilterActive(
     showGraduatedMembers !==
     shouldShowGraduatedMemberFeaturesByDefault(selectionMode)
   );
+}
+
+export function filterSongsForSearch(
+  songs: readonly Song[],
+  filters: SongSearchFilterState,
+): Song[] {
+  return songs.filter((song) => {
+    if (
+      !filters.normalizedQuery &&
+      !filters.showGraduatedMembers &&
+      isGraduatedMemberFeature(song)
+    ) {
+      return false;
+    }
+    if (
+      filters.hideSelected &&
+      filters.selectedRanksBySongId[song.id] !== undefined
+    ) {
+      return false;
+    }
+    if (
+      filters.releaseTypeFilter !== "all" &&
+      song.releaseType !== filters.releaseTypeFilter
+    ) {
+      return false;
+    }
+    if (
+      filters.trackTypeFilter !== "all" &&
+      song.trackType !== filters.trackTypeFilter
+    ) {
+      return false;
+    }
+    if (
+      filters.yearFilter !== "all" &&
+      !song.releaseDate?.startsWith(filters.yearFilter)
+    ) {
+      return false;
+    }
+    if (
+      filters.memberFilters.length > 0 &&
+      !filters.memberFilters.some(
+        (memberId) =>
+          song.memberIds?.includes(memberId) ||
+          song.centerMemberIds?.includes(memberId),
+      )
+    ) {
+      return false;
+    }
+    return true;
+  });
 }
 
 export function normalizeSongSearchText(value: string | undefined): string {
@@ -129,6 +195,12 @@ function getSongMatchRank(
     return 6;
   }
   return Number.POSITIVE_INFINITY;
+}
+
+function isGraduatedMemberFeature(song: Song) {
+  return (song.tags ?? []).some((tag) =>
+    GRADUATED_MEMBER_FEATURE_TAGS.has(tag),
+  );
 }
 
 function getSearchableParts(song: Song, membersById: Record<string, Member>) {

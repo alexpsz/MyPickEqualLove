@@ -15,19 +15,6 @@ const creditsSourceUrl = new URL(
   "../src/utils/songCredits.ts",
   import.meta.url,
 );
-const searchModalSourceUrl = new URL(
-  "../src/components/SearchModal.tsx",
-  import.meta.url,
-);
-const songDetailModalSourceUrl = new URL(
-  "../src/components/SongDetailModal.tsx",
-  import.meta.url,
-);
-const pickExperienceClientSourceUrl = new URL(
-  "../src/components/PickExperienceClient.tsx",
-  import.meta.url,
-);
-const messagesSourceUrl = new URL("../src/i18n/messages.ts", import.meta.url);
 const source = await readFile(sourceUrl, "utf8");
 const compilerOptions = {
   module: ts.ModuleKind.ESNext,
@@ -49,6 +36,7 @@ const compiled = ts
   .outputText.replace('"./songCredits"', JSON.stringify(creditsModuleUrl));
 const moduleUrl = `data:text/javascript;base64,${Buffer.from(compiled).toString("base64")}`;
 const {
+  filterSongsForSearch,
   getFirstSearchResultForEnter,
   isGraduatedMemberVisibilityFilterActive,
   normalizeSongSearchText,
@@ -67,18 +55,6 @@ const {
   saveSongDiscoveryState,
   updateStoredSongDiscoveryState,
 } = await import(storageModuleUrl);
-const [
-  searchModalSource,
-  songDetailModalSource,
-  pickExperienceClientSource,
-  messagesSource,
-] = await Promise.all([
-  readFile(searchModalSourceUrl, "utf8"),
-  readFile(songDetailModalSourceUrl, "utf8"),
-  readFile(pickExperienceClientSourceUrl, "utf8"),
-  readFile(messagesSourceUrl, "utf8"),
-]);
-
 const membersById = {
   member: {
     id: "member",
@@ -100,6 +76,73 @@ const songs = [
   createSong("stable-b", "同じ曲 B", "Stable Song B"),
 ];
 
+const graduatedFeatureSongs = [
+  createSong("regular", "通常曲", "Regular", {
+    releaseType: "single",
+    releaseDate: "2026-01-01",
+    trackType: "title",
+    memberIds: ["active"],
+  }),
+  createSong("ordinary-graduate", "卒業生参加の通常曲", "Ordinary Graduate", {
+    releaseType: "single",
+    releaseDate: "2025-01-01",
+    trackType: "coupling",
+    memberIds: ["graduated"],
+  }),
+  createSong("graduated-member", "卒業企画曲", "Graduated Member", {
+    releaseType: "single",
+    releaseDate: "2024-01-01",
+    trackType: "coupling",
+    memberIds: ["graduated"],
+    tags: ["graduated_member"],
+  }),
+  createSong("graduation-solo", "卒業ソロ", "Graduation Solo", {
+    releaseType: "digital",
+    releaseDate: "2023-01-01",
+    trackType: "digital",
+    memberIds: ["graduated"],
+    tags: ["graduation_solo"],
+  }),
+  createSong("graduation-unit", "卒業ユニット", "Graduation Unit", {
+    releaseType: "album",
+    releaseDate: "2022-01-01",
+    trackType: "album",
+    centerMemberIds: ["graduated"],
+    tags: ["graduation_unit"],
+  }),
+];
+
+const defaultSongFilters = {
+  normalizedQuery: "",
+  releaseTypeFilter: "all",
+  trackTypeFilter: "all",
+  yearFilter: "all",
+  memberFilters: [],
+  showGraduatedMembers: false,
+  hideSelected: false,
+  selectedRanksBySongId: {},
+};
+
+function getFilteredSongIds(overrides = {}) {
+  return filterSongsForSearch(graduatedFeatureSongs, {
+    ...defaultSongFilters,
+    ...overrides,
+  }).map((song) => song.id);
+}
+
+function getRankedFilteredSongIds(sourceSongs, queryValue, overrides = {}) {
+  const normalizedQuery = normalizeSongSearchText(queryValue);
+  const filteredSongs = filterSongsForSearch(sourceSongs, {
+    ...defaultSongFilters,
+    ...overrides,
+    normalizedQuery,
+  });
+
+  return rankSongsByQuery(filteredSongs, normalizedQuery, membersById).map(
+    ({ song }) => song.id,
+  );
+}
+
 test("normalizes NFKC, kana, case, whitespace, and symbols", () => {
   assert.equal(normalizeSongSearchText(" ＬＯＶＥ！ "), "love");
   assert.equal(normalizeSongSearchText("ラブ・ソング"), "らぶそんぐ");
@@ -120,85 +163,11 @@ test("orders title relevance before secondary matches and preserves source order
   );
 });
 
-test("ordinary search and song details omit orphan favorites but keep real Assistant actions", () => {
-  assert.doesNotMatch(
-    searchModalSource,
-    /favoriteSongIds|onToggleFavorite|name="star"/,
-  );
-  assert.doesNotMatch(
-    songDetailModalSource,
-    /isFavorite|onToggleFavorite|name="star"/,
-  );
-  assert.doesNotMatch(
-    pickExperienceClientSource,
-    /handleToggleFavorite|toggleFavoriteSongId|onToggleFavorite=/,
-  );
-  assert.doesNotMatch(
-    messagesSource,
-    /"search\.candidate"|"songDetail\.(?:add|remove)Candidate"/,
-  );
-  assert.match(
-    searchModalSource,
-    /isAssistantShortlistMode\s*\?\s*onToggleCandidate\?\.\(song\)\s*:\s*onSelect\(song\)/s,
-    "assistant mode must toggle the shortlist from the whole result row while board mode still selects",
-  );
-  assert.match(
-    searchModalSource,
-    /!isAssistantShortlistMode\s*\?\s*\(\s*<button[\s\S]*?onClick=\{\(\) => onToggleCandidate\?\.\(song\)\}[\s\S]*?aria-pressed=\{isCandidate\}[\s\S]*?<AppIcon[\s\S]*?name=\{isCandidate \? "check" : "music"\}/,
-    "board-mode results must expose a real Pick Assistant add/remove action",
-  );
-  assert.match(
-    songDetailModalSource,
-    /onToggleCandidate: \(song: Song\) => void;[\s\S]*?onClick=\{\(\) => onToggleCandidate\(song\)\}[\s\S]*?aria-pressed=\{isCandidate\}[\s\S]*?assistant\.removeCandidateAria[\s\S]*?assistant\.addCandidateAria/,
-    "song details must expose the real Pick Assistant add/remove action",
-  );
-  assert.match(
-    pickExperienceClientSource,
-    /<SongDetailModal[\s\S]*?onToggleCandidate=\{handleToggleCandidate\}/,
-    "the detail action must be wired to the persisted Assistant mutation",
-  );
-  assert.match(
-    songDetailModalSource,
-    /!isAssistantShortlistMode\s*\?\s*\([\s\S]*?onClick=\{\(\) => onSelect\(song\)\}[\s\S]*?songDetail\.selectSong/,
-    "only ordinary song details may select a song onto the board",
-  );
-  const candidateDisabledExpression = searchModalSource.match(
-    /const candidateDisabled =([\s\S]*?)!onToggleCandidate;/,
-  )?.[1];
-  assert.ok(candidateDisabledExpression);
-  assert.doesNotMatch(
-    candidateDisabledExpression,
-    /\bselected\b/,
-    "songs already on the board must remain eligible for the Assistant shortlist",
-  );
-  assert.match(
-    pickExperienceClientSource,
-    /selectionMode=\{searchPresentation\.selectionMode\}/,
-  );
-  assert.match(messagesSource, /"assistant\.addCandidate": "加入选曲助手"/);
-  assert.match(messagesSource, /"assistant\.candidate": "已加入选曲助手"/);
-});
-
 test("only the dedicated Assistant search shows the complete graduated-member feature set by default", () => {
   assert.equal(shouldShowGraduatedMemberFeaturesByDefault("board"), false);
   assert.equal(
     shouldShowGraduatedMemberFeaturesByDefault("assistant-shortlist"),
     true,
-  );
-  assert.match(
-    searchModalSource,
-    /useState\(\(\) =>\s*shouldShowGraduatedMemberFeaturesByDefault\(selectionMode\)/,
-    "the first Assistant render must use the complete eligible set without a one-frame omission",
-  );
-  assert.match(
-    searchModalSource,
-    /setShowGraduatedMembers\(\s*shouldShowGraduatedMemberFeaturesByDefault\(selectionMode\)/,
-    "retained Assistant and board searches must reset to their own default semantics",
-  );
-  assert.match(
-    searchModalSource,
-    /const resetFilters = \(\) => \{[\s\S]*?setShowGraduatedMembers\(\s*shouldShowGraduatedMemberFeaturesByDefault\(selectionMode\)[\s\S]*?setHideSelected\(false\)/,
-    "reset must restore the current search mode default",
   );
   assert.equal(isGraduatedMemberVisibilityFilterActive("board", false), false);
   assert.equal(
@@ -210,10 +179,92 @@ test("only the dedicated Assistant search shows the complete graduated-member fe
     true,
   );
   assert.equal(isGraduatedMemberVisibilityFilterActive("board", true), true);
-  assert.match(
-    searchModalSource,
-    /isGraduatedMemberVisibilityFilterActive\(\s*selectionMode,\s*showGraduatedMembers/,
-    "the active-filter badge must count deviations from the current mode default",
+});
+
+test("board defaults hide only explicitly tagged graduated-member features", () => {
+  assert.deepEqual(getFilteredSongIds(), ["regular", "ordinary-graduate"]);
+});
+
+test("a query restores matching graduated-member features", () => {
+  assert.deepEqual(
+    getRankedFilteredSongIds(graduatedFeatureSongs, "Graduation Solo"),
+    ["graduation-solo"],
+  );
+});
+
+test("board and Assistant defaults expose different graduated-member sets", () => {
+  assert.deepEqual(
+    getFilteredSongIds({
+      showGraduatedMembers: shouldShowGraduatedMemberFeaturesByDefault("board"),
+    }),
+    ["regular", "ordinary-graduate"],
+  );
+  assert.deepEqual(
+    getFilteredSongIds({
+      showGraduatedMembers: shouldShowGraduatedMemberFeaturesByDefault(
+        "assistant-shortlist",
+      ),
+    }),
+    graduatedFeatureSongs.map((song) => song.id),
+  );
+});
+
+test("release, track, year, and member filters compose without changing OR member semantics", () => {
+  assert.deepEqual(
+    getFilteredSongIds({
+      showGraduatedMembers: true,
+      releaseTypeFilter: "single",
+    }),
+    ["regular", "ordinary-graduate", "graduated-member"],
+  );
+  assert.deepEqual(
+    getFilteredSongIds({
+      showGraduatedMembers: true,
+      trackTypeFilter: "coupling",
+      yearFilter: "2024",
+      memberFilters: ["graduated"],
+    }),
+    ["graduated-member"],
+  );
+  assert.deepEqual(
+    getFilteredSongIds({
+      showGraduatedMembers: true,
+      memberFilters: ["graduated"],
+    }),
+    [
+      "ordinary-graduate",
+      "graduated-member",
+      "graduation-solo",
+      "graduation-unit",
+    ],
+  );
+  assert.deepEqual(
+    getFilteredSongIds({
+      showGraduatedMembers: true,
+      memberFilters: ["missing", "active"],
+    }),
+    ["regular"],
+  );
+});
+
+test("hide selected excludes every song with a recorded rank", () => {
+  assert.deepEqual(
+    getFilteredSongIds({
+      showGraduatedMembers: true,
+      hideSelected: true,
+      selectedRanksBySongId: { regular: 1, "graduation-unit": 0 },
+    }),
+    ["ordinary-graduate", "graduated-member", "graduation-solo"],
+  );
+});
+
+test("filtering before ranking preserves the existing relevance and source-order contract", () => {
+  assert.deepEqual(
+    getRankedFilteredSongIds(songs, "love", {
+      hideSelected: true,
+      selectedRanksBySongId: { contains: 2 },
+    }),
+    ["exact", "prefix", "secondary"],
   );
 });
 

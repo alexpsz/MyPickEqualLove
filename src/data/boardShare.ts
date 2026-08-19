@@ -1,10 +1,15 @@
 import { DEFAULT_PICK_SLOTS, STANDARD_EXPERIENCE_ID } from "../config/project";
-import { COMBINED_CONTEXT_ID } from "./pickExperiences";
-import { PROJECT_IDS, PROJECTS, type ProjectId } from "../projects/registry";
-import type {
-  ExperiencePickSlot,
-  PickExperience,
-} from "../schema/pick-experience";
+import { PROJECTS } from "../projects/registry";
+import {
+  getShareValidationProject,
+  type ShareValidationExperience,
+} from "../projects/shareValidation";
+import {
+  COMBINED_CONTEXT_ID,
+  PROJECT_IDS,
+  type ProjectId,
+} from "../schema/project";
+import type { PickExperience } from "../schema/pick-experience";
 import type { StoredPicks } from "../schema/music";
 import {
   BOARD_SHARE_PROTOCOL_VERSION,
@@ -18,8 +23,8 @@ interface BoardShareTarget {
   experienceId: string;
   displayName: string;
   canonicalUrl: string;
-  slots: ExperiencePickSlot[];
-  performances?: PickExperience["performances"];
+  slots: ShareValidationExperience["slots"];
+  performances: ShareValidationExperience["performances"];
   includeCombinedPerformance?: boolean;
 }
 
@@ -123,14 +128,12 @@ function getBoardShareTarget(
         ...slot,
         eligibility: "catalog",
       })),
+      performances: [],
     };
   }
 
-  const experience = project.liveExperiences.find(
-    (candidate) =>
-      candidate.id === experienceId &&
-      (candidate.status === "published" || candidate.status === "archived"),
-  );
+  const experience =
+    getShareValidationProject(projectId).experiences[experienceId];
   if (!experience) {
     return null;
   }
@@ -150,9 +153,8 @@ function getBoardShareTarget(
 }
 
 function buildTargetRules(target: BoardShareTarget, contextId: string | null) {
-  const project = PROJECTS[target.projectId];
-  const songIds = new Set(project.songs.map((song) => song.id));
-  const performances = target.performances ?? [];
+  const songIds = new Set(getShareValidationProject(target.projectId).songIds);
+  const performances = target.performances;
   const contextIds = performances.map((performance) => performance.id);
   if (target.includeCombinedPerformance && performances.length > 1) {
     contextIds.push(COMBINED_CONTEXT_ID);
@@ -163,14 +165,10 @@ function buildTargetRules(target: BoardShareTarget, contextId: string | null) {
       ? performances
       : performances.filter((performance) => performance.id === contextId);
   const selectedPerformanceSongIds = new Set(
-    selectedPerformances.flatMap((performance) =>
-      performance.setlist.map((entry) => entry.songId),
-    ),
+    selectedPerformances.flatMap((performance) => performance.songIds),
   );
   const eventSongIds = new Set(
-    performances.flatMap((performance) =>
-      performance.setlist.map((entry) => entry.songId),
-    ),
+    performances.flatMap((performance) => performance.songIds),
   );
 
   return {

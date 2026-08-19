@@ -1,0 +1,2 @@
+# 由 scripts/generate-share-validation-manifest.mjs 生成，格式必须与生成器一致
+src/projects/share-validation-manifest.json

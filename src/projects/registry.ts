@@ -1,22 +1,12 @@
-import type { Member, Song } from "../schema/music";
-import type { PickExperience } from "../schema/pick-experience";
-import equalLoveLiveExperiences from "./equal-love/live-experiences.json";
-import equalLoveMembers from "./equal-love/members.json";
-import equalLoveSongs from "./equal-love/songs.json";
-import nearlyEqualJoyLiveExperiences from "./nearly-equal-joy/live-experiences.json";
-import nearlyEqualJoyMembers from "./nearly-equal-joy/members.json";
-import nearlyEqualJoySongs from "./nearly-equal-joy/songs.json";
-import notEqualMeLiveExperiences from "./not-equal-me/live-experiences.json";
-import notEqualMeMembers from "./not-equal-me/members.json";
-import notEqualMeSongs from "./not-equal-me/songs.json";
+import { resolveProjectId } from "../schema/project";
+import type { ProjectId } from "../schema/project";
 
-export const PROJECT_IDS = [
-  "equal-love",
-  "nearly-equal-joy",
-  "not-equal-me",
-] as const;
-
-export type ProjectId = (typeof PROJECT_IDS)[number];
+export {
+  DEFAULT_PROJECT_ID,
+  PROJECT_IDS,
+  resolveProjectId,
+} from "../schema/project";
+export type { ProjectId } from "../schema/project";
 
 export interface ProjectConfig {
   id: ProjectId;
@@ -38,14 +28,9 @@ export interface ProjectConfig {
   keywords: string[];
 }
 
-interface ProjectDefinition {
+export interface ProjectDefinition {
   config: ProjectConfig;
-  members: Member[];
-  songs: Song[];
-  liveExperiences: PickExperience[];
 }
-
-export const DEFAULT_PROJECT_ID: ProjectId = "equal-love";
 
 export const PROJECTS: Record<ProjectId, ProjectDefinition> = {
   "equal-love": {
@@ -78,9 +63,6 @@ export const PROJECTS: Record<ProjectId, ProjectDefinition> = {
         "ファンツール",
       ],
     },
-    members: equalLoveMembers as Member[],
-    songs: equalLoveSongs as Song[],
-    liveExperiences: equalLoveLiveExperiences as PickExperience[],
   },
   "nearly-equal-joy": {
     config: {
@@ -112,9 +94,6 @@ export const PROJECTS: Record<ProjectId, ProjectDefinition> = {
         "ファンツール",
       ],
     },
-    members: nearlyEqualJoyMembers as Member[],
-    songs: nearlyEqualJoySongs as Song[],
-    liveExperiences: nearlyEqualJoyLiveExperiences as PickExperience[],
   },
   "not-equal-me": {
     config: {
@@ -146,19 +125,8 @@ export const PROJECTS: Record<ProjectId, ProjectDefinition> = {
         "ファンツール",
       ],
     },
-    members: notEqualMeMembers as Member[],
-    songs: notEqualMeSongs as Song[],
-    liveExperiences: notEqualMeLiveExperiences as PickExperience[],
   },
 };
-
-export function resolveProjectId(projectId: string | undefined): ProjectId {
-  if (PROJECT_IDS.includes(projectId as ProjectId)) {
-    return projectId as ProjectId;
-  }
-
-  return DEFAULT_PROJECT_ID;
-}
 
 export const CURRENT_PROJECT_ID = resolveProjectId(
   process.env.NEXT_PUBLIC_PROJECT_ID,

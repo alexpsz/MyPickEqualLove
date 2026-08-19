@@ -1,0 +1,11 @@
+# 统一以 LF 存储所有文本，避免 core.autocrlf 在 Windows 上造成行尾漂移。
+* text=auto eol=lf
+
+# 生成文件：格式必须与生成器输出逐字节一致，禁止任何行尾翻译。
+src/projects/share-validation-manifest.json -text
+
+# 二进制资产
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
