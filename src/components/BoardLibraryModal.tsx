@@ -18,8 +18,9 @@ import { APPLE_OPACITY, APPLE_SPRING_GENTLE } from "./AppleMotion";
 import JapaneseContent from "./JapaneseContent";
 import type { PresenceState } from "./MotionPresence";
 
-export type { BoardLibraryActionResult } from "../hooks/useBoardLibrary";
-import type { BoardLibraryActionResult } from "../hooks/useBoardLibrary";
+export type BoardLibraryActionResult =
+  | { ok: true; name: string }
+  | { ok: false; error: BoardLibraryError | "storage" };
 
 interface BoardLibraryModalProps {
   snapshots: BoardSnapshot[];

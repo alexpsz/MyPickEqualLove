@@ -20,6 +20,7 @@ import {
   STORAGE_KEYS,
 } from "../config/project";
 import {
+  DEFAULT_EXPORT_OPTIONS,
   DEFAULT_EXPORT_SIZE_PRESET_ID,
   EXPORT_BACKGROUND,
   EXPORT_SCALE,
@@ -73,7 +74,17 @@ import type {
 import type { PickSlotId, Picks, Song, StoredPicks } from "../schema/music";
 import { sameStoredPicks, type BoardMutationKind } from "../utils/boardHistory";
 import {
+  addBoardSnapshot,
+  createEmptyBoardLibrary,
+  deleteBoardSnapshot,
+  getSnapshotsForScope,
+  loadBoardLibrary,
   loadStoredBoard,
+  loadStoredOptions,
+  mutateStoredBoardLibrary,
+  mutateStoredOptions,
+  renameBoardSnapshot,
+  type BoardLibraryDocument,
   type BoardScope,
   type BoardSnapshot,
   type StorageLoadStatus,
@@ -101,18 +112,15 @@ import {
 } from "../utils/boardShareImport";
 import { resolveExportRealmRequest } from "../utils/exportRealmRequest";
 import {
-  useBoardLibrary,
-  type BoardLibraryActionResult,
-} from "../hooks/useBoardLibrary";
-import { useSongDiscovery } from "../hooks/useSongDiscovery";
-import { useExportOptions } from "../hooks/useExportOptions";
-import { useAssistantSnapshot } from "../hooks/useAssistantSnapshot";
-import { useExportPreview } from "../hooks/useExportPreview";
-import {} from "../utils/storageSyncPolicy";
+  planAssistantSnapshotSync,
+  resolveStorageSyncAction,
+  shouldResyncStorage,
+} from "../utils/storageSyncPolicy";
 import {
   EXPORT_CAPTURE_PROTOCOL_VERSION,
   EXPORT_REALM_READY_TYPE,
   EXPORT_REALM_RESULT_TYPE,
+  captureExportImageInFrame,
   isExportRenderRequest,
   type ExportRenderRequest,
   type ExportRenderResult,
@@ -123,6 +131,7 @@ import {
   createPickAssistantSession,
   deriveTournament,
   getBoardCandidateIds,
+  parsePickAssistantSnapshot,
   planRankedPicks,
   recordComparison,
   samePickAssistantApplicationInputs,
@@ -130,13 +139,25 @@ import {
   skipComparison,
   togglePickAssistantShortlistSong,
   undoComparison,
+  updatePickAssistantSnapshot,
   type ComparisonOutcome,
   type PickAssistantSession,
+  type PickAssistantSnapshot,
 } from "../utils/pickAssistant";
 import {
+  createEmptyPickAssistantSnapshot,
+  createMutationId,
   loadPickAssistantSnapshot,
   resetPickAssistantStorageSafely,
+  savePickAssistantSnapshotSafely,
 } from "../utils/pickAssistantStorage";
+import {
+  createEmptySongDiscoveryState,
+  loadSongDiscoveryState,
+  recordRecentSongId,
+  updateStoredSongDiscoveryState,
+  type SongDiscoveryState,
+} from "../utils/songDiscoveryStorage";
 import {
   DIALOG_RETURN_KEYS,
   getPickSlotReturnKey,
@@ -144,7 +165,9 @@ import {
 } from "../utils/useDialogA11y";
 import AppTopBar from "./AppTopBar";
 import AppleMotion from "./AppleMotion";
-import BoardLibraryModal from "./BoardLibraryModal";
+import BoardLibraryModal, {
+  type BoardLibraryActionResult,
+} from "./BoardLibraryModal";
 import BoardShareImportModal, {
   type BoardShareDialogState,
 } from "./BoardShareImportModal";
@@ -173,6 +196,9 @@ const PickAssistantModal = dynamic(() => import("./PickAssistantModal"), {
 const ArchetypeResultModal = dynamic(() => import("./ArchetypeResultModal"), {
   ssr: false,
 });
+
+type PickAssistantStorageIssue =
+  import("./PickAssistantModal").PickAssistantStorageIssue;
 
 interface PickExperienceClientProps {
   experience: PickExperience;
@@ -234,12 +260,6 @@ export default function PickExperienceClient({
     () => localizeExperienceUi(experience, locale),
     [experience, locale],
   );
-  const {
-    preview,
-    generating,
-    runCapture,
-    cancel: cancelPreview,
-  } = useExportPreview<PreviewSnapshot>();
   const boardSessionCallbacksRef = useRef<{
     onBeforeHydrated: (
       storageKeys: ReturnType<typeof getStorageKeysForExperience>,
@@ -347,11 +367,27 @@ export default function PickExperienceClient({
   const [showBoardLibrary, setShowBoardLibrary] = useState(false);
   const [detailSongId, setDetailSongId] = useState<string | null>(null);
   const [detailLayerActive, setDetailLayerActive] = useState(false);
+  const [songDiscoveryState, setSongDiscoveryState] =
+    useState<SongDiscoveryState>(createEmptySongDiscoveryState);
   const [pendingReplacementSong, setPendingReplacementSong] =
     useState<Song | null>(null);
+  const [preview, setPreview] = useState<PreviewSnapshot | null>(null);
   const [openArchetypeInputKey, setOpenArchetypeInputKey] = useState<
     string | null
   >(null);
+  const [generating, setGenerating] = useState(false);
+  const [showTitles, setShowTitles] = useState(
+    DEFAULT_EXPORT_OPTIONS.showTitles,
+  );
+  const [transparentBg, setTransparentBg] = useState(
+    DEFAULT_EXPORT_OPTIONS.transparentBg,
+  );
+  const [showQrCode, setShowQrCode] = useState(
+    DEFAULT_EXPORT_OPTIONS.showQrCode,
+  );
+  const [templateId, setTemplateId] = useState<ExportTemplateId>(
+    DEFAULT_EXPORT_OPTIONS.templateId,
+  );
   const [frameSizePresetId, setFrameSizePresetId] =
     useState<ExportSizePresetId>(DEFAULT_EXPORT_SIZE_PRESET_ID);
   const [nicknameDraft, setNicknameDraft] = useState("");
@@ -359,25 +395,46 @@ export default function PickExperienceClient({
     useState<ExportRenderRequest | null>(null);
   const [framePageUrl, setFramePageUrl] = useState<string | null>(null);
   const [showPickAssistant, setShowPickAssistant] = useState(false);
+  const [pickAssistantSnapshot, setPickAssistantSnapshot] =
+    useState<PickAssistantSnapshot>(() =>
+      createEmptyPickAssistantSnapshot(PICK_ASSISTANT_CONFIG.schemaVersion),
+    );
+  const [pickAssistantStorageIssue, setPickAssistantStorageIssue] =
+    useState<PickAssistantStorageIssue | null>(null);
   const [assistantNeedsReview, setAssistantNeedsReview] = useState(false);
   const [assistantReviewNotice, setAssistantReviewNotice] = useState(false);
+  const [assistantMutationPending, setAssistantMutationPending] =
+    useState(false);
+  const [boardLibrary, setBoardLibrary] = useState<BoardLibraryDocument>(() =>
+    createEmptyBoardLibrary(),
+  );
+  const [boardLibraryStatus, setBoardLibraryStatus] =
+    useState<StorageLoadStatus>("empty");
+  const [boardLibraryLoaded, setBoardLibraryLoaded] = useState(false);
   const [boardStatusMessage, setBoardStatusMessage] = useState("");
+  const [optionsStorageWritable, setOptionsStorageWritable] = useState(false);
   const [boardLinkCopied, setBoardLinkCopied] = useState(false);
   const [boardShareDialog, setBoardShareDialog] =
     useState<BoardShareDialogState | null>(null);
   const [pendingBoardShareImport, setPendingBoardShareImport] =
     useState<PendingBoardShareImport | null>(null);
+  const generatingRef = useRef(false);
   const activeFrameRequestIdRef = useRef<string | null>(null);
   const capturedFrameRequestIdRef = useRef<string | null>(null);
   const previewTriggerRef = useRef<HTMLButtonElement>(null);
   const pickAssistantTriggerRef = useRef<HTMLButtonElement>(null);
   const archetypeTriggerRef = useRef<HTMLButtonElement>(null);
+  const pickAssistantSnapshotRef = useRef(pickAssistantSnapshot);
+  const pickAssistantStorageKeyRef = useRef(storageKeys.assistant);
+  const assistantMutationPendingRef = useRef(false);
   const assistantApplyBaselineRef = useRef<AssistantApplyBaseline | null>(null);
   const assistantResultVisibleRef = useRef(false);
   const searchReturnFocusKeyRef = useRef<string>(
     DIALOG_RETURN_KEYS.globalSearch,
   );
   const detailTriggerRef = useRef<HTMLElement>(null);
+  const previewGenerationIdRef = useRef(0);
+  const activePreviewCaptureAbortRef = useRef<AbortController | null>(null);
   const boardShareConsumedRef = useRef(false);
   const boardLinkCopiedTimerRef = useRef<number | null>(null);
   const boardSharePreviewSnapshotRef = useRef({
@@ -396,6 +453,15 @@ export default function PickExperienceClient({
     uiSlots,
     uiContextOptions,
   };
+  pickAssistantStorageKeyRef.current = storageKeys.assistant;
+
+  const setCurrentPickAssistantSnapshot = useCallback(
+    (snapshot: PickAssistantSnapshot) => {
+      pickAssistantSnapshotRef.current = snapshot;
+      setPickAssistantSnapshot(snapshot);
+    },
+    [],
+  );
 
   const picks = useMemo<Picks>(() => {
     const entries = Object.entries(storedPicks)
@@ -494,34 +560,6 @@ export default function PickExperienceClient({
       current && current !== archetypeResult?.inputKey ? null : current,
     );
   }, [archetypeResult?.inputKey]);
-  const {
-    snapshot: pickAssistantSnapshot,
-    storageIssue: pickAssistantStorageIssue,
-    mutationPending: assistantMutationPending,
-    commit: commitAssistantSnapshot,
-    getSnapshot: getAssistantSnapshot,
-    adopt: adoptAssistantSnapshot,
-    reset: resetAssistantSnapshot,
-    isCurrentKey: isCurrentAssistantKey,
-  } = useAssistantSnapshot({
-    storageKey: storageKeys.assistant,
-    schemaVersion: PICK_ASSISTANT_CONFIG.schemaVersion,
-    storageOptions: pickAssistantStorageOptions,
-    active: hydrated && !isExportRealm,
-    isResultVisible: () => assistantResultVisibleRef.current,
-    onReload: () => {
-      assistantApplyBaselineRef.current = null;
-      setAssistantNeedsReview(false);
-      setAssistantReviewNotice(false);
-    },
-    onExternalChange: ({ flagReview }) => {
-      assistantApplyBaselineRef.current = null;
-      if (!flagReview) return;
-      setAssistantNeedsReview(true);
-      setAssistantReviewNotice(true);
-      setBoardStatusMessage(t("assistant.previewRefreshed"));
-    },
-  });
   const assistantShortlistIds = pickAssistantSnapshot.shortlistIds;
   const candidateSongIds = useMemo(
     () => new Set(assistantShortlistIds),
@@ -703,19 +741,6 @@ export default function PickExperienceClient({
           context: activeUiContextDescription,
         })
       : uiCopy.title;
-  const {
-    options: exportOptions,
-    writable: optionsStorageWritable,
-    hydrateFrom: hydrateExportOptions,
-    adopt: adoptExportOptions,
-    update: persistExportOptions,
-  } = useExportOptions({
-    storageKeys,
-    active: hydrated && !isExportRealm,
-    onStorageUnavailable: () =>
-      setBoardStatusMessage(t("boardLibrary.error.storage")),
-  });
-  const { showTitles, transparentBg, showQrCode, templateId } = exportOptions;
   const posterImageFileName = getExperienceImageFileName(
     experience,
     activeContext,
@@ -739,26 +764,106 @@ export default function PickExperienceClient({
       }),
     [effectiveContextId, experience],
   );
-  const { recentSongIds, isRecentlyViewed, recordRecentlyViewed } =
-    useSongDiscovery({
-      storageKey: STORAGE_KEYS.songDiscovery,
-      validSongIds: VALID_SONG_IDS,
-      recentLimit: SONG_DISCOVERY_CONFIG.recentLimit,
-      active: hydrated && !isExportRealm,
-    });
-  const {
-    snapshots: scopedSnapshots,
-    writable: boardLibraryWritable,
-    saveBoard,
-    renameBoard,
-    deleteBoard,
-  } = useBoardLibrary({
-    storageKey: storageKeys.boardLibrary,
-    projectId: PROJECT_ID,
-    scope: boardScope,
-    sanitizePicks: sanitizeBoardPicks,
-    active: hydrated && !isExportRealm,
-  });
+  const scopedSnapshots = useMemo(
+    () => getSnapshotsForScope(boardLibrary, boardScope, sanitizeBoardPicks),
+    [boardLibrary, boardScope, sanitizeBoardPicks],
+  );
+  const boardLibraryWritable =
+    boardLibraryLoaded &&
+    (boardLibraryStatus === "empty" || boardLibraryStatus === "loaded");
+
+  useEffect(() => {
+    if (!hydrated || isExportRealm) return;
+
+    assistantApplyBaselineRef.current = null;
+    setAssistantNeedsReview(false);
+    setAssistantReviewNotice(false);
+    const result = loadPickAssistantSnapshot(
+      localStorage,
+      storageKeys.assistant,
+      pickAssistantStorageOptions,
+    );
+    if (result.status === "valid") {
+      setCurrentPickAssistantSnapshot(result.snapshot);
+      setPickAssistantStorageIssue(null);
+      return;
+    }
+
+    setCurrentPickAssistantSnapshot(
+      createEmptyPickAssistantSnapshot(PICK_ASSISTANT_CONFIG.schemaVersion),
+    );
+    setPickAssistantStorageIssue(
+      result.status === "missing" ? null : result.status,
+    );
+  }, [
+    hydrated,
+    isExportRealm,
+    pickAssistantStorageOptions,
+    setCurrentPickAssistantSnapshot,
+    storageKeys.assistant,
+  ]);
+
+  useEffect(() => {
+    if (!hydrated || isExportRealm) return;
+
+    const handleAssistantStorage = (event: StorageEvent) => {
+      const sync = resolveStorageSyncAction(event, {
+        storage: localStorage,
+        watchedKey: storageKeys.assistant,
+      });
+      if (sync.kind === "ignore") return;
+
+      // A cleared area carries no per-key value, so re-read storage instead of
+      // trusting the event payload.
+      const incoming =
+        sync.kind === "apply"
+          ? parsePickAssistantSnapshot(sync.value, {
+              ...pickAssistantStorageOptions,
+              now: Date.now(),
+            })
+          : loadPickAssistantSnapshot(
+              localStorage,
+              storageKeys.assistant,
+              pickAssistantStorageOptions,
+            );
+
+      // Another tab touched the document, so any pending apply baseline is
+      // stale regardless of what the plan decides below.
+      assistantApplyBaselineRef.current = null;
+
+      const plan = planAssistantSnapshotSync({
+        incoming,
+        current: pickAssistantSnapshotRef.current,
+        resultVisible: assistantResultVisibleRef.current,
+        isSameSnapshot: samePickAssistantSnapshots,
+      });
+      if (plan.action === "none") return;
+
+      setCurrentPickAssistantSnapshot(
+        plan.action === "adopt"
+          ? plan.snapshot
+          : createEmptyPickAssistantSnapshot(
+              PICK_ASSISTANT_CONFIG.schemaVersion,
+            ),
+      );
+      setPickAssistantStorageIssue(plan.storageIssue);
+      if (plan.flagReview) {
+        setAssistantNeedsReview(true);
+        setAssistantReviewNotice(true);
+        setBoardStatusMessage(t("assistant.previewRefreshed"));
+      }
+    };
+
+    window.addEventListener("storage", handleAssistantStorage);
+    return () => window.removeEventListener("storage", handleAssistantStorage);
+  }, [
+    hydrated,
+    isExportRealm,
+    pickAssistantStorageOptions,
+    setCurrentPickAssistantSnapshot,
+    storageKeys.assistant,
+    t,
+  ]);
 
   useEffect(() => {
     if (
@@ -776,9 +881,27 @@ export default function PickExperienceClient({
     t,
   ]);
 
+  const cancelStalePreview = useCallback(() => {
+    previewGenerationIdRef.current += 1;
+    activePreviewCaptureAbortRef.current?.abort();
+    activePreviewCaptureAbortRef.current = null;
+    setPreview(null);
+  }, []);
+
   boardSessionCallbacksRef.current = {
     onBeforeHydrated: (initialStorageKeys) => {
-      hydrateExportOptions(initialStorageKeys);
+      const optionsResult = loadStoredOptions({
+        storage: localStorage,
+        versionedKey: initialStorageKeys.optionsV2,
+        legacyKey: initialStorageKeys.options,
+      });
+      if (optionsResult.options) {
+        setShowTitles(optionsResult.options.showTitles);
+        setTransparentBg(optionsResult.options.transparentBg);
+        setShowQrCode(optionsResult.options.showQrCode);
+        setTemplateId(optionsResult.options.templateId);
+      }
+      setOptionsStorageWritable(isWritableStorageStatus(optionsResult.status));
     },
     onContextWillActivate: () => {
       setActiveSlotId(null);
@@ -795,7 +918,7 @@ export default function PickExperienceClient({
       setPendingBoardShareImport(null);
       setBoardShareDialog(null);
     },
-    onInvalidatePreview: cancelPreview,
+    onInvalidatePreview: cancelStalePreview,
     onStorageUnavailable: () => {
       setBoardStatusMessage(t("boardLibrary.error.storage"));
     },
@@ -809,8 +932,94 @@ export default function PickExperienceClient({
     },
   };
 
+  useEffect(() => {
+    if (!hydrated || isExportRealm) return;
+    const syncBoardLibrary = () => {
+      const result = loadBoardLibrary(
+        localStorage,
+        storageKeys.boardLibrary,
+        PROJECT_ID,
+      );
+      setBoardLibrary(result.document);
+      setBoardLibraryStatus(result.status);
+      setBoardLibraryLoaded(true);
+    };
+    const handleStorage = (event: StorageEvent) => {
+      if (
+        shouldResyncStorage(event, {
+          storage: localStorage,
+          watchedKey: storageKeys.boardLibrary,
+        })
+      ) {
+        syncBoardLibrary();
+      }
+    };
+
+    syncBoardLibrary();
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, [hydrated, isExportRealm, storageKeys.boardLibrary]);
+
+  useEffect(() => {
+    if (!hydrated || isExportRealm) return;
+    const syncSongDiscovery = () =>
+      setSongDiscoveryState(
+        loadSongDiscoveryState(STORAGE_KEYS.songDiscovery, VALID_SONG_IDS),
+      );
+    const handleStorage = (event: StorageEvent) => {
+      if (
+        shouldResyncStorage(event, {
+          storage: localStorage,
+          watchedKey: STORAGE_KEYS.songDiscovery,
+        })
+      ) {
+        syncSongDiscovery();
+      }
+    };
+
+    syncSongDiscovery();
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, [hydrated, isExportRealm]);
+
+  useEffect(() => {
+    if (!hydrated || isExportRealm) return;
+    const syncExportOptions = () => {
+      const result = loadStoredOptions({
+        storage: localStorage,
+        versionedKey: storageKeys.optionsV2,
+        legacyKey: storageKeys.options,
+      });
+      setOptionsStorageWritable(isWritableStorageStatus(result.status));
+      if (!isWritableStorageStatus(result.status)) {
+        setBoardStatusMessage(t("boardLibrary.error.storage"));
+        return;
+      }
+      const options = result.options ?? DEFAULT_EXPORT_OPTIONS;
+      setShowTitles(options.showTitles);
+      setTransparentBg(options.transparentBg);
+      setShowQrCode(options.showQrCode);
+      setTemplateId(options.templateId);
+    };
+    const handleStorage = (event: StorageEvent) => {
+      if (
+        shouldResyncStorage(event, {
+          storage: localStorage,
+          watchedKey: storageKeys.optionsV2,
+        })
+      ) {
+        syncExportOptions();
+      }
+    };
+
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, [hydrated, isExportRealm, storageKeys.options, storageKeys.optionsV2, t]);
+
   useEffect(
     () => () => {
+      activePreviewCaptureAbortRef.current?.abort();
+      activePreviewCaptureAbortRef.current = null;
       if (boardLinkCopiedTimerRef.current !== null) {
         window.clearTimeout(boardLinkCopiedTimerRef.current);
       }
@@ -823,7 +1032,7 @@ export default function PickExperienceClient({
       dialog: BoardShareDialogState,
       pendingImport: PendingBoardShareImport | null = null,
     ) => {
-      cancelPreview();
+      cancelStalePreview();
       setShowBoardLibrary(false);
       setShowPickAssistant(false);
       setAssistantNeedsReview(false);
@@ -836,7 +1045,7 @@ export default function PickExperienceClient({
       setPendingBoardShareImport(pendingImport);
       setBoardShareDialog(dialog);
     },
-    [cancelPreview],
+    [cancelStalePreview],
   );
 
   const resetBoardWithoutHistory = useCallback(
@@ -1013,25 +1222,84 @@ export default function PickExperienceClient({
     setNicknameDraft(nickname.slice(0, MAX_NICKNAME_LENGTH));
   };
 
+  const updateSongDiscoveryState = useCallback(
+    (update: (current: SongDiscoveryState) => SongDiscoveryState) => {
+      const result = updateStoredSongDiscoveryState(
+        STORAGE_KEYS.songDiscovery,
+        VALID_SONG_IDS,
+        update,
+      );
+      if (!result.ok) {
+        setBoardStatusMessage(t("boardLibrary.error.storage"));
+        return false;
+      }
+
+      setSongDiscoveryState(result.state);
+      setBoardStatusMessage("");
+      return true;
+    },
+    [t],
+  );
+
   const handleOpenSongDetail = useCallback(
     (song: Song, trigger: HTMLButtonElement) => {
       detailTriggerRef.current = trigger;
-      if (!recordRecentlyViewed(song.id)) {
-        setBoardStatusMessage(t("boardLibrary.error.storage"));
-      }
+      updateSongDiscoveryState((current) =>
+        recordRecentSongId(current, song.id, SONG_DISCOVERY_CONFIG.recentLimit),
+      );
       setDetailLayerActive(true);
       setDetailSongId(song.id);
     },
-    [recordRecentlyViewed, t],
+    [updateSongDiscoveryState],
   );
 
   const commitPickAssistantUpdate = useCallback(
     async (shortlistIds: string[], session: PickAssistantSession | null) => {
-      const saved = await commitAssistantSnapshot(shortlistIds, session);
-      if (saved) setAssistantReviewNotice(false);
-      return saved;
+      if (pickAssistantStorageIssue || assistantMutationPendingRef.current) {
+        return false;
+      }
+
+      const storageKey = storageKeys.assistant;
+      const expected = pickAssistantSnapshotRef.current;
+      const next = updatePickAssistantSnapshot(
+        expected,
+        { shortlistIds, session },
+        Date.now(),
+        createMutationId(),
+      );
+      assistantMutationPendingRef.current = true;
+      setAssistantMutationPending(true);
+      try {
+        const result = await savePickAssistantSnapshotSafely(
+          localStorage,
+          storageKey,
+          expected,
+          next,
+          pickAssistantStorageOptions,
+          navigator.locks,
+        );
+        if (pickAssistantStorageKeyRef.current !== storageKey) return false;
+        if (result.status === "saved") {
+          setCurrentPickAssistantSnapshot(next);
+          setPickAssistantStorageIssue(null);
+          setAssistantReviewNotice(false);
+          return true;
+        }
+        setPickAssistantStorageIssue(
+          result.status === "blocked" ? result.reason : result.status,
+        );
+        return false;
+      } finally {
+        assistantMutationPendingRef.current = false;
+        setAssistantMutationPending(false);
+      }
     },
-    [commitAssistantSnapshot],
+    [
+      pickAssistantStorageIssue,
+      pickAssistantStorageOptions,
+      setCurrentPickAssistantSnapshot,
+      storageKeys.assistant,
+    ],
   );
 
   const handleToggleCandidate = useCallback(
@@ -1163,14 +1431,17 @@ export default function PickExperienceClient({
       storageKey,
       navigator.locks,
     ).then((result) => {
-      if (!isCurrentAssistantKey(storageKey)) return;
+      if (pickAssistantStorageKeyRef.current !== storageKey) return;
       if (result !== "reset") {
-        resetAssistantSnapshot(
+        setPickAssistantStorageIssue(
           result === "conflict" ? "conflict" : "unavailable",
         );
         return;
       }
-      resetAssistantSnapshot(null);
+      setCurrentPickAssistantSnapshot(
+        createEmptyPickAssistantSnapshot(PICK_ASSISTANT_CONFIG.schemaVersion),
+      );
+      setPickAssistantStorageIssue(null);
       setAssistantNeedsReview(false);
       setAssistantReviewNotice(false);
       assistantApplyBaselineRef.current = null;
@@ -1205,7 +1476,7 @@ export default function PickExperienceClient({
   const handleApplyAssistantResult = async () => {
     if (!assistantApplicationPlan || !assistantSession) return;
     if (assistantNeedsReview) {
-      const currentAssistant = getAssistantSnapshot();
+      const currentAssistant = pickAssistantSnapshotRef.current;
       assistantApplyBaselineRef.current = {
         storageKey: storageKeys.assistant,
         contextId: effectiveContextId,
@@ -1252,7 +1523,10 @@ export default function PickExperienceClient({
       return;
     }
     if (latestAssistant.status !== "valid") {
-      resetAssistantSnapshot(
+      setCurrentPickAssistantSnapshot(
+        createEmptyPickAssistantSnapshot(PICK_ASSISTANT_CONFIG.schemaVersion),
+      );
+      setPickAssistantStorageIssue(
         latestAssistant.status === "missing"
           ? "conflict"
           : latestAssistant.status,
@@ -1263,7 +1537,7 @@ export default function PickExperienceClient({
     const baseline = assistantApplyBaselineRef.current;
     const assistantMatches = samePickAssistantSnapshots(
       latestAssistant.snapshot,
-      getAssistantSnapshot(),
+      pickAssistantSnapshotRef.current,
     );
     const boardMatches = sameStoredPicks(
       latestBoard.picks,
@@ -1278,7 +1552,7 @@ export default function PickExperienceClient({
       sameStoredPicks(baseline.boardPicks, latestBoard.picks),
     );
     if (!assistantMatches || !boardMatches || !baselineMatches) {
-      adoptAssistantSnapshot(latestAssistant.snapshot);
+      setCurrentPickAssistantSnapshot(latestAssistant.snapshot);
       resetFromFreshness(latestBoard.picks);
       assistantApplyBaselineRef.current = {
         storageKey: storageKeys.assistant,
@@ -1341,7 +1615,10 @@ export default function PickExperienceClient({
       return;
     }
     if (confirmedAssistant.status !== "valid") {
-      resetAssistantSnapshot(
+      setCurrentPickAssistantSnapshot(
+        createEmptyPickAssistantSnapshot(PICK_ASSISTANT_CONFIG.schemaVersion),
+      );
+      setPickAssistantStorageIssue(
         confirmedAssistant.status === "missing"
           ? "conflict"
           : confirmedAssistant.status,
@@ -1357,7 +1634,7 @@ export default function PickExperienceClient({
     if (
       !samePickAssistantApplicationInputs(preConfirmInputs, confirmedInputs)
     ) {
-      adoptAssistantSnapshot(confirmedAssistant.snapshot);
+      setCurrentPickAssistantSnapshot(confirmedAssistant.snapshot);
       resetFromFreshness(confirmedBoard.picks);
       assistantApplyBaselineRef.current = {
         storageKey: storageKeys.assistant,
@@ -1745,13 +2022,10 @@ export default function PickExperienceClient({
       activeFrameRequestIdRef.current = request.requestId;
       injectEphemeralBoard(nextContextId, nextPicks);
       setNicknameDraft(request.selectedBy.slice(0, MAX_NICKNAME_LENGTH));
-      adoptExportOptions({
-        showTitles: request.showTitles,
-        transparentBg: request.transparentBg,
-        showQrCode: request.showQrCode,
-        templateId: request.templateId,
-        sizePresetId: request.sizePresetId,
-      });
+      setShowTitles(request.showTitles);
+      setTransparentBg(request.transparentBg);
+      setShowQrCode(request.showQrCode);
+      setTemplateId(request.templateId);
       setFrameSizePresetId(request.sizePresetId);
       setFramePageUrl(request.pageUrl);
       setFrameCaptureRequest(request);
@@ -1870,6 +2144,7 @@ export default function PickExperienceClient({
 
   const generateImage = useCallback(
     async (kind: ExportContentKind) => {
+      if (generatingRef.current) return;
       if (!boardStorageWritable || !optionsStorageWritable) {
         setBoardStatusMessage(t("boardLibrary.error.storage"));
         return;
@@ -1893,6 +2168,7 @@ export default function PickExperienceClient({
         }
       }
 
+      const generationId = ++previewGenerationIdRef.current;
       const optionsKey = getPreviewOptionsKey(
         showTitles,
         transparentBg,
@@ -1901,60 +2177,81 @@ export default function PickExperienceClient({
         kind,
         archetypeForExport?.inputKey,
       );
+      const captureController = new AbortController();
+      activePreviewCaptureAbortRef.current = captureController;
+      generatingRef.current = true;
+      setGenerating(true);
       if (kind === "archetype") setOpenArchetypeInputKey(null);
 
-      const characterNames = archetypeForExport
-        ? archetypeForExport.characters
-            .map((character) => character.displayName)
-            .join(" / ")
-        : "";
-
-      await runCapture({
-        payload: {
-          kind,
-          experienceId: experience.id,
-          contextId: effectiveContextId,
-          picks: filteredPicks,
-          showTitles,
-          transparentBg,
-          showQrCode,
-          templateId,
-          sizePresetId: DEFAULT_EXPORT_SIZE_PRESET_ID,
-          selectedBy: exportNickname,
-          pageUrl,
-        },
-        buildSnapshot: (dataUrl) => ({
-          kind,
-          archetypeInputKey: archetypeForExport?.inputKey,
-          dataUrl,
-          optionsKey,
-          imageFileName: archetypeForExport
-            ? getArchetypeImageFileName(archetypeForExport.characters)
-            : posterImageFileName,
-          pageUrl,
-          previewLabel: archetypeForExport
-            ? formatArchetypeTemplate(
-                archetypeForExport.ui.export.previewLabel,
-                { characterNames },
-              )
-            : previewLabel,
-          shareText: archetypeForExport
-            ? formatArchetypeTemplate(archetypeForExport.ui.export.shareText, {
-                characterNames,
-              })
-            : uiCopy.shareText,
-          shareHashtags: archetypeForExport
-            ? [...experience.share.hashtags, "#恋はじめました"]
-            : experience.share.hashtags.slice(),
-          shareTitle: archetypeForExport
-            ? archetypeForExport.ui.title
-            : uiCopy.title,
-        }),
-        onError: (error) => {
+      try {
+        const characterNames = archetypeForExport
+          ? archetypeForExport.characters
+              .map((character) => character.displayName)
+              .join(" / ")
+          : "";
+        const sharePageUrl = pageUrl;
+        const dataUrl = await captureExportImageInFrame(
+          {
+            kind,
+            experienceId: experience.id,
+            contextId: effectiveContextId,
+            picks: filteredPicks,
+            showTitles,
+            transparentBg,
+            showQrCode,
+            templateId,
+            sizePresetId: DEFAULT_EXPORT_SIZE_PRESET_ID,
+            selectedBy: exportNickname,
+            pageUrl,
+          },
+          { signal: captureController.signal },
+        );
+        if (generationId === previewGenerationIdRef.current) {
+          setPreview({
+            kind,
+            archetypeInputKey: archetypeForExport?.inputKey,
+            dataUrl,
+            optionsKey,
+            imageFileName: archetypeForExport
+              ? getArchetypeImageFileName(archetypeForExport.characters)
+              : posterImageFileName,
+            pageUrl: sharePageUrl,
+            previewLabel: archetypeForExport
+              ? formatArchetypeTemplate(
+                  archetypeForExport.ui.export.previewLabel,
+                  { characterNames },
+                )
+              : previewLabel,
+            shareText: archetypeForExport
+              ? formatArchetypeTemplate(
+                  archetypeForExport.ui.export.shareText,
+                  {
+                    characterNames,
+                  },
+                )
+              : uiCopy.shareText,
+            shareHashtags: archetypeForExport
+              ? [...experience.share.hashtags, "#恋はじめました"]
+              : experience.share.hashtags.slice(),
+            shareTitle: archetypeForExport
+              ? archetypeForExport.ui.title
+              : uiCopy.title,
+          });
+        }
+      } catch (error) {
+        if (!isAbortError(error)) {
           console.error("Failed to generate image", error);
-          window.alert(t("errors.imageGenerationFailed"));
-        },
-      });
+          if (generationId === previewGenerationIdRef.current) {
+            window.alert(t("errors.imageGenerationFailed"));
+          }
+        }
+      } finally {
+        if (activePreviewCaptureAbortRef.current === captureController) {
+          activePreviewCaptureAbortRef.current = null;
+        }
+        generatingRef.current = false;
+        setGenerating(false);
+      }
     },
     [
       archetypeResult,
@@ -1967,7 +2264,6 @@ export default function PickExperienceClient({
       posterImageFileName,
       previewLabel,
       resetBoardWithoutHistory,
-      runCapture,
       showTitles,
       showQrCode,
       storedPicks,
@@ -2009,14 +2305,53 @@ export default function PickExperienceClient({
     return () => window.clearTimeout(timer);
   }, [generateImage, preview, previewOptionsKey]);
 
-  const handleClosePreview = () => cancelPreview();
+  const handleClosePreview = () => {
+    previewGenerationIdRef.current += 1;
+    activePreviewCaptureAbortRef.current?.abort();
+    activePreviewCaptureAbortRef.current = null;
+    setPreview(null);
+  };
 
   const updateExportOptions = useCallback(
     async (update: (current: ExportOptions) => ExportOptions) => {
-      const result = await persistExportOptions(update);
-      setBoardStatusMessage(result.ok ? "" : t("boardLibrary.error.storage"));
+      if (!optionsStorageWritable) {
+        setBoardStatusMessage(t("boardLibrary.error.storage"));
+        return;
+      }
+
+      const runMutation = () =>
+        mutateStoredOptions({
+          storage: localStorage,
+          versionedKey: storageKeys.optionsV2,
+          legacyKey: storageKeys.options,
+          update,
+        });
+
+      try {
+        const result = navigator.locks
+          ? await navigator.locks.request(
+              `mypick-options:${storageKeys.optionsV2}`,
+              runMutation,
+            )
+          : runMutation();
+        if (!result.ok) {
+          setOptionsStorageWritable(isWritableStorageStatus(result.status));
+          setBoardStatusMessage(t("boardLibrary.error.storage"));
+          return;
+        }
+
+        setOptionsStorageWritable(true);
+        setShowTitles(result.options.showTitles);
+        setTransparentBg(result.options.transparentBg);
+        setShowQrCode(result.options.showQrCode);
+        setTemplateId(result.options.templateId);
+        setBoardStatusMessage("");
+      } catch {
+        setOptionsStorageWritable(false);
+        setBoardStatusMessage(t("boardLibrary.error.storage"));
+      }
     },
-    [persistExportOptions, t],
+    [optionsStorageWritable, storageKeys.options, storageKeys.optionsV2, t],
   );
 
   const handleShowTitlesChange = (value: boolean) => {
@@ -2047,16 +2382,60 @@ export default function PickExperienceClient({
     }));
   };
 
-  const handleSaveBoard = (name: string): BoardLibraryActionResult =>
-    saveBoard(name, storedPicks);
+  const handleSaveBoard = (name: string): BoardLibraryActionResult => {
+    if (!boardLibraryWritable) return { ok: false, error: "storage" };
+    const result = mutateStoredBoardLibrary(
+      localStorage,
+      storageKeys.boardLibrary,
+      PROJECT_ID,
+      (latestDocument) =>
+        addBoardSnapshot(latestDocument, {
+          id: window.crypto.randomUUID(),
+          name,
+          now: new Date().toISOString(),
+          scope: boardScope,
+          picks: sanitizeBoardPicks(storedPicks),
+        }),
+    );
+    if (!result.ok) return result;
+    setBoardLibrary(result.document);
+    setBoardLibraryStatus("loaded");
+    return { ok: true, name: result.snapshot.name };
+  };
 
   const handleRenameBoard = (
     snapshotId: string,
     name: string,
-  ): BoardLibraryActionResult => renameBoard(snapshotId, name);
+  ): BoardLibraryActionResult => {
+    if (!boardLibraryWritable) return { ok: false, error: "storage" };
+    const result = mutateStoredBoardLibrary(
+      localStorage,
+      storageKeys.boardLibrary,
+      PROJECT_ID,
+      (latestDocument) =>
+        renameBoardSnapshot(latestDocument, {
+          snapshotId,
+          name,
+          now: new Date().toISOString(),
+        }),
+    );
+    if (!result.ok) return result;
+    setBoardLibrary(result.document);
+    return { ok: true, name: result.snapshot.name };
+  };
 
-  const handleDeleteBoard = (snapshotId: string): BoardLibraryActionResult =>
-    deleteBoard(snapshotId);
+  const handleDeleteBoard = (snapshotId: string): BoardLibraryActionResult => {
+    if (!boardLibraryWritable) return { ok: false, error: "storage" };
+    const result = mutateStoredBoardLibrary(
+      localStorage,
+      storageKeys.boardLibrary,
+      PROJECT_ID,
+      (latestDocument) => deleteBoardSnapshot(latestDocument, snapshotId),
+    );
+    if (!result.ok) return result;
+    setBoardLibrary(result.document);
+    return { ok: true, name: result.snapshot.name };
+  };
 
   const handleRestoreBoard = (
     snapshot: BoardSnapshot,
@@ -2284,7 +2663,7 @@ export default function PickExperienceClient({
               selectedSongsById={selectedSongsById}
               emptyMessage={t("search.noEligibleMatches")}
               selectedRanksBySongId={selectedRanksBySongId}
-              recentSongIds={recentSongIds}
+              recentSongIds={songDiscoveryState.recentSongIds}
               candidateSongIds={candidateSongIds}
               candidateEligibleSongIds={assistantEligibleSongIds}
               selectionMode={searchPresentation.selectionMode}
@@ -2322,7 +2701,9 @@ export default function PickExperienceClient({
             <SongDetailModal
               song={song}
               members={MEMBERS}
-              isRecentlyViewed={isRecentlyViewed(song.id)}
+              isRecentlyViewed={songDiscoveryState.recentSongIds.includes(
+                song.id,
+              )}
               selectionMode={searchSelectionMode}
               isCandidate={candidateSongIds.has(song.id)}
               candidateDisabled={
@@ -2596,6 +2977,15 @@ function getArchetypeImageFileName(
 
 function isWritableStorageStatus(status: StorageLoadStatus) {
   return status === "empty" || status === "loaded" || status === "migrated";
+}
+
+function isAbortError(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "name" in error &&
+    error.name === "AbortError"
+  );
 }
 
 function createExportRenderResult(
