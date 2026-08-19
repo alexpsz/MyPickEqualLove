@@ -23,6 +23,27 @@ Fan-made static web apps for creating shareable Top 10 song boards for =LOVE, â‰
 
 ![EqualLove_Kokuritsu2026_Afterglow_DAY1](docs/equal-love-kokuritsu-2026-afterglow-day1.png)
 
+## MyPick Archetype
+
+=LOVE's standard Top 10 has an optional companion feature: once ten different
+songs are picked, it matches them against ten characters from the 21st single's
+MV world and shows which one fits the selection.
+
+- Matching runs entirely in the browser against a frozen document of 85 reviewed
+  song fingerprints. No API key ships to the client and no request is made at
+  runtime.
+- The fingerprints were produced offline from the official public MVs and are
+  checked into `src/projects/equal-love/archetype-21/`. Characters never
+  influenced them: the labelling step never saw a character card, name, or
+  attribute.
+- The result is a temporary dialog. It is not written to `localStorage` and it
+  does not change the board.
+- It is available on the =LOVE standard page only, in all four interface
+  languages, and reuses the existing export pipeline to produce a partner poster.
+
+It is presented as an entertainment feature. The result cites the user's Top 10
+and credits the official MVs as its source; it does not claim a similarity score.
+
 ## Projects
 
 | Project ID         | Site                 | Build command                    |
