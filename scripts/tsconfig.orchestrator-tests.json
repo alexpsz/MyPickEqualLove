@@ -22,6 +22,7 @@
     "./tests/storage-sync-policy.test.ts",
     "../src/utils/colors.ts",
     "../src/utils/exportStyleProxy.ts",
-    "./tests/export-style-proxy.test.ts"
+    "./tests/export-style-proxy.test.ts",
+    "./color-conversion.test.ts"
   ]
 }

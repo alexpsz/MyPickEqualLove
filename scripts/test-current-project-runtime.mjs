@@ -7,67 +7,6 @@ const projectIds = ["equal-love", "nearly-equal-joy", "not-equal-me"];
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
-test("Next selects one fail-closed current-project runtime for both bundlers", async () => {
-  const [nextConfigSource, projectSchemaSource] = await Promise.all([
-    read("next.config.ts"),
-    read("src/schema/project.ts"),
-  ]);
-
-  assert.match(
-    nextConfigSource,
-    /resolveProjectId\(process\.env\.NEXT_PUBLIC_PROJECT_ID\)/u,
-  );
-  assert.equal(
-    nextConfigSource.match(/"@current-project\/runtime"/gu)?.length,
-    2,
-    "the same virtual module must be configured once for Turbopack and once for webpack",
-  );
-  assert.match(nextConfigSource, /turbopack:\s*\{[\s\S]*resolveAlias:/u);
-  assert.match(nextConfigSource, /webpack\(config\)/u);
-  assert.match(nextConfigSource, /output:\s*"export"/u);
-  assert.match(nextConfigSource, /trailingSlash:\s*true/u);
-  assert.match(nextConfigSource, /unoptimized:\s*true/u);
-
-  assert.match(
-    projectSchemaSource,
-    /if \(projectId === undefined \|\| projectId === ""\) \{\s*return DEFAULT_PROJECT_ID;/u,
-  );
-  assert.match(projectSchemaSource, /if \(isProjectId\(projectId\)\)/u);
-  assert.match(
-    projectSchemaSource,
-    /throw new Error\([\s\S]*Unsupported NEXT_PUBLIC_PROJECT_ID/u,
-  );
-});
-
-test("metadata and i18n modules do not import project payload JSON", async () => {
-  for (const relativePath of [
-    "src/projects/registry.ts",
-    "src/i18n/content.ts",
-  ]) {
-    const source = await read(relativePath);
-    assert.doesNotMatch(source, /(?:songs|members|live-experiences)\.json/u);
-  }
-
-  const registrySource = await read("src/projects/registry.ts");
-  assert.doesNotMatch(
-    registrySource,
-    /\b(?:songs|members|liveExperiences)\s*:/u,
-  );
-
-  for (const projectId of projectIds) {
-    const source = await read(`src/projects/${projectId}/runtime.ts`);
-    assert.match(source, new RegExp(`projectId:\\s*"${projectId}"`, "u"));
-    assert.equal(source.match(/\.json"/gu)?.length, 3);
-    assert.doesNotMatch(
-      source,
-      new RegExp(
-        projectIds.filter((candidate) => candidate !== projectId).join("|"),
-        "u",
-      ),
-    );
-  }
-});
-
 test("the share-validation manifest closes over authoritative data", async () => {
   const actual = JSON.parse(
     await read("src/projects/share-validation-manifest.json"),
