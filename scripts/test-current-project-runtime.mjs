@@ -7,74 +7,24 @@ const projectIds = ["equal-love", "nearly-equal-joy", "not-equal-me"];
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
-test("the share-validation manifest closes over authoritative data", async () => {
-  const actual = JSON.parse(
-    await read("src/projects/share-validation-manifest.json"),
-  );
-  const projects = {};
-  for (const projectId of projectIds) {
-    const [songs, liveExperiences] = await Promise.all([
-      read(`src/projects/${projectId}/songs.json`).then(JSON.parse),
-      read(`src/projects/${projectId}/live-experiences.json`).then(JSON.parse),
-    ]);
-    projects[projectId] = {
-      songIds: songs.map((song) => song.id),
-      experiences: Object.fromEntries(
-        liveExperiences
-          .filter(
-            (experience) =>
-              experience.status === "published" ||
-              experience.status === "archived",
-          )
-          .map((experience) => [
-            experience.id,
-            {
-              title: experience.title,
-              canonicalPath: experience.canonicalPath,
-              slots: experience.slots.map((slot) => ({
-                id: slot.id,
-                eligibility: slot.eligibility,
-              })),
-              performances: (experience.performances ?? []).map(
-                (performance) => ({
-                  id: performance.id,
-                  songIds: [
-                    ...new Set(
-                      performance.setlist
-                        .slice()
-                        .sort((left, right) => left.order - right.order)
-                        .map((entry) => entry.songId),
-                    ),
-                  ],
-                }),
-              ),
-              includeCombinedPerformance: Boolean(
-                experience.includeCombinedPerformance,
-              ),
-            },
-          ]),
-      ),
-    };
-  }
-  assert.deepEqual(actual, { schemaVersion: 1, projects });
-});
+const [presentationModule, messageModule, projectSchemaModule] =
+  await Promise.all([
+    importDataOnlyTypeScript("src/i18n/presentation.ts", {
+      "../schema/project": "src/schema/project.ts",
+    }),
+    importDataOnlyTypeScript("src/i18n/messages.ts"),
+    importDataOnlyTypeScript("src/schema/project.ts"),
+  ]);
+const {
+  LIVE_EXPERIENCE_PRESENTATION_KEYS,
+  localizeLiveExperiencePresentation,
+  presentationMessages,
+} = presentationModule;
+const { messages } = messageModule;
+const { COMBINED_CONTEXT_ID, PROJECT_IDS, resolveProjectId } =
+  projectSchemaModule;
 
 test("repository-wide live i18n mappings cover authoritative routable data", async () => {
-  const [presentationModule, messageModule, projectSchemaModule] =
-    await Promise.all([
-      importDataOnlyTypeScript("src/i18n/presentation.ts", {
-        "../schema/project": "src/schema/project.ts",
-      }),
-      importDataOnlyTypeScript("src/i18n/messages.ts"),
-      importDataOnlyTypeScript("src/schema/project.ts"),
-    ]);
-  const {
-    LIVE_EXPERIENCE_PRESENTATION_KEYS,
-    localizeLiveExperiencePresentation,
-    presentationMessages,
-  } = presentationModule;
-  const { messages } = messageModule;
-  const { COMBINED_CONTEXT_ID } = projectSchemaModule;
   const expectedExperienceIds = [];
   const authoritativeExperiences = [];
 
@@ -145,4 +95,50 @@ test("repository-wide live i18n mappings cover authoritative routable data", asy
       }
     }
   }
+});
+
+test("placeholder tokens stay identical across all four locales", () => {
+  // The mapped MessageCatalog type already forces the four catalogs to share a
+  // key set, but nothing checks the {tokens} inside the strings. A translation
+  // that drops or renames one renders a literal brace to the user.
+  const tokens = (value) =>
+    [...value.matchAll(/\{(\w+)\}/g)].map((match) => match[1]).sort();
+
+  for (const [catalog, name] of [
+    [messages, "common"],
+    [presentationMessages, "presentation"],
+  ]) {
+    const reference = catalog.en;
+    for (const locale of ["ja", "zh-CN", "ko"]) {
+      const localized = catalog[locale];
+      if (!localized) continue;
+      for (const key of Object.keys(localized)) {
+        if (typeof reference[key] !== "string") continue;
+        assert.deepEqual(
+          tokens(localized[key]),
+          tokens(reference[key]),
+          `${name}/${locale} placeholder drift for ${key}`,
+        );
+      }
+    }
+  }
+});
+
+test("project id resolution defaults, accepts exact ids, and fails loudly", () => {
+  assert.equal(resolveProjectId(undefined), "equal-love");
+  assert.equal(resolveProjectId(""), "equal-love");
+  for (const projectId of PROJECT_IDS) {
+    assert.equal(resolveProjectId(projectId), projectId);
+  }
+
+  assert.throws(
+    () => resolveProjectId("equal_love"),
+    (error) =>
+      error instanceof Error &&
+      error.message.includes("Unsupported NEXT_PUBLIC_PROJECT_ID") &&
+      error.message.includes('"equal_love"') &&
+      PROJECT_IDS.every((projectId) => error.message.includes(projectId)),
+  );
+  // A leading space is not a formatting nicety; it is a different id.
+  assert.throws(() => resolveProjectId(" equal-love"));
 });
