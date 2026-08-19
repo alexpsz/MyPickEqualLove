@@ -31,6 +31,9 @@ jobs:
         with:
           python-version: "3.13"
           cache: pip
+          # This repository pins Python deps in requirements-discography.txt,
+          # which the action's default glob (**/requirements.txt) never matches.
+          cache-dependency-path: requirements-discography.txt
 
       - name: Install Node.js dependencies
         run: npm ci
