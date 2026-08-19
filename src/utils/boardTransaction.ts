@@ -264,3 +264,17 @@ function readFreshBoard(
   }
   return { status: "fresh" };
 }
+
+/** Input for importing a board received from a share link. */
+export interface ImportedBoardInput {
+  contextId?: string;
+  expectedPicks: StoredPicks;
+  picks: StoredPicks;
+}
+
+export type BoardSessionMutationStatus = BoardTransactionResult["status"];
+
+/** A no-op counts as success: the board already held the requested state. */
+export function isSuccessfulBoardMutation(status: BoardSessionMutationStatus) {
+  return status === "committed" || status === "noop";
+}

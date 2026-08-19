@@ -45,6 +45,9 @@ import {
 } from "../data/boardShare";
 import {
   filterStoredPicksForExperience,
+  getDefaultExperienceContextId,
+  getExperienceContext,
+  getExperienceContexts,
   findFirstEligibleEmptySlot,
   getAssistantEligibleSongsForExperience,
   getEligibleSongsForExperience,
@@ -72,7 +75,12 @@ import type {
   ExportTemplateId,
 } from "../schema/export";
 import type { PickSlotId, Picks, Song, StoredPicks } from "../schema/music";
-import { sameStoredPicks, type BoardMutationKind } from "../utils/boardHistory";
+import {
+  createBoardHistoryState,
+  sameStoredPicks,
+  type BoardHistoryState,
+  type BoardMutationKind,
+} from "../utils/boardHistory";
 import {
   addBoardSnapshot,
   createEmptyBoardLibrary,
@@ -90,9 +98,18 @@ import {
   type StorageLoadStatus,
 } from "../utils/boardStorage";
 import {
+  applyBoardHistoryTransaction,
+  commitBoardTransaction,
+  createEphemeralBoardReset,
+  getBoardStorageEventAction,
+  importBoardTransaction,
   isSuccessfulBoardMutation,
-  useExperienceBoardSession,
-} from "../hooks/useExperienceBoardSession";
+  isWritableBoardStorageStatus,
+  publishBoardTransactionResult,
+  resetStoredBoardTransaction,
+  type BoardTransactionResult,
+  type ImportedBoardInput,
+} from "../utils/boardTransaction";
 import { centerExportYearInk } from "../utils/centerExportYearInk";
 import {
   installExportStyleAdapter,
@@ -118,6 +135,7 @@ import {
 } from "../utils/storageSyncPolicy";
 import {
   EXPORT_CAPTURE_PROTOCOL_VERSION,
+  isExportRealmHash,
   EXPORT_REALM_READY_TYPE,
   EXPORT_REALM_RESULT_TYPE,
   captureExportImageInFrame,
@@ -275,56 +293,369 @@ export default function PickExperienceClient({
     onStorageUnavailable: () => {},
     onExternalBoardReset: () => {},
   });
-  const handleBoardBeforeHydrated = useCallback(
-    (keys: ReturnType<typeof getStorageKeysForExperience>) =>
-      boardSessionCallbacksRef.current.onBeforeHydrated(keys),
-    [],
+  // ── Board session ────────────────────────────────────────────────────────
+  // Context selection, the undo/redo history and every localStorage read and
+  // write for the board. The decisions live in boardTransaction.ts; what stays
+  // here is the React wiring, which has exactly one consumer.
+  //
+  // The callbacks below are read through boardSessionCallbacksRef because they
+  // close over state declared later in this component. The ref is assigned
+  // during render, so effects always see the current implementations.
+  const contextOptions = useMemo(
+    () => getExperienceContexts(experience),
+    [experience],
   );
-  const handleBoardContextWillActivate = useCallback(
-    () => boardSessionCallbacksRef.current.onContextWillActivate(),
-    [],
+  const defaultContextId = useMemo(
+    () => getDefaultExperienceContextId(experience),
+    [experience],
   );
-  const handleBoardInvalidatePreview = useCallback(
-    () => boardSessionCallbacksRef.current.onInvalidatePreview(),
-    [],
+  const [contextId, setContextId] = useState<string | undefined>(
+    defaultContextId,
   );
-  const handleBoardStorageUnavailable = useCallback(
-    () => boardSessionCallbacksRef.current.onStorageUnavailable(),
-    [],
+  const activeContext = useMemo(
+    () => getExperienceContext(experience, contextId),
+    [contextId, experience],
   );
-  const handleExternalBoardReset = useCallback(
-    () => boardSessionCallbacksRef.current.onExternalBoardReset(),
-    [],
+  const effectiveContextId = activeContext?.id;
+  const storageKeys = useMemo(
+    () => getStorageKeysForExperience(experience, effectiveContextId),
+    [effectiveContextId, experience],
   );
-  const boardSession = useExperienceBoardSession({
-    experience,
-    onBeforeHydrated: handleBoardBeforeHydrated,
-    onContextWillActivate: handleBoardContextWillActivate,
-    onInvalidatePreview: handleBoardInvalidatePreview,
-    onStorageUnavailable: handleBoardStorageUnavailable,
-    onExternalBoardReset: handleExternalBoardReset,
-  });
-  const {
+  const [boardHistory, setBoardHistory] = useState<BoardHistoryState>(() =>
+    createBoardHistoryState(),
+  );
+  const [boardStorageWritable, setBoardStorageWritable] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
+  const [isExportRealm, setIsExportRealm] = useState(false);
+  const storedPicks = boardHistory.present;
+  const storedPicksRef = useRef<StoredPicks>({});
+  const historyRef = useRef(boardHistory);
+
+  const publishHistory = useCallback((nextHistory: BoardHistoryState) => {
+    historyRef.current = nextHistory;
+    storedPicksRef.current = nextHistory.present;
+    setBoardHistory(nextHistory);
+  }, []);
+
+  const resetHistory = useCallback(
+    (picks: StoredPicks) => publishHistory(createBoardHistoryState(picks)),
+    [publishHistory],
+  );
+
+  const sanitizeForContext = useCallback(
+    (candidatePicks: StoredPicks, targetContextId?: string) =>
+      filterStoredPicksForExperience({
+        experience,
+        storedPicks: candidatePicks,
+        contextId: targetContextId,
+      }),
+    [experience],
+  );
+
+  useEffect(() => {
+    const exportRealm =
+      window.parent !== window && isExportRealmHash(window.location.hash);
+    setIsExportRealm(exportRealm);
+    if (exportRealm) {
+      setContextId(defaultContextId);
+      resetHistory({});
+      setHydrated(true);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      let initialContextId = defaultContextId;
+      const defaultStorageKeys = getStorageKeysForExperience(
+        experience,
+        defaultContextId,
+      );
+
+      if (defaultStorageKeys.context) {
+        let savedContextId: string | null = null;
+        try {
+          savedContextId = localStorage.getItem(defaultStorageKeys.context);
+        } catch {
+          savedContextId = null;
+        }
+        if (
+          savedContextId &&
+          contextOptions.some((context) => context.id === savedContextId)
+        ) {
+          initialContextId = savedContextId;
+        }
+      }
+
+      const initialStorageKeys = getStorageKeysForExperience(
+        experience,
+        initialContextId,
+      );
+      setContextId(initialContextId);
+      const boardResult = loadStoredBoard({
+        storage: localStorage,
+        versionedKey: initialStorageKeys.picksV2,
+        legacyKey: initialStorageKeys.picks,
+        sanitize: (candidatePicks) =>
+          sanitizeForContext(candidatePicks, initialContextId),
+      });
+      resetHistory(boardResult.picks);
+      const writable = isWritableBoardStorageStatus(boardResult.status);
+      setBoardStorageWritable(writable);
+      boardSessionCallbacksRef.current.onBeforeHydrated(initialStorageKeys);
+      setHydrated(true);
+      if (!writable) boardSessionCallbacksRef.current.onStorageUnavailable();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [
     contextOptions,
     defaultContextId,
-    activeContext,
+    experience,
+    resetHistory,
+    sanitizeForContext,
+  ]);
+
+  const activateExperienceContext = useCallback(
+    (requestedContextId: string | null | undefined, persist: boolean) => {
+      const nextContextId = contextOptions.some(
+        (context) => context.id === requestedContextId,
+      )
+        ? (requestedContextId ?? defaultContextId)
+        : defaultContextId;
+      const nextStorageKeys = getStorageKeysForExperience(
+        experience,
+        nextContextId,
+      );
+
+      boardSessionCallbacksRef.current.onInvalidatePreview();
+      boardSessionCallbacksRef.current.onContextWillActivate();
+      setContextId(nextContextId);
+
+      if (persist && nextStorageKeys.context && nextContextId) {
+        try {
+          localStorage.setItem(nextStorageKeys.context, nextContextId);
+        } catch {
+          // Preserve the existing best-effort context preference behavior.
+        }
+      }
+
+      const boardResult = loadStoredBoard({
+        storage: localStorage,
+        versionedKey: nextStorageKeys.picksV2,
+        legacyKey: nextStorageKeys.picks,
+        sanitize: (candidatePicks) =>
+          sanitizeForContext(candidatePicks, nextContextId),
+      });
+      const writable = isWritableBoardStorageStatus(boardResult.status);
+      setBoardStorageWritable(writable);
+      resetHistory(boardResult.picks);
+      if (!writable) boardSessionCallbacksRef.current.onStorageUnavailable();
+    },
+    [
+      contextOptions,
+      defaultContextId,
+      experience,
+      resetHistory,
+      sanitizeForContext,
+    ],
+  );
+
+  useEffect(() => {
+    if (!hydrated || isExportRealm) return;
+
+    const syncActiveBoard = () => {
+      const result = loadStoredBoard({
+        storage: localStorage,
+        versionedKey: storageKeys.picksV2,
+        legacyKey: storageKeys.picks,
+        sanitize: (candidatePicks) =>
+          sanitizeForContext(candidatePicks, effectiveContextId),
+      });
+      const writable = isWritableBoardStorageStatus(result.status);
+      setBoardStorageWritable(writable);
+      if (!writable) {
+        boardSessionCallbacksRef.current.onStorageUnavailable();
+        return;
+      }
+      boardSessionCallbacksRef.current.onInvalidatePreview();
+      resetHistory(result.picks);
+      boardSessionCallbacksRef.current.onExternalBoardReset();
+    };
+    const syncStoredContext = () => {
+      if (!storageKeys.context) return false;
+      let nextContextId: string | null = null;
+      try {
+        nextContextId = localStorage.getItem(storageKeys.context);
+      } catch {
+        boardSessionCallbacksRef.current.onStorageUnavailable();
+        return true;
+      }
+      activateExperienceContext(nextContextId, false);
+      return true;
+    };
+    const handleStorage = (event: StorageEvent) => {
+      if (event.storageArea !== localStorage) return;
+      switch (getBoardStorageEventAction(event.key, storageKeys)) {
+        case "context":
+          syncStoredContext();
+          return;
+        case "clear":
+          if (!syncStoredContext()) syncActiveBoard();
+          return;
+        case "board":
+          syncActiveBoard();
+          return;
+        case "ignore":
+          return;
+      }
+    };
+
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, [
+    activateExperienceContext,
     effectiveContextId,
-    storageKeys,
-    boardHistory,
-    storedPicks,
-    storedPicksRef,
-    boardStorageWritable,
     hydrated,
     isExportRealm,
-    activateExperienceContext,
-    commitUserMutation: commitBoardSessionMutation,
-    applyHistoryAction: applyBoardSessionHistoryAction,
-    resetBoardWithoutHistory: resetBoardSessionWithoutHistory,
-    importBoard,
-    resetFromFreshness,
-    injectEphemeralBoard,
-    markBoardStorageUnavailable,
-  } = boardSession;
+    resetHistory,
+    sanitizeForContext,
+    storageKeys,
+  ]);
+
+  const createTransactionTarget = useCallback(
+    () => ({
+      storage: localStorage,
+      versionedKey: storageKeys.picksV2,
+      legacyKey: storageKeys.picks,
+      sanitize: (candidatePicks: StoredPicks) =>
+        sanitizeForContext(candidatePicks, effectiveContextId),
+    }),
+    [
+      effectiveContextId,
+      sanitizeForContext,
+      storageKeys.picks,
+      storageKeys.picksV2,
+    ],
+  );
+
+  const publishTransaction = useCallback(
+    (result: BoardTransactionResult) =>
+      publishBoardTransactionResult(result, {
+        invalidatePreview: () =>
+          boardSessionCallbacksRef.current.onInvalidatePreview(),
+        publishHistory,
+        resetHistory,
+        setStorageWritable: setBoardStorageWritable,
+        onExternalBoardReset: () =>
+          boardSessionCallbacksRef.current.onExternalBoardReset(),
+      }),
+    [publishHistory, resetHistory],
+  );
+
+  const commitBoardSessionMutation = useCallback(
+    (kind: BoardMutationKind, nextPicks: StoredPicks) => {
+      if (!boardStorageWritable) return "blocked" as const;
+      return publishTransaction(
+        commitBoardTransaction({
+          target: createTransactionTarget(),
+          expectedPicks: storedPicksRef.current,
+          history: historyRef.current,
+          mutation: { kind, nextPicks },
+        }),
+      );
+    },
+    [boardStorageWritable, createTransactionTarget, publishTransaction],
+  );
+
+  const applyBoardSessionHistoryAction = useCallback(
+    (type: "undo" | "redo") => {
+      if (!boardStorageWritable) return "blocked" as const;
+      return publishTransaction(
+        applyBoardHistoryTransaction({
+          target: createTransactionTarget(),
+          expectedPicks: storedPicksRef.current,
+          history: historyRef.current,
+          action: { type },
+        }),
+      );
+    },
+    [boardStorageWritable, createTransactionTarget, publishTransaction],
+  );
+
+  const resetBoardSessionWithoutHistory = useCallback(
+    (nextPicks: StoredPicks) => {
+      if (!boardStorageWritable) return "blocked" as const;
+      return publishTransaction(
+        resetStoredBoardTransaction({
+          target: createTransactionTarget(),
+          expectedPicks: storedPicksRef.current,
+          history: historyRef.current,
+          nextPicks,
+        }),
+      );
+    },
+    [boardStorageWritable, createTransactionTarget, publishTransaction],
+  );
+
+  const importBoard = useCallback(
+    ({
+      contextId: nextContextId,
+      expectedPicks,
+      picks,
+    }: ImportedBoardInput) => {
+      const targetStorageKeys = getStorageKeysForExperience(
+        experience,
+        nextContextId,
+      );
+      const result = importBoardTransaction({
+        storage: localStorage,
+        versionedKey: targetStorageKeys.picksV2,
+        legacyKey: targetStorageKeys.picks,
+        sanitize: (candidatePicks) =>
+          sanitizeForContext(candidatePicks, nextContextId),
+        expectedPicks,
+        picks,
+        context:
+          targetStorageKeys.context && nextContextId
+            ? { key: targetStorageKeys.context, value: nextContextId }
+            : undefined,
+      });
+      if (result.status === "committed") {
+        boardSessionCallbacksRef.current.onInvalidatePreview();
+        setContextId(nextContextId);
+        setBoardStorageWritable(true);
+        publishHistory(result.history);
+      } else if (result.status === "blocked") {
+        setBoardStorageWritable(false);
+      }
+      return result;
+    },
+    [experience, publishHistory, sanitizeForContext],
+  );
+
+  const resetFromFreshness = useCallback(
+    (picks: StoredPicks) => {
+      boardSessionCallbacksRef.current.onInvalidatePreview();
+      resetHistory(sanitizeForContext(picks, effectiveContextId));
+    },
+    [effectiveContextId, resetHistory, sanitizeForContext],
+  );
+
+  const injectEphemeralBoard = useCallback(
+    (nextContextId: string | undefined, picks: StoredPicks) => {
+      const reset = createEphemeralBoardReset(picks, (candidatePicks) =>
+        sanitizeForContext(candidatePicks, nextContextId),
+      );
+      setContextId(nextContextId);
+      publishHistory(reset.history);
+    },
+    [publishHistory, sanitizeForContext],
+  );
+
+  const markBoardStorageUnavailable = useCallback(
+    () => setBoardStorageWritable(false),
+    [],
+  );
+  // ── End board session ────────────────────────────────────────────────────
   const uiContextOptions = useMemo(
     () =>
       contextOptions.map((context) => ({
