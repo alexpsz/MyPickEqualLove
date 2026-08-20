@@ -185,7 +185,7 @@ function DrawerSection({
       <h3 className="mb-2 px-1 text-xs font-semibold text-[var(--muted)]">
         {label}
       </h3>
-      <div className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--line)] bg-white">
+      <div className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--paper)]">
         {children}
       </div>
     </section>

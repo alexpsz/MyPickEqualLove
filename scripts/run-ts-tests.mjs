@@ -56,6 +56,12 @@ const SUITES = {
       "scripts/color-conversion.test.js",
     ],
   },
+  theme: {
+    tempPrefix: "mypick-theme-tests-",
+    project: "scripts/tsconfig.orchestrator-tests.json",
+    emittedTestFiles: ["scripts/tests/theme-preference.test.js"],
+    successMessage: "Theme preference tests passed.",
+  },
   "export-presets": {
     tempPrefix: "mypick-export-tests-",
     compilerArgs: NODE16_ARGS,

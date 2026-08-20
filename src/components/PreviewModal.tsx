@@ -251,7 +251,7 @@ export default function PreviewModal({
           scale: APPLE_SPRING_GENTLE,
         }}
       >
-        <div className="flex flex-col gap-2 border-b border-[var(--line)] bg-white px-4 py-3 sm:gap-4 sm:px-6 sm:py-4">
+        <div className="flex flex-col gap-2 border-b border-[var(--line)] bg-[var(--paper)] px-4 py-3 sm:gap-4 sm:px-6 sm:py-4">
           <div className="flex min-w-0 items-center justify-between gap-3">
             <div className="min-w-0 text-left">
               <h3
@@ -377,7 +377,7 @@ export default function PreviewModal({
           )}
         </div>
 
-        <div className="relative grid grid-cols-5 items-stretch gap-1 border-t border-[var(--line)] bg-white px-2 pt-2 pb-[max(.5rem,env(safe-area-inset-bottom))] sm:flex sm:flex-wrap sm:items-center sm:justify-end sm:gap-2 sm:p-3 sm:pb-[max(.75rem,env(safe-area-inset-bottom))] sm:px-5">
+        <div className="relative grid grid-cols-5 items-stretch gap-1 border-t border-[var(--line)] bg-[var(--paper)] px-2 pt-2 pb-[max(.5rem,env(safe-area-inset-bottom))] sm:flex sm:flex-wrap sm:items-center sm:justify-end sm:gap-2 sm:p-3 sm:pb-[max(.75rem,env(safe-area-inset-bottom))] sm:px-5">
           {imageActionMessage ? (
             <p
               role="status"
@@ -410,7 +410,7 @@ export default function PreviewModal({
             }}
             disabled={pageActionDisabled}
             aria-label={t("preview.sharePage")}
-            className="official-button min-w-0 flex-col gap-0.5 border-transparent bg-transparent px-1 py-1 text-[10px] leading-none shadow-none disabled:opacity-50 sm:flex-row sm:gap-2 sm:border-[var(--line-strong)] sm:bg-white sm:px-4 sm:py-0 sm:text-[13px]"
+            className="official-button min-w-0 flex-col gap-0.5 border-transparent bg-transparent px-1 py-1 text-[10px] leading-none shadow-none disabled:opacity-50 sm:flex-row sm:gap-2 sm:border-[var(--line-strong)] sm:bg-[var(--paper)] sm:px-4 sm:py-0 sm:text-[13px]"
           >
             <AppIcon name="share" size={16} />
             <span className="max-w-full truncate sm:hidden">
@@ -429,7 +429,7 @@ export default function PreviewModal({
                 blocked: t("errors.downloadBlocked"),
               });
             }}
-            className="official-button min-w-0 flex-col gap-0.5 border-transparent bg-transparent px-1 py-1 text-[10px] leading-none shadow-none disabled:opacity-50 sm:flex-row sm:gap-2 sm:border-[var(--line-strong)] sm:bg-white sm:px-4 sm:py-0 sm:text-[13px]"
+            className="official-button min-w-0 flex-col gap-0.5 border-transparent bg-transparent px-1 py-1 text-[10px] leading-none shadow-none disabled:opacity-50 sm:flex-row sm:gap-2 sm:border-[var(--line-strong)] sm:bg-[var(--paper)] sm:px-4 sm:py-0 sm:text-[13px]"
           >
             <AppIcon name="download" size={16} />
             <span className="max-w-full truncate sm:hidden">
@@ -587,7 +587,7 @@ function TemplateSegmentedControl({
     <div
       role="group"
       aria-label={label}
-      className="grid min-h-11 grid-cols-2 rounded-[var(--radius-sm)] border border-[var(--line-strong)] bg-white p-0.5"
+      className="grid min-h-11 grid-cols-2 rounded-[var(--radius-sm)] border border-[var(--line-strong)] bg-[var(--paper)] p-0.5"
     >
       {EXPORT_TEMPLATE_ORDER.map((option) => {
         const selected = option === value;
@@ -654,7 +654,7 @@ function ToggleChip({
       className={`flex min-h-11 w-full min-w-0 items-center justify-center gap-1.5 rounded-[var(--radius-sm)] border px-2 text-center text-[12px] font-semibold outline-none transition-[background-color,color,border-color,box-shadow] duration-150 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:opacity-50 sm:w-auto sm:px-3 sm:text-[13px] ${
         checked
           ? "border-[var(--project-primary)] bg-[var(--project-primary-wash)] text-[var(--project-primary)]"
-          : "border-[var(--line-strong)] bg-white text-[var(--foreground)] hover:bg-[var(--background)]"
+          : "border-[var(--line-strong)] bg-[var(--paper)] text-[var(--foreground)] hover:bg-[var(--background)]"
       }`}
     >
       <span

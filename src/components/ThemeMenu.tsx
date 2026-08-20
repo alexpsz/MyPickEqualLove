@@ -10,40 +10,35 @@ import {
 } from "react";
 import * as m from "motion/react-m";
 import { useLocale } from "../i18n/LocaleProvider";
-import {
-  DEFAULT_LOCALE,
-  LOCALE_OPTIONS,
-  resolveNavigatorLocale,
-  type AppLocale,
-  type LocalePreference,
-} from "../i18n/locales";
-import AppIcon from "./AppIcon";
+import type { MessageKey } from "../i18n/messages";
+import type { ThemePreference } from "../utils/themePreference";
 import { APPLE_SPRING_GENTLE } from "./AppleMotion";
+import AppIcon, { type AppIconName } from "./AppIcon";
 import MotionPresence from "./MotionPresence";
+import { useTheme } from "./ThemeProvider";
 
-export default function LanguageMenu({
-  className = "",
-}: {
-  className?: string;
-}) {
-  const { locale, preference, ready, setPreference, t } = useLocale();
+const THEME_OPTIONS: ReadonlyArray<{
+  value: ThemePreference;
+  icon: AppIconName;
+}> = [
+  { value: "auto", icon: "monitor" },
+  { value: "light", icon: "sun" },
+  { value: "dark", icon: "moon" },
+];
+
+export default function ThemeMenu() {
+  const { preference, setPreference } = useTheme();
+  const { t } = useLocale();
   const [isOpen, setIsOpen] = useState(false);
-  const [browserLocale, setBrowserLocale] = useState<AppLocale>(DEFAULT_LOCALE);
   const menuId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const openFocusIndexRef = useRef(0);
   const focusOptionOnOpenRef = useRef(true);
-  const currentLanguage =
-    LOCALE_OPTIONS.find((option) => option.value === locale)?.nativeLabel ??
-    locale;
-  const browserLanguage =
-    LOCALE_OPTIONS.find((option) => option.value === browserLocale)
-      ?.nativeLabel ?? browserLocale;
   const preferenceIndex = Math.max(
     0,
-    LOCALE_OPTIONS.findIndex((option) => option.value === preference),
+    THEME_OPTIONS.findIndex((option) => option.value === preference),
   );
 
   const closeMenuAndRestoreFocus = useCallback(() => {
@@ -72,24 +67,17 @@ export default function LanguageMenu({
       closeMenuAndRestoreFocus();
     };
 
-    const handleLanguageChange = () => {
-      setBrowserLocale(resolveNavigatorLocale());
-    };
-
     document.addEventListener("pointerdown", handlePointerDown);
     document.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("languagechange", handleLanguageChange);
 
     return () => {
       window.clearTimeout(focusTimer);
       document.removeEventListener("pointerdown", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("languagechange", handleLanguageChange);
     };
   }, [closeMenuAndRestoreFocus, isOpen]);
 
   const openMenu = (focusIndex = preferenceIndex, focusOptionOnOpen = true) => {
-    setBrowserLocale(resolveNavigatorLocale());
     openFocusIndexRef.current = focusIndex;
     focusOptionOnOpenRef.current = focusOptionOnOpen;
     setIsOpen(true);
@@ -103,7 +91,7 @@ export default function LanguageMenu({
       openMenu(0);
     } else if (event.key === "ArrowUp") {
       event.preventDefault();
-      openMenu(LOCALE_OPTIONS.length - 1);
+      openMenu(THEME_OPTIONS.length - 1);
     }
   };
 
@@ -125,14 +113,14 @@ export default function LanguageMenu({
 
     if (event.key === "ArrowDown") {
       nextIndex =
-        (currentIndex + 1 + LOCALE_OPTIONS.length) % LOCALE_OPTIONS.length;
+        (currentIndex + 1 + THEME_OPTIONS.length) % THEME_OPTIONS.length;
     } else if (event.key === "ArrowUp") {
       nextIndex =
-        (currentIndex - 1 + LOCALE_OPTIONS.length) % LOCALE_OPTIONS.length;
+        (currentIndex - 1 + THEME_OPTIONS.length) % THEME_OPTIONS.length;
     } else if (event.key === "Home") {
       nextIndex = 0;
     } else if (event.key === "End") {
-      nextIndex = LOCALE_OPTIONS.length - 1;
+      nextIndex = THEME_OPTIONS.length - 1;
     }
 
     if (nextIndex === null) return;
@@ -140,7 +128,7 @@ export default function LanguageMenu({
     optionRefs.current[nextIndex]?.focus();
   };
 
-  const handleSelect = (nextPreference: LocalePreference) => {
+  const handleSelect = (nextPreference: ThemePreference) => {
     setPreference(nextPreference);
     closeMenuAndRestoreFocus();
   };
@@ -148,7 +136,7 @@ export default function LanguageMenu({
   return (
     <div
       ref={rootRef}
-      className={`relative h-11 w-11 ${className}`}
+      className="relative h-11 w-11"
       onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
           setIsOpen(false);
@@ -164,21 +152,27 @@ export default function LanguageMenu({
             : openMenu(preferenceIndex, event.detail === 0)
         }
         onKeyDown={handleTriggerKeyDown}
-        disabled={!ready}
-        className={`icon-button ${isOpen ? "[&::before]:border-[var(--line-strong)] [&::before]:bg-[var(--paper)] [&::before]:shadow-sm" : ""}`}
-        aria-label={t("language.current", { language: currentLanguage })}
+        className={joinClassNames(
+          "icon-button",
+          isOpen &&
+            "[&::before]:border-[var(--line-strong)] [&::before]:bg-[var(--paper)] [&::before]:shadow-sm",
+        )}
+        aria-label={t("theme.selectorLabel")}
         aria-haspopup="menu"
         aria-expanded={isOpen}
         aria-controls={isOpen ? menuId : undefined}
-        title={t("language.current", { language: currentLanguage })}
+        title={t("theme.selectorLabel")}
       >
         <span className="relative z-10 flex items-center" aria-hidden="true">
-          <AppIcon name="globe" size={16} />
+          <AppIcon name="monitor" size={16} />
           <AppIcon
             name="chevron-down"
             size={14}
             strokeWidth={1.65}
-            className={`-ml-0.5 text-[var(--muted)] transition-transform duration-150 ${isOpen ? "rotate-180" : ""}`}
+            className={joinClassNames(
+              "-ml-0.5 text-[var(--muted)] transition-transform duration-150",
+              isOpen && "rotate-180",
+            )}
           />
         </span>
       </button>
@@ -188,23 +182,18 @@ export default function LanguageMenu({
           <m.div
             id={menuId}
             role="menu"
-            aria-label={t("language.selectorLabel")}
+            aria-label={t("theme.selectorLabel")}
             aria-hidden={presenceState === "exiting"}
             inert={presenceState === "exiting"}
             onKeyDown={handleMenuKeyDown}
-            className="apple-material absolute right-0 top-[calc(100%+6px)] z-50 w-[236px] max-w-[calc(100vw-1.5rem)] origin-top-right rounded-[14px] border-[var(--line)] bg-[var(--menu-surface)] p-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.14),0_2px_8px_rgba(0,0,0,0.06)] outline-none"
+            className="apple-material absolute right-0 top-[calc(100%+6px)] z-50 w-[208px] max-w-[calc(100vw-1.5rem)] origin-top-right rounded-[14px] border-[var(--line)] bg-[var(--menu-surface)] p-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.14),0_2px_8px_rgba(0,0,0,0.06)] outline-none"
             initial={{ opacity: 0, scale: 0.985, y: -4 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.985, y: -4 }}
             transition={APPLE_SPRING_GENTLE}
           >
-            {LOCALE_OPTIONS.map((option, index) => {
+            {THEME_OPTIONS.map((option, index) => {
               const selected = option.value === preference;
-              const label =
-                option.value === "auto"
-                  ? t("language.auto")
-                  : option.nativeLabel;
-
               return (
                 <div key={option.value}>
                   {index === 1 ? (
@@ -222,31 +211,20 @@ export default function LanguageMenu({
                     tabIndex={-1}
                     aria-checked={selected}
                     onClick={() => handleSelect(option.value)}
-                    className={`group flex min-h-11 w-full items-center gap-3 rounded-[10px] px-3 py-2 text-left outline-none transition-[background-color,color,transform] duration-150 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring)] active:scale-[0.985] ${
+                    className={joinClassNames(
+                      "group flex min-h-11 w-full items-center gap-3 rounded-[10px] px-3 py-2 text-left outline-none transition-[background-color,color,transform] duration-150 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring)] active:scale-[0.985]",
                       selected
                         ? "bg-[var(--project-primary-wash)] text-[var(--foreground)]"
-                        : "text-[var(--foreground)] hover:bg-[var(--background)] focus-visible:bg-[var(--background)]"
-                    }`}
+                        : "text-[var(--foreground)] hover:bg-[var(--background)] focus-visible:bg-[var(--background)]",
+                    )}
                   >
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[14px] font-medium tracking-[-0.01em]">
-                        {option.value === "auto" ? (
-                          label
-                        ) : (
-                          <NativeLanguageLabel
-                            locale={option.value}
-                            label={label}
-                          />
-                        )}
-                      </span>
-                      {option.value === "auto" ? (
-                        <span className="mt-0.5 block truncate text-[11px] leading-tight text-[var(--muted)]">
-                          <NativeLanguageLabel
-                            locale={browserLocale}
-                            label={browserLanguage}
-                          />
-                        </span>
-                      ) : null}
+                    <AppIcon
+                      name={option.icon}
+                      size={16}
+                      className="text-[var(--muted)]"
+                    />
+                    <span className="min-w-0 flex-1 truncate text-[14px] font-medium tracking-[-0.01em]">
+                      {getThemeLabel(option.value, t)}
                     </span>
                     <span className="flex h-5 w-5 shrink-0 items-center justify-center">
                       {selected ? (
@@ -264,22 +242,19 @@ export default function LanguageMenu({
   );
 }
 
-function NativeLanguageLabel({
-  locale,
-  label,
-}: {
-  locale: AppLocale;
-  label: string;
-}) {
-  return (
-    <span
-      lang={locale}
-      data-language={locale}
-      className="native-language-label"
-    >
-      {label}
-    </span>
-  );
+function getThemeLabel(
+  preference: ThemePreference,
+  t: (key: MessageKey) => string,
+) {
+  if (preference === "light") return t("theme.light");
+  if (preference === "dark") return t("theme.dark");
+  return t("theme.auto");
+}
+
+function joinClassNames(
+  ...classNames: Array<string | false | null | undefined>
+) {
+  return classNames.filter(Boolean).join(" ");
 }
 
 const DOCUMENT_TAB_STOP_SELECTOR = [

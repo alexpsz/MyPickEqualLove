@@ -293,7 +293,7 @@ export default function BoardLibraryModal({
                     aria-invalid={Boolean(error)}
                     aria-describedby="board-library-name-hint board-library-error"
                     placeholder={t("boardLibrary.namePlaceholder")}
-                    className="min-h-11 min-w-0 rounded-[var(--radius-sm)] border border-[var(--line-strong)] bg-white px-3 text-[15px] outline-none transition-[border-color,box-shadow] focus:border-[var(--focus-ring)] focus:shadow-[0_0_0_2px_var(--focus-ring)] disabled:opacity-50"
+                    className="min-h-11 min-w-0 rounded-[var(--radius-sm)] border border-[var(--line-strong)] bg-[var(--paper)] px-3 text-[15px] outline-none transition-[border-color,box-shadow] focus:border-[var(--focus-ring)] focus:shadow-[0_0_0_2px_var(--focus-ring)] disabled:opacity-50"
                   />
                   <button
                     type="button"
@@ -325,11 +325,11 @@ export default function BoardLibraryModal({
                   {t("boardLibrary.savedBoards")}
                 </h3>
                 {snapshots.length === 0 ? (
-                  <p className="rounded-[var(--radius-md)] border border-dashed border-[var(--line-strong)] bg-white px-4 py-8 text-center text-[13px] text-[var(--muted)]">
+                  <p className="rounded-[var(--radius-md)] border border-dashed border-[var(--line-strong)] bg-[var(--paper)] px-4 py-8 text-center text-[13px] text-[var(--muted)]">
                     {t("boardLibrary.empty")}
                   </p>
                 ) : (
-                  <div className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--line)] bg-white">
+                  <div className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--paper)]">
                     {snapshots.map((snapshot, index) => {
                       const isRenaming = renamingId === snapshot.id;
                       const available = Object.keys(snapshot.picks).length > 0;
@@ -510,11 +510,11 @@ function RestorePreview({
   return (
     <div className="grid gap-4">
       {changedSlots.length === 0 ? (
-        <p className="rounded-[var(--radius-md)] border border-[var(--line)] bg-white px-4 py-6 text-center text-[13px] text-[var(--muted)]">
+        <p className="rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--paper)] px-4 py-6 text-center text-[13px] text-[var(--muted)]">
           {t("boardLibrary.noChanges")}
         </p>
       ) : (
-        <div className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--line)] bg-white">
+        <div className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--paper)]">
           {changedSlots.map((slot, index) => (
             <div
               key={slot.id}

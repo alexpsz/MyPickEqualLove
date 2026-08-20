@@ -48,8 +48,8 @@ export default function ExperienceNavigation({
       data-page-reveal
       className="app-content-shell relative z-10 mb-3 flex px-4 sm:px-6 md:px-8"
     >
-      <div className="relative max-w-full after:pointer-events-none after:absolute after:inset-y-1 after:right-0 after:w-8 after:rounded-r-[var(--radius-sm)] after:bg-gradient-to-l after:from-white after:to-transparent sm:after:hidden">
-        <div className="no-scrollbar flex max-w-full gap-1 overflow-x-auto rounded-[var(--radius-sm)] border border-[var(--line)] bg-white p-1 shadow-[0_1px_3px_rgba(0,0,0,0.035)]">
+      <div className="relative max-w-full after:pointer-events-none after:absolute after:inset-y-1 after:right-0 after:w-8 after:rounded-r-[var(--radius-sm)] after:bg-gradient-to-l after:from-[var(--paper)] after:to-transparent sm:after:hidden">
+        <div className="no-scrollbar flex max-w-full gap-1 overflow-x-auto rounded-[var(--radius-sm)] border border-[var(--line)] bg-[var(--paper)] p-1 shadow-[0_1px_3px_rgba(0,0,0,0.035)]">
           {items.map((item) => {
             const active = item.id === activeExperienceId;
             return (

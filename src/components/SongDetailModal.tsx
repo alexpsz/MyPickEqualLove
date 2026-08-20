@@ -127,7 +127,7 @@ export default function SongDetailModal({
         <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[var(--background)] px-4 py-4 sm:px-6 sm:py-5">
           <div className="grid gap-5 sm:grid-cols-[minmax(220px,0.82fr)_minmax(0,1.18fr)]">
             <div className="min-w-0">
-              <div className="relative aspect-square overflow-hidden rounded-[var(--radius-md)] border border-[var(--line)] bg-white shadow-sm">
+              <div className="relative aspect-square overflow-hidden rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--paper)] shadow-sm">
                 <Image
                   src={song.coverUrl}
                   alt={t("pick.coverAlt", { title: song.title.ja })}
@@ -147,7 +147,7 @@ export default function SongDetailModal({
             </div>
 
             <div className="min-w-0 space-y-4">
-              <dl className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--line)] bg-white">
+              <dl className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--paper)]">
                 <DetailRow label={t("songDetail.japaneseTitle")}>
                   <JapaneseContent>{song.title.ja}</JapaneseContent>
                 </DetailRow>
@@ -261,7 +261,7 @@ export default function SongDetailModal({
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center justify-end gap-2 border-t border-[var(--line)] bg-white px-4 py-3 pb-[max(.75rem,env(safe-area-inset-bottom))] sm:px-6">
+        <div className="flex flex-wrap items-center justify-end gap-2 border-t border-[var(--line)] bg-[var(--paper)] px-4 py-3 pb-[max(.75rem,env(safe-area-inset-bottom))] sm:px-6">
           <button
             type="button"
             onClick={() => onToggleCandidate(song)}
@@ -330,7 +330,7 @@ function DetailSection({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-[var(--radius-md)] border border-[var(--line)] bg-white p-4">
+    <section className="rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--paper)] p-4">
       <h3 className="text-xs font-semibold uppercase tracking-[0.1em] text-[var(--muted)]">
         {title}
       </h3>
@@ -408,7 +408,7 @@ function StatusBadge({
     <span
       className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
         muted
-          ? "bg-white text-[var(--muted)]"
+          ? "bg-[var(--paper)] text-[var(--muted)]"
           : "bg-[var(--project-primary-wash)] text-[var(--foreground)]"
       }`}
     >

@@ -14,12 +14,15 @@ export type AppIconName =
   | "image"
   | "info"
   | "menu"
+  | "monitor"
+  | "moon"
   | "music"
   | "plus"
   | "reset"
   | "redo"
   | "search"
   | "share"
+  | "sun"
   | "undo";
 
 interface AppIconProps {
@@ -130,6 +133,17 @@ function getIconPaths(name: AppIconName) {
           <path d="M5 16.75h14" />
         </>
       );
+    case "monitor":
+      return (
+        <>
+          <rect x="4.25" y="5" width="15.5" height="11.5" rx="1.75" />
+          <path d="M8.5 19h7M12 16.5V19" />
+        </>
+      );
+    case "moon":
+      return (
+        <path d="M18.25 15.45A7.75 7.75 0 0 1 8.55 5.75a7.75 7.75 0 1 0 9.7 9.7Z" />
+      );
     case "music":
       return (
         <>
@@ -161,6 +175,13 @@ function getIconPaths(name: AppIconName) {
           <circle cx="6" cy="12" r="2.25" />
           <circle cx="18" cy="18.25" r="2.25" />
           <path d="m7.9 10.95 8.2-4.15M7.9 13.05l8.2 4.15" />
+        </>
+      );
+    case "sun":
+      return (
+        <>
+          <circle cx="12" cy="12" r="3.75" />
+          <path d="M12 2.75v2M12 19.25v2M2.75 12h2M19.25 12h2M5.46 5.46l1.42 1.42M17.12 17.12l1.42 1.42M18.54 5.46l-1.42 1.42M6.88 17.12l-1.42 1.42" />
         </>
       );
     case "redo":

@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  color-scheme: light !important;
+  color-scheme: light;
   --background: #f5f5f7;
   --foreground: #1d1d1f;
   --muted: #6e6e73;
@@ -17,6 +17,10 @@
   --paper-soft: #f5f5f7;
   --material: rgba(255, 255, 255, 0.78);
   --material-strong: rgba(255, 255, 255, 0.9);
+  --menu-surface: rgba(255, 255, 255, 0.97);
+  --material-border: rgba(255, 255, 255, 0.78);
+  --chrome-surface: rgba(255, 255, 255, 0.78);
+  --quiet-hover: rgba(29, 29, 31, 0.055);
   --radius-sm: 12px;
   --radius-md: 16px;
   --radius-lg: 22px;
@@ -42,6 +46,36 @@
   --font-korean-content:
     -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic",
     "Noto Sans KR", "Segoe UI", sans-serif;
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #101114;
+  --foreground: #f5f5f7;
+  --muted: #afb2bc;
+  --muted-soft: #9296a2;
+  --focus-ring: #78b8ff;
+  --line: rgba(255, 255, 255, 0.13);
+  --line-strong: rgba(255, 255, 255, 0.24);
+  --paper: #1a1c20;
+  --paper-soft: #15171a;
+  --material: rgba(24, 26, 30, 0.82);
+  --material-strong: rgba(27, 29, 34, 0.94);
+  --menu-surface: rgba(30, 32, 37, 0.98);
+  --material-border: rgba(255, 255, 255, 0.12);
+  --chrome-surface: rgba(255, 255, 255, 0.08);
+  --quiet-hover: rgba(255, 255, 255, 0.09);
+  --shadow-panel:
+    0 1px 2px rgba(0, 0, 0, 0.24), 0 12px 32px rgba(0, 0, 0, 0.34);
+  --shadow-lift: 0 2px 5px rgba(0, 0, 0, 0.3), 0 18px 44px rgba(0, 0, 0, 0.42);
+}
+
+html[data-theme="dark"] body {
+  --project-primary-wash: color-mix(
+    in srgb,
+    var(--project-primary) 20%,
+    transparent
+  ) !important;
 }
 
 @theme inline {
@@ -86,7 +120,7 @@ body {
 }
 
 ::selection {
-  background: color-mix(in srgb, var(--project-primary) 32%, white);
+  background: color-mix(in srgb, var(--project-primary) 32%, var(--paper));
   color: var(--foreground);
 }
 
@@ -149,7 +183,7 @@ a {
 
 @layer components {
   .apple-material {
-    border: 1px solid rgba(255, 255, 255, 0.78);
+    border: 1px solid var(--material-border);
     background: var(--material);
     box-shadow: var(--shadow-panel);
     backdrop-filter: blur(24px) saturate(165%);
@@ -278,7 +312,7 @@ a {
     height: 32px;
     border: 1px solid var(--line);
     border-radius: 10px;
-    background: rgba(255, 255, 255, 0.78);
+    background: var(--chrome-surface);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.025);
     content: "";
     pointer-events: none;
@@ -557,7 +591,7 @@ a {
 
     .official-button-quiet:hover:not(:disabled) {
       border-color: transparent;
-      background: rgba(29, 29, 31, 0.055);
+      background: var(--quiet-hover);
       color: var(--foreground);
     }
 

@@ -145,13 +145,13 @@ export default function ArchetypeResultModal({
             ))}
           </div>
 
-          <div className="mt-4 grid gap-2 rounded-[var(--radius-md)] border border-[var(--line)] bg-white p-4 text-[12px] leading-relaxed text-[var(--muted)] sm:grid-cols-2">
+          <div className="mt-4 grid gap-2 rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--paper)] p-4 text-[12px] leading-relaxed text-[var(--muted)] sm:grid-cols-2">
             <p>{ui.metadata.entertainmentNotice}</p>
             <p>{ui.metadata.sourceAttribution}</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 border-t border-[var(--line)] bg-white p-3 pb-[max(.75rem,env(safe-area-inset-bottom))] sm:flex sm:justify-end sm:px-5">
+        <div className="grid grid-cols-2 gap-2 border-t border-[var(--line)] bg-[var(--paper)] p-3 pb-[max(.75rem,env(safe-area-inset-bottom))] sm:flex sm:justify-end sm:px-5">
           <button
             type="button"
             onClick={onGenerateImage}
@@ -192,7 +192,7 @@ function CharacterResultCard({
   return (
     <article
       data-archetype-character-card={character.roleId}
-      className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--line)] bg-white"
+      className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--paper)]"
     >
       <div
         className="border-b border-[var(--line)] p-4 sm:p-5"
@@ -311,7 +311,7 @@ function CharacterResultCard({
               {character.overlapTraitIds.map((traitId) => (
                 <li
                   key={traitId}
-                  className="flex items-center gap-2 rounded-full border border-[var(--line)] bg-white px-3 py-1.5 text-[12px] font-semibold text-[var(--foreground)]"
+                  className="flex items-center gap-2 rounded-full border border-[var(--line)] bg-[var(--paper)] px-3 py-1.5 text-[12px] font-semibold text-[var(--foreground)]"
                 >
                   <span
                     aria-hidden="true"

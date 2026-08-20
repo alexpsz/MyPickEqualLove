@@ -3,6 +3,7 @@ import { PROJECT_CONFIG } from "../config/project";
 import GitHubLink from "./GitHubLink";
 import LanguageMenu from "./LanguageMenu";
 import SisterProjectsMenu from "./SisterProjectsMenu";
+import ThemeMenu from "./ThemeMenu";
 
 export default function AppTopBar({
   memberColorBackground,
@@ -29,6 +30,7 @@ export default function AppTopBar({
           </span>
         </TitleElement>
         <div className="flex shrink-0 items-center">
+          <ThemeMenu />
           <LanguageMenu />
           <GitHubLink />
         </div>

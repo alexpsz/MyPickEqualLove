@@ -118,7 +118,7 @@ export default function ReplacementModal({
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto bg-[var(--background)] p-4 sm:p-5">
-          <div className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--line)] bg-white">
+          <div className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--paper)]">
             {slots
               .slice()
               .sort((a, b) => a.sortOrder - b.sortOrder)
@@ -188,7 +188,7 @@ export default function ReplacementModal({
           </div>
         </div>
 
-        <div className="flex justify-end border-t border-[var(--line)] bg-white p-3 pb-[max(.75rem,env(safe-area-inset-bottom))] sm:px-5">
+        <div className="flex justify-end border-t border-[var(--line)] bg-[var(--paper)] p-3 pb-[max(.75rem,env(safe-area-inset-bottom))] sm:px-5">
           <button type="button" onClick={onClose} className="official-button">
             {t("replacement.cancel")}
           </button>

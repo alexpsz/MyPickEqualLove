@@ -768,7 +768,7 @@ export default function PickBoard({
           aria-label={t("reorder.toolbarLabel", {
             title: picks[keyboardSession.sourceSlotId]?.title.ja ?? "",
           })}
-          className="mb-3 flex flex-wrap items-center gap-2 rounded-[var(--radius-md)] border border-[var(--line)] bg-white p-2 shadow-sm"
+          className="mb-3 flex flex-wrap items-center gap-2 rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--paper)] p-2 shadow-sm"
         >
           <span className="min-w-0 flex-1 px-2 text-[13px] font-semibold text-[var(--foreground)]">
             {t("search.selectedAt", {

@@ -52,7 +52,8 @@
     "hooks:install": "node scripts/install-git-hooks.mjs",
     "validate:data": "node scripts/validate-project-data.mjs && npm run check:share-validation",
     "validate:data:project": "node scripts/validate-project-data.mjs --project",
-    "test:orchestrator": "node scripts/run-ts-tests.mjs orchestrator"
+    "test:orchestrator": "node scripts/run-ts-tests.mjs orchestrator",
+    "test:theme": "node scripts/run-ts-tests.mjs theme"
   },
   "dependencies": {
     "html2canvas": "^1.4.1",

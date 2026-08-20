@@ -459,7 +459,7 @@ export default function SearchModal({
                   onChange={(event) => setSearchQuery(event.target.value)}
                   onKeyDown={handleSearchKeyDown}
                   placeholder={t("search.placeholder")}
-                  className="h-11 w-full rounded-[var(--radius-sm)] border border-[var(--line-strong)] bg-white pl-10 pr-3 text-[15px] text-[var(--foreground)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--muted-soft)] focus:border-[var(--focus-ring)] focus:shadow-[0_0_0_2px_var(--focus-ring)]"
+                  className="h-11 w-full rounded-[var(--radius-sm)] border border-[var(--line-strong)] bg-[var(--paper)] pl-10 pr-3 text-[15px] text-[var(--foreground)] outline-none transition-[border-color,box-shadow] placeholder:text-[var(--muted-soft)] focus:border-[var(--focus-ring)] focus:shadow-[0_0_0_2px_var(--focus-ring)]"
                 />
               </label>
               <button
@@ -534,7 +534,7 @@ export default function SearchModal({
               <div className="filter-reveal-content px-4 py-3 sm:px-6">
                 <div
                   id="song-more-filters"
-                  className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--line)] bg-white p-4"
+                  className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--paper)] p-4"
                 >
                   <div className="grid gap-4">
                     <FilterRow label={t("search.year")}>
@@ -588,7 +588,7 @@ export default function SearchModal({
 
           <div className="px-4 py-3 sm:px-6 sm:py-4">
             {filteredSongs.length > 0 ? (
-              <div className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--line)] bg-white">
+              <div className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--paper)]">
                 {filteredSongs.map((song, index) => {
                   const selected = selectedSongsById[song.id];
                   const selectedRank = selectedRanksBySongId[song.id];
@@ -740,7 +740,7 @@ export default function SearchModal({
                             className={`flex h-11 w-11 items-center justify-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-45 ${
                               isCandidate
                                 ? "bg-[var(--project-primary-wash)] text-[var(--foreground)]"
-                                : "text-[var(--muted)] hover:bg-white hover:text-[var(--foreground)]"
+                                : "text-[var(--muted)] hover:bg-[var(--paper)] hover:text-[var(--foreground)]"
                             }`}
                           >
                             <AppIcon
@@ -759,7 +759,7 @@ export default function SearchModal({
                           onClick={(event) =>
                             onOpenDetail(song, event.currentTarget)
                           }
-                          className="flex h-11 w-11 items-center justify-center rounded-full text-[var(--muted)] transition-colors hover:bg-white hover:text-[var(--foreground)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+                          className="flex h-11 w-11 items-center justify-center rounded-full text-[var(--muted)] transition-colors hover:bg-[var(--paper)] hover:text-[var(--foreground)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
                         >
                           <AppIcon name="info" size={16} />
                         </button>
@@ -769,14 +769,14 @@ export default function SearchModal({
                 })}
               </div>
             ) : (
-              <div className="rounded-[var(--radius-md)] border border-[var(--line)] bg-white px-6 py-14 text-center text-sm text-[var(--muted)]">
+              <div className="rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--paper)] px-6 py-14 text-center text-sm text-[var(--muted)]">
                 {emptyMessage ?? t("search.noMatches")}
               </div>
             )}
           </div>
         </div>
 
-        <div className="flex min-h-14 items-center justify-between gap-3 border-t border-[var(--line)] bg-white px-4 py-3 pb-[max(.75rem,env(safe-area-inset-bottom))] text-xs text-[var(--muted)] sm:px-6">
+        <div className="flex min-h-14 items-center justify-between gap-3 border-t border-[var(--line)] bg-[var(--paper)] px-4 py-3 pb-[max(.75rem,env(safe-area-inset-bottom))] text-xs text-[var(--muted)] sm:px-6">
           <span
             aria-live={isAssistantShortlistMode ? "polite" : undefined}
             aria-busy={
@@ -925,7 +925,7 @@ function FilterChip({
           ? "border-[var(--project-primary)] bg-[var(--project-primary-wash)] text-[var(--foreground)]"
           : muted
             ? "border-[var(--line)] bg-[var(--background)] text-[var(--muted)] hover:text-[var(--foreground)]"
-            : "border-[var(--line)] bg-white text-[var(--muted)] hover:border-[var(--line-strong)] hover:text-[var(--foreground)]"
+            : "border-[var(--line)] bg-[var(--paper)] text-[var(--muted)] hover:border-[var(--line-strong)] hover:text-[var(--foreground)]"
       }`}
     >
       {children}

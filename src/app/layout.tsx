@@ -1,10 +1,16 @@
 import type { Metadata } from "next";
 import type { CSSProperties, ReactNode } from "react";
 import "./globals.css";
-import { PROJECT_CONFIG } from "../config/project";
+import ThemeProvider from "../components/ThemeProvider";
+import { PROJECT_CONFIG, STORAGE_KEYS } from "../config/project";
 import { localizeProjectCopy } from "../i18n/content";
 import LocaleProvider from "../i18n/LocaleProvider";
 import { SITE_URL } from "../utils/constants";
+import { EXPORT_REALM_HASH } from "../utils/exportCapture";
+import {
+  THEME_COLORS,
+  createThemeBootstrapScript,
+} from "../utils/themePreference";
 
 const metadataCopy = localizeProjectCopy(PROJECT_CONFIG.id, "en");
 
@@ -56,15 +62,24 @@ export default function RootLayout({
     <html
       lang="en"
       data-locale="en"
+      data-theme="light"
+      data-theme-preference="auto"
       className="h-full antialiased"
+      style={{ colorScheme: "light" }}
       suppressHydrationWarning
     >
+      <head>
+        <meta name="theme-color" content={THEME_COLORS.light} />
+        <script dangerouslySetInnerHTML={{ __html: themeBootstrapScript }} />
+      </head>
       <body
         className="flex min-h-full flex-col"
         style={projectThemeStyle}
         suppressHydrationWarning
       >
-        <LocaleProvider>{children}</LocaleProvider>
+        <ThemeProvider>
+          <LocaleProvider>{children}</LocaleProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
@@ -75,6 +90,11 @@ const projectThemeStyle = {
   "--project-accent": PROJECT_CONFIG.logoAccentColor,
   "--project-primary-wash": hexToRgba(PROJECT_CONFIG.themeColor, 0.08),
 } as CSSProperties;
+
+const themeBootstrapScript = createThemeBootstrapScript(
+  EXPORT_REALM_HASH,
+  STORAGE_KEYS.theme,
+);
 
 function hexToRgba(hexColor: string, alpha: number) {
   const normalized = hexColor.replace("#", "");

@@ -195,7 +195,7 @@ export default function AnchoredOptionMenu<T extends string>({
         aria-haspopup="menu"
         aria-expanded={isOpen}
         aria-controls={isOpen ? menuId : undefined}
-        className={`flex min-h-11 w-full items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--line-strong)] bg-white px-3 text-left text-[13px] font-medium text-[var(--foreground)] outline-none transition-[border-color,box-shadow,background-color] duration-150 focus:border-[var(--focus-ring)] focus:ring-2 focus:ring-[var(--focus-ring)] disabled:opacity-50 ${
+        className={`flex min-h-11 w-full items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--line-strong)] bg-[var(--paper)] px-3 text-left text-[13px] font-medium text-[var(--foreground)] outline-none transition-[border-color,box-shadow,background-color] duration-150 focus:border-[var(--focus-ring)] focus:ring-2 focus:ring-[var(--focus-ring)] disabled:opacity-50 ${
           isOpen ? "bg-[var(--project-primary-wash)]" : ""
         }`}
       >
@@ -221,7 +221,7 @@ export default function AnchoredOptionMenu<T extends string>({
             aria-hidden={presenceState === "exiting"}
             inert={presenceState === "exiting"}
             onKeyDown={handleMenuKeyDown}
-            className={`apple-material absolute left-0 top-[calc(100%+6px)] z-50 w-full max-w-[calc(100vw-2rem)] origin-top-left rounded-[14px] border-[var(--line)] bg-[rgba(255,255,255,0.97)] p-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.14),0_2px_8px_rgba(0,0,0,0.06)] outline-none ${
+            className={`apple-material absolute left-0 top-[calc(100%+6px)] z-50 w-full max-w-[calc(100vw-2rem)] origin-top-left rounded-[14px] border-[var(--line)] bg-[var(--menu-surface)] p-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.14),0_2px_8px_rgba(0,0,0,0.06)] outline-none ${
               compact ? "min-w-36" : "min-w-[190px]"
             }`}
             initial={{ opacity: 0, scale: 0.985, y: -4 }}

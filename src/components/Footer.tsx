@@ -24,7 +24,7 @@ export default function Footer() {
             href="https://mypick.rurino.dev/"
             target="_blank"
             rel="noreferrer"
-            className="font-semibold text-[var(--foreground)] underline decoration-[var(--project-primary)] decoration-2 underline-offset-4 transition-colors hover:text-black"
+            className="font-semibold text-[var(--foreground)] underline decoration-[var(--project-primary)] decoration-2 underline-offset-4 transition-colors hover:text-[var(--foreground)]"
           >
             {inspirationName}
           </a>

@@ -292,7 +292,7 @@ function ShortlistView({
     currentBoardCandidateCount <= maximumCandidates;
   if (shortlist.length === 0) {
     return (
-      <div className="rounded-[var(--radius-md)] border border-[var(--line)] bg-white px-6 py-14 text-center">
+      <div className="rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--paper)] px-6 py-14 text-center">
         <h3 className="text-lg font-semibold text-[var(--foreground)]">
           {t("assistant.emptyTitle")}
         </h3>
@@ -344,7 +344,7 @@ function ShortlistView({
           {t("assistant.clear")}
         </button>
       </div>
-      <div className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--line)] bg-white">
+      <div className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--paper)]">
         {shortlist.map((song, index) => (
           <div
             key={song.id}
@@ -532,7 +532,7 @@ function ComparisonCard({
       onClick={onClick}
       disabled={disabled}
       aria-label={t("assistant.chooseAria", { title: song.title.ja })}
-      className="group overflow-hidden rounded-[var(--radius-md)] border border-[var(--line-strong)] bg-white text-left transition-[border-color,box-shadow,transform] duration-150 hover:border-[var(--project-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:scale-[0.985]"
+      className="group overflow-hidden rounded-[var(--radius-md)] border border-[var(--line-strong)] bg-[var(--paper)] text-left transition-[border-color,box-shadow,transform] duration-150 hover:border-[var(--project-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] active:scale-[0.985]"
     >
       <img
         src={song.coverUrl}
@@ -592,7 +592,7 @@ function ResultView({
           {t("assistant.completeHint")}
         </p>
       </div>
-      <ol className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--line)] bg-white">
+      <ol className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--paper)]">
         {orderedIds.map((songId, index) => {
           const song = songsById[songId];
           if (!song) return null;
@@ -673,7 +673,7 @@ function StorageIssue({
 }) {
   const { t } = useLocale();
   return (
-    <div className="rounded-[var(--radius-md)] border border-amber-200 bg-white px-5 py-8 text-center">
+    <div className="rounded-[var(--radius-md)] border border-amber-200 bg-[var(--paper)] px-5 py-8 text-center">
       <h3 className="text-lg font-semibold text-[var(--foreground)]">
         {t("assistant.storageBlockedTitle")}
       </h3>

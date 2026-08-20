@@ -17,6 +17,7 @@ export const PROJECT_ID = CURRENT_PROJECT_ID;
 export const STORAGE_KEYS = {
   picks: `${PROJECT_CONFIG.storagePrefix}_mypicks_v1`,
   options: `${PROJECT_CONFIG.storagePrefix}_options_v1`,
+  theme: PROJECT_CONFIG.storagePrefix + "_theme_preference_v1",
   picksV2: `${PROJECT_CONFIG.storagePrefix}_mypicks_v2`,
   optionsV2: `${PROJECT_CONFIG.storagePrefix}_options_v2`,
   boardLibrary: `${PROJECT_CONFIG.storagePrefix}_board_library_v1`,

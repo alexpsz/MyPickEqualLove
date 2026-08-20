@@ -33,7 +33,7 @@ export default function ContextSelector({
             }
             className={`min-h-11 min-w-0 rounded-[9px] border px-1 py-1 text-[13px] font-medium transition-[background-color,border-color,color,box-shadow,transform] duration-150 active:scale-[0.98] sm:px-3 sm:py-2 ${
               activeContextId === context.id
-                ? "border-[var(--line)] bg-white text-[var(--foreground)] shadow-sm"
+                ? "border-[var(--line)] bg-[var(--paper)] text-[var(--foreground)] shadow-sm"
                 : "border-transparent bg-transparent text-[var(--muted)] hover:text-[var(--foreground)]"
             }`}
           >

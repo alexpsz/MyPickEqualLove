@@ -104,7 +104,7 @@ export default function BoardShareImportModal({
           scale: APPLE_SPRING_GENTLE,
         }}
       >
-        <header className="flex items-start gap-3 border-b border-[var(--line)] bg-white px-4 py-4 sm:px-6">
+        <header className="flex items-start gap-3 border-b border-[var(--line)] bg-[var(--paper)] px-4 py-4 sm:px-6">
           <div className="min-w-0 flex-1">
             <h2
               id="board-share-dialog-title"
@@ -156,11 +156,11 @@ export default function BoardShareImportModal({
               {t("boardShare.changesHeading")}
             </h3>
             {state.changes.length === 0 ? (
-              <p className="rounded-[var(--radius-md)] border border-[var(--line)] bg-white px-4 py-5 text-[13px] leading-relaxed text-[var(--muted)]">
+              <p className="rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--paper)] px-4 py-5 text-[13px] leading-relaxed text-[var(--muted)]">
                 {t("boardShare.noChanges")}
               </p>
             ) : (
-              <div className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--line)] bg-white">
+              <div className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--paper)]">
                 {state.changes.map((change, index) => (
                   <div
                     key={change.slotId}
@@ -195,7 +195,7 @@ export default function BoardShareImportModal({
           </div>
         ) : null}
 
-        <footer className="flex flex-wrap items-center justify-end gap-2 border-t border-[var(--line)] bg-white p-3 pb-[max(.75rem,env(safe-area-inset-bottom))] sm:px-5">
+        <footer className="flex flex-wrap items-center justify-end gap-2 border-t border-[var(--line)] bg-[var(--paper)] p-3 pb-[max(.75rem,env(safe-area-inset-bottom))] sm:px-5">
           {state.kind === "mismatch" ? (
             <a
               href={state.targetUrl}

@@ -2870,7 +2870,7 @@ export default function PickExperienceClient({
             />
           ) : null}
           {experience.id === "kokuritsu_2026" ? (
-            <p className="text-[11px] font-medium leading-relaxed text-slate-500">
+            <p className="text-[11px] font-medium leading-relaxed text-[var(--muted)]">
               {uiCopy.hint}
             </p>
           ) : null}

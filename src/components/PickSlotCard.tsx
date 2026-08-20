@@ -75,7 +75,7 @@ export default function PickSlotCard({
   return (
     <article
       ref={articleRef}
-      className="group relative min-w-0 overflow-hidden rounded-[var(--radius-md)] border border-[var(--line)] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.025),0_8px_24px_rgba(0,0,0,0.035)] transition-[border-color,box-shadow] duration-150"
+      className="group relative min-w-0 overflow-hidden rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--paper)] shadow-[0_1px_2px_rgba(0,0,0,0.025),0_8px_24px_rgba(0,0,0,0.035)] transition-[border-color,box-shadow] duration-150"
     >
       <div className="relative">
         <AnimatePresence initial={false} mode="sync">
@@ -149,7 +149,7 @@ function AnimatedCardFace({
       data-card-current={isPresent ? "true" : "false"}
       aria-hidden={!isPresent}
       inert={!isPresent}
-      className={`${isPresent ? "relative" : "absolute inset-0"} origin-center bg-white`}
+      className={`${isPresent ? "relative" : "absolute inset-0"} origin-center bg-[var(--paper)]`}
     >
       {children}
     </m.div>
@@ -244,7 +244,7 @@ function CardFace({
         <CardHeader label={slot.label} reserveAction />
         {compact ? (
           <div className="flex min-h-[180px] min-w-0 border-t border-[var(--line)] bg-[var(--paper-soft)]">
-            <div className="pick-cover-surface pick-cover-surface-compact relative isolate aspect-square w-[clamp(150px,46%,180px)] shrink-0 self-center overflow-hidden border-r border-[var(--line)] bg-white">
+            <div className="pick-cover-surface pick-cover-surface-compact relative isolate aspect-square w-[clamp(150px,46%,180px)] shrink-0 self-center overflow-hidden border-r border-[var(--line)] bg-[var(--paper)]">
               <img
                 src={song.coverUrl}
                 draggable={false}

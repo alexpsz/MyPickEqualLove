@@ -23,6 +23,8 @@
     "../src/utils/colors.ts",
     "../src/utils/exportStyleProxy.ts",
     "./tests/export-style-proxy.test.ts",
-    "./color-conversion.test.ts"
+    "./color-conversion.test.ts",
+    "../src/utils/themePreference.ts",
+    "./tests/theme-preference.test.ts"
   ]
 }
