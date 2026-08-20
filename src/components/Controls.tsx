@@ -9,6 +9,7 @@ interface ControlsProps {
   onClearAll: () => boolean;
   onGenerate: () => void;
   onGlobalSearch: () => void;
+  onOpenCommandPalette: () => void;
   onOpenPickAssistant: () => void;
   onUndo: () => void;
   onRedo: () => void;
@@ -37,6 +38,7 @@ export default function Controls({
   onClearAll,
   onGenerate,
   onGlobalSearch,
+  onOpenCommandPalette,
   onOpenPickAssistant,
   onUndo,
   onRedo,
@@ -166,7 +168,7 @@ export default function Controls({
             <div className="grid gap-3 sm:hidden">{children}</div>
           ) : null}
 
-          <div className="grid grid-cols-3 gap-2 sm:hidden">
+          <div className="grid grid-cols-4 gap-2 sm:hidden">
             <button
               type="button"
               onClick={() => {
@@ -180,6 +182,22 @@ export default function Controls({
               <AppIcon name="search" size={16} />
               <span className="min-w-0 truncate">
                 {t("controls.searchSongsShort")}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setIsMoreOpen(false);
+                onOpenCommandPalette();
+              }}
+              data-command-palette-entry="mobile"
+              data-dialog-return-key={DIALOG_RETURN_KEYS.commandPalette}
+              aria-label={t("commands.entryAria")}
+              className="official-button min-w-0 gap-0.5 !px-1 !text-[12px] leading-tight"
+            >
+              <AppIcon name="keyboard" size={16} />
+              <span className="min-w-0 truncate">
+                {t("commands.entryShort")}
               </span>
             </button>
             <button
@@ -330,6 +348,16 @@ export default function Controls({
               >
                 <AppIcon name="search" />
                 {t("controls.searchSongs")}
+              </button>
+              <button
+                type="button"
+                onClick={onOpenCommandPalette}
+                data-command-palette-entry="desktop"
+                data-dialog-return-key={DIALOG_RETURN_KEYS.commandPalette}
+                className="official-button w-full sm:w-auto"
+              >
+                <AppIcon name="keyboard" />
+                {t("commands.entry")}
               </button>
               <button
                 ref={pickAssistantButtonRef}

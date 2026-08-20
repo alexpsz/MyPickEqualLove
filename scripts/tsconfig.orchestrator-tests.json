@@ -31,6 +31,8 @@
     "./tests/board-insights.test.ts",
     "./color-conversion.test.ts",
     "../src/utils/themePreference.ts",
-    "./tests/theme-preference.test.ts"
+    "./tests/theme-preference.test.ts",
+    "../src/utils/keyboardShortcuts.ts",
+    "./tests/keyboard-shortcuts.test.ts"
   ]
 }

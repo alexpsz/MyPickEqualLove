@@ -53,7 +53,9 @@
     "validate:data": "node scripts/validate-project-data.mjs && npm run check:share-validation",
     "validate:data:project": "node scripts/validate-project-data.mjs --project",
     "test:orchestrator": "node scripts/run-ts-tests.mjs orchestrator",
-    "test:theme": "node scripts/run-ts-tests.mjs theme"
+    "test:theme": "node scripts/run-ts-tests.mjs theme",
+    "test:keyboard-shortcuts": "node scripts/run-ts-tests.mjs keyboard-shortcuts",
+    "test:command-palette-ui": "node scripts/test-command-palette-ui.mjs"
   },
   "dependencies": {
     "html2canvas": "^1.4.1",

@@ -186,6 +186,10 @@ import {
   getPickSlotReturnKey,
   setActiveDialogReturnFocusKey,
 } from "../utils/useDialogA11y";
+import {
+  isShortcutEditableTarget,
+  resolveKeyboardShortcut,
+} from "../utils/keyboardShortcuts";
 import AppTopBar from "./AppTopBar";
 import AppleMotion from "./AppleMotion";
 import BoardLibraryModal, {
@@ -195,6 +199,11 @@ import BoardInsightsPanel from "./BoardInsightsPanel";
 import BoardShareImportModal, {
   type BoardShareDialogState,
 } from "./BoardShareImportModal";
+import CommandPalette, {
+  type CommandPaletteAction,
+  type CommandPaletteCommand,
+  type CommandPaletteView,
+} from "./CommandPalette";
 import Controls from "./Controls";
 import ExperienceNavigation from "./ExperienceNavigation";
 import ExportBoard from "./ExportBoard";
@@ -760,6 +769,8 @@ export default function PickExperienceClient({
     useState<BoardShareDialogState | null>(null);
   const [pendingBoardShareImport, setPendingBoardShareImport] =
     useState<PendingBoardShareImport | null>(null);
+  const [commandPaletteView, setCommandPaletteView] =
+    useState<CommandPaletteView | null>(null);
   const generatingRef = useRef(false);
   const activeFrameRequestIdRef = useRef<string | null>(null);
   const capturedFrameRequestIdRef = useRef<string | null>(null);
@@ -779,6 +790,16 @@ export default function PickExperienceClient({
   const activePreviewCaptureAbortRef = useRef<AbortController | null>(null);
   const boardShareConsumedRef = useRef(false);
   const boardLinkCopiedTimerRef = useRef<number | null>(null);
+  const pendingCommandPaletteActionRef = useRef<CommandPaletteAction | null>(
+    null,
+  );
+  const shortcutActionHandlersRef = useRef<{
+    openCommandPalette: (view: CommandPaletteView) => void;
+    openSearch: () => void;
+  }>({
+    openCommandPalette: () => {},
+    openSearch: () => {},
+  });
   const boardSharePreviewSnapshotRef = useRef({
     experience,
     effectiveContextId,
@@ -1312,6 +1333,8 @@ export default function PickExperienceClient({
       setShowModal(false);
       setSearchSelectionMode("board");
       setShowBoardLibrary(false);
+      setCommandPaletteView(null);
+      pendingCommandPaletteActionRef.current = null;
       setShowPickAssistant(false);
       setAssistantNeedsReview(false);
       setAssistantReviewNotice(false);
@@ -1622,6 +1645,26 @@ export default function PickExperienceClient({
     setDetailSongId(null);
     setActiveSlotId(null);
     setShowModal(true);
+  };
+
+  const handleOpenPickAssistant = () => {
+    if (!hydrated || isExportRealm) return;
+    setShowBoardLibrary(false);
+    setShowModal(false);
+    setSearchSelectionMode("board");
+    setDetailSongId(null);
+    setPendingReplacementSong(null);
+    setShowPickAssistant(true);
+  };
+
+  const handleOpenBoardLibrary = () => {
+    if (hydrated && !isExportRealm) setShowBoardLibrary(true);
+  };
+
+  const handleOpenCommandPalette = (view: CommandPaletteView = "commands") => {
+    if (!hydrated || isExportRealm) return;
+    pendingCommandPaletteActionRef.current = null;
+    setCommandPaletteView(view);
   };
 
   const handleArchetypeEntryClick = () => {
@@ -2931,6 +2974,172 @@ export default function PickExperienceClient({
     return { ok: true, name: snapshot.name };
   };
 
+  const selectedPickCount = Object.keys(picks).length;
+  const canGenerateImage = !generating && selectedPickCount > 0;
+  const commandPaletteCommands = useMemo<CommandPaletteCommand[]>(() => {
+    const commands: CommandPaletteCommand[] = [
+      {
+        action: "search",
+        icon: "search",
+        label: t("controls.searchSongs"),
+      },
+      {
+        action: "pick-assistant",
+        icon: "music",
+        label: t("controls.pickAssistant"),
+      },
+      {
+        action: "board-library",
+        icon: "archive",
+        label: t("controls.myBoards", { count: scopedSnapshots.length }),
+      },
+      {
+        action: "undo",
+        disabled: boardHistory.past.length === 0,
+        icon: "undo",
+        label: t("controls.undo"),
+      },
+      {
+        action: "redo",
+        disabled: boardHistory.future.length === 0,
+        icon: "redo",
+        label: t("controls.redo"),
+      },
+      {
+        action: "preview",
+        disabled: !canGenerateImage,
+        icon: "image",
+        label: t("controls.generateImage"),
+      },
+    ];
+
+    if (showArchetypeEntry) {
+      commands.push({
+        action: "archetype",
+        icon: "sparkles",
+        label: t("commands.archetype"),
+      });
+    }
+
+    return commands;
+  }, [
+    boardHistory.future.length,
+    boardHistory.past.length,
+    canGenerateImage,
+    scopedSnapshots.length,
+    showArchetypeEntry,
+    t,
+  ]);
+
+  const runCommandPaletteAction = (action: CommandPaletteAction) => {
+    switch (action) {
+      case "search":
+        handleGlobalSearchClick();
+        return;
+      case "pick-assistant":
+        handleOpenPickAssistant();
+        return;
+      case "board-library":
+        handleOpenBoardLibrary();
+        return;
+      case "undo":
+        applyHistoryAction("undo");
+        return;
+      case "redo":
+        applyHistoryAction("redo");
+        return;
+      case "preview":
+        void handleGenerateImage();
+        return;
+      case "archetype":
+        handleArchetypeEntryClick();
+    }
+  };
+
+  const handleCommandPaletteActionRequest = (action: CommandPaletteAction) => {
+    pendingCommandPaletteActionRef.current = action;
+    setCommandPaletteView(null);
+  };
+
+  const handleCommandPaletteExitComplete = () => {
+    const action = pendingCommandPaletteActionRef.current;
+    if (!action) return;
+
+    pendingCommandPaletteActionRef.current = null;
+    window.requestAnimationFrame(() => runCommandPaletteAction(action));
+  };
+
+  shortcutActionHandlersRef.current = {
+    openCommandPalette: handleOpenCommandPalette,
+    openSearch: handleGlobalSearchClick,
+  };
+
+  useEffect(() => {
+    if (!hydrated || isExportRealm) return;
+
+    const isPopoverOpen = (element: HTMLElement) => {
+      try {
+        return element.matches(":popover-open");
+      } catch {
+        return !element.hidden && element.getClientRects().length > 0;
+      }
+    };
+
+    const handleKeyboardShortcut = (event: KeyboardEvent) => {
+      const action = resolveKeyboardShortcut(event, {
+        hasActiveDialog: Boolean(
+          document.querySelector('[aria-modal="true"], dialog[open]'),
+        ),
+        hasOpenMenu:
+          Boolean(
+            document.querySelector(
+              '[role="menu"], [role="listbox"], [aria-expanded="true"]',
+            ),
+          ) ||
+          Array.from(document.querySelectorAll<HTMLElement>("[popover]")).some(
+            isPopoverOpen,
+          ),
+        isEditableTarget: isShortcutEditableTarget(event.target),
+        isExportRealm,
+        isHydrated: hydrated,
+        isReordering: Boolean(
+          document.querySelector(
+            '[data-reorder-source="true"], [data-dragging="true"]',
+          ),
+        ),
+        slotCount: slots.length,
+      });
+      if (!action) return;
+
+      if (action.type === "focus-slot") {
+        const slot = document.querySelectorAll<HTMLElement>(
+          "[data-reorder-slot-id]",
+        )[action.slotIndex];
+        const slotAction = slot?.querySelector<HTMLButtonElement>(
+          "[data-dialog-return-key]",
+        );
+        if (!slot || !slotAction) return;
+
+        event.preventDefault();
+        slot.scrollIntoView({ block: "nearest", inline: "nearest" });
+        slotAction.focus({ preventScroll: true });
+        return;
+      }
+
+      event.preventDefault();
+      if (action.type === "open-search") {
+        shortcutActionHandlersRef.current.openSearch();
+        return;
+      }
+      shortcutActionHandlersRef.current.openCommandPalette(
+        action.type === "open-shortcuts" ? "shortcuts" : "commands",
+      );
+    };
+
+    window.addEventListener("keydown", handleKeyboardShortcut);
+    return () => window.removeEventListener("keydown", handleKeyboardShortcut);
+  }, [hydrated, isExportRealm, slots.length]);
+
   const headerMeta = buildHeaderMeta(
     uiCopy.eventName,
     activeUiContextDescription,
@@ -2975,31 +3184,22 @@ export default function PickExperienceClient({
             void handleGenerateImage();
           }}
           onGlobalSearch={handleGlobalSearchClick}
-          onOpenPickAssistant={() => {
-            if (!hydrated || isExportRealm) return;
-            setShowBoardLibrary(false);
-            setShowModal(false);
-            setSearchSelectionMode("board");
-            setDetailSongId(null);
-            setPendingReplacementSong(null);
-            setShowPickAssistant(true);
-          }}
+          onOpenCommandPalette={handleOpenCommandPalette}
+          onOpenPickAssistant={handleOpenPickAssistant}
           onUndo={() => applyHistoryAction("undo")}
           onRedo={() => applyHistoryAction("redo")}
-          onOpenBoardLibrary={() => {
-            if (hydrated && !isExportRealm) setShowBoardLibrary(true);
-          }}
+          onOpenBoardLibrary={handleOpenBoardLibrary}
           onCopyBoardLink={handleCopyBoardLink}
           nickname={nicknameDraft}
           nicknameMaxLength={MAX_NICKNAME_LENGTH}
           onNicknameChange={handleNicknameChange}
           generating={generating}
-          hasPicks={Object.keys(picks).length > 0}
+          hasPicks={selectedPickCount > 0}
           canUndo={boardHistory.past.length > 0}
           canRedo={boardHistory.future.length > 0}
           savedBoardCount={scopedSnapshots.length}
           totalSongs={eligibleSongsCount}
-          selectedCount={Object.keys(picks).length}
+          selectedCount={selectedPickCount}
           shortlistCount={assistantShortlistIds.length}
           slotCount={slots.length}
           metricLabel={
@@ -3106,6 +3306,25 @@ export default function PickExperienceClient({
         </main>
 
         <Footer />
+
+        <MotionPresence
+          value={commandPaletteView}
+          onExitComplete={handleCommandPaletteExitComplete}
+        >
+          {(view, presenceState) => (
+            <CommandPalette
+              commands={commandPaletteCommands}
+              presenceState={presenceState}
+              view={view}
+              onClose={() => {
+                pendingCommandPaletteActionRef.current = null;
+                setCommandPaletteView(null);
+              }}
+              onSelect={handleCommandPaletteActionRequest}
+              onViewChange={setCommandPaletteView}
+            />
+          )}
+        </MotionPresence>
 
         <MotionPresence value={showBoardLibrary ? true : null}>
           {(_boardLibraryPresentation, presenceState) => (

@@ -13,6 +13,7 @@ export type AppIconName =
   | "grip"
   | "image"
   | "info"
+  | "keyboard"
   | "menu"
   | "monitor"
   | "moon"
@@ -22,6 +23,7 @@ export type AppIconName =
   | "redo"
   | "search"
   | "share"
+  | "sparkles"
   | "sun"
   | "undo";
 
@@ -125,6 +127,14 @@ function getIconPaths(name: AppIconName) {
           <path d="M12 7.4h.01" />
         </>
       );
+    case "keyboard":
+      return (
+        <>
+          <rect x="3.5" y="6.25" width="17" height="11.5" rx="2" />
+          <path d="M6.75 10h.01M9.75 10h.01M12.75 10h.01M15.75 10h.01M6.75 13h.01M9.75 13h.01M12.75 13h.01M15.75 13h.01" />
+          <path d="M8.5 15.5h7" />
+        </>
+      );
     case "menu":
       return (
         <>
@@ -175,6 +185,14 @@ function getIconPaths(name: AppIconName) {
           <circle cx="6" cy="12" r="2.25" />
           <circle cx="18" cy="18.25" r="2.25" />
           <path d="m7.9 10.95 8.2-4.15M7.9 13.05l8.2 4.15" />
+        </>
+      );
+    case "sparkles":
+      return (
+        <>
+          <path d="m12 3 1.2 4.1L17.25 8.3l-4.05 1.2L12 13.5l-1.2-4-4.05-1.2L10.8 7.1 12 3Z" />
+          <path d="m18.25 14.75.65 2.1 2.1.65-2.1.65-.65 2.1-.65-2.1-2.1-.65 2.1-.65.65-2.1Z" />
+          <path d="m5.75 14.5.5 1.6 1.6.5-1.6.5-.5 1.6-.5-1.6-1.6-.5 1.6-.5.5-1.6Z" />
         </>
       );
     case "sun":

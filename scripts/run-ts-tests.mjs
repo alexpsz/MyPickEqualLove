@@ -64,6 +64,12 @@ const SUITES = {
     emittedTestFiles: ["scripts/tests/theme-preference.test.js"],
     successMessage: "Theme preference tests passed.",
   },
+  "keyboard-shortcuts": {
+    tempPrefix: "mypick-keyboard-shortcuts-tests-",
+    project: "scripts/tsconfig.orchestrator-tests.json",
+    emittedTestFiles: ["scripts/tests/keyboard-shortcuts.test.js"],
+    successMessage: "Keyboard shortcut tests passed.",
+  },
   "export-presets": {
     tempPrefix: "mypick-export-tests-",
     compilerArgs: NODE16_ARGS,

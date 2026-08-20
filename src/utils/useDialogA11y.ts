@@ -17,6 +17,7 @@ export const DIALOG_RETURN_KEYS = {
   generateImage: "generate-image",
   boardLibrary: "board-library",
   copyBoardLink: "copy-board-link",
+  commandPalette: "command-palette",
   pickAssistant: "pick-assistant",
   archetype: "archetype-result",
 } as const;
