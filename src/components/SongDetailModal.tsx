@@ -11,6 +11,7 @@ import {
   SOURCE_STATUS_MESSAGE_KEYS,
   TRACK_TYPE_MESSAGE_KEYS,
 } from "../utils/songMetadata";
+import { getSongPagePath } from "../utils/songRoutes";
 import { useDialogA11y } from "../utils/useDialogA11y";
 import AppIcon from "./AppIcon";
 import { APPLE_OPACITY, APPLE_SPRING_GENTLE } from "./AppleMotion";
@@ -262,6 +263,13 @@ export default function SongDetailModal({
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-2 border-t border-[var(--line)] bg-[var(--paper)] px-4 py-3 pb-[max(.75rem,env(safe-area-inset-bottom))] sm:px-6">
+          <a
+            href={getSongPagePath(song.id)}
+            className="official-button official-button-quiet"
+          >
+            {t("songCatalog.viewSongPage")}
+            <AppIcon name="chevron-right" size={16} />
+          </a>
           <button
             type="button"
             onClick={() => onToggleCandidate(song)}
