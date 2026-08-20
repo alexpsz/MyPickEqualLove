@@ -15,11 +15,21 @@ const creditsSourceUrl = new URL(
   "../src/utils/songCredits.ts",
   import.meta.url,
 );
-const source = await readFile(sourceUrl, "utf8");
+const pickExperienceClientSourceUrl = new URL(
+  "../src/components/PickExperienceClient.tsx",
+  import.meta.url,
+);
+const searchModalSourceUrl = new URL(
+  "../src/components/SearchModal.tsx",
+  import.meta.url,
+);
+const projectSourceUrl = new URL("../src/config/project.ts", import.meta.url);
 const compilerOptions = {
   module: ts.ModuleKind.ESNext,
   target: ts.ScriptTarget.ES2022,
 };
+
+const source = await readFile(sourceUrl, "utf8");
 const creditsSource = await readFile(creditsSourceUrl, "utf8");
 const creditsCompiled = ts.transpileModule(creditsSource, {
   compilerOptions,
@@ -28,9 +38,7 @@ const creditsCompiled = ts.transpileModule(creditsSource, {
 const creditsModuleUrl = `data:text/javascript;base64,${Buffer.from(creditsCompiled).toString("base64")}`;
 const compiled = ts
   .transpileModule(source, {
-    compilerOptions: {
-      ...compilerOptions,
-    },
+    compilerOptions,
     fileName: sourceUrl.pathname,
   })
   .outputText.replace('"./songCredits"', JSON.stringify(creditsModuleUrl));
@@ -43,6 +51,7 @@ const {
   rankSongsByQuery,
   shouldShowGraduatedMemberFeaturesByDefault,
 } = await import(moduleUrl);
+
 const storageSource = await readFile(storageSourceUrl, "utf8");
 const storageCompiled = ts.transpileModule(storageSource, {
   compilerOptions,
@@ -50,11 +59,19 @@ const storageCompiled = ts.transpileModule(storageSource, {
 }).outputText;
 const storageModuleUrl = `data:text/javascript;base64,${Buffer.from(storageCompiled).toString("base64")}`;
 const {
-  readSongDiscoveryStorage,
+  getNewSongIds,
+  loadSongDiscoveryState,
+  markSongDiscoverySongsSeen,
   recordRecentSongId,
-  saveSongDiscoveryState,
   updateStoredSongDiscoveryState,
 } = await import(storageModuleUrl);
+const [pickExperienceClientSource, searchModalSource, projectSource] =
+  await Promise.all([
+    readFile(pickExperienceClientSourceUrl, "utf8"),
+    readFile(searchModalSourceUrl, "utf8"),
+    readFile(projectSourceUrl, "utf8"),
+  ]);
+
 const membersById = {
   member: {
     id: "member",
@@ -122,6 +139,10 @@ const defaultSongFilters = {
   hideSelected: false,
   selectedRanksBySongId: {},
 };
+
+const DISCOVERY_V1_KEY = "discovery-v1";
+const DISCOVERY_V2_KEY = "discovery-v2";
+const CATALOG_SONG_IDS = ["song-a", "song-b", "song-c"];
 
 function getFilteredSongIds(overrides = {}) {
   return filterSongsForSearch(graduatedFeatureSongs, {
@@ -315,206 +336,425 @@ test("Enter selects the first ranked result but not during IME or modifiers", ()
   );
 });
 
-test("classifies and preserves every blocked discovery document", async (t) => {
+test("seeds an absent v2 and absent v1 catalog without announcing existing songs", () => {
+  withDiscoveryStorage({}, ({ storage }) => {
+    const result = loadSongDiscoveryState(
+      DISCOVERY_V2_KEY,
+      DISCOVERY_V1_KEY,
+      CATALOG_SONG_IDS,
+    );
+
+    assert.deepEqual(result, {
+      ok: true,
+      state: createV2State({ seenSongIds: CATALOG_SONG_IDS }),
+      newSongIds: [],
+    });
+    assert.equal(storage.setCalls, 1);
+    assert.deepEqual(
+      JSON.parse(storage.peekItem(DISCOVERY_V2_KEY)),
+      createV2State({ seenSongIds: CATALOG_SONG_IDS }),
+    );
+    assert.equal(storage.peekItem(DISCOVERY_V1_KEY), null);
+  });
+});
+
+test("migrates a legal v1 document into a seeded v2 document without changing v1", () => {
+  const legacy = JSON.stringify({
+    version: 1,
+    favoriteSongIds: ["song-b", "unknown", "song-b"],
+    recentSongIds: ["unknown", "song-a", "song-a"],
+  });
+
+  withDiscoveryStorage({ [DISCOVERY_V1_KEY]: legacy }, ({ storage }) => {
+    const result = loadSongDiscoveryState(
+      DISCOVERY_V2_KEY,
+      DISCOVERY_V1_KEY,
+      CATALOG_SONG_IDS,
+    );
+
+    assert.deepEqual(result, {
+      ok: true,
+      state: createV2State({
+        favoriteSongIds: ["song-b"],
+        recentSongIds: ["song-a"],
+        seenSongIds: CATALOG_SONG_IDS,
+      }),
+      newSongIds: [],
+    });
+    assert.equal(storage.peekItem(DISCOVERY_V1_KEY), legacy);
+    assert.deepEqual(
+      JSON.parse(storage.peekItem(DISCOVERY_V2_KEY)),
+      result.state,
+    );
+  });
+});
+
+test("fails closed instead of migrating unsupported, damaged, or unreadable v1", async (t) => {
   const fixtures = [
     {
-      name: "old",
-      serialized: JSON.stringify({
-        version: 0,
-        favoriteSongIds: ["song-a"],
-        recentSongIds: [],
-      }),
-      kind: "unsupported-version",
-      version: 0,
-    },
-    {
       name: "future",
-      serialized: JSON.stringify({
+      value: JSON.stringify({
         version: 2,
-        favoriteSongIds: ["song-a"],
+        favoriteSongIds: [],
         recentSongIds: [],
       }),
-      kind: "unsupported-version",
-      version: 2,
+      reason: "unsupported-version",
     },
+    { name: "corrupt", value: "{", reason: "corrupt" },
     {
-      name: "missingVersion",
-      serialized: JSON.stringify({
-        favoriteSongIds: ["song-a"],
-        recentSongIds: [],
-      }),
-      kind: "invalid",
-    },
-    { name: "badJson", serialized: "{", kind: "corrupt" },
-    { name: "nullRoot", serialized: "null", kind: "invalid" },
-    { name: "arrayRoot", serialized: "[]", kind: "invalid" },
-    { name: "stringRoot", serialized: '"text"', kind: "invalid" },
-    {
-      name: "badV1",
-      serialized: JSON.stringify({
+      name: "invalid",
+      value: JSON.stringify({
         version: 1,
-        favoriteSongIds: ["song-a", 7],
+        favoriteSongIds: [],
         recentSongIds: [],
+        unexpected: true,
       }),
-      kind: "invalid",
-    },
-    {
-      name: "badV1Field",
-      serialized: JSON.stringify({
-        version: 1,
-        favoriteSongIds: ["song-a"],
-        recentSongIds: "song-b",
-      }),
-      kind: "invalid",
+      reason: "invalid",
     },
   ];
 
   for (const fixture of fixtures) {
     await t.test(fixture.name, () => {
-      withLocalStorage(fixture.serialized, ({ storage }) => {
-        const readResult = readSongDiscoveryStorage(
-          "discovery",
-          new Set(["song-a", "song-b"]),
-        );
-        assert.equal(readResult.kind, fixture.kind);
-        if (readResult.kind === "unsupported-version") {
-          assert.equal(readResult.version, fixture.version);
-        }
-
-        const updateResult = updateStoredSongDiscoveryState(
-          "discovery",
-          new Set(["song-a", "song-b"]),
-          (current) => recordRecentSongId(current, "song-b", 4),
-        );
-        assert.equal(updateResult.ok, false);
-        if (!updateResult.ok) {
-          assert.equal(updateResult.reason, fixture.kind);
-          if (updateResult.reason === "unsupported-version") {
-            assert.equal(updateResult.version, fixture.version);
+      withDiscoveryStorage(
+        { [DISCOVERY_V1_KEY]: fixture.value },
+        ({ storage }) => {
+          const result = loadSongDiscoveryState(
+            DISCOVERY_V2_KEY,
+            DISCOVERY_V1_KEY,
+            CATALOG_SONG_IDS,
+          );
+          assert.equal(result.ok, false);
+          if (!result.ok) {
+            assert.equal(result.reason, fixture.reason);
+            assert.deepEqual(result.newSongIds, []);
           }
-        }
-        assert.equal(
-          saveSongDiscoveryState("discovery", {
-            version: 1,
-            favoriteSongIds: ["song-a"],
-            recentSongIds: ["song-b"],
-          }),
-          false,
+          assert.equal(storage.setCalls, 0);
+          assert.equal(storage.peekItem(DISCOVERY_V2_KEY), null);
+          assert.equal(storage.peekItem(DISCOVERY_V1_KEY), fixture.value);
+        },
+      );
+    });
+  }
+
+  await t.test("read-failed", () => {
+    withDiscoveryStorage(
+      {},
+      ({ storage }) => {
+        const result = loadSongDiscoveryState(
+          DISCOVERY_V2_KEY,
+          DISCOVERY_V1_KEY,
+          CATALOG_SONG_IDS,
         );
+        assert.equal(result.ok, false);
+        if (!result.ok) assert.equal(result.reason, "read-failed");
         assert.equal(storage.setCalls, 0);
-        assert.equal(storage.peekItem("discovery"), fixture.serialized);
+        assert.equal(storage.peekItem(DISCOVERY_V2_KEY), null);
+      },
+      { throwOnGetCall: 2 },
+    );
+  });
+});
+
+test("derives NEW only from an old valid v2 seen snapshot in current catalog order", () => {
+  const v2 = JSON.stringify(
+    createV2State({ seenSongIds: ["song-a", "unknown", "song-a"] }),
+  );
+  const currentCatalog = ["song-c", "song-a", "song-b"];
+
+  withDiscoveryStorage(
+    {
+      [DISCOVERY_V2_KEY]: v2,
+      [DISCOVERY_V1_KEY]: JSON.stringify({
+        version: 1,
+        favoriteSongIds: ["song-b"],
+        recentSongIds: [],
+      }),
+    },
+    ({ storage }) => {
+      const result = loadSongDiscoveryState(
+        DISCOVERY_V2_KEY,
+        DISCOVERY_V1_KEY,
+        currentCatalog,
+      );
+      assert.deepEqual(result, {
+        ok: true,
+        state: createV2State({ seenSongIds: ["song-a"] }),
+        newSongIds: ["song-c", "song-b"],
       });
+      assert.equal(storage.setCalls, 0);
+      assert.equal(storage.peekItem(DISCOVERY_V2_KEY), v2);
+    },
+  );
+});
+
+test("fails closed for bad v2 without falling back to or overwriting v1", async (t) => {
+  const legacy = JSON.stringify({
+    version: 1,
+    favoriteSongIds: ["song-a"],
+    recentSongIds: ["song-b"],
+  });
+  const fixtures = [
+    {
+      name: "future",
+      value: JSON.stringify({
+        version: 3,
+        favoriteSongIds: [],
+        recentSongIds: [],
+        seenSongIds: [],
+      }),
+      reason: "unsupported-version",
+    },
+    { name: "corrupt", value: "{", reason: "corrupt" },
+    {
+      name: "invalid",
+      value: JSON.stringify({
+        version: 2,
+        favoriteSongIds: [],
+        recentSongIds: [],
+      }),
+      reason: "invalid",
+    },
+  ];
+
+  for (const fixture of fixtures) {
+    await t.test(fixture.name, () => {
+      withDiscoveryStorage(
+        { [DISCOVERY_V2_KEY]: fixture.value, [DISCOVERY_V1_KEY]: legacy },
+        ({ storage }) => {
+          const result = loadSongDiscoveryState(
+            DISCOVERY_V2_KEY,
+            DISCOVERY_V1_KEY,
+            CATALOG_SONG_IDS,
+          );
+          assert.equal(result.ok, false);
+          if (!result.ok) {
+            assert.equal(result.reason, fixture.reason);
+            assert.deepEqual(result.newSongIds, []);
+          }
+          assert.equal(storage.setCalls, 0);
+          assert.equal(storage.peekItem(DISCOVERY_V2_KEY), fixture.value);
+          assert.equal(storage.peekItem(DISCOVERY_V1_KEY), legacy);
+        },
+      );
+    });
+  }
+
+  await t.test("read-failed", () => {
+    withDiscoveryStorage(
+      { [DISCOVERY_V1_KEY]: legacy },
+      ({ storage }) => {
+        const result = loadSongDiscoveryState(
+          DISCOVERY_V2_KEY,
+          DISCOVERY_V1_KEY,
+          CATALOG_SONG_IDS,
+        );
+        assert.equal(result.ok, false);
+        if (!result.ok) assert.equal(result.reason, "read-failed");
+        assert.equal(storage.setCalls, 0);
+        assert.equal(storage.peekItem(DISCOVERY_V2_KEY), null);
+        assert.equal(storage.peekItem(DISCOVERY_V1_KEY), legacy);
+      },
+      { throwOnGetCall: 1 },
+    );
+  });
+});
+
+test("does not publish a NEW state when v2 initialization or migration cannot write", async (t) => {
+  const legacy = JSON.stringify({
+    version: 1,
+    favoriteSongIds: ["song-a"],
+    recentSongIds: ["song-b"],
+  });
+  const fixtures = [
+    { name: "initialization", initial: {} },
+    { name: "migration", initial: { [DISCOVERY_V1_KEY]: legacy } },
+  ];
+
+  for (const fixture of fixtures) {
+    await t.test(fixture.name, () => {
+      withDiscoveryStorage(
+        fixture.initial,
+        ({ storage }) => {
+          const result = loadSongDiscoveryState(
+            DISCOVERY_V2_KEY,
+            DISCOVERY_V1_KEY,
+            CATALOG_SONG_IDS,
+          );
+          assert.equal(result.ok, false);
+          if (!result.ok) {
+            assert.equal(result.reason, "write-failed");
+            assert.deepEqual(result.newSongIds, []);
+          }
+          assert.equal(storage.setCalls, 1);
+          assert.equal(storage.peekItem(DISCOVERY_V2_KEY), null);
+          assert.equal(
+            storage.peekItem(DISCOVERY_V1_KEY),
+            fixture.initial[DISCOVERY_V1_KEY] ?? null,
+          );
+        },
+        { throwOnSet: true },
+      );
     });
   }
 });
 
-test("allows an absent discovery key to be written for the first time", () => {
-  withLocalStorage(undefined, ({ storage }) => {
-    assert.deepEqual(
-      readSongDiscoveryStorage("discovery", new Set(["song-a"])),
-      {
-        kind: "absent",
-        state: { version: 1, favoriteSongIds: [], recentSongIds: [] },
-      },
-    );
-
-    const result = updateStoredSongDiscoveryState(
-      "discovery",
-      new Set(["song-a"]),
-      (current) => recordRecentSongId(current, "song-a", 4),
-    );
-    assert.deepEqual(result, {
-      ok: true,
-      state: {
-        version: 1,
-        favoriteSongIds: [],
-        recentSongIds: ["song-a"],
-      },
-    });
-    assert.equal(storage.setCalls, 1);
-    assert.deepEqual(JSON.parse(storage.peekItem("discovery")), result.state);
-  });
-});
-
-test("updates valid v1 from one read while preserving legacy favorites", () => {
-  const original = JSON.stringify({
-    version: 1,
-    favoriteSongIds: ["song-a", "missing", "song-a"],
-    recentSongIds: ["missing", "song-b", "song-b"],
+test("recording a recent song preserves the v2 seen snapshot and NEW batch", () => {
+  const current = createV2State({
+    favoriteSongIds: ["song-a"],
+    recentSongIds: ["song-b"],
+    seenSongIds: ["song-a"],
   });
 
-  withLocalStorage(original, ({ storage }) => {
-    const result = updateStoredSongDiscoveryState(
-      "discovery",
-      new Set(["song-a", "song-b", "song-c"]),
-      (current) => recordRecentSongId(current, "song-c", 3),
-    );
-    assert.deepEqual(result, {
-      ok: true,
-      state: {
-        version: 1,
-        favoriteSongIds: ["song-a"],
-        recentSongIds: ["song-c", "song-b"],
-      },
-    });
-    assert.equal(storage.getCalls, 1);
-    assert.equal(storage.setCalls, 1);
-    assert.deepEqual(JSON.parse(storage.peekItem("discovery")), result.state);
-  });
-});
-
-test("keeps recent song IDs newest-first, unique, and within the limit", () => {
-  const initial = {
-    version: 1,
-    favoriteSongIds: [],
-    recentSongIds: ["song-b", "song-a", "song-c"],
-  };
-
-  assert.deepEqual(recordRecentSongId(initial, "song-a", 2).recentSongIds, [
-    "song-a",
-    "song-b",
-  ]);
-  assert.deepEqual(recordRecentSongId(initial, "song-d", 3).recentSongIds, [
-    "song-d",
-    "song-b",
-    "song-a",
-  ]);
-});
-
-test("reports storage read and write failures without optimistic success", () => {
-  withLocalStorage(
-    undefined,
+  withDiscoveryStorage(
+    { [DISCOVERY_V2_KEY]: JSON.stringify(current) },
     ({ storage }) => {
-      assert.deepEqual(
-        updateStoredSongDiscoveryState(
-          "discovery",
-          new Set(["song-a"]),
-          (current) => recordRecentSongId(current, "song-a", 4),
-        ),
-        { ok: false, reason: "read-failed" },
+      const result = updateStoredSongDiscoveryState(
+        DISCOVERY_V2_KEY,
+        CATALOG_SONG_IDS,
+        (state) => recordRecentSongId(state, "song-c", 20),
       );
-      assert.equal(storage.setCalls, 0);
-    },
-    { throwOnGet: true },
-  );
-
-  withLocalStorage(
-    undefined,
-    ({ storage }) => {
-      assert.deepEqual(
-        updateStoredSongDiscoveryState(
-          "discovery",
-          new Set(["song-a"]),
-          (current) => recordRecentSongId(current, "song-a", 4),
-        ),
-        { ok: false, reason: "write-failed" },
-      );
+      assert.deepEqual(result, {
+        ok: true,
+        state: createV2State({
+          favoriteSongIds: ["song-a"],
+          recentSongIds: ["song-c", "song-b"],
+          seenSongIds: ["song-a"],
+        }),
+      });
       assert.equal(storage.getCalls, 1);
-      assert.equal(storage.setCalls, 1);
-      assert.equal(storage.peekItem("discovery"), null);
+      assert.deepEqual(getNewSongIds(result.state, CATALOG_SONG_IDS), [
+        "song-b",
+        "song-c",
+      ]);
     },
-    { throwOnSet: true },
   );
+});
+
+test("explicitly marking seen acknowledges every current song and clears NEW", () => {
+  const current = createV2State({
+    favoriteSongIds: ["song-b"],
+    recentSongIds: ["song-a"],
+    seenSongIds: ["song-a"],
+  });
+
+  withDiscoveryStorage(
+    { [DISCOVERY_V2_KEY]: JSON.stringify(current) },
+    ({ storage }) => {
+      const result = markSongDiscoverySongsSeen(
+        DISCOVERY_V2_KEY,
+        CATALOG_SONG_IDS,
+        current,
+      );
+      assert.deepEqual(result, {
+        ok: true,
+        state: createV2State({
+          favoriteSongIds: ["song-b"],
+          recentSongIds: ["song-a"],
+          seenSongIds: CATALOG_SONG_IDS,
+        }),
+      });
+      assert.deepEqual(getNewSongIds(result.state, CATALOG_SONG_IDS), []);
+      assert.deepEqual(
+        JSON.parse(storage.peekItem(DISCOVERY_V2_KEY)),
+        result.state,
+      );
+    },
+  );
+});
+
+test("mark-seen write failures and freshness conflicts leave the caller state unchanged", async (t) => {
+  const memoryState = createV2State({ seenSongIds: ["song-a"] });
+  const memorySnapshot = JSON.stringify(memoryState);
+
+  await t.test("write-failed", () => {
+    const serialized = JSON.stringify(memoryState);
+    withDiscoveryStorage(
+      { [DISCOVERY_V2_KEY]: serialized },
+      ({ storage }) => {
+        const result = markSongDiscoverySongsSeen(
+          DISCOVERY_V2_KEY,
+          CATALOG_SONG_IDS,
+          memoryState,
+        );
+        assert.deepEqual(result, { ok: false, reason: "write-failed" });
+        assert.equal(JSON.stringify(memoryState), memorySnapshot);
+        assert.equal(storage.peekItem(DISCOVERY_V2_KEY), serialized);
+      },
+      { throwOnSet: true },
+    );
+  });
+
+  await t.test("freshness-conflict", () => {
+    const stored = createV2State({
+      favoriteSongIds: ["song-b"],
+      seenSongIds: ["song-a"],
+    });
+    const serialized = JSON.stringify(stored);
+    withDiscoveryStorage({ [DISCOVERY_V2_KEY]: serialized }, ({ storage }) => {
+      const result = markSongDiscoverySongsSeen(
+        DISCOVERY_V2_KEY,
+        CATALOG_SONG_IDS,
+        memoryState,
+      );
+      assert.deepEqual(result, { ok: false, reason: "conflict" });
+      assert.equal(JSON.stringify(memoryState), memorySnapshot);
+      assert.equal(storage.setCalls, 0);
+      assert.equal(storage.peekItem(DISCOVERY_V2_KEY), serialized);
+    });
+  });
+});
+
+test("new song UI remains a standard-mode search affordance with one explicit acknowledgement", () => {
+  assert.match(
+    projectSource,
+    /songDiscoveryV2:\s+`\$\{PROJECT_CONFIG\.storagePrefix\}_song_discovery_v2`/,
+  );
+  assert.match(pickExperienceClientSource, /<NewSongsBanner/);
+  assert.match(
+    pickExperienceClientSource,
+    /onViewNewSongs=\{handleGlobalSearchClick\}/,
+  );
+  assert.match(
+    pickExperienceClientSource,
+    /onMarkSeen=\{handleMarkSongDiscoverySongsSeen\}/,
+  );
+  assert.match(
+    pickExperienceClientSource,
+    /const isStandardTopTen = isStandard && slots\.length === 10;/,
+  );
+  assert.match(
+    pickExperienceClientSource,
+    /const showNewSongsBanner =\s*hydrated &&\s*!isExportRealm &&\s*isStandardTopTen &&\s*songDiscoveryNewSongIds\.length > 0;/,
+  );
+  assert.match(
+    pickExperienceClientSource,
+    /newSongIds=\{isStandardTopTen \? newSongIdSet : undefined\}/,
+  );
+  assert.match(
+    pickExperienceClientSource,
+    /watchedKey: STORAGE_KEYS\.songDiscoveryV2/,
+  );
+  assert.match(searchModalSource, /newSongIds\?: ReadonlySet<string>/);
+  assert.match(searchModalSource, /songDiscovery\.newBadge/);
+  assert.match(
+    getSourceSection(
+      pickExperienceClientSource,
+      "const handleMarkSongDiscoverySongsSeen",
+      "const handleOpenSongDetail",
+    ),
+    /if \(!result\.ok\) \{\s*setBoardStatusMessage\(t\("boardLibrary\.error\.storage"\)\);\s*return;\s*\}\s*setSongDiscoveryState\(result\.state\)/,
+  );
+
+  for (const [start, end] of [
+    ["const handleGlobalSearchClick", "const handleArchetypeEntryClick"],
+    ["const handleOpenSongDetail", "const commitPickAssistantUpdate"],
+    ["const handleSelectSong =", "const handleSelectSongFromDetail"],
+  ]) {
+    assert.doesNotMatch(
+      getSourceSection(pickExperienceClientSource, start, end),
+      /markSongDiscoverySongsSeen/,
+    );
+  }
 });
 
 function createSong(id, ja, romaji, overrides = {}) {
@@ -532,16 +772,35 @@ function createSong(id, ja, romaji, overrides = {}) {
   };
 }
 
-function withLocalStorage(serialized, callback, options = {}) {
+function createV2State(overrides = {}) {
+  return {
+    version: 2,
+    favoriteSongIds: [],
+    recentSongIds: [],
+    seenSongIds: [],
+    ...overrides,
+  };
+}
+
+function getSourceSection(sourceText, startMarker, endMarker) {
+  const start = sourceText.indexOf(startMarker);
+  const end = sourceText.indexOf(endMarker, start + startMarker.length);
+  assert.notEqual(start, -1, `missing ${startMarker}`);
+  assert.notEqual(end, -1, `missing ${endMarker}`);
+  return sourceText.slice(start, end);
+}
+
+function withDiscoveryStorage(initialValues, callback, options = {}) {
   const originalWindow = globalThis.window;
-  const values = new Map();
-  if (serialized !== undefined) values.set("discovery", serialized);
+  const values = new Map(Object.entries(initialValues));
   const storage = {
     getCalls: 0,
     setCalls: 0,
     getItem(key) {
       this.getCalls += 1;
-      if (options.throwOnGet) throw new Error("storage unavailable");
+      if (options.throwOnGet || options.throwOnGetCall === this.getCalls) {
+        throw new Error("storage unavailable");
+      }
       return values.get(key) ?? null;
     },
     setItem(key, value) {
@@ -558,14 +817,10 @@ function withLocalStorage(serialized, callback, options = {}) {
   try {
     return callback({ storage });
   } finally {
-    restoreWindow(originalWindow);
-  }
-}
-
-function restoreWindow(originalWindow) {
-  if (originalWindow === undefined) {
-    delete globalThis.window;
-  } else {
-    globalThis.window = originalWindow;
+    if (originalWindow === undefined) {
+      delete globalThis.window;
+    } else {
+      globalThis.window = originalWindow;
+    }
   }
 }

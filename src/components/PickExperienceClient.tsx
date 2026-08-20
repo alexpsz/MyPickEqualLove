@@ -30,6 +30,7 @@ import {
   MEMBERS,
   RELEASE_TYPES,
   RELEASE_YEARS,
+  SONGS,
   SONGS_BY_ID,
   TRACK_TYPES,
 } from "../data/songs";
@@ -173,7 +174,9 @@ import {
 } from "../utils/pickAssistantStorage";
 import {
   createEmptySongDiscoveryState,
+  getNewSongIds,
   loadSongDiscoveryState,
+  markSongDiscoverySongsSeen,
   recordRecentSongId,
   updateStoredSongDiscoveryState,
   type SongDiscoveryState,
@@ -201,6 +204,7 @@ import JapaneseContent, {
   LocalizedTextWithJapaneseValue,
 } from "./JapaneseContent";
 import MotionPresence from "./MotionPresence";
+import NewSongsBanner from "./NewSongsBanner";
 import PickBoard from "./PickBoard";
 import PreviewModal from "./PreviewModal";
 import ReplacementModal from "./ReplacementModal";
@@ -226,7 +230,7 @@ interface PickExperienceClientProps {
 }
 
 const MAX_NICKNAME_LENGTH = 32;
-const VALID_SONG_IDS = new Set(Object.keys(SONGS_BY_ID));
+const CATALOG_SONG_IDS = SONGS.map((song) => song.id);
 const BOARD_LINK_COPIED_DURATION_MS = 2_000;
 interface PendingBoardShareImport {
   payload: BoardSharePayload;
@@ -704,6 +708,9 @@ export default function PickExperienceClient({
   const [detailLayerActive, setDetailLayerActive] = useState(false);
   const [songDiscoveryState, setSongDiscoveryState] =
     useState<SongDiscoveryState>(createEmptySongDiscoveryState);
+  const [songDiscoveryNewSongIds, setSongDiscoveryNewSongIds] = useState<
+    string[]
+  >([]);
   const [pendingReplacementSong, setPendingReplacementSong] =
     useState<Song | null>(null);
   const [preview, setPreview] = useState<PreviewSnapshot | null>(null);
@@ -863,6 +870,16 @@ export default function PickExperienceClient({
     PROJECT_ID === "equal-love" &&
     isStandard &&
     slots.length === 10;
+  const newSongIdSet = useMemo(
+    () => new Set(songDiscoveryNewSongIds),
+    [songDiscoveryNewSongIds],
+  );
+  const isStandardTopTen = isStandard && slots.length === 10;
+  const showNewSongsBanner =
+    hydrated &&
+    !isExportRealm &&
+    isStandardTopTen &&
+    songDiscoveryNewSongIds.length > 0;
   const archetypeEntryUi = useMemo(
     () => (showArchetypeEntry ? getEqualLoveArchetypeUiCopy(locale) : null),
     [locale, showArchetypeEntry],
@@ -1349,15 +1366,25 @@ export default function PickExperienceClient({
 
   useEffect(() => {
     if (!hydrated || isExportRealm) return;
-    const syncSongDiscovery = () =>
-      setSongDiscoveryState(
-        loadSongDiscoveryState(STORAGE_KEYS.songDiscovery, VALID_SONG_IDS),
+    const syncSongDiscovery = () => {
+      const result = loadSongDiscoveryState(
+        STORAGE_KEYS.songDiscoveryV2,
+        STORAGE_KEYS.songDiscovery,
+        CATALOG_SONG_IDS,
       );
+      if (!result.ok) {
+        setSongDiscoveryState(createEmptySongDiscoveryState());
+        setSongDiscoveryNewSongIds([]);
+        return;
+      }
+      setSongDiscoveryState(result.state);
+      setSongDiscoveryNewSongIds(result.newSongIds);
+    };
     const handleStorage = (event: StorageEvent) => {
       if (
         shouldResyncStorage(event, {
           storage: localStorage,
-          watchedKey: STORAGE_KEYS.songDiscovery,
+          watchedKey: STORAGE_KEYS.songDiscoveryV2,
         })
       ) {
         syncSongDiscovery();
@@ -1616,8 +1643,8 @@ export default function PickExperienceClient({
   const updateSongDiscoveryState = useCallback(
     (update: (current: SongDiscoveryState) => SongDiscoveryState) => {
       const result = updateStoredSongDiscoveryState(
-        STORAGE_KEYS.songDiscovery,
-        VALID_SONG_IDS,
+        STORAGE_KEYS.songDiscoveryV2,
+        CATALOG_SONG_IDS,
         update,
       );
       if (!result.ok) {
@@ -1626,11 +1653,28 @@ export default function PickExperienceClient({
       }
 
       setSongDiscoveryState(result.state);
+      setSongDiscoveryNewSongIds(getNewSongIds(result.state, CATALOG_SONG_IDS));
       setBoardStatusMessage("");
       return true;
     },
     [t],
   );
+
+  const handleMarkSongDiscoverySongsSeen = useCallback(() => {
+    const result = markSongDiscoverySongsSeen(
+      STORAGE_KEYS.songDiscoveryV2,
+      CATALOG_SONG_IDS,
+      songDiscoveryState,
+    );
+    if (!result.ok) {
+      setBoardStatusMessage(t("boardLibrary.error.storage"));
+      return;
+    }
+
+    setSongDiscoveryState(result.state);
+    setSongDiscoveryNewSongIds(getNewSongIds(result.state, CATALOG_SONG_IDS));
+    setBoardStatusMessage("");
+  }, [songDiscoveryState, t]);
 
   const handleOpenSongDetail = useCallback(
     (song: Song, trigger: HTMLButtonElement) => {
@@ -2979,6 +3023,14 @@ export default function PickExperienceClient({
           ) : null}
         </Controls>
 
+        {showNewSongsBanner ? (
+          <NewSongsBanner
+            count={songDiscoveryNewSongIds.length}
+            onViewNewSongs={handleGlobalSearchClick}
+            onMarkSeen={handleMarkSongDiscoverySongsSeen}
+          />
+        ) : null}
+
         {archetypeEntryUi ? (
           <div
             data-page-reveal
@@ -3101,6 +3153,7 @@ export default function PickExperienceClient({
               emptyMessage={t("search.noEligibleMatches")}
               selectedRanksBySongId={selectedRanksBySongId}
               recentSongIds={songDiscoveryState.recentSongIds}
+              newSongIds={isStandardTopTen ? newSongIdSet : undefined}
               candidateSongIds={candidateSongIds}
               candidateEligibleSongIds={assistantEligibleSongIds}
               selectionMode={searchPresentation.selectionMode}

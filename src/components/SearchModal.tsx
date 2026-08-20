@@ -51,6 +51,7 @@ interface SearchModalProps {
   emptyMessage?: string;
   selectedRanksBySongId?: Record<string, number>;
   recentSongIds?: string[];
+  newSongIds?: ReadonlySet<string>;
   selectionMode?: SearchSelectionMode;
   candidateSongIds?: ReadonlySet<string>;
   candidateEligibleSongIds?: ReadonlySet<string>;
@@ -160,6 +161,7 @@ export default function SearchModal({
   emptyMessage,
   selectedRanksBySongId = {},
   recentSongIds = [],
+  newSongIds = EMPTY_SONG_ID_SET,
   selectionMode = "board",
   candidateSongIds = EMPTY_SONG_ID_SET,
   candidateEligibleSongIds,
@@ -593,6 +595,7 @@ export default function SearchModal({
                   const selected = selectedSongsById[song.id];
                   const selectedRank = selectedRanksBySongId[song.id];
                   const isRecentlyViewed = recentSongIdSet.has(song.id);
+                  const isNewSong = newSongIds.has(song.id);
                   const isCandidate = candidateSongIds.has(song.id);
                   const candidateDisabled =
                     candidateChangesBlocked ||
@@ -687,6 +690,11 @@ export default function SearchModal({
                             {isAssistantShortlistMode && isCandidate ? (
                               <ResultBadge>
                                 {t("assistant.candidate")}
+                              </ResultBadge>
+                            ) : null}
+                            {isNewSong ? (
+                              <ResultBadge>
+                                {t("songDiscovery.newBadge")}
                               </ResultBadge>
                             ) : null}
                             {isRecentlyViewed ? (
