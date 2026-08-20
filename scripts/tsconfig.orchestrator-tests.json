@@ -25,6 +25,10 @@
     "../src/utils/colors.ts",
     "../src/utils/exportStyleProxy.ts",
     "./tests/export-style-proxy.test.ts",
+    "../src/utils/songCredits.ts",
+    "../src/utils/songMetadata.ts",
+    "../src/utils/boardInsights.ts",
+    "./tests/board-insights.test.ts",
     "./color-conversion.test.ts",
     "../src/utils/themePreference.ts",
     "./tests/theme-preference.test.ts"

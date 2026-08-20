@@ -111,6 +111,7 @@ import {
   type ImportedBoardInput,
 } from "../utils/boardTransaction";
 import { centerExportYearInk } from "../utils/centerExportYearInk";
+import { deriveBoardInsights } from "../utils/boardInsights";
 import {
   installExportStyleAdapter,
   type ExportStyleWindowLike,
@@ -187,6 +188,7 @@ import AppleMotion from "./AppleMotion";
 import BoardLibraryModal, {
   type BoardLibraryActionResult,
 } from "./BoardLibraryModal";
+import BoardInsightsPanel from "./BoardInsightsPanel";
 import BoardShareImportModal, {
   type BoardShareDialogState,
 } from "./BoardShareImportModal";
@@ -837,6 +839,24 @@ export default function PickExperienceClient({
 
     return Object.fromEntries(entries);
   }, [storedPicks]);
+  const boardInsights = useMemo(() => {
+    if (!hydrated || isExportRealm || !isStandard || slots.length !== 10) {
+      return null;
+    }
+
+    const topTen: Song[] = [];
+    const songIds = new Set<string>();
+
+    for (const slot of slots) {
+      const song = picks[slot.id];
+      if (!song || songIds.has(song.id)) return null;
+
+      topTen.push(song);
+      songIds.add(song.id);
+    }
+
+    return deriveBoardInsights(topTen);
+  }, [hydrated, isExportRealm, isStandard, picks, slots]);
   const showArchetypeEntry =
     hydrated &&
     !isExportRealm &&
@@ -3028,6 +3048,9 @@ export default function PickExperienceClient({
             previewRelocation={previewRelocation}
             onRelocate={handleRelocate}
           />
+          {boardInsights ? (
+            <BoardInsightsPanel insights={boardInsights} />
+          ) : null}
         </main>
 
         <Footer />

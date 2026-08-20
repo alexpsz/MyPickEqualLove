@@ -6,6 +6,26 @@ export interface ConfirmedSongCredits {
   arranger: LocalizedString;
 }
 
+export type SongCreditRole = keyof ConfirmedSongCredits;
+
+export function getConfirmedSongCredit(
+  song: Song,
+  role: SongCreditRole,
+): LocalizedString | null {
+  const credit = song.credits?.[role];
+
+  if (
+    song.sourceStatus === "unverified" ||
+    !credit ||
+    !credit.ja.trim() ||
+    !credit.romaji.trim()
+  ) {
+    return null;
+  }
+
+  return credit;
+}
+
 export function getConfirmedSongCredits(
   song: Song,
 ): ConfirmedSongCredits | null {

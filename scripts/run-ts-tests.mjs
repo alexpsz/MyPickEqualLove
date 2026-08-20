@@ -54,6 +54,7 @@ const SUITES = {
       "scripts/tests/export-realm-request.test.js",
       "scripts/tests/storage-sync-policy.test.js",
       "scripts/tests/export-style-proxy.test.js",
+      "scripts/tests/board-insights.test.js",
       "scripts/color-conversion.test.js",
     ],
   },
