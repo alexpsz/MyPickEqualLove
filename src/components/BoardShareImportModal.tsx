@@ -3,9 +3,16 @@
 import { useRef } from "react";
 import * as m from "motion/react-m";
 import { useLocale } from "../i18n/LocaleProvider";
+import type { MessageKey } from "../i18n/messages";
+import type {
+  AvailableBoardComparison,
+  BoardComparisonResult as BoardComparisonResultValue,
+  BoardComparisonUnavailableReason,
+} from "../utils/boardComparison";
 import { DIALOG_RETURN_KEYS, useDialogA11y } from "../utils/useDialogA11y";
 import AppIcon from "./AppIcon";
 import { APPLE_OPACITY, APPLE_SPRING_GENTLE } from "./AppleMotion";
+import BoardComparisonResult from "./BoardComparisonResult";
 import JapaneseContent from "./JapaneseContent";
 import type { PresenceState } from "./MotionPresence";
 
@@ -22,6 +29,7 @@ export type BoardShareDialogState =
       changes: BoardShareChange[];
       contextLabel?: string;
       previewRefreshed?: boolean;
+      comparison?: AvailableBoardComparison;
     }
   | {
       kind: "mismatch";
@@ -36,20 +44,41 @@ export type BoardShareDialogState =
 interface BoardShareImportModalProps {
   state: BoardShareDialogState;
   presenceState: PresenceState;
+  comparisonAvailability: BoardComparisonResultValue | null;
   onClose: () => void;
   onConfirm: () => void;
+  onCompare: () => void;
 }
+
+const COMPARISON_UNAVAILABLE_KEYS = {
+  "project-mismatch": "boardComparison.unavailable.projectMismatch",
+  "experience-mismatch": "boardComparison.unavailable.experienceMismatch",
+  "context-mismatch": "boardComparison.unavailable.contextMismatch",
+  "no-slots": "boardComparison.unavailable.noSlots",
+  "current-incomplete": "boardComparison.unavailable.currentIncomplete",
+  "shared-incomplete": "boardComparison.unavailable.sharedIncomplete",
+  "current-duplicate-song": "boardComparison.unavailable.currentDuplicate",
+  "shared-duplicate-song": "boardComparison.unavailable.sharedDuplicate",
+} as const satisfies Record<BoardComparisonUnavailableReason, MessageKey>;
 
 export default function BoardShareImportModal({
   state,
   presenceState,
+  comparisonAvailability,
   onClose,
   onConfirm,
+  onCompare,
 }: BoardShareImportModalProps) {
   const { t } = useLocale();
   const panelRef = useRef<HTMLDivElement>(null);
   const cancelButtonRef = useRef<HTMLButtonElement>(null);
   const isImport = state.kind === "import";
+  const comparisonAvailable =
+    comparisonAvailability?.availability === "available";
+  const comparisonUnavailableMessage =
+    comparisonAvailability?.availability === "unavailable"
+      ? t(COMPARISON_UNAVAILABLE_KEYS[comparisonAvailability.reason])
+      : null;
 
   useDialogA11y({
     dialogRef: panelRef,
@@ -192,6 +221,33 @@ export default function BoardShareImportModal({
                 ))}
               </div>
             )}
+
+            <section
+              aria-labelledby="board-comparison-heading"
+              className="mt-5 rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--paper)] p-4 sm:p-5"
+            >
+              <h3
+                id="board-comparison-heading"
+                className="text-sm font-semibold text-[var(--foreground)]"
+              >
+                {t("boardComparison.heading")}
+              </h3>
+              {comparisonUnavailableMessage ? (
+                <p
+                  id="board-comparison-unavailable"
+                  role="status"
+                  className="mt-2 text-[13px] leading-relaxed text-[var(--muted)]"
+                >
+                  {comparisonUnavailableMessage}
+                </p>
+              ) : state.comparison ? (
+                <BoardComparisonResult result={state.comparison} />
+              ) : (
+                <p className="mt-2 text-[13px] leading-relaxed text-[var(--muted)]">
+                  {t("boardComparison.ready")}
+                </p>
+              )}
+            </section>
           </div>
         ) : null}
 
@@ -217,6 +273,19 @@ export default function BoardShareImportModal({
           >
             {isImport ? t("boardShare.cancel") : t("boardShare.dismiss")}
           </button>
+          {isImport ? (
+            <button
+              type="button"
+              onClick={onCompare}
+              disabled={!comparisonAvailable}
+              aria-describedby={
+                comparisonAvailable ? undefined : "board-comparison-unavailable"
+              }
+              className="official-button"
+            >
+              {t("boardComparison.compare")}
+            </button>
+          ) : null}
           {isImport ? (
             <button
               type="button"

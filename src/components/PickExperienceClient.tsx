@@ -127,6 +127,7 @@ import {
   planBoardShareDialog,
   type BoardShareDialogPlan,
 } from "../utils/boardShareImport";
+import { compareBoardPicks } from "../utils/boardComparison";
 import { resolveExportRealmRequest } from "../utils/exportRealmRequest";
 import {
   planAssistantSnapshotSync,
@@ -227,6 +228,7 @@ const VALID_SONG_IDS = new Set(Object.keys(SONGS_BY_ID));
 const BOARD_LINK_COPIED_DURATION_MS = 2_000;
 interface PendingBoardShareImport {
   payload: BoardSharePayload;
+  picks: StoredPicks;
   baselinePicks: StoredPicks;
 }
 
@@ -785,6 +787,40 @@ export default function PickExperienceClient({
     uiContextOptions,
   };
   pickAssistantStorageKeyRef.current = storageKeys.assistant;
+
+  const boardShareComparisonAvailability = useMemo(() => {
+    if (boardShareDialog?.kind !== "import" || !pendingBoardShareImport) {
+      return null;
+    }
+
+    return compareBoardPicks({
+      slots,
+      current: {
+        scope: {
+          projectId: experience.projectId,
+          experienceId: experience.id,
+          contextId: effectiveContextId,
+        },
+        picks: storedPicks,
+      },
+      shared: {
+        scope: {
+          projectId: pendingBoardShareImport.payload.p,
+          experienceId: pendingBoardShareImport.payload.e,
+          contextId: pendingBoardShareImport.payload.c,
+        },
+        picks: pendingBoardShareImport.picks,
+      },
+    });
+  }, [
+    boardShareDialog?.kind,
+    effectiveContextId,
+    experience.id,
+    experience.projectId,
+    pendingBoardShareImport,
+    slots,
+    storedPicks,
+  ]);
 
   const setCurrentPickAssistantSnapshot = useCallback(
     (snapshot: PickAssistantSnapshot) => {
@@ -1499,7 +1535,11 @@ export default function PickExperienceClient({
           getSongTitle: (songId) => SONGS_BY_ID[songId]?.title.ja,
           createPreviewDiff: createBoardSharePreviewDiff,
         }),
-        { payload: parsed.payload, baselinePicks: currentTargetPicks },
+        {
+          payload: parsed.payload,
+          picks: resolved.picks,
+          baselinePicks: currentTargetPicks,
+        },
       );
     };
 
@@ -2204,6 +2244,43 @@ export default function PickExperienceClient({
     }
   };
 
+  const handleCompareBoardShare = () => {
+    if (!pendingBoardShareImport) return;
+
+    // Comparison intentionally stays in memory. It neither re-reads another
+    // context nor invokes the import transaction, so it cannot overwrite the
+    // current board or any saved board.
+    const comparison = compareBoardPicks({
+      slots,
+      current: {
+        scope: {
+          projectId: experience.projectId,
+          experienceId: experience.id,
+          contextId: effectiveContextId,
+        },
+        picks: storedPicksRef.current,
+      },
+      shared: {
+        scope: {
+          projectId: pendingBoardShareImport.payload.p,
+          experienceId: pendingBoardShareImport.payload.e,
+          contextId: pendingBoardShareImport.payload.c,
+        },
+        picks: pendingBoardShareImport.picks,
+      },
+    });
+
+    setBoardShareDialog((current) =>
+      current?.kind === "import"
+        ? {
+            ...current,
+            comparison:
+              comparison.availability === "available" ? comparison : undefined,
+          }
+        : current,
+    );
+  };
+
   const handleConfirmBoardShareImport = () => {
     if (!pendingBoardShareImport) return;
     const resolved = resolveBoardSharePayload({
@@ -2271,11 +2348,17 @@ export default function PickExperienceClient({
       );
       setPendingBoardShareImport({
         payload: pendingBoardShareImport.payload,
+        picks: pendingBoardShareImport.picks,
         baselinePicks: targetBoard.picks,
       });
       setBoardShareDialog((current) =>
         current?.kind === "import"
-          ? { ...current, changes, previewRefreshed: true }
+          ? {
+              ...current,
+              changes,
+              comparison: undefined,
+              previewRefreshed: true,
+            }
           : current,
       );
       return;
@@ -3082,8 +3165,10 @@ export default function PickExperienceClient({
             <BoardShareImportModal
               state={dialogState}
               presenceState={presenceState}
+              comparisonAvailability={boardShareComparisonAvailability}
               onClose={handleCloseBoardShareDialog}
               onConfirm={handleConfirmBoardShareImport}
+              onCompare={handleCompareBoardShare}
             />
           )}
         </MotionPresence>

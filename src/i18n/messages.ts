@@ -328,6 +328,41 @@ const en = {
   "boardShare.importFailed":
     "The board could not be imported. Your current board was kept.",
 
+  "boardComparison.heading": "Compare boards",
+  "boardComparison.ready":
+    "Both complete boards use the same context. Compare them without replacing either board.",
+  "boardComparison.compare": "Compare",
+  "boardComparison.resultHeading": "Comparison result",
+  "boardComparison.score": "Compatibility {score}/100",
+  "boardComparison.formulaBase": "Each shared song contributes 70/N points.",
+  "boardComparison.formulaRank":
+    "It adds up to 30/N more points when the two ranks are close, reduced by |your rank − shared rank|/(N − 1).",
+  "boardComparison.formulaRounded":
+    "The total is rounded to a whole number from 0 to 100.",
+  "boardComparison.sharedHeading": "Shared songs",
+  "boardComparison.onlyCurrentHeading": "Only on your board",
+  "boardComparison.onlySharedHeading": "Only on the shared board",
+  "boardComparison.none": "None",
+  "boardComparison.currentRank": "Your rank #{rank}",
+  "boardComparison.sharedRank": "Shared rank #{rank}",
+  "boardComparison.rankDifference": "Difference {difference}",
+  "boardComparison.unavailable.projectMismatch":
+    "Comparison is available only for the same project.",
+  "boardComparison.unavailable.experienceMismatch":
+    "Comparison is available only for the same pick experience.",
+  "boardComparison.unavailable.contextMismatch":
+    "Comparison is available only when both boards use the same context.",
+  "boardComparison.unavailable.noSlots":
+    "This pick experience has no configured slots to compare.",
+  "boardComparison.unavailable.currentIncomplete":
+    "Your current board needs a song in every slot before it can be compared.",
+  "boardComparison.unavailable.sharedIncomplete":
+    "The shared board needs a song in every slot before it can be compared.",
+  "boardComparison.unavailable.currentDuplicate":
+    "Your current board contains the same song more than once.",
+  "boardComparison.unavailable.sharedDuplicate":
+    "The shared board contains the same song more than once.",
+
   "menu.openTitle": "Open other MyPick sites",
   "menu.openAria": "Open other MyPick sites",
   "menu.dismissAria": "Dismiss other MyPick sites",
@@ -705,6 +740,40 @@ const ja: MessageCatalog = {
   "boardShare.importFailed":
     "ボードを取り込めませんでした。現在のボードは保持されています。",
 
+  "boardComparison.heading": "ランキングを比較",
+  "boardComparison.ready":
+    "両方の完全なボードが同じコンテキストです。どちらのボードも置き換えずに比較できます。",
+  "boardComparison.compare": "比較する",
+  "boardComparison.resultHeading": "比較結果",
+  "boardComparison.score": "一致度 {score}/100",
+  "boardComparison.formulaBase": "共通する各楽曲は 70/N 点です。",
+  "boardComparison.formulaRank":
+    "さらに順位が近いほど最大 30/N 点が加わります（|自分の順位 − 共有順位|/(N − 1) に応じて減少）。",
+  "boardComparison.formulaRounded": "合計は 0〜100 の整数に丸められます。",
+  "boardComparison.sharedHeading": "共通の楽曲",
+  "boardComparison.onlyCurrentHeading": "自分のボードのみ",
+  "boardComparison.onlySharedHeading": "共有ボードのみ",
+  "boardComparison.none": "なし",
+  "boardComparison.currentRank": "自分の順位 #{rank}",
+  "boardComparison.sharedRank": "共有順位 #{rank}",
+  "boardComparison.rankDifference": "順位差 {difference}",
+  "boardComparison.unavailable.projectMismatch":
+    "比較できるのは同じプロジェクトのボードのみです。",
+  "boardComparison.unavailable.experienceMismatch":
+    "比較できるのは同じピック体験のボードのみです。",
+  "boardComparison.unavailable.contextMismatch":
+    "比較できるのは両方のボードが同じコンテキストの場合のみです。",
+  "boardComparison.unavailable.noSlots":
+    "このピック体験には比較できる設定済みスロットがありません。",
+  "boardComparison.unavailable.currentIncomplete":
+    "比較するには、現在のボードのすべてのスロットに楽曲を入れてください。",
+  "boardComparison.unavailable.sharedIncomplete":
+    "比較するには、共有ボードのすべてのスロットに楽曲が必要です。",
+  "boardComparison.unavailable.currentDuplicate":
+    "現在のボードに同じ楽曲が複数回含まれています。",
+  "boardComparison.unavailable.sharedDuplicate":
+    "共有ボードに同じ楽曲が複数回含まれています。",
+
   "menu.openTitle": "他のMyPickサイトを開く",
   "menu.openAria": "他のMyPickサイトを開く",
   "menu.dismissAria": "他のMyPickサイト一覧を閉じる",
@@ -1048,6 +1117,38 @@ const zhCN: MessageCatalog = {
   "boardShare.dismiss": "关闭",
   "boardShare.copyFailed": "无法复制榜单链接。请检查浏览器的剪贴板权限后重试。",
   "boardShare.importFailed": "无法导入榜单，当前榜单已保持不变。",
+
+  "boardComparison.heading": "对比榜单",
+  "boardComparison.ready":
+    "两份完整榜单使用相同 context，可直接对比，且不会替换任何榜单。",
+  "boardComparison.compare": "对比",
+  "boardComparison.resultHeading": "对比结果",
+  "boardComparison.score": "契合度 {score}/100",
+  "boardComparison.formulaBase": "每首重合歌曲贡献 70/N 分。",
+  "boardComparison.formulaRank":
+    "排名越接近，另加最多 30/N 分；该部分会按 |我的名次 − 分享名次|/(N − 1) 减少。",
+  "boardComparison.formulaRounded": "总分会四舍五入为 0 到 100 的整数。",
+  "boardComparison.sharedHeading": "重合歌曲",
+  "boardComparison.onlyCurrentHeading": "仅我的榜单",
+  "boardComparison.onlySharedHeading": "仅分享榜单",
+  "boardComparison.none": "无",
+  "boardComparison.currentRank": "我的第 #{rank} 名",
+  "boardComparison.sharedRank": "分享方第 #{rank} 名",
+  "boardComparison.rankDifference": "名次差 {difference}",
+  "boardComparison.unavailable.projectMismatch": "只有同一项目的榜单才能对比。",
+  "boardComparison.unavailable.experienceMismatch":
+    "只有同一选曲体验的榜单才能对比。",
+  "boardComparison.unavailable.contextMismatch":
+    "只有两份榜单使用相同 context 时才能对比。",
+  "boardComparison.unavailable.noSlots": "此选曲体验没有可对比的已配置槽位。",
+  "boardComparison.unavailable.currentIncomplete":
+    "请先为当前榜单的每个槽位选择歌曲，再进行对比。",
+  "boardComparison.unavailable.sharedIncomplete":
+    "分享榜单需要每个槽位都有歌曲，才能进行对比。",
+  "boardComparison.unavailable.currentDuplicate":
+    "当前榜单包含重复歌曲，无法对比。",
+  "boardComparison.unavailable.sharedDuplicate":
+    "分享榜单包含重复歌曲，无法对比。",
 
   "menu.openTitle": "打开其他 MyPick 站点",
   "menu.openAria": "打开其他 MyPick 站点",
@@ -1417,6 +1518,41 @@ const ko: MessageCatalog = {
     "보드 링크를 복사하지 못했습니다. 브라우저의 클립보드 권한을 확인한 뒤 다시 시도해 주세요.",
   "boardShare.importFailed":
     "보드를 가져오지 못했습니다. 현재 보드는 그대로 유지됩니다.",
+
+  "boardComparison.heading": "보드 비교",
+  "boardComparison.ready":
+    "두 완성 보드가 같은 컨텍스트를 사용합니다. 어느 보드도 바꾸지 않고 비교할 수 있습니다.",
+  "boardComparison.compare": "비교",
+  "boardComparison.resultHeading": "비교 결과",
+  "boardComparison.score": "일치도 {score}/100",
+  "boardComparison.formulaBase": "겹치는 각 곡은 70/N점을 더합니다.",
+  "boardComparison.formulaRank":
+    "순위가 가까울수록 최대 30/N점이 더해지며, |내 순위 − 공유 순위|/(N − 1)에 따라 줄어듭니다.",
+  "boardComparison.formulaRounded":
+    "총점은 0에서 100 사이의 정수로 반올림됩니다.",
+  "boardComparison.sharedHeading": "겹치는 곡",
+  "boardComparison.onlyCurrentHeading": "내 보드에만 있는 곡",
+  "boardComparison.onlySharedHeading": "공유 보드에만 있는 곡",
+  "boardComparison.none": "없음",
+  "boardComparison.currentRank": "내 순위 #{rank}",
+  "boardComparison.sharedRank": "공유 순위 #{rank}",
+  "boardComparison.rankDifference": "순위 차이 {difference}",
+  "boardComparison.unavailable.projectMismatch":
+    "같은 프로젝트의 보드만 비교할 수 있습니다.",
+  "boardComparison.unavailable.experienceMismatch":
+    "같은 선곡 경험의 보드만 비교할 수 있습니다.",
+  "boardComparison.unavailable.contextMismatch":
+    "두 보드가 같은 컨텍스트를 사용할 때만 비교할 수 있습니다.",
+  "boardComparison.unavailable.noSlots":
+    "이 선곡 경험에는 비교할 수 있는 설정된 슬롯이 없습니다.",
+  "boardComparison.unavailable.currentIncomplete":
+    "비교하려면 현재 보드의 모든 슬롯에 곡을 넣어 주세요.",
+  "boardComparison.unavailable.sharedIncomplete":
+    "비교하려면 공유 보드의 모든 슬롯에 곡이 있어야 합니다.",
+  "boardComparison.unavailable.currentDuplicate":
+    "현재 보드에 같은 곡이 두 번 이상 들어 있습니다.",
+  "boardComparison.unavailable.sharedDuplicate":
+    "공유 보드에 같은 곡이 두 번 이상 들어 있습니다.",
 
   "menu.openTitle": "다른 MyPick 사이트 열기",
   "menu.openAria": "다른 MyPick 사이트 열기",
