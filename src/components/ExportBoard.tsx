@@ -1,5 +1,9 @@
 import React from "react";
-import { PROJECT_CONFIG, PROJECT_THEME_COLOR } from "../config/project";
+import {
+  PROJECT_CONFIG,
+  PROJECT_ID,
+  PROJECT_THEME_COLOR,
+} from "../config/project";
 import {
   EXPORT_BACKGROUND,
   resolveExportComposition,
@@ -23,6 +27,10 @@ import type {
 import type { PickExperience } from "../schema/pick-experience";
 import type { PickSlot, Picks } from "../schema/music";
 import { getArchetypeAccentContrast } from "../utils/archetypeAccent";
+import {
+  getCoverToneAvailability,
+  resolveAvailableExportTemplateId,
+} from "../data/coverTonePilot";
 import { getColorBackground, getMemberColors } from "../utils/memberColors";
 import ArchetypeRadarChart from "./ArchetypeRadarChart";
 import ExportQrCode from "./ExportQrCode";
@@ -94,6 +102,15 @@ export default function ExportBoard({
     pageUrl,
   });
   if (archetypeDossier) return archetypeDossier;
+  const coverToneAvailability = getCoverToneAvailability({
+    projectId: PROJECT_ID,
+    slots: sortedSlots,
+    picks,
+  });
+  const resolvedTemplateId = resolveAvailableExportTemplateId(
+    templateId,
+    coverToneAvailability,
+  );
   const selectedByLabel = selectedBy.trim();
   const pageLabel = formatPageLabel(pageUrl);
   const subtitle =
@@ -102,10 +119,11 @@ export default function ExportBoard({
       .filter(Boolean)
       .join(" · ");
   const baseComposition = resolveExportComposition(
-    templateId,
+    resolvedTemplateId,
     sizePresetId,
     experience.export.layout,
     PROJECT_THEME_COLOR,
+    coverToneAvailability.palette,
   );
   const composition =
     showQrCode &&
@@ -127,7 +145,9 @@ export default function ExportBoard({
       lang="ja"
       className="relative overflow-hidden font-sans"
       style={{
-        backgroundColor: transparentBg ? "transparent" : EXPORT_BACKGROUND,
+        backgroundColor: transparentBg
+          ? "transparent"
+          : visual.canvasBackground,
         width: `${size.width}px`,
         height: `${size.height}px`,
         boxSizing: "border-box",
@@ -182,7 +202,7 @@ export default function ExportBoard({
             style={{
               margin: "14px auto 0",
               maxWidth: "860px",
-              color: "#6f8199",
+              color: visual.mutedTextColor,
               fontSize: `${canvas.selectedBySize}px`,
               fontWeight: 900,
               letterSpacing: "0.08em",
@@ -196,7 +216,7 @@ export default function ExportBoard({
         <div
           style={{
             marginTop: selectedByLabel ? "10px" : "12px",
-            color: "#6f8199",
+            color: visual.mutedTextColor,
             fontSize: `${canvas.subtitleSize}px`,
             fontWeight: 900,
             letterSpacing: "0.2em",
@@ -270,12 +290,15 @@ export default function ExportBoard({
                   width: `${MEMBER_COLOR_STRIP_WIDTH}px`,
                   height: "8px",
                   borderRadius: "999px",
-                  border: "1px solid #d4d4d4",
+                  border:
+                    resolvedTemplateId === "cover-tone"
+                      ? visual.cardBorder
+                      : "1px solid #d4d4d4",
                   boxSizing: "border-box",
-                  background: getColorBackground(
-                    member.colors,
-                    PROJECT_THEME_COLOR,
-                  ),
+                  background:
+                    resolvedTemplateId === "cover-tone"
+                      ? visual.slotLabelColor
+                      : getColorBackground(member.colors, PROJECT_THEME_COLOR),
                 }}
               />
             ))}
@@ -1288,9 +1311,13 @@ function ExportPickCard({
             >
               {showSlotTitle ? (
                 <div>
-                  <div style={exportSlotLabelStyle}>{slot.label}</div>
+                  <div style={getExportSlotLabelStyle(visual)}>
+                    {slot.label}
+                  </div>
                   {slot.subtitle ? (
-                    <div style={exportSlotSubtitleStyle}>{slot.subtitle}</div>
+                    <div style={getExportSlotSubtitleStyle(visual)}>
+                      {slot.subtitle}
+                    </div>
                   ) : null}
                 </div>
               ) : null}
@@ -1302,7 +1329,7 @@ function ExportPickCard({
                       lineHeight: 1.16,
                       fontWeight: 900,
                       fontFamily: EXPORT_TITLE_FONT_FAMILY,
-                      color: "#000",
+                      color: visual.songTitleColor,
                       wordBreak: "break-word",
                     }}
                   >
@@ -1317,7 +1344,10 @@ function ExportPickCard({
                       gap: "8px",
                     }}
                   >
-                    <span data-export-year-tag style={exportTagStyle}>
+                    <span
+                      data-export-year-tag
+                      style={getExportTagStyle(visual)}
+                    >
                       <span style={exportTagTextStyle}>
                         {song.releaseDate?.slice(0, 4) ?? "TBD"}
                       </span>
@@ -1337,7 +1367,7 @@ function ExportPickCard({
             alignItems: "center",
             justifyContent: "center",
             gap: "10px",
-            color: "#777",
+            color: visual.emptyTextColor,
             fontSize: "16px",
             fontWeight: 800,
             letterSpacing: "0.12em",
@@ -1346,7 +1376,13 @@ function ExportPickCard({
           }}
         >
           {showSlotTitle ? (
-            <span style={{ color: "#000", fontSize: "22px", letterSpacing: 0 }}>
+            <span
+              style={{
+                color: visual.songTitleColor,
+                fontSize: "22px",
+                letterSpacing: 0,
+              }}
+            >
               {slot.label}
             </span>
           ) : null}
@@ -1357,22 +1393,26 @@ function ExportPickCard({
   );
 }
 
-const exportTagStyle: React.CSSProperties = {
-  display: "inline-block",
-  minWidth: "44px",
-  height: "24px",
-  boxSizing: "border-box",
-  border: `1px solid ${PROJECT_THEME_COLOR}`,
-  background: "#fff",
-  color: PROJECT_THEME_COLOR,
-  padding: "0 8px",
-  fontSize: "10px",
-  fontWeight: 900,
-  letterSpacing: "0.12em",
-  lineHeight: "22px",
-  textAlign: "center",
-  textTransform: "uppercase",
-};
+function getExportTagStyle(
+  visual: ExportComposition["visual"],
+): React.CSSProperties {
+  return {
+    display: "inline-block",
+    minWidth: "44px",
+    height: "24px",
+    boxSizing: "border-box",
+    border: visual.yearTagBorder,
+    background: visual.yearTagBackground,
+    color: visual.yearTagColor,
+    padding: "0 8px",
+    fontSize: "10px",
+    fontWeight: 900,
+    letterSpacing: "0.12em",
+    lineHeight: "22px",
+    textAlign: "center",
+    textTransform: "uppercase",
+  };
+}
 
 const exportTagTextStyle: React.CSSProperties = {
   display: "inline-block",
@@ -1380,23 +1420,31 @@ const exportTagTextStyle: React.CSSProperties = {
   transform: "translateY(-5px)",
 };
 
-const exportSlotLabelStyle: React.CSSProperties = {
-  color: PROJECT_THEME_COLOR,
-  fontSize: "19px",
-  fontWeight: 900,
-  letterSpacing: 0,
-  lineHeight: 1.2,
-  fontFamily: EXPORT_TITLE_FONT_FAMILY,
-};
+function getExportSlotLabelStyle(
+  visual: ExportComposition["visual"],
+): React.CSSProperties {
+  return {
+    color: visual.slotLabelColor,
+    fontSize: "19px",
+    fontWeight: 900,
+    letterSpacing: 0,
+    lineHeight: 1.2,
+    fontFamily: EXPORT_TITLE_FONT_FAMILY,
+  };
+}
 
-const exportSlotSubtitleStyle: React.CSSProperties = {
-  marginTop: "5px",
-  color: "#6f8199",
-  fontSize: "11px",
-  fontWeight: 900,
-  letterSpacing: "0.04em",
-  lineHeight: 1.35,
-};
+function getExportSlotSubtitleStyle(
+  visual: ExportComposition["visual"],
+): React.CSSProperties {
+  return {
+    marginTop: "5px",
+    color: visual.mutedTextColor,
+    fontSize: "11px",
+    fontWeight: 900,
+    letterSpacing: "0.04em",
+    lineHeight: 1.35,
+  };
+}
 
 function formatPageLabel(pageUrl: string) {
   const url = new URL(pageUrl);

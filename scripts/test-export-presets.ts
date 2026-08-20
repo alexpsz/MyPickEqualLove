@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   DEFAULT_EXPORT_OPTIONS,
+  EXPORT_OPTIONS_VERSION,
   EXPORT_SCALE,
   EXPORT_SIZE_PRESET_ORDER,
   EXPORT_SIZE_PRESETS,
@@ -11,6 +12,7 @@ import {
   isExportTemplateId,
   resolveExportComposition,
 } from "../src/config/exportPresets";
+import { COVER_TONE_PILOT_ENTRIES } from "../src/data/coverTonePilot";
 import { buildExportImageFileName } from "../src/utils/exportFileName";
 import {
   EXPORT_CAPTURE_PROTOCOL_VERSION,
@@ -32,6 +34,7 @@ test("default contract remains Classic portrait at scale 2", () => {
     sizePresetId: "portrait",
   });
   assert.equal(EXPORT_SCALE, 2);
+  assert.equal(EXPORT_OPTIONS_VERSION, 2);
   assert.deepEqual(EXPORT_SIZE_PRESETS.portrait, {
     id: "portrait",
     width: 1080,
@@ -73,6 +76,129 @@ test("default contract remains Classic portrait at scale 2", () => {
   assert.equal(composition.visual.rootBorder, "2px solid #000");
   assert.equal(composition.visual.cardBorder, "2px solid #000");
   assert.equal(composition.visual.headerTextAlign, "center");
+});
+
+test("Classic and Spotlight retain their locked visual values", () => {
+  const theme = "#ff74a8";
+  const classic = resolveExportComposition(
+    "classic",
+    "portrait",
+    "top10-grid",
+    theme,
+  );
+  const spotlight = resolveExportComposition(
+    "spotlight",
+    "portrait",
+    "top10-grid",
+    theme,
+  );
+
+  assert.deepEqual(classic.visual, {
+    canvasBackground: "#ffffff",
+    rootBorder: "2px solid #000",
+    textureBackground:
+      "repeating-linear-gradient(135deg, rgba(0,0,0,0.035) 0, rgba(0,0,0,0.035) 1px, transparent 1px, transparent 9px)",
+    headerBackground: "#ffffff",
+    headerBorder: "none",
+    headerRadius: "0",
+    headerTextAlign: "center",
+    headerTitleColor: "#07182a",
+    memberStripJustify: "center",
+    cardBorder: "2px solid #000",
+    cardRadius: "0",
+    emptyBackground: "#f8f8f8",
+    cardBackground: "#ffffff",
+    cardDivider: "2px solid #000",
+    footerBorder: "2px solid #000",
+    footerColor: "#000000",
+    mutedTextColor: "#6f8199",
+    songTitleColor: "#000",
+    emptyTextColor: "#777",
+    slotLabelColor: theme,
+    yearTagBorder: `1px solid ${theme}`,
+    yearTagBackground: "#fff",
+    yearTagColor: theme,
+  });
+  assert.deepEqual(spotlight.visual, {
+    canvasBackground: "#ffffff",
+    rootBorder: `6px solid ${theme}`,
+    textureBackground:
+      "repeating-linear-gradient(135deg, rgba(0,0,0,0.018) 0, rgba(0,0,0,0.018) 2px, transparent 2px, transparent 14px)",
+    headerBackground: "#ffffff",
+    headerBorder: `2px solid ${theme}`,
+    headerRadius: "22px",
+    headerTextAlign: "left",
+    headerTitleColor: theme,
+    memberStripJustify: "flex-start",
+    cardBorder: `2px solid ${theme}`,
+    cardRadius: "18px",
+    emptyBackground: "#ffffff",
+    cardBackground: "#ffffff",
+    cardDivider: `2px solid ${theme}`,
+    footerBorder: `2px solid ${theme}`,
+    footerColor: theme,
+    mutedTextColor: "#6f8199",
+    songTitleColor: "#000",
+    emptyTextColor: "#777",
+    slotLabelColor: theme,
+    yearTagBorder: `1px solid ${theme}`,
+    yearTagBackground: "#fff",
+    yearTagColor: theme,
+  });
+});
+
+test("Midnight is fixed while cover-tone requires an approved palette", () => {
+  const palette = COVER_TONE_PILOT_ENTRIES[0]?.palette;
+  assert.ok(palette);
+  assert.throws(
+    () =>
+      resolveExportComposition(
+        "cover-tone",
+        "portrait",
+        "top10-grid",
+        "#ff74a8",
+      ),
+    /requires an approved cover palette/,
+  );
+  assert.equal(
+    resolveExportComposition("midnight", "portrait", "top10-grid", "#ff74a8")
+      .visual.canvasBackground,
+    "#08111f",
+  );
+  assert.deepEqual(
+    resolveExportComposition(
+      "cover-tone",
+      "portrait",
+      "top10-grid",
+      "#ff74a8",
+      palette,
+    ).visual,
+    {
+      canvasBackground: palette.background,
+      rootBorder: `2px solid ${palette.border}`,
+      textureBackground: "none",
+      headerBackground: palette.surface,
+      headerBorder: `1px solid ${palette.border}`,
+      headerRadius: "0",
+      headerTextAlign: "center",
+      headerTitleColor: palette.text,
+      memberStripJustify: "center",
+      cardBorder: `1px solid ${palette.border}`,
+      cardRadius: "0",
+      emptyBackground: palette.surface,
+      cardBackground: palette.surface,
+      cardDivider: `1px solid ${palette.border}`,
+      footerBorder: `1px solid ${palette.border}`,
+      footerColor: palette.mutedText,
+      mutedTextColor: palette.mutedText,
+      songTitleColor: palette.text,
+      emptyTextColor: palette.mutedText,
+      slotLabelColor: palette.text,
+      yearTagBorder: `1px solid ${palette.yearBorder}`,
+      yearTagBackground: palette.yearBackground,
+      yearTagColor: palette.yearText,
+    },
+  );
 });
 
 test("all social presets resolve to exact scale-2 output dimensions", () => {
@@ -127,6 +253,9 @@ test("every template x size x experience composition has slot capacity", () => {
           sizePresetId,
           layout.id,
           "#ff74a8",
+          templateId === "cover-tone"
+            ? COVER_TONE_PILOT_ENTRIES[0]?.palette
+            : undefined,
         );
 
         if (composition.content.mode === "grid") {
@@ -149,7 +278,7 @@ test("v2 options round trip only lightweight values", () => {
     showTitles: false,
     transparentBg: true,
     showQrCode: true,
-    templateId: "spotlight" as const,
+    templateId: "cover-tone" as const,
     sizePresetId: "story" as const,
   };
   const serialized = serializeExportOptions(options);
@@ -166,6 +295,8 @@ test("v2 options round trip only lightweight values", () => {
 });
 
 test("preset id guards reject inherited object properties", () => {
+  assert.equal(isExportTemplateId("midnight"), true);
+  assert.equal(isExportTemplateId("cover-tone"), true);
   for (const inheritedProperty of ["toString", "__proto__"]) {
     assert.equal(isExportTemplateId(inheritedProperty), false);
     assert.equal(isExportSizePresetId(inheritedProperty), false);
@@ -382,9 +513,18 @@ test("default filename is unchanged and non-default presets are explicit", () =>
     buildExportImageFileName("mypick.png", "day1", "spotlight", "story"),
     "mypick_DAY1_SPOTLIGHT_STORY.png",
   );
+  assert.equal(
+    buildExportImageFileName("mypick.png", undefined, "midnight", "portrait"),
+    "mypick_MIDNIGHT.png",
+  );
+  assert.equal(
+    buildExportImageFileName("mypick.png", undefined, "cover-tone", "portrait"),
+    "mypick_COVER-TONE.png",
+  );
 });
 
 test("poster export request strictly validates its ephemeral payload", () => {
+  assert.equal(EXPORT_CAPTURE_PROTOCOL_VERSION, 4);
   const pageUrl = "https://mypick.kozueginko.com/";
   const request = {
     type: EXPORT_REALM_RENDER_TYPE,

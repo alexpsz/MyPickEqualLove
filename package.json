@@ -38,6 +38,7 @@
     "test:pick-reordering": "node scripts/test-pick-reordering.mjs",
     "test:share-links": "node scripts/test-board-share-protocol.mjs",
     "test:export-presets": "node scripts/run-ts-tests.mjs export-presets",
+    "test:cover-tone": "node scripts/run-ts-tests.mjs cover-tone",
     "test:export-board": "node scripts/run-ts-tests.mjs export-board",
     "test:pick-assistant": "node scripts/run-ts-tests.mjs pick-assistant",
     "test:image-actions": "node scripts/run-ts-tests.mjs image-actions",

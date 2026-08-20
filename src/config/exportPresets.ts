@@ -1,5 +1,6 @@
 import type {
   ExportExperienceLayout,
+  ExportCoverTonePalette,
   ExportOptions,
   ExportSizePreset,
   ExportSizePresetId,
@@ -19,6 +20,14 @@ export const EXPORT_TEMPLATES = {
   spotlight: {
     id: "spotlight",
     fileNameSuffix: "SPOTLIGHT",
+  },
+  midnight: {
+    id: "midnight",
+    fileNameSuffix: "MIDNIGHT",
+  },
+  "cover-tone": {
+    id: "cover-tone",
+    fileNameSuffix: "COVER-TONE",
   },
 } as const satisfies Record<ExportTemplateId, ExportTemplatePreset>;
 
@@ -52,6 +61,8 @@ export const EXPORT_SIZE_PRESETS = {
 export const EXPORT_TEMPLATE_ORDER: readonly ExportTemplateId[] = [
   "classic",
   "spotlight",
+  "midnight",
+  "cover-tone",
 ];
 
 export const EXPORT_SIZE_PRESET_ORDER: readonly ExportSizePresetId[] = [
@@ -72,6 +83,7 @@ export const EXPORT_BACKGROUND = "#ffffff";
 export const EXPORT_SCALE = 2;
 
 export interface ExportVisualTokens {
+  canvasBackground: string;
   rootBorder: string;
   textureBackground: string;
   headerBackground: string;
@@ -87,6 +99,13 @@ export interface ExportVisualTokens {
   cardDivider: string;
   footerBorder: string;
   footerColor: string;
+  mutedTextColor: string;
+  songTitleColor: string;
+  emptyTextColor: string;
+  slotLabelColor: string;
+  yearTagBorder: string;
+  yearTagBackground: string;
+  yearTagColor: string;
 }
 
 export interface ExportCanvasMetrics {
@@ -270,11 +289,12 @@ export function resolveExportComposition(
   sizePresetId: ExportSizePresetId,
   layout: ExportExperienceLayout,
   themeColor: string,
+  coverTonePalette?: ExportCoverTonePalette,
 ): ExportComposition {
   return {
     templateId,
     size: EXPORT_SIZE_PRESETS[sizePresetId],
-    visual: getVisualTokens(templateId, themeColor),
+    visual: getVisualTokens(templateId, themeColor, coverTonePalette),
     canvas: CANVAS_METRICS[sizePresetId],
     content: CONTENT_METRICS[layout][sizePresetId],
   };
@@ -283,9 +303,72 @@ export function resolveExportComposition(
 function getVisualTokens(
   templateId: ExportTemplateId,
   themeColor: string,
+  coverTonePalette?: ExportCoverTonePalette,
 ): ExportVisualTokens {
+  if (templateId === "cover-tone") {
+    if (!coverTonePalette) {
+      throw new Error("Cover-tone export requires an approved cover palette");
+    }
+
+    return {
+      canvasBackground: coverTonePalette.background,
+      rootBorder: `2px solid ${coverTonePalette.border}`,
+      textureBackground: "none",
+      headerBackground: coverTonePalette.surface,
+      headerBorder: `1px solid ${coverTonePalette.border}`,
+      headerRadius: "0",
+      headerTextAlign: "center",
+      headerTitleColor: coverTonePalette.text,
+      memberStripJustify: "center",
+      cardBorder: `1px solid ${coverTonePalette.border}`,
+      cardRadius: "0",
+      emptyBackground: coverTonePalette.surface,
+      cardBackground: coverTonePalette.surface,
+      cardDivider: `1px solid ${coverTonePalette.border}`,
+      footerBorder: `1px solid ${coverTonePalette.border}`,
+      footerColor: coverTonePalette.mutedText,
+      mutedTextColor: coverTonePalette.mutedText,
+      songTitleColor: coverTonePalette.text,
+      emptyTextColor: coverTonePalette.mutedText,
+      slotLabelColor: coverTonePalette.text,
+      yearTagBorder: `1px solid ${coverTonePalette.yearBorder}`,
+      yearTagBackground: coverTonePalette.yearBackground,
+      yearTagColor: coverTonePalette.yearText,
+    };
+  }
+
+  if (templateId === "midnight") {
+    return {
+      canvasBackground: "#08111f",
+      rootBorder: "2px solid #98c7ff",
+      textureBackground:
+        "repeating-linear-gradient(135deg, rgba(255,255,255,0.025) 0, rgba(255,255,255,0.025) 1px, transparent 1px, transparent 10px)",
+      headerBackground: "#0d1b2c",
+      headerBorder: "1px solid rgba(152,199,255,0.56)",
+      headerRadius: "0",
+      headerTextAlign: "center",
+      headerTitleColor: "#e8f4ff",
+      memberStripJustify: "center",
+      cardBorder: "1px solid rgba(152,199,255,0.56)",
+      cardRadius: "0",
+      emptyBackground: "#101f32",
+      cardBackground: "#0d1b2c",
+      cardDivider: "1px solid rgba(152,199,255,0.56)",
+      footerBorder: "1px solid rgba(152,199,255,0.56)",
+      footerColor: "#d9efff",
+      mutedTextColor: "#a9c8e8",
+      songTitleColor: "#f7fbff",
+      emptyTextColor: "#b9d2eb",
+      slotLabelColor: "#bfe0ff",
+      yearTagBorder: "1px solid rgba(152,199,255,0.56)",
+      yearTagBackground: "#142a43",
+      yearTagColor: "#e8f4ff",
+    };
+  }
+
   if (templateId === "spotlight") {
     return {
+      canvasBackground: "#ffffff",
       rootBorder: `6px solid ${themeColor}`,
       textureBackground:
         "repeating-linear-gradient(135deg, rgba(0,0,0,0.018) 0, rgba(0,0,0,0.018) 2px, transparent 2px, transparent 14px)",
@@ -302,10 +385,18 @@ function getVisualTokens(
       cardDivider: `2px solid ${themeColor}`,
       footerBorder: `2px solid ${themeColor}`,
       footerColor: themeColor,
+      mutedTextColor: "#6f8199",
+      songTitleColor: "#000",
+      emptyTextColor: "#777",
+      slotLabelColor: themeColor,
+      yearTagBorder: `1px solid ${themeColor}`,
+      yearTagBackground: "#fff",
+      yearTagColor: themeColor,
     };
   }
 
   return {
+    canvasBackground: "#ffffff",
     rootBorder: "2px solid #000",
     textureBackground:
       "repeating-linear-gradient(135deg, rgba(0,0,0,0.035) 0, rgba(0,0,0,0.035) 1px, transparent 1px, transparent 9px)",
@@ -322,5 +413,12 @@ function getVisualTokens(
     cardDivider: "2px solid #000",
     footerBorder: "2px solid #000",
     footerColor: "#000000",
+    mutedTextColor: "#6f8199",
+    songTitleColor: "#000",
+    emptyTextColor: "#777",
+    slotLabelColor: themeColor,
+    yearTagBorder: `1px solid ${themeColor}`,
+    yearTagBackground: "#fff",
+    yearTagColor: themeColor,
   };
 }

@@ -328,6 +328,11 @@ const en = {
   "preview.templateLabel": "Template",
   "preview.template.classic": "Classic",
   "preview.template.spotlight": "Spotlight",
+  "preview.template.midnight": "Midnight",
+  "preview.template.coverTone": "Cover tone",
+  "preview.template.midnightDescription": "A stable deep-dark poster theme.",
+  "preview.template.coverToneDescription":
+    "Uses the approved cover palette for your highest-ranked selected song.",
   "preview.imageAlt": "Preview of {title}",
   "preview.updating": "Updating preview...",
   "preview.close": "Close",
@@ -796,6 +801,12 @@ const ja: MessageCatalog = {
   "preview.templateLabel": "テンプレート",
   "preview.template.classic": "クラシック",
   "preview.template.spotlight": "スポットライト",
+  "preview.template.midnight": "ミッドナイト",
+  "preview.template.coverTone": "カバートーン",
+  "preview.template.midnightDescription":
+    "安定した深いダークポスターのテーマです。",
+  "preview.template.coverToneDescription":
+    "現在最上位に選んだ曲の承認済みカバーパレットを使います。",
   "preview.imageAlt": "{title}のプレビュー",
   "preview.updating": "プレビューを更新中...",
   "preview.close": "閉じる",
@@ -1238,6 +1249,11 @@ const zhCN: MessageCatalog = {
   "preview.templateLabel": "模板",
   "preview.template.classic": "经典",
   "preview.template.spotlight": "聚光",
+  "preview.template.midnight": "午夜",
+  "preview.template.coverTone": "封面色",
+  "preview.template.midnightDescription": "稳定的深色海报主题。",
+  "preview.template.coverToneDescription":
+    "使用你当前排名最高的已选歌曲的已批准封面配色。",
   "preview.imageAlt": "{title}预览",
   "preview.updating": "正在更新预览...",
   "preview.close": "关闭",
@@ -1689,6 +1705,11 @@ const ko: MessageCatalog = {
   "preview.templateLabel": "템플릿",
   "preview.template.classic": "클래식",
   "preview.template.spotlight": "스포트라이트",
+  "preview.template.midnight": "미드나이트",
+  "preview.template.coverTone": "커버 톤",
+  "preview.template.midnightDescription": "안정적인 딥 다크 포스터 테마입니다.",
+  "preview.template.coverToneDescription":
+    "현재 가장 높은 순위로 선택한 곡의 승인된 커버 팔레트를 사용합니다.",
   "preview.imageAlt": "{title} 미리보기",
   "preview.updating": "미리보기 업데이트 중...",
   "preview.close": "닫기",

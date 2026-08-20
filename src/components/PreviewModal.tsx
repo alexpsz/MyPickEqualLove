@@ -2,8 +2,10 @@
 
 import React, { useEffect, useId, useRef, useState } from "react";
 import * as m from "motion/react-m";
-import { EXPORT_TEMPLATE_ORDER } from "../config/exportPresets";
-import { getExportTemplateMessageKey } from "../i18n/content";
+import {
+  getExportTemplateDescriptionMessageKey,
+  getExportTemplateMessageKey,
+} from "../i18n/content";
 import { useLocale } from "../i18n/LocaleProvider";
 import type { MessageKey } from "../i18n/messages";
 import type { ExportTemplateId } from "../schema/export";
@@ -31,6 +33,7 @@ interface PreviewModalProps {
   showQrCode: boolean;
   onToggleShowQrCode: (show: boolean) => void;
   templateId: ExportTemplateId;
+  availableTemplateIds: readonly ExportTemplateId[];
   onTemplateChange: (templateId: ExportTemplateId) => void;
   generating: boolean;
   actionsDisabled: boolean;
@@ -56,6 +59,7 @@ export default function PreviewModal({
   showQrCode,
   onToggleShowQrCode,
   templateId,
+  availableTemplateIds,
   onTemplateChange,
   generating,
   actionsDisabled,
@@ -102,6 +106,8 @@ export default function PreviewModal({
     shareText,
     shareHashtags,
   };
+  const templateDescriptionKey =
+    getExportTemplateDescriptionMessageKey(templateId);
 
   useDialogA11y({
     dialogRef: panelRef,
@@ -296,17 +302,30 @@ export default function PreviewModal({
                 <div
                   data-preview-option="template"
                   className={`order-1 col-span-2 min-w-0 sm:col-auto ${
-                    locale === "zh-CN" ? "sm:w-44" : "sm:w-60"
+                    availableTemplateIds.length === 4
+                      ? "sm:w-[30rem]"
+                      : locale === "zh-CN"
+                        ? "sm:w-56"
+                        : "sm:w-72"
                   }`}
                 >
                   <TemplateSegmentedControl
                     label={t("preview.templateLabel")}
                     value={templateId}
+                    options={availableTemplateIds}
                     disabled={generating}
                     onValueChange={onTemplateChange}
                     getOptionLabel={(id) => t(getExportTemplateMessageKey(id))}
                     compactLabels={locale !== "zh-CN"}
                   />
+                  {templateDescriptionKey ? (
+                    <p
+                      data-preview-template-description
+                      className="mt-1 px-1 text-center text-[11px] leading-snug text-[var(--muted)]"
+                    >
+                      {t(templateDescriptionKey)}
+                    </p>
+                  ) : null}
                 </div>
                 <div
                   data-preview-option="transparent"
@@ -571,6 +590,7 @@ function isAndroidDevice() {
 function TemplateSegmentedControl({
   label,
   value,
+  options,
   disabled,
   onValueChange,
   getOptionLabel,
@@ -578,18 +598,27 @@ function TemplateSegmentedControl({
 }: {
   label: string;
   value: ExportTemplateId;
+  options: readonly ExportTemplateId[];
   disabled: boolean;
   onValueChange: (value: ExportTemplateId) => void;
   getOptionLabel: (value: ExportTemplateId) => string;
   compactLabels: boolean;
 }) {
+  const gridColumnsClass =
+    options.length === 4
+      ? "grid-cols-4"
+      : options.length === 3
+        ? "grid-cols-3"
+        : "grid-cols-2";
+  const compactFourOptions = options.length === 4;
+
   return (
     <div
       role="group"
       aria-label={label}
-      className="grid min-h-11 grid-cols-2 rounded-[var(--radius-sm)] border border-[var(--line-strong)] bg-[var(--paper)] p-0.5"
+      className={`grid min-h-11 ${gridColumnsClass} rounded-[var(--radius-sm)] border border-[var(--line-strong)] bg-[var(--paper)] p-0.5`}
     >
-      {EXPORT_TEMPLATE_ORDER.map((option) => {
+      {options.map((option) => {
         const selected = option === value;
 
         return (
@@ -600,23 +629,29 @@ function TemplateSegmentedControl({
             aria-pressed={selected}
             disabled={disabled}
             onClick={() => onValueChange(option)}
-            className={`flex min-h-11 min-w-0 items-center justify-center gap-1 rounded-[calc(var(--radius-sm)-2px)] px-1.5 text-[12px] font-semibold outline-none transition-[background-color,color,box-shadow] duration-150 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:opacity-50 ${
+            className={`flex min-h-11 min-w-0 items-center justify-center gap-1 rounded-[calc(var(--radius-sm)-2px)] px-1 text-[11px] font-semibold outline-none transition-[background-color,color,box-shadow] duration-150 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:opacity-50 ${
               selected
                 ? "bg-[var(--project-primary)] text-[var(--project-contrast)] shadow-sm"
                 : "text-[var(--foreground)] hover:bg-[var(--background)]"
             }`}
           >
-            <span
-              className="flex h-4 w-4 shrink-0 items-center justify-center"
-              aria-hidden="true"
-            >
-              {selected ? (
-                <AppIcon name="check" size={14} strokeWidth={2.25} />
-              ) : null}
-            </span>
+            {!compactFourOptions ? (
+              <span
+                className="flex h-4 w-4 shrink-0 items-center justify-center"
+                aria-hidden="true"
+              >
+                {selected ? (
+                  <AppIcon name="check" size={14} strokeWidth={2.25} />
+                ) : null}
+              </span>
+            ) : null}
             <span
               className={`truncate ${
-                compactLabels ? "sm:text-[12px]" : "sm:text-[13px]"
+                compactFourOptions
+                  ? "text-[10px] sm:text-[11px]"
+                  : compactLabels
+                    ? "sm:text-[12px]"
+                    : "sm:text-[13px]"
               }`}
             >
               {getOptionLabel(option)}

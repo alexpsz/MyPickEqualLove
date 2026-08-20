@@ -16,10 +16,25 @@ export type { ExperienceUiCopy } from "./presentation";
 const EXPORT_TEMPLATE_MESSAGE_KEYS: Record<ExportTemplateId, MessageKey> = {
   classic: "preview.template.classic",
   spotlight: "preview.template.spotlight",
+  midnight: "preview.template.midnight",
+  "cover-tone": "preview.template.coverTone",
+};
+
+const EXPORT_TEMPLATE_DESCRIPTION_MESSAGE_KEYS: Partial<
+  Record<ExportTemplateId, MessageKey>
+> = {
+  midnight: "preview.template.midnightDescription",
+  "cover-tone": "preview.template.coverToneDescription",
 };
 
 export function getExportTemplateMessageKey(templateId: ExportTemplateId) {
   return EXPORT_TEMPLATE_MESSAGE_KEYS[templateId];
+}
+
+export function getExportTemplateDescriptionMessageKey(
+  templateId: ExportTemplateId,
+) {
+  return EXPORT_TEMPLATE_DESCRIPTION_MESSAGE_KEYS[templateId];
 }
 
 export function localizeProjectCopy(projectId: ProjectId, locale: AppLocale) {

@@ -15,7 +15,7 @@ import {
   type EqualLoveArchetypeCharacterResult,
   type EqualLoveArchetypeResult,
 } from "../../src/data/equalLoveArchetype";
-import { MEMBERS_BY_ID, SONGS } from "../../src/data/songs";
+import { MEMBERS_BY_ID, SONGS, SONGS_BY_ID } from "../../src/data/songs";
 import equalLoveArchetypeAffinitiesData from "../../src/projects/equal-love/archetype-21/song-affinities.json";
 import {
   EXPORT_SIZE_PRESET_ORDER,
@@ -194,6 +194,42 @@ function renderDossierPoster(
   );
 }
 
+function renderDossierThroughExportBoard(
+  templateId: (typeof EXPORT_TEMPLATE_ORDER)[number],
+) {
+  const result = realArchetypeResults[0];
+  if (!result) throw new Error("Expected a real production archetype result.");
+  const slots = getSortedExperienceSlots(STANDARD_PICK_EXPERIENCE);
+  const picks: Picks = Object.fromEntries(
+    slots.map((slot, index) => [
+      slot.id,
+      SONGS_BY_ID[result.inputKey.split(":")[index] ?? ""],
+    ]),
+  );
+
+  return renderToStaticMarkup(
+    createElement(ExportBoard, {
+      experience: STANDARD_PICK_EXPERIENCE,
+      exportCanvasId: "test-archetype-template-contract",
+      slots,
+      picks,
+      showTitles: true,
+      transparentBg: false,
+      showQrCode: false,
+      templateId,
+      sizePresetId: "portrait",
+      selectedBy: "Test Picker",
+      pageUrl: "https://mypick.kozueginko.com/",
+      headerPresentation: {
+        title: "MY ADVENTURE PARTNER",
+        subtitle: "Template contract",
+        highlights: ["TEMPLATE CONTRACT"],
+        footerLabel: "MY PICK ARCHETYPE",
+      },
+    }),
+  );
+}
+
 test("poster metadata is all-or-nothing across templates, sizes, and layouts", () => {
   for (const experience of [STANDARD_PICK_EXPERIENCE, liveExperience]) {
     const slotCount = getSortedExperienceSlots(experience).length;
@@ -277,6 +313,14 @@ test("ordinary poster retains its existing header, grid, metadata, and footer DO
   assert.equal((markup.match(/data-export-year-tag/g) ?? []).length, 10);
   assert.doesNotMatch(markup, /data-archetype-radar/);
   assert.doesNotMatch(markup, /data-export-boundary="archetype-dossier"/);
+});
+
+test("Archetype dossier markup is identical for every ordinary export template", () => {
+  const baseline = renderDossierThroughExportBoard("classic");
+
+  for (const templateId of EXPORT_TEMPLATE_ORDER) {
+    assert.equal(renderDossierThroughExportBoard(templateId), baseline);
+  }
 });
 
 test("single archetype export is a dedicated fixed dossier with radar and Top 10", () => {

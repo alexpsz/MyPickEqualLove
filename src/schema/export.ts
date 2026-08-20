@@ -1,4 +1,8 @@
-export type ExportTemplateId = "classic" | "spotlight";
+export type ExportTemplateId =
+  | "classic"
+  | "spotlight"
+  | "midnight"
+  | "cover-tone";
 
 export type ExportSizePresetId = "portrait" | "square" | "story";
 
@@ -28,6 +32,17 @@ export interface StoredExportOptionsV2 extends ExportOptions {
 export interface ExportTemplatePreset {
   id: ExportTemplateId;
   fileNameSuffix: string;
+}
+
+export interface ExportCoverTonePalette {
+  background: string;
+  surface: string;
+  border: string;
+  text: string;
+  mutedText: string;
+  yearBackground: string;
+  yearBorder: string;
+  yearText: string;
 }
 
 export interface ExportSizePreset {

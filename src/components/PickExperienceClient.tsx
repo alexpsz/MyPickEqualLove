@@ -24,6 +24,7 @@ import {
   DEFAULT_EXPORT_SIZE_PRESET_ID,
   EXPORT_BACKGROUND,
   EXPORT_SCALE,
+  EXPORT_TEMPLATE_ORDER,
   getExportSizePreset,
 } from "../config/exportPresets";
 import {
@@ -39,6 +40,11 @@ import {
   getEqualLoveArchetypeUiCopy,
   resolveEqualLoveArchetype,
 } from "../data/equalLoveArchetype";
+import {
+  getCoverToneAvailability,
+  isExportTemplateAvailable,
+  resolveAvailableExportTemplateId,
+} from "../data/coverTonePilot";
 import equalLoveArchetypeAffinitiesData from "../projects/equal-love/archetype-21/song-affinities.json";
 import {
   createBoardSharePayload,
@@ -867,6 +873,25 @@ export default function PickExperienceClient({
 
     return Object.fromEntries(entries);
   }, [storedPicks]);
+  const coverToneAvailability = useMemo(
+    () =>
+      getCoverToneAvailability({
+        projectId: PROJECT_ID,
+        slots,
+        picks,
+      }),
+    [picks, slots],
+  );
+  const availableTemplateIds = useMemo(
+    () =>
+      EXPORT_TEMPLATE_ORDER.filter((candidate) =>
+        isExportTemplateAvailable(candidate, coverToneAvailability),
+      ),
+    [coverToneAvailability],
+  );
+  const activeTemplateId = hydrated
+    ? resolveAvailableExportTemplateId(templateId, coverToneAvailability)
+    : templateId;
   const boardInsights = useMemo(() => {
     if (!hydrated || isExportRealm || !isStandard || slots.length !== 10) {
       return null;
@@ -1169,7 +1194,7 @@ export default function PickExperienceClient({
   const posterImageFileName = getExperienceImageFileName(
     experience,
     activeContext,
-    templateId,
+    activeTemplateId,
     DEFAULT_EXPORT_SIZE_PRESET_ID,
   );
   const boardScope = useMemo<BoardScope>(
@@ -2540,6 +2565,34 @@ export default function PickExperienceClient({
         storedPicks: request.picks,
         contextId: nextContextId,
       });
+      const requestPicks: Picks = Object.fromEntries(
+        Object.entries(nextPicks)
+          .map(([slotId, songId]) => [slotId, SONGS_BY_ID[songId]] as const)
+          .filter((entry): entry is readonly [string, Song] =>
+            Boolean(entry[1]),
+          ),
+      );
+      const requestCoverToneAvailability = getCoverToneAvailability({
+        projectId: PROJECT_ID,
+        slots,
+        picks: requestPicks,
+      });
+      if (
+        request.kind !== "archetype" &&
+        !isExportTemplateAvailable(
+          request.templateId,
+          requestCoverToneAvailability,
+        )
+      ) {
+        postResult(
+          createExportRenderResult(
+            request.requestId,
+            undefined,
+            "Cover-tone is unavailable for the highest-ranked selected song",
+          ),
+        );
+        return;
+      }
       activeFrameRequestIdRef.current = request.requestId;
       injectEphemeralBoard(nextContextId, nextPicks);
       setNicknameDraft(request.selectedBy.slice(0, MAX_NICKNAME_LENGTH));
@@ -2570,6 +2623,7 @@ export default function PickExperienceClient({
     injectEphemeralBoard,
     isExportRealm,
     pageUrl,
+    slots,
   ]);
 
   const captureExportCanvas = useCallback(async () => {
@@ -2694,7 +2748,7 @@ export default function PickExperienceClient({
         showTitles,
         transparentBg,
         showQrCode,
-        templateId,
+        activeTemplateId,
         kind,
         archetypeForExport?.inputKey,
       );
@@ -2720,7 +2774,7 @@ export default function PickExperienceClient({
             showTitles,
             transparentBg,
             showQrCode,
-            templateId,
+            templateId: activeTemplateId,
             sizePresetId: DEFAULT_EXPORT_SIZE_PRESET_ID,
             selectedBy: exportNickname,
             pageUrl,
@@ -2776,6 +2830,7 @@ export default function PickExperienceClient({
     },
     [
       archetypeResult,
+      activeTemplateId,
       boardStorageWritable,
       effectiveContextId,
       experience,
@@ -2789,7 +2844,6 @@ export default function PickExperienceClient({
       showQrCode,
       storedPicks,
       t,
-      templateId,
       transparentBg,
       uiCopy.shareText,
       uiCopy.title,
@@ -2809,7 +2863,7 @@ export default function PickExperienceClient({
     showTitles,
     transparentBg,
     showQrCode,
-    templateId,
+    activeTemplateId,
     preview?.kind ?? "picks",
     preview?.kind === "archetype"
       ? (archetypeResult?.inputKey ?? preview.archetypeInputKey)
@@ -2875,6 +2929,29 @@ export default function PickExperienceClient({
     [optionsStorageWritable, storageKeys.options, storageKeys.optionsV2, t],
   );
 
+  useEffect(() => {
+    if (
+      !hydrated ||
+      isExportRealm ||
+      templateId !== "cover-tone" ||
+      coverToneAvailability.isSupported
+    ) {
+      return;
+    }
+
+    setTemplateId("midnight");
+    void updateExportOptions((current) => ({
+      ...current,
+      templateId: "midnight",
+    }));
+  }, [
+    coverToneAvailability.isSupported,
+    hydrated,
+    isExportRealm,
+    templateId,
+    updateExportOptions,
+  ]);
+
   const handleShowTitlesChange = (value: boolean) => {
     void updateExportOptions((current) => ({
       ...current,
@@ -2897,6 +2974,8 @@ export default function PickExperienceClient({
   };
 
   const handleTemplateChange = (value: ExportTemplateId) => {
+    if (!isExportTemplateAvailable(value, coverToneAvailability)) return;
+
     void updateExportOptions((current) => ({
       ...current,
       templateId: value,
@@ -3546,7 +3625,8 @@ export default function PickExperienceClient({
               onToggleTransparentBg={handleTransparentBackgroundChange}
               showQrCode={showQrCode}
               onToggleShowQrCode={handleShowQrCodeChange}
-              templateId={templateId}
+              templateId={activeTemplateId}
+              availableTemplateIds={availableTemplateIds}
               onTemplateChange={handleTemplateChange}
               generating={generating}
               actionsDisabled={
@@ -3593,7 +3673,7 @@ export default function PickExperienceClient({
             showTitles={showTitles}
             transparentBg={transparentBg}
             showQrCode={showQrCode}
-            templateId={templateId}
+            templateId={activeTemplateId}
             sizePresetId={frameSizePresetId}
             selectedBy={exportNickname}
             pageUrl={framePageUrl ?? pageUrl}
