@@ -22,6 +22,7 @@ export const PROJECT_CONTRACTS = Object.freeze({
 });
 
 const ROUTABLE_STATUSES = new Set(["published", "archived"]);
+const SONG_CATALOG_PATH = "/songs/";
 const FRAMEWORK_ERROR_MARKERS = [
   "__next_error__",
   "NEXT_HTTP_ERROR_FALLBACK",
@@ -61,6 +62,7 @@ export async function verifyStaticExport({
   const out = path.resolve(outputDirectory);
   const projects = await loadProjectExperiences(root);
   const expectedExperiences = projects.get(projectId) ?? [];
+  const songIds = await loadProjectSongIds(root, projectId);
   const foreignExperiences = Array.from(projects.entries())
     .filter(([candidateId]) => candidateId !== projectId)
     .flatMap(([, experiences]) => experiences);
@@ -74,6 +76,7 @@ export async function verifyStaticExport({
     verifyNoFrameworkError(rootHtml, "index.html", violations);
   }
   await verifyRscArtifact(path.join(out, "index.txt"), "index.txt", violations);
+  await verifySongCatalog(out, contract, songIds, violations);
 
   for (const experience of expectedExperiences) {
     const routeDirectory = path.join("live", experience.slug);
@@ -122,7 +125,7 @@ export async function verifyStaticExport({
     violations,
   );
 
-  await verifySitemap(out, contract, expectedExperiences, violations);
+  await verifySitemap(out, contract, expectedExperiences, songIds, violations);
   await verifyReferencedAssets(out, contract.siteUrl, violations);
 
   if (violations.length > 0) {
@@ -135,7 +138,7 @@ export async function verifyStaticExport({
 
   return {
     projectId,
-    routes: 1 + expectedExperiences.length,
+    routes: 2 + songIds.length + expectedExperiences.length,
   };
 }
 
@@ -146,6 +149,44 @@ async function verifyRscArtifact(filePath, label, violations) {
     violations.push(`${label} is not a valid static RSC payload`);
   }
   verifyNoFrameworkErrorMarkers(rsc, label, violations);
+}
+
+async function verifySongCatalog(out, contract, songIds, violations) {
+  const catalogRelativePath = path.join("songs", "index.html");
+  const catalogHtml = await readRequiredText(
+    path.join(out, catalogRelativePath),
+    violations,
+  );
+  if (catalogHtml !== null) {
+    verifyCanonical(
+      catalogHtml,
+      `${contract.siteUrl}${SONG_CATALOG_PATH}`,
+      catalogRelativePath,
+      violations,
+    );
+    verifyNoFrameworkError(catalogHtml, catalogRelativePath, violations);
+  }
+
+  for (const songId of songIds) {
+    const relativePath = path.join(
+      "songs",
+      encodeURIComponent(songId),
+      "index.html",
+    );
+    const songHtml = await readRequiredText(
+      path.join(out, relativePath),
+      violations,
+    );
+    if (songHtml !== null) {
+      verifyCanonical(
+        songHtml,
+        `${contract.siteUrl}${getSongCanonicalPath(songId)}`,
+        relativePath,
+        violations,
+      );
+      verifyNoFrameworkError(songHtml, relativePath, violations);
+    }
+  }
 }
 
 async function loadProjectExperiences(repositoryRoot) {
@@ -174,6 +215,33 @@ async function loadProjectExperiences(repositoryRoot) {
   }
 
   return projects;
+}
+
+async function loadProjectSongIds(repositoryRoot, projectId) {
+  const sourcePath = path.join(
+    repositoryRoot,
+    "src",
+    "projects",
+    projectId,
+    "songs.json",
+  );
+  let parsed;
+  try {
+    parsed = JSON.parse(await readFile(sourcePath, "utf8"));
+  } catch (error) {
+    throw new Error(`Unable to read ${sourcePath}: ${error.message}`);
+  }
+  if (!Array.isArray(parsed)) {
+    throw new Error(`${sourcePath} must contain an array`);
+  }
+
+  const songIds = parsed.map((song) => song?.id);
+  if (!songIds.every((songId) => typeof songId === "string" && songId)) {
+    throw new Error(
+      `${sourcePath} must contain songs with non-empty string ids`,
+    );
+  }
+  return songIds;
 }
 
 function verifyRootIdentity(html, contract, violations) {
@@ -239,7 +307,7 @@ function verifyNoFrameworkErrorMarkers(content, label, violations) {
   }
 }
 
-async function verifySitemap(out, contract, experiences, violations) {
+async function verifySitemap(out, contract, experiences, songIds, violations) {
   const sitemapPath = path.join(out, "sitemap.xml");
   const sitemap = await readRequiredText(sitemapPath, violations);
   if (sitemap === null) return;
@@ -250,6 +318,10 @@ async function verifySitemap(out, contract, experiences, violations) {
   ).sort();
   const expected = [
     `${contract.siteUrl}/`,
+    `${contract.siteUrl}${SONG_CATALOG_PATH}`,
+    ...songIds.map(
+      (songId) => `${contract.siteUrl}${getSongCanonicalPath(songId)}`,
+    ),
     ...experiences.map(
       (experience) => `${contract.siteUrl}${experience.canonicalPath}`,
     ),
@@ -260,6 +332,10 @@ async function verifySitemap(out, contract, experiences, violations) {
       `sitemap.xml locations differ: expected ${JSON.stringify(expected)}, received ${JSON.stringify(actual)}`,
     );
   }
+}
+
+function getSongCanonicalPath(songId) {
+  return `${SONG_CATALOG_PATH}${encodeURIComponent(songId)}/`;
 }
 
 async function verifyReferencedAssets(out, siteUrl, violations) {
