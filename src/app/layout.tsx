@@ -14,6 +14,10 @@ import {
 
 const metadataCopy = localizeProjectCopy(PROJECT_CONFIG.id, "en");
 
+function installIconPath(size: 180 | 192 | 512) {
+  return `/icons/install/${PROJECT_CONFIG.id}-${size}.png`;
+}
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: `${PROJECT_CONFIG.displayName} | ${metadataCopy.subtitle}`,
@@ -23,7 +27,26 @@ export const metadata: Metadata = {
     canonical: "/",
   },
   icons: {
-    icon: [{ url: PROJECT_CONFIG.iconPath, type: "image/svg+xml" }],
+    icon: [
+      { url: PROJECT_CONFIG.iconPath, type: "image/svg+xml" },
+      {
+        url: installIconPath(192),
+        sizes: "192x192",
+        type: "image/png",
+      },
+      {
+        url: installIconPath(512),
+        sizes: "512x512",
+        type: "image/png",
+      },
+    ],
+    apple: [
+      {
+        url: installIconPath(180),
+        sizes: "180x180",
+        type: "image/png",
+      },
+    ],
   },
   openGraph: {
     title: PROJECT_CONFIG.displayName,
