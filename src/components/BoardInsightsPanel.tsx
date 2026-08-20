@@ -29,7 +29,7 @@ function InsightCard({
 }: InsightCardProps) {
   return (
     <section
-      className={`rounded-2xl border border-black/8 bg-white/70 p-4 ${className}`}
+      className={`rounded-2xl border border-[var(--line)] bg-[var(--paper)] p-4 ${className}`}
     >
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <h3 className="text-sm font-semibold text-[var(--foreground)]">
@@ -74,7 +74,7 @@ function CreditDimension({
   countLabel: (count: number) => string;
 }) {
   return (
-    <div className="rounded-xl bg-black/[0.025] p-3">
+    <div className="rounded-xl bg-[var(--background)] p-3">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <h4 className="text-sm font-semibold text-[var(--foreground)]">
           {title}
@@ -133,7 +133,7 @@ export default function BoardInsightsPanel({
     <section
       aria-labelledby="board-insights-title"
       data-board-insights
-      className="mt-5 mb-6 rounded-2xl border border-black/10 bg-white/85 p-4 shadow-sm sm:mt-6 sm:p-5"
+      className="mt-5 mb-6 rounded-2xl border border-[var(--line)] bg-[var(--material-strong)] p-4 shadow-sm sm:mt-6 sm:p-5"
     >
       <div className="max-w-2xl">
         <h2
