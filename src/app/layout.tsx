@@ -13,6 +13,12 @@ import {
 } from "../utils/themePreference";
 
 const metadataCopy = localizeProjectCopy(PROJECT_CONFIG.id, "en");
+const homeOgImage = {
+  url: `/og/${PROJECT_CONFIG.id}/home.png`,
+  width: 1200,
+  height: 630,
+  alt: `${PROJECT_CONFIG.displayName} My Pick social card`,
+};
 
 function installIconPath(size: 180 | 192 | 512) {
   return `/icons/install/${PROJECT_CONFIG.id}-${size}.png`;
@@ -55,20 +61,13 @@ export const metadata: Metadata = {
     siteName: PROJECT_CONFIG.displayName,
     locale: "en_US",
     type: "website",
-    images: [
-      {
-        url: PROJECT_CONFIG.iconPath,
-        width: 512,
-        height: 512,
-        alt: `${PROJECT_CONFIG.displayName} Logo`,
-      },
-    ],
+    images: [homeOgImage],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: PROJECT_CONFIG.displayName,
     description: metadataCopy.description,
-    images: [PROJECT_CONFIG.iconPath],
+    images: [homeOgImage],
   },
   robots: {
     index: true,

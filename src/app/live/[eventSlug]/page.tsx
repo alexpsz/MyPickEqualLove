@@ -44,6 +44,22 @@ export async function generateMetadata({
 
   const pageUrl = getExperiencePageUrl(experience);
   const metadataCopy = localizeExperienceUi(experience, "en");
+  const publishedLiveImage = {
+    url: `/og/${PROJECT_CONFIG.id}/live/${experience.slug}.png`,
+    width: 1200,
+    height: 630,
+    alt: `${experience.title} | ${PROJECT_CONFIG.displayName} Live Pick social card`,
+  };
+  const existingLogoImage = {
+    url: PROJECT_CONFIG.iconPath,
+    width: 512,
+    height: 512,
+    alt: `${PROJECT_CONFIG.displayName} Logo`,
+  };
+  const socialImage =
+    experience.status === "published" ? publishedLiveImage : existingLogoImage;
+  const twitterCard =
+    experience.status === "published" ? "summary_large_image" : "summary";
 
   return {
     metadataBase: new URL(PROJECT_CONFIG.siteUrl),
@@ -60,20 +76,13 @@ export async function generateMetadata({
       siteName: PROJECT_CONFIG.displayName,
       locale: "en_US",
       type: "website",
-      images: [
-        {
-          url: PROJECT_CONFIG.iconPath,
-          width: 512,
-          height: 512,
-          alt: `${PROJECT_CONFIG.displayName} Logo`,
-        },
-      ],
+      images: [socialImage],
     },
     twitter: {
-      card: "summary",
+      card: twitterCard,
       title: metadataCopy.title,
       description: metadataCopy.description,
-      images: [PROJECT_CONFIG.iconPath],
+      images: [socialImage],
     },
     robots: {
       index: experience.status !== "draft",
