@@ -16,6 +16,7 @@ import { useDialogA11y } from "../utils/useDialogA11y";
 import AppIcon from "./AppIcon";
 import { APPLE_OPACITY, APPLE_SPRING_GENTLE } from "./AppleMotion";
 import JapaneseContent from "./JapaneseContent";
+import OfficialMediaLinks from "./OfficialMediaLinks";
 import type { PresenceState } from "./MotionPresence";
 import type { SearchSelectionMode } from "./SearchModal";
 
@@ -258,6 +259,8 @@ export default function SongDetailModal({
                   </div>
                 </DetailSection>
               ) : null}
+
+              <OfficialMediaLinks songId={song.id} headingLevel="h3" />
             </div>
           </div>
         </div>

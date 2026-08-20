@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "projectId": "equal-love",
+  "entries": [
+    {
+      "songId": "equal-love",
+      "sourceMode": "official-mv",
+      "sourceUrl": "https://www.youtube.com/watch?v=xOAaBsPaPpY"
+    },
+    {
+      "songId": "sutaato",
+      "sourceMode": "official-dance",
+      "sourceUrl": "https://www.youtube.com/watch?v=HshrEcPx2hs"
+    },
+    {
+      "songId": "kioku-nodokokade",
+      "sourceMode": "official-art-track",
+      "sourceUrl": "https://www.youtube.com/watch?v=Bqin98SsHT0"
+    },
+    {
+      "songId": "bokura-no-seifuku-christmas",
+      "sourceMode": "official-mv",
+      "sourceUrl": "https://www.youtube.com/watch?v=YIjPbF-dKQA"
+    },
+    {
+      "songId": "youkoso-ikorabu-numa",
+      "sourceMode": "official-mv",
+      "sourceUrl": "https://www.youtube.com/watch?v=z858cLcnaJo"
+    },
+    {
+      "songId": "todoi-te-love-you",
+      "sourceMode": "official-mv",
+      "sourceUrl": "https://www.youtube.com/watch?v=RxcNhst20uw"
+    },
+    {
+      "songId": "teokure-caution",
+      "sourceMode": "official-mv",
+      "sourceUrl": "https://www.youtube.com/watch?v=w0N0TiOlAY0"
+    },
+    {
+      "songId": "bukatsu-nakani-me-ga-au-natte-omotte-tanda",
+      "sourceMode": "official-mv",
+      "sourceUrl": "https://www.youtube.com/watch?v=vJIPN_iZnIU"
+    },
+    {
+      "songId": "ki-ai-ra-tasuke-ni-kita-zo",
+      "sourceMode": "official-mv",
+      "sourceUrl": "https://www.youtube.com/watch?v=Qg9344QHJDU"
+    },
+    {
+      "songId": "want-you-want-you",
+      "sourceMode": "official-mv",
+      "sourceUrl": "https://www.youtube.com/watch?v=Bot92Nn-ozk"
+    },
+    {
+      "songId": "ima-kono-fune-ni-nore",
+      "sourceMode": "official-mv",
+      "sourceUrl": "https://www.youtube.com/watch?v=canxm5HHHQc"
+    },
+    {
+      "songId": "aikatsuhappiiendo",
+      "sourceMode": "official-mv",
+      "sourceUrl": "https://www.youtube.com/watch?v=SrqqHpWIN9M"
+    },
+    {
+      "songId": "sagase-diamond-lily",
+      "sourceMode": "official-mv",
+      "sourceUrl": "https://www.youtube.com/watch?v=t5r0rNwjXQU"
+    },
+    {
+      "songId": "iranai-tsuinteeru",
+      "sourceMode": "official-mv",
+      "sourceUrl": "https://www.youtube.com/watch?v=hRdSH41gjx0"
+    },
+    {
+      "songId": "niji-no-moto",
+      "sourceMode": "official-mv",
+      "sourceUrl": "https://www.youtube.com/watch?v=qoPqgiQVhok"
+    },
+    {
+      "songId": "zuruiyo-zuruine",
+      "sourceMode": "official-mv",
+      "sourceUrl": "https://www.youtube.com/watch?v=J5eTB_0SEeg"
+    },
+    {
+      "songId": "sweetest-girl",
+      "sourceMode": "official-mv",
+      "sourceUrl": "https://www.youtube.com/watch?v=TA0oDNGCFHQ"
+    },
+    {
+      "songId": "oshi-noiru-sekai",
+      "sourceMode": "official-mv",
+      "sourceUrl": "https://www.youtube.com/watch?v=E8OqOUTLesg"
+    },
+    {
+      "songId": "tsugini-ae-ta-toki-naniwo-hanaso-ukana",
+      "sourceMode": "official-mv",
+      "sourceUrl": "https://www.youtube.com/watch?v=aC4CdVDFzB4"
+    },
+    {
+      "songId": "cameo",
+      "sourceMode": "official-mv",
+      "sourceUrl": "https://www.youtube.com/watch?v=iEYwHScdJFQ"
+    }
+  ]
+}

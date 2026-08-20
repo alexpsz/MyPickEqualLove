@@ -15,6 +15,7 @@ import { getSongPagePath, SONG_CATALOG_PATH } from "../utils/songRoutes";
 import AppTopBar from "./AppTopBar";
 import Footer from "./Footer";
 import JapaneseContent from "./JapaneseContent";
+import OfficialMediaLinks from "./OfficialMediaLinks";
 
 const SONG_CATALOG_BAR_BACKGROUND = `linear-gradient(90deg, ${PROJECT_THEME_COLOR}, var(--project-accent))`;
 
@@ -198,6 +199,8 @@ export function SongCatalogDetail({ song }: { song: Song }) {
                   </p>
                 )}
               </DetailSection>
+
+              <OfficialMediaLinks songId={song.id} />
             </div>
           </div>
         </article>
