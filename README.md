@@ -8,10 +8,13 @@ Fan-made static web apps for creating shareable Top 10 song boards for =LOVE, â‰
 
 ## Features
 
-- Pick up to 10 favorite songs from the current group's catalog.
-- Search and filter by song, release, year, member, and credits.
-- Save picks and export options locally in the browser.
-- Generate a PNG board for download or sharing to X.
+- Pick a Top 10 with search, filters, permanent song pages, and reviewed official
+  media links.
+- Save, reorder, restore, share, and compare boards locally in the browser.
+- Use Pick Assistant, factual Top 10 overviews, new-song notices, and quick
+  commands.
+- Follow the system theme or choose light or dark mode, and install each site.
+- Export four PNG styles with optional QR codes for download or sharing.
 - Build three sister sites from one shared codebase.
 
 ## Live Specials
