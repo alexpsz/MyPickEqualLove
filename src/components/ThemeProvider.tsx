@@ -1,11 +1,14 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import {
   createContext,
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -28,27 +31,41 @@ interface ThemeContextValue extends ThemeState {
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
+const DEFAULT_THEME_STATE: ThemeState = {
+  preference: AUTO_THEME_PREFERENCE,
+  theme: "light",
+};
 
 export default function ThemeProvider({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
   const [isExportRealm] = useState(isCurrentExportRealm);
-  const [themeState, setThemeState] = useState<ThemeState>(
-    readInitialThemeState,
-  );
+  const initialThemeStateRef = useRef<ThemeState | null>(null);
+  const initialThemeAppliedRef = useRef(false);
+  const [themeState, setThemeState] = useState<ThemeState>(DEFAULT_THEME_STATE);
+
+  if (initialThemeStateRef.current === null) {
+    initialThemeStateRef.current = readInitialThemeState();
+  }
 
   const applyTheme = useCallback(
     (preference: ThemePreference, theme: ResolvedTheme) => {
       setThemeState({ preference, theme });
-      if (typeof document === "undefined") return;
-
-      applyThemeToRoot(
-        document.documentElement,
-        preference,
-        theme,
-        document.querySelector<HTMLMetaElement>('meta[name="theme-color"]'),
-      );
+      applyThemeToDocument(preference, theme);
     },
     [],
   );
+  const currentPreference = themeState.preference;
+  const currentTheme = themeState.theme;
+
+  useLayoutEffect(() => {
+    const nextThemeState = initialThemeAppliedRef.current
+      ? { preference: currentPreference, theme: currentTheme }
+      : (initialThemeStateRef.current ?? DEFAULT_THEME_STATE);
+
+    initialThemeAppliedRef.current = true;
+    applyThemeToDocument(nextThemeState.preference, nextThemeState.theme);
+    setThemeState(nextThemeState);
+  }, [currentPreference, currentTheme, pathname]);
 
   useEffect(() => {
     if (isExportRealm) return;
@@ -153,4 +170,18 @@ function getLocalStorage() {
   } catch {
     return null;
   }
+}
+
+function applyThemeToDocument(
+  preference: ThemePreference,
+  theme: ResolvedTheme,
+) {
+  if (typeof document === "undefined") return;
+
+  applyThemeToRoot(
+    document.documentElement,
+    preference,
+    theme,
+    document.querySelector<HTMLMetaElement>('meta[name="theme-color"]'),
+  );
 }
