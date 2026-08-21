@@ -28,24 +28,10 @@ Fan-made static web apps for creating shareable Top 10 song boards for =LOVE, â‰
 
 ## MyPick Archetype
 
-=LOVE's standard Top 10 has an optional companion feature: once ten different
-songs are picked, it matches them against ten characters from the 21st single's
-MV world and shows which one fits the selection.
-
-- Matching runs entirely in the browser against a frozen document of 85 reviewed
-  song fingerprints. No API key ships to the client and no request is made at
-  runtime.
-- The fingerprints were produced offline from the official public MVs and are
-  checked into `src/projects/equal-love/archetype-21/`. Characters never
-  influenced them: the labelling step never saw a character card, name, or
-  attribute.
-- The result is a temporary dialog. It is not written to `localStorage` and it
-  does not change the board.
-- It is available on the =LOVE standard page only, in all four interface
-  languages, and reuses the existing export pipeline to produce a partner poster.
-
-It is presented as an entertainment feature. The result cites the user's Top 10
-and credits the official MVs as its source; it does not claim a similarity score.
+=LOVE's standard Top 10 includes an optional entertainment preview that pairs a
+completed board with a character from the 21st single's MV world. It runs
+entirely in the browser, sends no user information to a server, and does not save
+the result or change the board.
 
 ## Projects
 
@@ -87,7 +73,9 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Data
 
-There is no runtime database. Project data is versioned in `src/projects/<project-id>/`: each project has `members.json` and `songs.json`, while cover images live in `public/covers/<project-id>/`.
+Song and member catalogs are stored as static JSON in
+`src/projects/<project-id>/`; cover images are in
+`public/covers/<project-id>/`.
 
 ```bash
 python -m pip install -r requirements-discography.txt
@@ -95,11 +83,7 @@ npm run sync:data:all
 npm run validate:data
 ```
 
-`npm run sync:songs:all` is the catalog-only variant. It discovers releases from the three official discography sites and their release-news feeds; Uta-Net only enriches official candidates with credits. Public song data is written only after the release identity, cover, ownership, participants, and lyricist/composer/arranger are complete. Incomplete or ambiguous announcements remain review candidates instead of becoming placeholder catalog records.
-
-The catalog is updated by hand. Run the sync, run `npm run validate:data`, review the diff, and commit; the connected Cloudflare Pages projects deploy from `main`. Releases are infrequent enough that this does not need to be automated, and a reviewed diff is a stronger gate than an unattended one.
-
-Canonical `releaseDate` normally means the earliest verified commercial CD or digital release. For a verified advance-digital/primary-release campaign, it uses the advance date until the primary release occurs and then switches the entire release bundle atomically; unrelated later reissues never overwrite it. An MV, preview, news post, or live performance does not count.
+Use `npm run sync:songs:all` to refresh song catalogs only.
 
 ## Stack
 
