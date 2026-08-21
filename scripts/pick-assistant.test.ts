@@ -18,6 +18,7 @@ import {
   togglePickAssistantShortlistSong,
   undoComparison,
   updatePickAssistantSnapshot,
+  type ComparisonOutcome,
   type PickAssistantSession,
 } from "../src/utils/pickAssistant";
 import {
@@ -83,6 +84,127 @@ test("merge tournament carries an odd candidate into the next round", () => {
     "song-4",
     "song-5",
   ]);
+});
+
+function tournamentCandidateIds(count: number) {
+  return Array.from({ length: count }, (_, index) => `candidate-${index + 1}`);
+}
+
+function reportedMaximumComparisons(count: number) {
+  return deriveTournament(
+    createPickAssistantSession(tournamentCandidateIds(count)),
+  ).maximumComparisons;
+}
+
+function playTournament(
+  count: number,
+  chooseOutcome: (step: number) => ComparisonOutcome,
+) {
+  const candidateIds = tournamentCandidateIds(count);
+  let session = createPickAssistantSession(candidateIds);
+  const maximumComparisons = deriveTournament(session).maximumComparisons;
+  let step = 0;
+
+  for (;;) {
+    const answered = recordComparison(session, chooseOutcome(step));
+    if (answered === session) break;
+    session = answered;
+    step += 1;
+    assert.ok(
+      session.decisions.length <= maximumComparisons,
+      `${count} candidates exceeded the reported ceiling: ` +
+        `${session.decisions.length} > ${maximumComparisons}`,
+    );
+  }
+
+  const state = deriveTournament(session);
+  if (state.status !== "complete") {
+    throw new Error(`${count} candidates never completed`);
+  }
+  assert.deepEqual(
+    [...state.orderedIds].sort(),
+    [...candidateIds].sort(),
+    `${count} candidates lost or duplicated a song`,
+  );
+}
+
+function deepestDecisionCount(session: PickAssistantSession): number {
+  const state = deriveTournament(session);
+  if (state.status === "complete") return state.decisionsMade;
+  return Math.max(
+    deepestDecisionCount(recordComparison(session, "left")),
+    deepestDecisionCount(recordComparison(session, "right")),
+  );
+}
+
+test("the reported comparison ceiling follows the executed merge plan", () => {
+  const expected = new Map([
+    [2, 1],
+    [3, 3],
+    [4, 5],
+    [5, 9],
+    [8, 17],
+    [9, 25],
+    [16, 49],
+    [17, 65],
+    [24, 89],
+    [32, 129],
+    [33, 161],
+    [64, 321],
+    [100, 589],
+    [128, 769],
+  ]);
+
+  for (const [count, maximumComparisons] of expected) {
+    assert.equal(
+      reportedMaximumComparisons(count),
+      maximumComparisons,
+      `${count} candidates`,
+    );
+  }
+});
+
+test("no decision path can push progress past the reported ceiling", () => {
+  let seed = 0x2f6e2b1;
+  const randomOutcome = (): ComparisonOutcome => {
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+    return (["left", "right", "tie"] as const)[seed % 3];
+  };
+  const alternating = (step: number): ComparisonOutcome =>
+    step % 2 === 0 ? "left" : "right";
+  const strategies: ((step: number) => ComparisonOutcome)[] = [
+    () => "left",
+    () => "right",
+    alternating,
+    randomOutcome,
+  ];
+
+  for (let count = 2; count <= 32; count += 1) {
+    for (const chooseOutcome of strategies) {
+      playTournament(count, chooseOutcome);
+    }
+  }
+
+  // Replaying a decision list costs O(n^2), so the counts above the current cap
+  // are swept with one strategy and the largest ones are only spot-checked.
+  for (let count = 33; count <= 48; count += 1) {
+    playTournament(count, alternating);
+  }
+  for (const count of [64, 100]) {
+    playTournament(count, alternating);
+  }
+});
+
+test("the reported comparison ceiling is reachable, not merely safe", () => {
+  for (let count = 2; count <= 7; count += 1) {
+    assert.equal(
+      deepestDecisionCount(
+        createPickAssistantSession(tournamentCandidateIds(count)),
+      ),
+      reportedMaximumComparisons(count),
+      `${count} candidates`,
+    );
+  }
 });
 
 test("tie is stable and skip rotates without recording a preference", () => {

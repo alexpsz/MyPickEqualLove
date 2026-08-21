@@ -571,21 +571,32 @@ function replayTournament(session: PickAssistantSession): TournamentReplay {
   };
 }
 
-function createMergeJobs(runs: string[][]): MergeJob[] {
-  const jobs: MergeJob[] = [];
+/**
+ * One bottom-up merge round: adjacent runs pair up and a trailing odd run
+ * passes through untouched. The executed tournament and its reported maximum
+ * must consume runs identically, so both read this plan instead of restating
+ * it.
+ */
+function planMergeRound<TRun>(runs: readonly TRun[]) {
+  const pairs: { left: TRun; right: TRun | null }[] = [];
   for (let index = 0; index < runs.length; index += 2) {
-    const left = runs[index];
-    const right = runs[index + 1] ?? [];
-    jobs.push({
-      index: jobs.length,
-      left,
-      right,
-      leftIndex: right.length === 0 ? left.length : 0,
-      rightIndex: 0,
-      merged: right.length === 0 ? left.slice() : [],
-    });
+    pairs.push({ left: runs[index], right: runs[index + 1] ?? null });
   }
-  return jobs;
+  return pairs;
+}
+
+function createMergeJobs(runs: string[][]): MergeJob[] {
+  return planMergeRound(runs).map(({ left, right }, index) => {
+    const rightRun = right ?? [];
+    return {
+      index,
+      left,
+      right: rightRun,
+      leftIndex: rightRun.length === 0 ? left.length : 0,
+      rightIndex: 0,
+      merged: rightRun.length === 0 ? left.slice() : [],
+    };
+  });
 }
 
 function getAvailablePairs(jobs: MergeJob[]): AvailablePair[] {
@@ -635,8 +646,19 @@ function completeMergeJobIfPossible(job: MergeJob) {
 
 function getMaximumMergeComparisons(candidateCount: number) {
   if (candidateCount < 2) return 0;
-  const power = Math.ceil(Math.log2(candidateCount));
-  return candidateCount * power - 2 ** power + 1;
+
+  let runLengths = Array.from({ length: candidateCount }, () => 1);
+  let maximum = 0;
+
+  while (runLengths.length > 1) {
+    runLengths = planMergeRound(runLengths).map(({ left, right }) => {
+      if (right === null) return left;
+      maximum += left + right - 1;
+      return left + right;
+    });
+  }
+
+  return maximum;
 }
 
 function getPairKey(leftId: string, rightId: string) {
