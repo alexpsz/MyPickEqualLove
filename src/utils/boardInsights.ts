@@ -48,7 +48,25 @@ export interface BoardInsightCreditEntry {
   count: number;
 }
 
+export interface BoardInsightYearSpan {
+  from: string;
+  to: string;
+}
+
+export interface BoardInsightTitleTrackShare {
+  count: number;
+  total: number;
+}
+
+export interface BoardInsightSummary {
+  topYears: readonly BoardInsightYearEntry[];
+  yearSpan: BoardInsightYearSpan | null;
+  titleTracks: BoardInsightTitleTrackShare | null;
+  topLyricists: readonly BoardInsightCreditEntry[];
+}
+
 export interface BoardInsights {
+  summary: BoardInsightSummary;
   releaseYears: BoardInsightDimension<BoardInsightYearEntry>;
   releaseTypes: BoardInsightDimension<BoardInsightReleaseTypeEntry>;
   trackTypes: BoardInsightDimension<BoardInsightTrackTypeEntry>;
@@ -215,26 +233,68 @@ function deriveCreditInsights(
 }
 
 /**
+ * Everything sharing the highest count, in the order the dimension already
+ * uses. A leader with a single song says nothing about a board — ten songs by
+ * ten different writers would name all ten — so that case yields nothing at all
+ * rather than an arbitrary pick or an unreadable list.
+ */
+function leadersOf<TEntry extends { count: number }>(
+  entries: readonly TEntry[],
+): readonly TEntry[] {
+  const top = Math.max(0, ...entries.map((entry) => entry.count));
+  return top < 2 ? [] : entries.filter((entry) => entry.count === top);
+}
+
+function deriveYearSpan(
+  entries: readonly BoardInsightYearEntry[],
+): BoardInsightYearSpan | null {
+  if (entries.length < 2) return null;
+  return { from: entries[entries.length - 1].year, to: entries[0].year };
+}
+
+function deriveTitleTrackShare(
+  trackTypes: BoardInsightDimension<BoardInsightTrackTypeEntry>,
+): BoardInsightTitleTrackShare | null {
+  if (trackTypes.coverage.covered === 0) return null;
+  return {
+    count:
+      trackTypes.entries.find((entry) => entry.value === "title")?.count ?? 0,
+    total: trackTypes.coverage.covered,
+  };
+}
+
+/**
  * Derives factual, rank-order-independent summaries for an already validated
  * board. Callers decide whether a board is complete and eligible to display.
  */
 export function deriveBoardInsights(songs: readonly Song[]): BoardInsights {
+  const releaseYears = deriveYearInsights(songs);
+  const releaseTypes = deriveEnumInsights(
+    songs,
+    (song) => (isReleaseType(song.releaseType) ? song.releaseType : null),
+    (value, count) => ({ key: value, value, count }),
+  );
+  const trackTypes = deriveEnumInsights(
+    songs,
+    (song) => (isTrackType(song.trackType) ? song.trackType : null),
+    (value, count) => ({ key: value, value, count }),
+  );
+  const credits = {
+    lyricist: deriveCreditInsights(songs, "lyricist"),
+    composer: deriveCreditInsights(songs, "composer"),
+    arranger: deriveCreditInsights(songs, "arranger"),
+  };
+
   return {
-    releaseYears: deriveYearInsights(songs),
-    releaseTypes: deriveEnumInsights(
-      songs,
-      (song) => (isReleaseType(song.releaseType) ? song.releaseType : null),
-      (value, count) => ({ key: value, value, count }),
-    ),
-    trackTypes: deriveEnumInsights(
-      songs,
-      (song) => (isTrackType(song.trackType) ? song.trackType : null),
-      (value, count) => ({ key: value, value, count }),
-    ),
-    credits: {
-      lyricist: deriveCreditInsights(songs, "lyricist"),
-      composer: deriveCreditInsights(songs, "composer"),
-      arranger: deriveCreditInsights(songs, "arranger"),
+    summary: {
+      topYears: leadersOf(releaseYears.entries),
+      yearSpan: deriveYearSpan(releaseYears.entries),
+      titleTracks: deriveTitleTrackShare(trackTypes),
+      topLyricists: leadersOf(credits.lyricist.entries),
     },
+    releaseYears,
+    releaseTypes,
+    trackTypes,
+    credits,
   };
 }

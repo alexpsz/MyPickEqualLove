@@ -303,6 +303,102 @@ test("an unregistered credit name is not counted instead of inventing a creator"
   );
 });
 
+test("the summary states the leading year, title-track share, span, and lyricist", () => {
+  const songs = makeTopTen([
+    { releaseDate: "2026-01-01", trackType: "title" },
+    { releaseDate: "2026-02-01", trackType: "title" },
+    { releaseDate: "2026-03-01", trackType: "title" },
+    { releaseDate: "2026-04-01", trackType: "title" },
+    { releaseDate: "2025-01-01", trackType: "coupling" },
+    { releaseDate: "2025-02-01", trackType: "coupling" },
+    { releaseDate: "2024-01-01", trackType: "coupling" },
+    { releaseDate: "2024-02-01", trackType: "album" },
+    { releaseDate: "2024-03-01", trackType: "album" },
+    { releaseDate: "2022-01-01", trackType: "title" },
+  ]);
+  const { summary } = deriveBoardInsights(songs);
+
+  assert.deepEqual(
+    summary.topYears.map((entry) => [entry.year, entry.count]),
+    [["2026", 4]],
+  );
+  assert.deepEqual(summary.yearSpan, { from: "2022", to: "2026" });
+  assert.deepEqual(summary.titleTracks, { count: 5, total: 10 });
+  assert.deepEqual(
+    summary.topLyricists.map((entry) => [entry.key, entry.count]),
+    [["sashihara-rino", 10]],
+  );
+});
+
+test("a tie names everyone that ties instead of picking one", () => {
+  const songs = makeTopTen(
+    Array.from({ length: 10 }, (_, index) => ({
+      releaseDate: index < 5 ? "2026-01-01" : "2025-01-01",
+      credits: { lyricist: index < 5 ? WRITER_A : WRITER_B },
+    })),
+  );
+  const { summary } = deriveBoardInsights(songs);
+
+  assert.deepEqual(
+    summary.topYears.map((entry) => entry.year),
+    ["2026", "2025"],
+  );
+  assert.deepEqual(
+    summary.topLyricists.map((entry) => entry.key),
+    ["nakamura-ayumu", "sashihara-rino"],
+  );
+});
+
+test("a leader with one song is not a fact worth stating", () => {
+  const songs = makeTopTen(
+    Array.from({ length: 10 }, (_, index) => ({
+      releaseDate: `20${16 + index}-01-01`,
+      credits: {
+        lyricist: index % 2 === 0 ? WRITER_A : WRITER_B,
+      },
+    })),
+  );
+  const { summary } = deriveBoardInsights(songs);
+
+  assert.deepEqual(summary.topYears, []);
+  assert.deepEqual(summary.yearSpan, { from: "2016", to: "2025" });
+  assert.deepEqual(
+    summary.topLyricists.map((entry) => entry.count),
+    [5, 5],
+  );
+});
+
+test("the summary drops the parts an incomplete board cannot support", () => {
+  const songs = makeTopTen(
+    Array.from({ length: 10 }, () => ({
+      releaseDate: undefined,
+      trackType: undefined,
+      credits: {},
+    })),
+  );
+  const { summary } = deriveBoardInsights(songs);
+
+  assert.deepEqual(summary, {
+    topYears: [],
+    yearSpan: null,
+    titleTracks: null,
+    topLyricists: [],
+  });
+});
+
+test("a single covered year has a leader but no span", () => {
+  const songs = makeTopTen(
+    Array.from({ length: 10 }, () => ({ releaseDate: "2026-01-01" })),
+  );
+  const { summary } = deriveBoardInsights(songs);
+
+  assert.deepEqual(
+    summary.topYears.map((entry) => [entry.year, entry.count]),
+    [["2026", 10]],
+  );
+  assert.equal(summary.yearSpan, null);
+});
+
 test("ties use deterministic keys and member or center fields do not affect output", () => {
   const overrides: Partial<Song>[] = Array.from({ length: 10 }, (_, index) => ({
     releaseDate: index % 2 === 0 ? "2024-01-01" : "2023-01-01",

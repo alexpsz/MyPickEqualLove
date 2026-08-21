@@ -1,7 +1,10 @@
-import type { ReactNode } from "react";
+"use client";
+
+import { useId, useState, type ReactNode } from "react";
 import { useLocale } from "../i18n/LocaleProvider";
 import type {
   BoardInsightCoverage,
+  BoardInsightCreditEntry,
   BoardInsights,
 } from "../utils/boardInsights";
 import {
@@ -12,16 +15,36 @@ import JapaneseContent from "./JapaneseContent";
 
 interface InsightCardProps {
   title: string;
-  coverageLabel?: string;
+  coverage?: BoardInsightCoverage;
   emptyLabel: string;
   hasEntries: boolean;
   children: ReactNode;
   className?: string;
 }
 
+/**
+ * Coverage only earns a line when something is missing. On a complete board it
+ * reads "10/10 (100%)" in every card at once, which is six repetitions of "no
+ * problem here".
+ */
+function CoverageLabel({ coverage }: { coverage: BoardInsightCoverage }) {
+  const { t } = useLocale();
+  if (coverage.covered >= coverage.total) return null;
+
+  return (
+    <p className="text-xs font-medium tabular-nums text-[var(--muted)]">
+      {t("insights.coverage", {
+        covered: coverage.covered,
+        total: coverage.total,
+        percent: coverage.percent,
+      })}
+    </p>
+  );
+}
+
 function InsightCard({
   title,
-  coverageLabel,
+  coverage,
   emptyLabel,
   hasEntries,
   children,
@@ -35,11 +58,7 @@ function InsightCard({
         <h3 className="text-sm font-semibold text-[var(--foreground)]">
           {title}
         </h3>
-        {coverageLabel ? (
-          <p className="text-xs font-medium tabular-nums text-[var(--muted)]">
-            {coverageLabel}
-          </p>
-        ) : null}
+        {coverage ? <CoverageLabel coverage={coverage} /> : null}
       </div>
       {hasEntries ? (
         children
@@ -60,51 +79,183 @@ function CountBadge({ label }: { label: string }) {
   );
 }
 
+function SummaryChip({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <li className="flex items-baseline gap-2 rounded-full border border-[var(--line)] bg-[var(--paper)] px-3 py-1.5">
+      <span className="text-xs font-medium text-[var(--muted)]">{label}</span>
+      <span className="min-w-0 text-sm font-semibold text-[var(--foreground)]">
+        {children}
+      </span>
+    </li>
+  );
+}
+
+/**
+ * The few statements a reader can take away without adding anything up. Each
+ * chip is omitted when the board does not actually support it, and a tie names
+ * everyone that ties rather than picking one.
+ */
+function BoardSummary({ summary }: { summary: BoardInsights["summary"] }) {
+  const { t } = useLocale();
+  const separator = t("insights.summary.separator");
+  const countLabel = (count: number) => t("insights.songCount", { count });
+  const chips: ReactNode[] = [];
+
+  if (summary.topYears.length > 0) {
+    chips.push(
+      <SummaryChip key="top-years" label={t("insights.summary.topYears")}>
+        <span className="tabular-nums">
+          {summary.topYears.map((entry) => entry.year).join(separator)}
+        </span>
+        {` · ${countLabel(summary.topYears[0].count)}`}
+      </SummaryChip>,
+    );
+  }
+
+  if (summary.titleTracks) {
+    chips.push(
+      <SummaryChip key="title-tracks" label={t("insights.summary.titleTracks")}>
+        <span className="tabular-nums">
+          {`${summary.titleTracks.count}/${summary.titleTracks.total}`}
+        </span>
+      </SummaryChip>,
+    );
+  }
+
+  if (summary.yearSpan) {
+    chips.push(
+      <SummaryChip key="year-span" label={t("insights.summary.yearSpan")}>
+        <span className="tabular-nums">
+          {`${summary.yearSpan.from}–${summary.yearSpan.to}`}
+        </span>
+      </SummaryChip>,
+    );
+  }
+
+  if (summary.topLyricists.length > 0) {
+    chips.push(
+      <SummaryChip
+        key="top-lyricists"
+        label={t("insights.summary.topLyricists")}
+      >
+        <JapaneseContent>
+          {summary.topLyricists.map((entry) => entry.value.ja).join(separator)}
+        </JapaneseContent>
+        {` · ${countLabel(summary.topLyricists[0].count)}`}
+      </SummaryChip>,
+    );
+  }
+
+  if (chips.length === 0) return null;
+
+  return <ul className="mt-4 flex flex-wrap gap-2">{chips}</ul>;
+}
+
+function CreditRow({
+  entry,
+  countLabel,
+}: {
+  entry: BoardInsightCreditEntry;
+  countLabel: (count: number) => string;
+}) {
+  return (
+    <li className="flex items-start justify-between gap-3 text-sm">
+      <span className="min-w-0 break-words text-[var(--foreground)]">
+        <JapaneseContent>{entry.value.ja}</JapaneseContent>
+        <span className="mt-0.5 block text-xs text-[var(--muted)]">
+          {entry.value.romaji}
+        </span>
+        {entry.value.en ? (
+          <span className="mt-0.5 block text-xs text-[var(--muted)]">
+            {entry.value.en}
+          </span>
+        ) : null}
+      </span>
+      <CountBadge label={countLabel(entry.count)} />
+    </li>
+  );
+}
+
+/**
+ * Contributors for one role, ranked by how many of the board's songs they
+ * worked on.
+ *
+ * Everyone credited on a single song is folded away by default. On a ten-song
+ * board a role like arrangement is usually ten different people with one song
+ * each, and printing that list ranks nothing while burying the names that do
+ * repeat.
+ */
 function CreditDimension({
   title,
   insights,
-  coverageLabel,
   emptyLabel,
   countLabel,
 }: {
   title: string;
   insights: BoardInsights["credits"]["lyricist"];
-  coverageLabel: (coverage: BoardInsightCoverage) => string;
   emptyLabel: string;
   countLabel: (count: number) => string;
 }) {
+  const { t } = useLocale();
+  const [showOnceOnly, setShowOnceOnly] = useState(false);
+  const listId = useId();
+
+  const repeated = insights.entries.filter((entry) => entry.count > 1);
+  const onceOnly = insights.entries.filter((entry) => entry.count === 1);
+
   return (
     <div className="rounded-xl bg-[var(--background)] p-3">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <h4 className="text-sm font-semibold text-[var(--foreground)]">
           {title}
         </h4>
-        <p className="text-xs font-medium tabular-nums text-[var(--muted)]">
-          {coverageLabel(insights.coverage)}
-        </p>
+        <CoverageLabel coverage={insights.coverage} />
       </div>
       {insights.entries.length > 0 ? (
-        <ul className="mt-3 space-y-2">
-          {insights.entries.map((entry) => (
-            <li
-              key={entry.key}
-              className="flex items-start justify-between gap-3 text-sm"
-            >
-              <span className="min-w-0 break-words text-[var(--foreground)]">
-                <JapaneseContent>{entry.value.ja}</JapaneseContent>
-                <span className="mt-0.5 block text-xs text-[var(--muted)]">
-                  {entry.value.romaji}
-                </span>
-                {entry.value.en ? (
-                  <span className="mt-0.5 block text-xs text-[var(--muted)]">
-                    {entry.value.en}
-                  </span>
-                ) : null}
-              </span>
-              <CountBadge label={countLabel(entry.count)} />
-            </li>
-          ))}
-        </ul>
+        <>
+          {repeated.length > 0 ? (
+            <ul className="mt-3 space-y-2">
+              {repeated.map((entry) => (
+                <CreditRow
+                  key={entry.key}
+                  entry={entry}
+                  countLabel={countLabel}
+                />
+              ))}
+            </ul>
+          ) : null}
+          {onceOnly.length > 0 ? (
+            <>
+              {/* Rendered even while collapsed so aria-controls always resolves. */}
+              <ul id={listId} hidden={!showOnceOnly} className="mt-3 space-y-2">
+                {onceOnly.map((entry) => (
+                  <CreditRow
+                    key={entry.key}
+                    entry={entry}
+                    countLabel={countLabel}
+                  />
+                ))}
+              </ul>
+              <button
+                type="button"
+                aria-expanded={showOnceOnly}
+                aria-controls={listId}
+                onClick={() => setShowOnceOnly((visible) => !visible)}
+                className="mt-3 -ml-2 min-h-11 rounded-[10px] px-2 text-left text-xs font-medium text-[var(--muted)] outline-none transition-colors duration-150 hover:bg-[var(--quiet-hover)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--focus-ring)]"
+              >
+                {showOnceOnly
+                  ? t("insights.hideOnceOnly")
+                  : t("insights.showOnceOnly", { count: onceOnly.length })}
+              </button>
+            </>
+          ) : null}
+        </>
       ) : (
         <p className="mt-3 text-sm leading-relaxed text-[var(--muted)]">
           {emptyLabel}
@@ -120,14 +271,9 @@ export default function BoardInsightsPanel({
   insights: BoardInsights;
 }) {
   const { t } = useLocale();
-  const coverageLabel = (coverage: BoardInsightCoverage) =>
-    t("insights.coverage", {
-      covered: coverage.covered,
-      total: coverage.total,
-      percent: coverage.percent,
-    });
   const countLabel = (count: number) => t("insights.songCount", { count });
   const emptyLabel = t("insights.noData");
+  const yearTotal = insights.releaseYears.coverage.covered;
 
   return (
     <section
@@ -147,23 +293,35 @@ export default function BoardInsightsPanel({
         </p>
       </div>
 
+      <BoardSummary summary={insights.summary} />
+
       <div className="mt-4 grid gap-3 md:grid-cols-2">
         <InsightCard
           title={t("insights.releaseYears")}
-          coverageLabel={coverageLabel(insights.releaseYears.coverage)}
+          coverage={insights.releaseYears.coverage}
           emptyLabel={emptyLabel}
           hasEntries={insights.releaseYears.entries.length > 0}
         >
-          <ul className="mt-3 space-y-2">
+          <ul className="mt-3 space-y-2.5">
             {insights.releaseYears.entries.map((entry) => (
-              <li
-                key={entry.key}
-                className="flex items-center justify-between gap-3 text-sm"
-              >
-                <span className="font-medium tabular-nums text-[var(--foreground)]">
-                  {entry.year}
-                </span>
-                <CountBadge label={countLabel(entry.count)} />
+              <li key={entry.key} className="text-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="font-medium tabular-nums text-[var(--foreground)]">
+                    {entry.year}
+                  </span>
+                  <CountBadge label={countLabel(entry.count)} />
+                </div>
+                <div
+                  aria-hidden="true"
+                  className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[var(--line)]"
+                >
+                  <div
+                    className="h-full rounded-full bg-[var(--project-primary)]"
+                    style={{
+                      width: `${yearTotal > 0 ? (entry.count / yearTotal) * 100 : 0}%`,
+                    }}
+                  />
+                </div>
               </li>
             ))}
           </ul>
@@ -171,7 +329,7 @@ export default function BoardInsightsPanel({
 
         <InsightCard
           title={t("insights.releaseTypes")}
-          coverageLabel={coverageLabel(insights.releaseTypes.coverage)}
+          coverage={insights.releaseTypes.coverage}
           emptyLabel={emptyLabel}
           hasEntries={insights.releaseTypes.entries.length > 0}
         >
@@ -192,7 +350,7 @@ export default function BoardInsightsPanel({
 
         <InsightCard
           title={t("insights.trackTypes")}
-          coverageLabel={coverageLabel(insights.trackTypes.coverage)}
+          coverage={insights.trackTypes.coverage}
           emptyLabel={emptyLabel}
           hasEntries={insights.trackTypes.entries.length > 0}
         >
@@ -221,21 +379,18 @@ export default function BoardInsightsPanel({
             <CreditDimension
               title={t("insights.lyricist")}
               insights={insights.credits.lyricist}
-              coverageLabel={coverageLabel}
               emptyLabel={emptyLabel}
               countLabel={countLabel}
             />
             <CreditDimension
               title={t("insights.composer")}
               insights={insights.credits.composer}
-              coverageLabel={coverageLabel}
               emptyLabel={emptyLabel}
               countLabel={countLabel}
             />
             <CreditDimension
               title={t("insights.arranger")}
               insights={insights.credits.arranger}
-              coverageLabel={coverageLabel}
               emptyLabel={emptyLabel}
               countLabel={countLabel}
             />
