@@ -18,6 +18,7 @@ export type AppIconName =
   | "monitor"
   | "moon"
   | "music"
+  | "play"
   | "plus"
   | "reset"
   | "redo"
@@ -30,7 +31,7 @@ export type AppIconName =
 interface AppIconProps {
   name: AppIconName;
   className?: string;
-  size?: 14 | 16 | 18;
+  size?: 14 | 16 | 18 | 32;
   strokeWidth?: number;
 }
 
@@ -161,6 +162,14 @@ function getIconPaths(name: AppIconName) {
           <ellipse cx="6.75" cy="17.5" rx="2.75" ry="2.1" />
           <ellipse cx="14.75" cy="15.5" rx="2.75" ry="2.1" />
         </>
+      );
+    case "play":
+      return (
+        <path
+          d="M6.25 2v20L23.5 12 6.25 2Z"
+          fill="currentColor"
+          stroke="none"
+        />
       );
     case "plus":
       return <path d="M12 5.5v13M5.5 12h13" />;

@@ -16,7 +16,9 @@ import { useDialogA11y } from "../utils/useDialogA11y";
 import AppIcon from "./AppIcon";
 import { APPLE_OPACITY, APPLE_SPRING_GENTLE } from "./AppleMotion";
 import JapaneseContent from "./JapaneseContent";
-import OfficialMediaLinks from "./OfficialMediaLinks";
+import OfficialMediaLinks, {
+  OfficialMediaCoverLink,
+} from "./OfficialMediaLinks";
 import type { PresenceState } from "./MotionPresence";
 import type { SearchSelectionMode } from "./SearchModal";
 
@@ -129,7 +131,11 @@ export default function SongDetailModal({
         <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[var(--background)] px-4 py-4 sm:px-6 sm:py-5">
           <div className="grid gap-5 sm:grid-cols-[minmax(220px,0.82fr)_minmax(0,1.18fr)]">
             <div className="min-w-0">
-              <div className="relative aspect-square overflow-hidden rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--paper)] shadow-sm">
+              <OfficialMediaCoverLink
+                songId={song.id}
+                title={song.title.ja}
+                className="relative block aspect-square overflow-hidden rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--paper)] shadow-sm"
+              >
                 <Image
                   src={song.coverUrl}
                   alt={t("pick.coverAlt", { title: song.title.ja })}
@@ -137,7 +143,7 @@ export default function SongDetailModal({
                   sizes="(min-width: 640px) 280px, calc(100vw - 2rem)"
                   className="h-full w-full object-cover"
                 />
-              </div>
+              </OfficialMediaCoverLink>
               <div className="mt-3 flex flex-wrap gap-2">
                 {isAssistantShortlistMode && isCandidate ? (
                   <StatusBadge>{t("assistant.candidate")}</StatusBadge>
@@ -273,33 +279,29 @@ export default function SongDetailModal({
             {t("songCatalog.viewSongPage")}
             <AppIcon name="chevron-right" size={16} />
           </a>
-          <button
-            type="button"
-            onClick={() => onToggleCandidate(song)}
-            disabled={candidateDisabled}
-            aria-pressed={isCandidate}
-            aria-label={
-              isCandidate
-                ? t("assistant.removeCandidateAria", {
-                    title: song.title.ja,
-                  })
-                : t("assistant.addCandidateAria", {
-                    title: song.title.ja,
-                  })
-            }
-            className={`official-button disabled:cursor-not-allowed disabled:opacity-45 ${
-              isAssistantShortlistMode
-                ? "official-button-primary"
-                : isCandidate
-                  ? "border-[var(--project-primary)] bg-[var(--project-primary-wash)]"
-                  : "official-button-quiet"
-            }`}
-          >
-            <AppIcon name={isCandidate ? "check" : "music"} size={16} />
-            {isCandidate
-              ? t("assistant.candidate")
-              : t("assistant.addCandidate")}
-          </button>
+          {isAssistantShortlistMode ? (
+            <button
+              type="button"
+              onClick={() => onToggleCandidate(song)}
+              disabled={candidateDisabled}
+              aria-pressed={isCandidate}
+              aria-label={
+                isCandidate
+                  ? t("assistant.removeCandidateAria", {
+                      title: song.title.ja,
+                    })
+                  : t("assistant.addCandidateAria", {
+                      title: song.title.ja,
+                    })
+              }
+              className="official-button official-button-primary disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              <AppIcon name={isCandidate ? "check" : "music"} size={16} />
+              {isCandidate
+                ? t("assistant.candidate")
+                : t("assistant.addCandidate")}
+            </button>
+          ) : null}
           {!isAssistantShortlistMode ? (
             <button
               type="button"

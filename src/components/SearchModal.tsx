@@ -11,6 +11,10 @@ import * as m from "motion/react-m";
 import { useLocale } from "../i18n/LocaleProvider";
 import type { MessageKey, MessageValues } from "../i18n/messages";
 import type { Member, ReleaseType, Song, TrackType } from "../schema/music";
+import {
+  getPrimaryOfficialMediaLink,
+  OFFICIAL_MEDIA_MESSAGE_KEYS,
+} from "../utils/officialMedia";
 import { getConfirmedSongCredits } from "../utils/songCredits";
 import {
   RELEASE_TYPE_MESSAGE_KEYS,
@@ -597,6 +601,9 @@ export default function SearchModal({
                   const isRecentlyViewed = recentSongIdSet.has(song.id);
                   const isNewSong = newSongIds.has(song.id);
                   const isCandidate = candidateSongIds.has(song.id);
+                  const officialMediaLink = getPrimaryOfficialMediaLink(
+                    song.id,
+                  );
                   const candidateDisabled =
                     candidateChangesBlocked ||
                     candidateMutationPending ||
@@ -725,37 +732,28 @@ export default function SearchModal({
                       </button>
 
                       <div className="flex shrink-0 items-center border-l border-[var(--line)] px-1">
-                        {!isAssistantShortlistMode ? (
-                          <button
-                            type="button"
-                            onClick={() => onToggleCandidate?.(song)}
-                            disabled={candidateDisabled}
-                            aria-pressed={isCandidate}
-                            aria-label={
-                              isCandidate
-                                ? t("assistant.removeCandidateAria", {
-                                    title: song.title.ja,
-                                  })
-                                : t("assistant.addCandidateAria", {
-                                    title: song.title.ja,
-                                  })
-                            }
-                            title={
-                              isCandidate
-                                ? t("assistant.candidate")
-                                : t("assistant.addCandidate")
-                            }
-                            className={`flex h-11 w-11 items-center justify-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-45 ${
-                              isCandidate
-                                ? "bg-[var(--project-primary-wash)] text-[var(--foreground)]"
-                                : "text-[var(--muted)] hover:bg-[var(--paper)] hover:text-[var(--foreground)]"
-                            }`}
+                        {!isAssistantShortlistMode && officialMediaLink ? (
+                          <a
+                            href={officialMediaLink.sourceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label={t("songDetail.openOfficialMediaAria", {
+                              media: t(
+                                OFFICIAL_MEDIA_MESSAGE_KEYS[
+                                  officialMediaLink.sourceMode
+                                ],
+                              ),
+                              title: song.title.ja,
+                            })}
+                            title={t(
+                              OFFICIAL_MEDIA_MESSAGE_KEYS[
+                                officialMediaLink.sourceMode
+                              ],
+                            )}
+                            className="flex h-11 w-11 items-center justify-center rounded-full text-[var(--muted)] transition-colors hover:bg-[var(--paper)] hover:text-[var(--foreground)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
                           >
-                            <AppIcon
-                              name={isCandidate ? "check" : "music"}
-                              size={16}
-                            />
-                          </button>
+                            <AppIcon name="play" size={16} />
+                          </a>
                         ) : null}
                         <button
                           type="button"

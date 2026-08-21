@@ -742,7 +742,7 @@ test("new song UI remains a standard-mode search affordance with one explicit ac
       "const handleMarkSongDiscoverySongsSeen",
       "const handleOpenSongDetail",
     ),
-    /if \(!result\.ok\) \{\s*setBoardStatusMessage\(t\("boardLibrary\.error\.storage"\)\);\s*return;\s*\}\s*setSongDiscoveryState\(result\.state\)/,
+    /if \(!result\.ok\) \{\s*setBoardStatusMessage\(t\("songDiscovery\.error\.storage"\)\);\s*return;\s*\}\s*setSongDiscoveryState\(result\.state\)/,
   );
 
   for (const [start, end] of [

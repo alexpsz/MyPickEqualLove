@@ -164,7 +164,10 @@ export default function ThemeMenu() {
         title={t("theme.selectorLabel")}
       >
         <span className="relative z-10 flex items-center" aria-hidden="true">
-          <AppIcon name="monitor" size={16} />
+          <AppIcon
+            name={THEME_OPTIONS[preferenceIndex]?.icon ?? "monitor"}
+            size={16}
+          />
           <AppIcon
             name="chevron-down"
             size={14}

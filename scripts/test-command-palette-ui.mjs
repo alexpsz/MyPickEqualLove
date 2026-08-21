@@ -50,8 +50,9 @@ assert.match(
 assert.match(shortcutHandler, /\[aria-modal="true"\], dialog\[open\]/);
 assert.match(
   shortcutHandler,
-  /\[role="menu"\], \[role="listbox"\], \[aria-expanded="true"\]/,
+  /\[role="menu"\], \[role="listbox"\], \[aria-haspopup="menu"\]\[aria-expanded="true"\], \[aria-haspopup="listbox"\]\[aria-expanded="true"\]/,
 );
+assert.doesNotMatch(shortcutHandler, /, \[aria-expanded="true"\]/);
 assert.match(clientSource, /:popover-open/);
 assert.match(
   shortcutHandler,

@@ -33,7 +33,9 @@ export default function NewSongsBanner({
             id="new-songs-banner-title"
             className="mt-1 text-base font-semibold tracking-[-0.01em] text-[var(--foreground)] sm:text-lg"
           >
-            {t("songDiscovery.bannerTitle", { count: String(count) })}
+            {count === 1
+              ? t("songDiscovery.bannerTitleSingle")
+              : t("songDiscovery.bannerTitle", { count: String(count) })}
           </h2>
           <p className="mt-1 text-[13px] leading-relaxed text-[var(--muted)] sm:text-sm">
             {t("songDiscovery.bannerDescription")}

@@ -22,7 +22,6 @@ import {
 import {
   DEFAULT_EXPORT_OPTIONS,
   DEFAULT_EXPORT_SIZE_PRESET_ID,
-  EXPORT_BACKGROUND,
   EXPORT_SCALE,
   EXPORT_TEMPLATE_ORDER,
   getExportSizePreset,
@@ -291,6 +290,13 @@ const getPreviewOptionsKey = (
     kind,
     archetypeInputKey,
   ].join(":");
+
+const isTransparentBackgroundAvailable = (
+  kind: ExportContentKind,
+  templateId: ExportTemplateId,
+) =>
+  kind === "archetype" ||
+  (templateId !== "midnight" && templateId !== "cover-tone");
 
 export default function PickExperienceClient({
   experience,
@@ -1716,7 +1722,7 @@ export default function PickExperienceClient({
         update,
       );
       if (!result.ok) {
-        setBoardStatusMessage(t("boardLibrary.error.storage"));
+        setBoardStatusMessage(t("songDiscovery.error.storage"));
         return false;
       }
 
@@ -1735,7 +1741,7 @@ export default function PickExperienceClient({
       songDiscoveryState,
     );
     if (!result.ok) {
-      setBoardStatusMessage(t("boardLibrary.error.storage"));
+      setBoardStatusMessage(t("songDiscovery.error.storage"));
       return;
     }
 
@@ -2651,9 +2657,16 @@ export default function PickExperienceClient({
       await new Promise((resolve) => window.setTimeout(resolve, 150));
       assertExportLayoutFits(exportElement);
       const sizePreset = getExportSizePreset(frameSizePresetId);
+      const exportBackgroundColor =
+        window.getComputedStyle(exportElement).backgroundColor;
+      const canvasBackgroundColor =
+        exportBackgroundColor === "transparent" ||
+        exportBackgroundColor === "rgba(0, 0, 0, 0)"
+          ? null
+          : exportBackgroundColor;
       const canvas = await html2canvas(exportElement, {
         useCORS: true,
-        backgroundColor: transparentBg ? null : EXPORT_BACKGROUND,
+        backgroundColor: canvasBackgroundColor,
         scale: EXPORT_SCALE,
         logging: false,
       });
@@ -2674,7 +2687,6 @@ export default function PickExperienceClient({
     exportCanvasId,
     frameCaptureRequest?.kind,
     frameSizePresetId,
-    transparentBg,
   ]);
 
   useEffect(() => {
@@ -2744,9 +2756,12 @@ export default function PickExperienceClient({
       }
 
       const generationId = ++previewGenerationIdRef.current;
+      const effectiveTransparentBg =
+        transparentBg &&
+        isTransparentBackgroundAvailable(kind, activeTemplateId);
       const optionsKey = getPreviewOptionsKey(
         showTitles,
-        transparentBg,
+        effectiveTransparentBg,
         showQrCode,
         activeTemplateId,
         kind,
@@ -2772,7 +2787,7 @@ export default function PickExperienceClient({
             contextId: effectiveContextId,
             picks: filteredPicks,
             showTitles,
-            transparentBg,
+            transparentBg: effectiveTransparentBg,
             showQrCode,
             templateId: activeTemplateId,
             sizePresetId: DEFAULT_EXPORT_SIZE_PRESET_ID,
@@ -2859,12 +2874,19 @@ export default function PickExperienceClient({
     [generateImage],
   );
 
+  const previewKind = preview?.kind ?? "picks";
+  const previewTransparentBgAvailable = isTransparentBackgroundAvailable(
+    previewKind,
+    activeTemplateId,
+  );
+  const effectivePreviewTransparentBg =
+    transparentBg && previewTransparentBgAvailable;
   const previewOptionsKey = getPreviewOptionsKey(
     showTitles,
-    transparentBg,
+    effectivePreviewTransparentBg,
     showQrCode,
     activeTemplateId,
-    preview?.kind ?? "picks",
+    previewKind,
     preview?.kind === "archetype"
       ? (archetypeResult?.inputKey ?? preview.archetypeInputKey)
       : undefined,
@@ -2928,29 +2950,6 @@ export default function PickExperienceClient({
     },
     [optionsStorageWritable, storageKeys.options, storageKeys.optionsV2, t],
   );
-
-  useEffect(() => {
-    if (
-      !hydrated ||
-      isExportRealm ||
-      templateId !== "cover-tone" ||
-      coverToneAvailability.isSupported
-    ) {
-      return;
-    }
-
-    setTemplateId("midnight");
-    void updateExportOptions((current) => ({
-      ...current,
-      templateId: "midnight",
-    }));
-  }, [
-    coverToneAvailability.isSupported,
-    hydrated,
-    isExportRealm,
-    templateId,
-    updateExportOptions,
-  ]);
 
   const handleShowTitlesChange = (value: boolean) => {
     void updateExportOptions((current) => ({
@@ -3172,7 +3171,7 @@ export default function PickExperienceClient({
         hasOpenMenu:
           Boolean(
             document.querySelector(
-              '[role="menu"], [role="listbox"], [aria-expanded="true"]',
+              '[role="menu"], [role="listbox"], [aria-haspopup="menu"][aria-expanded="true"], [aria-haspopup="listbox"][aria-expanded="true"]',
             ),
           ) ||
           Array.from(document.querySelectorAll<HTMLElement>("[popover]")).some(
@@ -3621,7 +3620,8 @@ export default function PickExperienceClient({
               onClose={handleClosePreview}
               showTitles={showTitles}
               onToggleShowTitles={handleShowTitlesChange}
-              transparentBg={transparentBg}
+              transparentBg={effectivePreviewTransparentBg}
+              transparentBgAvailable={previewTransparentBgAvailable}
               onToggleTransparentBg={handleTransparentBackgroundChange}
               showQrCode={showQrCode}
               onToggleShowQrCode={handleShowQrCodeChange}

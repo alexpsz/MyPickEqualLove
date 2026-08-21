@@ -705,6 +705,15 @@ a {
     --material: rgba(255, 255, 255, 0.96);
   }
 
+  html[data-theme="dark"] {
+    --muted: #d3d5dc;
+    --muted-soft: #c1c4ce;
+    --focus-ring: #a8d2ff;
+    --line: rgba(255, 255, 255, 0.32);
+    --line-strong: rgba(255, 255, 255, 0.58);
+    --material: rgba(20, 22, 26, 0.98);
+  }
+
   .official-button:focus-visible {
     outline-color: var(--foreground);
   }

@@ -1,0 +1,227 @@
+{
+  "schemaVersion": 1,
+  "projectId": "nearly-equal-joy",
+  "experienceId": "standard-top10",
+  "mapFile": "scripts/official-media/nearly-equal-joy-source-map.json",
+  "officialChannelAllowlist": [
+    {
+      "channelId": "UC_qmQbqvW6UES3NT780l2Pg",
+      "channelTitle": "NEARLY EQUAL JOY ニアリーイコールジョイ 公式チャンネル",
+      "scope": "≒JOY official artist/project channel"
+    },
+    {
+      "channelId": "UCv7VutirxDn3RWIJXI68n_A",
+      "channelTitle": "＝LOVE（イコールラブ）公式チャンネル",
+      "scope": "shared IKONOIJOY collaboration upload only"
+    }
+  ],
+  "songs": [
+    {
+      "songId": "toripurudeeto",
+      "title": "トリプルデート",
+      "status": "VERIFIED",
+      "sourceMode": "official-mv"
+    },
+    {
+      "songId": "mubou-nin",
+      "title": "無謀人",
+      "status": "VERIFIED",
+      "sourceMode": "official-mv"
+    },
+    {
+      "songId": "nearly-equal-joy",
+      "title": "≒JOY",
+      "status": "VERIFIED",
+      "sourceMode": "official-mv"
+    },
+    {
+      "songId": "waratsu-te-furajiiru",
+      "title": "笑って フラジール",
+      "status": "VERIFIED",
+      "sourceMode": "official-mv"
+    },
+    {
+      "songId": "chou-kodoku-raion",
+      "title": "超孤独ライオン",
+      "status": "VERIFIED",
+      "sourceMode": "official-mv"
+    },
+    {
+      "songId": "suiitoshikkusuteiin",
+      "title": "スイートシックスティーン",
+      "status": "VERIFIED",
+      "sourceMode": "official-mv"
+    },
+    {
+      "songId": "kyou-mo-kun-no-yume-wo-mita-nda",
+      "title": "今日も君の夢を見たんだ",
+      "status": "VERIFIED",
+      "sourceMode": "official-mv"
+    },
+    {
+      "songId": "oozora-byun-to",
+      "title": "大空、ビュンと",
+      "status": "VERIFIED",
+      "sourceMode": "official-mv"
+    },
+    {
+      "songId": "sono-saki-ha-iguzaruto",
+      "title": "その先はイグザルト",
+      "status": "VERIFIED",
+      "sourceMode": "official-mv"
+    },
+    {
+      "songId": "kitto-aoi",
+      "title": "きっと、青い",
+      "status": "VERIFIED",
+      "sourceMode": "official-mv"
+    },
+    {
+      "songId": "nebagiba-iki-ro",
+      "title": "ネバギバ!生きろ",
+      "status": "VERIFIED",
+      "sourceMode": "official-mv"
+    },
+    {
+      "songId": "taiikukan-disuko",
+      "title": "体育館ディスコ",
+      "status": "VERIFIED",
+      "sourceMode": "official-mv"
+    },
+    {
+      "songId": "yumemi-ru-aidoru",
+      "title": "夢見るアイドル",
+      "status": "VERIFIED",
+      "sourceMode": "official-mv"
+    },
+    {
+      "songId": "dadada-datte",
+      "title": "だだだ、だって。",
+      "status": "VERIFIED",
+      "sourceMode": "official-mv"
+    },
+    {
+      "songId": "piichiteii-to-piichipai",
+      "title": "ピーチティーとピーチパイ",
+      "status": "VERIFIED",
+      "sourceMode": "official-mv"
+    },
+    {
+      "songId": "hatsukoi-shinderera",
+      "title": "初恋シンデレラ",
+      "status": "VERIFIED",
+      "sourceMode": "official-mv"
+    },
+    {
+      "songId": "buruuhawairemon",
+      "title": "ブルーハワイレモン",
+      "status": "VERIFIED",
+      "sourceMode": "official-mv"
+    },
+    {
+      "songId": "3-ke-gatsu",
+      "title": "♡3ヶ月♡",
+      "status": "VERIFIED",
+      "sourceMode": "official-mv"
+    },
+    {
+      "songId": "0120-o-tasuke-ya-san",
+      "title": "0120お助け屋さん",
+      "status": "VERIFIED",
+      "sourceMode": "official-mv"
+    },
+    {
+      "songId": "ima-gatsu-ha-michi-ru",
+      "title": "いま、月は満ちる",
+      "status": "VERIFIED",
+      "sourceMode": "official-mv"
+    },
+    {
+      "songId": "ima-koi-woshiteiru",
+      "title": "今、恋をしている",
+      "status": "VERIFIED",
+      "sourceMode": "official-mv"
+    },
+    {
+      "songId": "niajoi-ondo",
+      "title": "ニアジョイ音頭",
+      "status": "VERIFIED",
+      "sourceMode": "official-live"
+    },
+    {
+      "songId": "the-rock-is-you",
+      "title": "The rock is you!",
+      "status": "VERIFIED",
+      "sourceMode": "official-mv"
+    },
+    {
+      "songId": "denwabangou-oshie-te",
+      "title": "電話番号教えて!",
+      "status": "VERIFIED",
+      "sourceMode": "official-mv"
+    },
+    {
+      "songId": "amagamigaaru-feat-dj-alice",
+      "title": "アマガミガール feat. DJ ALICE",
+      "status": "VERIFIED",
+      "sourceMode": "official-mv"
+    },
+    {
+      "songId": "ai-ga-itaka-tta",
+      "title": "愛が痛かった",
+      "status": "VERIFIED",
+      "sourceMode": "official-mv"
+    },
+    {
+      "songId": "nonfikushon",
+      "title": "ノンフィクション",
+      "status": "VERIFIED",
+      "sourceMode": "official-mv"
+    },
+    {
+      "songId": "boku-tachino-uta",
+      "title": "僕たちの歌",
+      "status": "VERIFIED",
+      "sourceMode": "official-mv"
+    },
+    {
+      "songId": "samaatsuinteeru",
+      "title": "サマーツインテール",
+      "status": "VERIFIED",
+      "sourceMode": "official-mv"
+    },
+    {
+      "songId": "watashi-chuuihou",
+      "title": "わたし注意報",
+      "status": "VERIFIED",
+      "sourceMode": "official-mv"
+    },
+    {
+      "songId": "natsu-ha-juerii",
+      "title": "夏はジュエリー",
+      "status": "VERIFIED",
+      "sourceMode": "official-mv"
+    }
+  ],
+  "statusCounts": {
+    "VERIFIED": 31,
+    "UNRESOLVED": 0
+  },
+  "modeCounts": {
+    "official-mv": 30,
+    "official-live": 1
+  },
+  "duplicateChecks": {
+    "songIds": [],
+    "videoIds": [],
+    "sourceUrls": []
+  },
+  "sharedVideoApprovals": [
+    {
+      "videoId": "gkabNNfTjX4",
+      "sourceUrl": "https://www.youtube.com/watch?v=gkabNNfTjX4",
+      "projectIds": ["equal-love", "nearly-equal-joy"],
+      "reason": "The official IKONOIJOY collaborative MV is hosted on the =LOVE official channel and is a complete single-song upload; the shared use is intentional and limited to this collaboration."
+    }
+  ]
+}

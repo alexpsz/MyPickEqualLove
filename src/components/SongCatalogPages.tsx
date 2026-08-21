@@ -15,7 +15,9 @@ import { getSongPagePath, SONG_CATALOG_PATH } from "../utils/songRoutes";
 import AppTopBar from "./AppTopBar";
 import Footer from "./Footer";
 import JapaneseContent from "./JapaneseContent";
-import OfficialMediaLinks from "./OfficialMediaLinks";
+import OfficialMediaLinks, {
+  OfficialMediaCoverLink,
+} from "./OfficialMediaLinks";
 
 const SONG_CATALOG_BAR_BACKGROUND = `linear-gradient(90deg, ${PROJECT_THEME_COLOR}, var(--project-accent))`;
 
@@ -104,7 +106,11 @@ export function SongCatalogDetail({ song }: { song: Song }) {
         <SongNavigation />
         <article className="mx-auto mt-6 w-full max-w-5xl">
           <div className="grid gap-6 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:items-start lg:gap-10">
-            <div className="relative aspect-square overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--paper-soft)] shadow-[var(--shadow-panel)]">
+            <OfficialMediaCoverLink
+              songId={song.id}
+              title={song.title.ja}
+              className="relative block aspect-square overflow-hidden rounded-[var(--radius-lg)] border border-[var(--line)] bg-[var(--paper-soft)] shadow-[var(--shadow-panel)]"
+            >
               <Image
                 src={song.coverUrl}
                 alt={t("pick.coverAlt", { title: song.title.ja })}
@@ -113,7 +119,7 @@ export function SongCatalogDetail({ song }: { song: Song }) {
                 sizes="(min-width: 1024px) 380px, min(100vw - 2rem, 560px)"
                 className="object-cover"
               />
-            </div>
+            </OfficialMediaCoverLink>
 
             <div className="min-w-0">
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--project-primary)]">

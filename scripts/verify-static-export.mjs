@@ -29,7 +29,7 @@ const FRAMEWORK_ERROR_MARKERS = [
   "Application error: a client-side exception has occurred",
   '"page":"/_error"',
 ];
-const ASSET_PATH_PREFIXES = ["/_next/static/", "/covers/", "/icons/"];
+const ASSET_PATH_PREFIXES = ["/_next/static/", "/covers/", "/icons/", "/og/"];
 const ASSET_EXTENSIONS = new Set([
   ".avif",
   ".css",
@@ -74,7 +74,16 @@ export async function verifyStaticExport({
     verifyRootIdentity(rootHtml, contract, violations);
     verifyCanonical(rootHtml, `${contract.siteUrl}/`, "index.html", violations);
     verifyNoFrameworkError(rootHtml, "index.html", violations);
+    await verifySocialCard({
+      html: rootHtml,
+      out,
+      contract,
+      assetPath: `/og/${projectId}/home.png`,
+      label: "index.html",
+      violations,
+    });
   }
+  await verifyManifest(out, contract, projectId, violations);
   await verifyRscArtifact(path.join(out, "index.txt"), "index.txt", violations);
   await verifySongCatalog(out, contract, songIds, violations);
 
@@ -92,6 +101,16 @@ export async function verifyStaticExport({
         violations,
       );
       verifyNoFrameworkError(routeHtml, relativePath, violations);
+      if (experience.status === "published") {
+        await verifySocialCard({
+          html: routeHtml,
+          out,
+          contract,
+          assetPath: `/og/${projectId}/live/${experience.slug}.png`,
+          label: relativePath,
+          violations,
+        });
+      }
     }
     const rscRelativePath = path.join(routeDirectory, "index.txt");
     await verifyRscArtifact(
@@ -307,6 +326,103 @@ function verifyNoFrameworkErrorMarkers(content, label, violations) {
   }
 }
 
+async function verifyManifest(out, contract, projectId, violations) {
+  const manifestPath = path.join(out, "manifest.webmanifest");
+  let manifest;
+  try {
+    manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+  } catch (error) {
+    violations.push(
+      `manifest.webmanifest is missing or invalid: ${error.message}`,
+    );
+    return;
+  }
+
+  for (const [field, expected] of Object.entries({
+    id: "/",
+    name: contract.displayName,
+    start_url: "/",
+    scope: "/",
+    display: "standalone",
+  })) {
+    if (manifest[field] !== expected) {
+      violations.push(
+        `manifest.webmanifest ${field} must be ${JSON.stringify(expected)}`,
+      );
+    }
+  }
+
+  for (const size of [192, 512]) {
+    const expectedSource = `/icons/install/${projectId}-${size}.png`;
+    const icon = manifest.icons?.find(
+      (candidate) => candidate?.src === expectedSource,
+    );
+    if (
+      !icon ||
+      icon.sizes !== `${size}x${size}` ||
+      icon.type !== "image/png"
+    ) {
+      violations.push(
+        `manifest.webmanifest must declare ${expectedSource} as a ${size}x${size} PNG`,
+      );
+    }
+  }
+}
+
+async function verifySocialCard({
+  html,
+  out,
+  contract,
+  assetPath,
+  label,
+  violations,
+}) {
+  const expectedUrl = `${contract.siteUrl}${assetPath}`;
+  const expectedMetadata = [
+    ["property", "og:image", expectedUrl],
+    ["property", "og:image:width", "1200"],
+    ["property", "og:image:height", "630"],
+    ["name", "twitter:card", "summary_large_image"],
+    ["name", "twitter:image", expectedUrl],
+    ["name", "twitter:image:width", "1200"],
+    ["name", "twitter:image:height", "630"],
+  ];
+  for (const [attribute, key, expected] of expectedMetadata) {
+    const actual = extractMetaContent(html, attribute, key);
+    if (actual !== expected) {
+      violations.push(
+        `${label} ${key} must be ${JSON.stringify(expected)} (received ${JSON.stringify(actual)})`,
+      );
+    }
+  }
+
+  const imagePath = path.join(out, ...assetPath.split("/").filter(Boolean));
+  let image;
+  try {
+    image = await readFile(imagePath);
+  } catch {
+    violations.push(`${label} references missing social card ${assetPath}`);
+    return;
+  }
+  const isPng =
+    image.length >= 24 &&
+    image
+      .subarray(0, 8)
+      .equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])) &&
+    image.toString("ascii", 12, 16) === "IHDR";
+  if (!isPng) {
+    violations.push(`${assetPath} must be a valid PNG with an IHDR header`);
+    return;
+  }
+  const width = image.readUInt32BE(16);
+  const height = image.readUInt32BE(20);
+  if (width !== 1200 || height !== 630) {
+    violations.push(
+      `${assetPath} must be 1200x630 (received ${width}x${height})`,
+    );
+  }
+}
+
 async function verifySitemap(out, contract, experiences, songIds, violations) {
   const sitemapPath = path.join(out, "sitemap.xml");
   const sitemap = await readRequiredText(sitemapPath, violations);
@@ -392,7 +508,7 @@ async function verifyReferencedAssets(out, siteUrl, violations) {
   for (const sourcePath of literalReferenceFiles) {
     const content = await readFile(sourcePath, "utf8");
     for (const match of content.matchAll(
-      /\/(?:_next\/static|covers|icons)\/[^\s"'`<>()[\]{}\\]+/g,
+      /\/(?:_next\/static|covers|icons|og)\/[^\s"'`<>()[\]{}\\]+/g,
     )) {
       references.push({
         basePath: sourcePath,

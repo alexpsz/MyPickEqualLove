@@ -111,6 +111,10 @@ export default function ExportBoard({
     templateId,
     coverToneAvailability,
   );
+  const effectiveTransparentBg =
+    transparentBg &&
+    resolvedTemplateId !== "midnight" &&
+    resolvedTemplateId !== "cover-tone";
   const selectedByLabel = selectedBy.trim();
   const pageLabel = formatPageLabel(pageUrl);
   const subtitle =
@@ -145,7 +149,7 @@ export default function ExportBoard({
       lang="ja"
       className="relative overflow-hidden font-sans"
       style={{
-        backgroundColor: transparentBg
+        backgroundColor: effectiveTransparentBg
           ? "transparent"
           : visual.canvasBackground,
         width: `${size.width}px`,

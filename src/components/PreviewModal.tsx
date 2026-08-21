@@ -29,6 +29,7 @@ interface PreviewModalProps {
   showTitles: boolean;
   onToggleShowTitles: (show: boolean) => void;
   transparentBg: boolean;
+  transparentBgAvailable: boolean;
   onToggleTransparentBg: (transparent: boolean) => void;
   showQrCode: boolean;
   onToggleShowQrCode: (show: boolean) => void;
@@ -55,6 +56,7 @@ export default function PreviewModal({
   showTitles,
   onToggleShowTitles,
   transparentBg,
+  transparentBgAvailable,
   onToggleTransparentBg,
   showQrCode,
   onToggleShowQrCode,
@@ -333,7 +335,7 @@ export default function PreviewModal({
                 >
                   <ToggleChip
                     checked={transparentBg}
-                    disabled={generating}
+                    disabled={generating || !transparentBgAvailable}
                     onPressedChange={onToggleTransparentBg}
                     ariaLabel={t("preview.transparentBackground")}
                     mobileLabel={t("preview.compactTransparentBackground")}
@@ -465,7 +467,7 @@ export default function PreviewModal({
             onClick={() => {
               shareToX(shareConfig);
             }}
-            className="official-button min-w-0 flex-col gap-0.5 border-transparent bg-transparent px-1 py-1 text-[10px] leading-none text-slate-950 shadow-none disabled:opacity-50 sm:flex-row sm:gap-2 sm:border-slate-950 sm:bg-slate-950 sm:px-4 sm:py-0 sm:text-[13px] sm:text-white"
+            className="official-button min-w-0 flex-col gap-0.5 border-transparent bg-transparent px-1 py-1 text-[10px] leading-none shadow-none disabled:opacity-50 sm:flex-row sm:gap-2 sm:border-slate-950 sm:bg-slate-950 sm:px-4 sm:py-0 sm:text-[13px] sm:text-white"
           >
             <svg
               className="h-4 w-4 shrink-0 fill-current"

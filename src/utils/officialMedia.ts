@@ -1,22 +1,14 @@
 import type { MessageKey } from "../i18n/messages";
-import { PROJECT_ID } from "../config/project";
-import pilot from "../projects/equal-love/official-media-pilot.json";
+import { CURRENT_PROJECT_RUNTIME } from "@current-project/runtime";
+import {
+  OFFICIAL_MEDIA_SOURCE_MODES,
+  type OfficialMediaRuntimeEntry,
+  type OfficialMediaSourceMode,
+} from "../projects/runtimeTypes";
 
-export const OFFICIAL_MEDIA_SOURCE_MODES = [
-  "official-mv",
-  "official-art-track",
-  "official-dance",
-  "official-live",
-] as const;
-
-export type OfficialMediaSourceMode =
-  (typeof OFFICIAL_MEDIA_SOURCE_MODES)[number];
-
-export interface OfficialMediaLink {
-  songId: string;
-  sourceMode: OfficialMediaSourceMode;
-  sourceUrl: string;
-}
+export { OFFICIAL_MEDIA_SOURCE_MODES };
+export type { OfficialMediaSourceMode };
+export type OfficialMediaLink = OfficialMediaRuntimeEntry;
 
 export const OFFICIAL_MEDIA_MESSAGE_KEYS: Record<
   OfficialMediaSourceMode,
@@ -28,24 +20,40 @@ export const OFFICIAL_MEDIA_MESSAGE_KEYS: Record<
   "official-live": "songDetail.officialMedia.live",
 };
 
-const PILOT_BY_SONG_ID = new Map<string, OfficialMediaLink>(
-  pilot.entries.map((entry) => [
-    entry.songId,
-    {
-      songId: entry.songId,
-      sourceMode: entry.sourceMode as OfficialMediaSourceMode,
-      sourceUrl: entry.sourceUrl,
-    },
-  ]),
+const OFFICIAL_MEDIA_BY_SONG_ID = new Map<string, OfficialMediaLink>(
+  CURRENT_PROJECT_RUNTIME.officialMedia.flatMap((entry) => {
+    if (
+      !isOfficialMediaSourceMode(entry.sourceMode) ||
+      !isExactYouTubeWatchUrl(entry.sourceUrl)
+    ) {
+      return [];
+    }
+
+    return [[entry.songId, entry] as const];
+  }),
 );
 
 export function getOfficialMediaLinks(
   songId: string,
 ): readonly OfficialMediaLink[] {
-  if (PROJECT_ID !== "equal-love") {
-    return [];
-  }
-
-  const link = PILOT_BY_SONG_ID.get(songId);
+  const link = OFFICIAL_MEDIA_BY_SONG_ID.get(songId);
   return link ? [link] : [];
+}
+
+export function getPrimaryOfficialMediaLink(
+  songId: string,
+): OfficialMediaLink | undefined {
+  return getOfficialMediaLinks(songId)[0];
+}
+
+function isOfficialMediaSourceMode(
+  value: string,
+): value is OfficialMediaSourceMode {
+  return OFFICIAL_MEDIA_SOURCE_MODES.some((mode) => mode === value);
+}
+
+function isExactYouTubeWatchUrl(value: string): boolean {
+  return /^https:\/\/www\.youtube\.com\/watch\?v=[A-Za-z0-9_-]{11}$/.test(
+    value,
+  );
 }

@@ -13,7 +13,8 @@ function installIconPath(size: 180 | 192 | 512) {
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: PROJECT_CONFIG.appName,
+    id: "/",
+    name: PROJECT_CONFIG.displayName,
     short_name: PROJECT_CONFIG.groupName,
     description: projectCopy.description,
     start_url: "/",

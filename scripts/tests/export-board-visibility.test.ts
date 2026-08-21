@@ -130,6 +130,7 @@ function renderPoster(
   templateId: (typeof EXPORT_TEMPLATE_ORDER)[number],
   sizePresetId: (typeof EXPORT_SIZE_PRESET_ORDER)[number],
   headerPresentation?: ExportHeaderPresentation,
+  transparentBg = false,
 ) {
   return renderToStaticMarkup(
     createElement(ExportBoard, {
@@ -138,6 +139,7 @@ function renderPoster(
       slots: getSortedExperienceSlots(experience),
       picks: createPicks(experience),
       showTitles,
+      transparentBg,
       templateId,
       sizePresetId,
       pageUrl: "https://mypick.kozueginko.com/",
@@ -196,6 +198,7 @@ function renderDossierPoster(
 
 function renderDossierThroughExportBoard(
   templateId: (typeof EXPORT_TEMPLATE_ORDER)[number],
+  transparentBg = false,
 ) {
   const result = realArchetypeResults[0];
   if (!result) throw new Error("Expected a real production archetype result.");
@@ -214,7 +217,7 @@ function renderDossierThroughExportBoard(
       slots,
       picks,
       showTitles: true,
-      transparentBg: false,
+      transparentBg,
       showQrCode: false,
       templateId,
       sizePresetId: "portrait",
@@ -313,6 +316,51 @@ test("ordinary poster retains its existing header, grid, metadata, and footer DO
   assert.equal((markup.match(/data-export-year-tag/g) ?? []).length, 10);
   assert.doesNotMatch(markup, /data-archetype-radar/);
   assert.doesNotMatch(markup, /data-export-boundary="archetype-dossier"/);
+});
+
+test("dark ordinary templates stay opaque while light and archetype exports preserve transparency", () => {
+  const classic = renderPoster(
+    STANDARD_PICK_EXPERIENCE,
+    true,
+    "classic",
+    "portrait",
+    undefined,
+    true,
+  );
+  const midnight = renderPoster(
+    STANDARD_PICK_EXPERIENCE,
+    true,
+    "midnight",
+    "portrait",
+    undefined,
+    true,
+  );
+  const coverTone = renderPoster(
+    STANDARD_PICK_EXPERIENCE,
+    true,
+    "cover-tone",
+    "portrait",
+    undefined,
+    true,
+  );
+  const archetype = renderDossierThroughExportBoard("midnight", true);
+
+  assert.match(
+    classic,
+    /id="test-export-board"[^>]*background-color:transparent/,
+  );
+  assert.doesNotMatch(
+    midnight,
+    /id="test-export-board"[^>]*background-color:transparent/,
+  );
+  assert.doesNotMatch(
+    coverTone,
+    /id="test-export-board"[^>]*background-color:transparent/,
+  );
+  assert.match(
+    archetype,
+    /id="test-archetype-template-contract"[^>]*background-color:transparent/,
+  );
 });
 
 test("Archetype dossier markup is identical for every ordinary export template", () => {
