@@ -11,7 +11,8 @@
     "rootDir": "..",
     "noEmit": false,
     "incremental": false,
-    "allowJs": true
+    "allowJs": true,
+    "resolveJsonModule": true
   },
   "include": [
     "../src/utils/boardShareImport.ts",
@@ -25,6 +26,7 @@
     "../src/utils/colors.ts",
     "../src/utils/exportStyleProxy.ts",
     "./tests/export-style-proxy.test.ts",
+    "../src/data/creditRegistry.ts",
     "../src/utils/songCredits.ts",
     "../src/utils/songMetadata.ts",
     "../src/utils/boardInsights.ts",

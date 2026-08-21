@@ -1,5 +1,8 @@
 import type { Member, ReleaseType, Song, TrackType } from "../schema/music";
-import { getConfirmedSongCredits } from "./songCredits";
+import {
+  getConfirmedSongCredits,
+  getCreditSignatureSearchTerms,
+} from "./songCredits";
 
 export interface SearchKeyInput {
   key: string;
@@ -207,12 +210,9 @@ function getSearchableParts(song: Song, membersById: Record<string, Member>) {
   const credits = getConfirmedSongCredits(song);
   const creditParts = credits
     ? [
-        credits.lyricist.ja,
-        credits.lyricist.romaji,
-        credits.composer.ja,
-        credits.composer.romaji,
-        credits.arranger.ja,
-        credits.arranger.romaji,
+        ...getCreditSignatureSearchTerms(credits.lyricist),
+        ...getCreditSignatureSearchTerms(credits.composer),
+        ...getCreditSignatureSearchTerms(credits.arranger),
       ]
     : [];
   const memberParts = [

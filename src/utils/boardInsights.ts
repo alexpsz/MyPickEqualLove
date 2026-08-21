@@ -4,7 +4,10 @@ import type {
   Song,
   TrackType,
 } from "../schema/music";
-import { getConfirmedSongCredit, type SongCreditRole } from "./songCredits";
+import {
+  getConfirmedSongCreditCreators,
+  type SongCreditRole,
+} from "./songCredits";
 import {
   RELEASE_TYPE_MESSAGE_KEYS,
   TRACK_TYPE_MESSAGE_KEYS,
@@ -165,20 +168,14 @@ function deriveEnumInsights<
   return { coverage: coverageFor(covered, songs.length), entries };
 }
 
-function trimLocalizedString(value: LocalizedString): LocalizedString {
-  const trimmed: LocalizedString = {
-    ja: value.ja.trim(),
-    romaji: value.romaji.trim(),
-  };
-  const english = value.en?.trim();
-  if (english) trimmed.en = english;
-  return trimmed;
-}
-
-function getLocalizedStringKey(value: LocalizedString): string {
-  return JSON.stringify([value.ja, value.romaji, value.en ?? ""]);
-}
-
+/**
+ * Counts how many songs each individual creator worked on for one role.
+ *
+ * A credit line naming several people counts once for each of them, so someone
+ * who only ever appears inside a joint signature is still counted. Identity is
+ * the registry creator id, never the written name, so a legacy spelling of the
+ * same person cannot split into two entries.
+ */
 function deriveCreditInsights(
   songs: readonly Song[],
   role: SongCreditRole,
@@ -187,18 +184,27 @@ function deriveCreditInsights(
   let covered = 0;
 
   for (const song of songs) {
-    const confirmedCredit = getConfirmedSongCredit(song, role);
-    if (!confirmedCredit) continue;
+    const creators = getConfirmedSongCreditCreators(song, role);
+    if (!creators) continue;
 
     covered += 1;
-    const value = trimLocalizedString(confirmedCredit);
-    const key = getLocalizedStringKey(value);
-    const existing = counts.get(key);
+    const counted = new Set<string>();
 
-    if (existing) {
-      existing.count += 1;
-    } else {
-      counts.set(key, { key, value, count: 1 });
+    for (const creator of creators) {
+      if (counted.has(creator.id)) continue;
+      counted.add(creator.id);
+
+      const existing = counts.get(creator.id);
+      if (existing) {
+        existing.count += 1;
+        continue;
+      }
+
+      counts.set(creator.id, {
+        key: creator.id,
+        value: { ja: creator.ja, romaji: creator.romaji },
+        count: 1,
+      });
     }
   }
 

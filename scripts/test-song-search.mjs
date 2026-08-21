@@ -15,6 +15,14 @@ const creditsSourceUrl = new URL(
   "../src/utils/songCredits.ts",
   import.meta.url,
 );
+const creditRegistrySourceUrl = new URL(
+  "../src/data/creditRegistry.ts",
+  import.meta.url,
+);
+const creditRegistryJsonUrl = new URL(
+  "../src/data/credit-registry.json",
+  import.meta.url,
+);
 const pickExperienceClientSourceUrl = new URL(
   "../src/components/PickExperienceClient.tsx",
   import.meta.url,
@@ -30,11 +38,31 @@ const compilerOptions = {
 };
 
 const source = await readFile(sourceUrl, "utf8");
+const creditRegistryJson = await readFile(creditRegistryJsonUrl, "utf8");
+const creditRegistryJsonModuleUrl = `data:text/javascript;base64,${Buffer.from(
+  `export default ${creditRegistryJson}`,
+).toString("base64")}`;
+const creditRegistrySource = await readFile(creditRegistrySourceUrl, "utf8");
+const creditRegistryCompiled = ts
+  .transpileModule(creditRegistrySource, {
+    compilerOptions,
+    fileName: creditRegistrySourceUrl.pathname,
+  })
+  .outputText.replace(
+    '"./credit-registry.json"',
+    JSON.stringify(creditRegistryJsonModuleUrl),
+  );
+const creditRegistryModuleUrl = `data:text/javascript;base64,${Buffer.from(creditRegistryCompiled).toString("base64")}`;
 const creditsSource = await readFile(creditsSourceUrl, "utf8");
-const creditsCompiled = ts.transpileModule(creditsSource, {
-  compilerOptions,
-  fileName: creditsSourceUrl.pathname,
-}).outputText;
+const creditsCompiled = ts
+  .transpileModule(creditsSource, {
+    compilerOptions,
+    fileName: creditsSourceUrl.pathname,
+  })
+  .outputText.replace(
+    '"../data/creditRegistry"',
+    JSON.stringify(creditRegistryModuleUrl),
+  );
 const creditsModuleUrl = `data:text/javascript;base64,${Buffer.from(creditsCompiled).toString("base64")}`;
 const compiled = ts
   .transpileModule(source, {
@@ -182,6 +210,39 @@ test("orders title relevance before secondary matches and preserves source order
     ),
     ["stable-a", "stable-b"],
   );
+});
+
+test("credited creators are searchable by canonical and legacy spellings alike", () => {
+  const credited = [
+    createSong("credited", "クレジット曲", "kurejitto kyoku", {
+      credits: {
+        lyricist: { ja: "指原莉乃", romaji: "Sashihara Rino" },
+        composer: {
+          ja: "中村歩・菊池博人",
+          romaji: "Nakamura Ayumu ・ Kikuchi Hiroto",
+        },
+        arranger: { ja: "YUU for YOU", romaji: "YUU for YOU" },
+      },
+    }),
+  ];
+
+  for (const query of [
+    "Sashihara Rino",
+    "sasuhara rino",
+    "指原莉乃",
+    "Nakamura Ayumu",
+    "nakamura ho",
+    "Kikuchi Hiroto",
+    "kikuchi hirohito",
+    "YUU for YOU",
+    "YUU for YUU",
+  ]) {
+    assert.deepEqual(
+      rankSongsByQuery(credited, query, membersById).map(({ song }) => song.id),
+      ["credited"],
+      query,
+    );
+  }
 });
 
 test("only the dedicated Assistant search shows the complete graduated-member feature set by default", () => {

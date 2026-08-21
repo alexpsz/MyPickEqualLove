@@ -18,6 +18,59 @@ const projectsDir = path.join(root, "src", "projects");
 
 const PROJECT_IDS = ["equal-love", "nearly-equal-joy", "not-equal-me"];
 
+const creditRegistry = JSON.parse(
+  fs.readFileSync(
+    path.join(root, "src", "data", "credit-registry.json"),
+    "utf8",
+  ),
+);
+
+/**
+ * Credit identity lives on the registry creator id, so this file re-derives the
+ * lookup rather than importing it: an independent reading is what makes the
+ * check worth running.
+ */
+const creditCreatorIdsByWrittenJa = new Map();
+const creditRegistryErrors = [];
+for (const [creatorId, entry] of Object.entries(creditRegistry.creators)) {
+  for (const writtenJa of [entry.ja, ...(entry.aliasesJa ?? [])]) {
+    const owner = creditCreatorIdsByWrittenJa.get(writtenJa);
+    if (owner) {
+      creditRegistryErrors.push(
+        `credit registry: "${writtenJa}" is claimed by both ${owner} and ${creatorId}`,
+      );
+      continue;
+    }
+    creditCreatorIdsByWrittenJa.set(writtenJa, creatorId);
+  }
+}
+
+function resolveCreditSignature(ja) {
+  const whole = creditCreatorIdsByWrittenJa.get(ja.trim());
+  if (whole) return [whole];
+
+  const creatorIds = [];
+  for (const part of ja.split(creditRegistry.signatureSeparator.ja)) {
+    const token = part.trim();
+    if (!token) continue;
+    const creatorId = creditCreatorIdsByWrittenJa.get(token);
+    if (!creatorId) return { unresolved: token };
+    creatorIds.push(creatorId);
+  }
+  return creatorIds.length > 0 ? creatorIds : { unresolved: ja };
+}
+
+function renderCreditSignature(creatorIds) {
+  return {
+    ja: creatorIds
+      .map((creatorId) => creditRegistry.creators[creatorId].ja)
+      .join(creditRegistry.signatureSeparator.ja),
+    romaji: creatorIds
+      .map((creatorId) => creditRegistry.creators[creatorId].romaji)
+      .join(creditRegistry.signatureSeparator.romaji),
+  };
+}
+
 const releaseTypes = new Set(["single", "album", "digital", "dvd_bd", "other"]);
 const trackTypes = new Set([
   "title",
@@ -191,6 +244,25 @@ function validateCredits(prefix, song, errors) {
     ) {
       errors.push(
         `${prefix} ${song.id}: credits.${role} contains an unknown placeholder`,
+      );
+      continue;
+    }
+
+    const resolved = resolveCreditSignature(credit.ja);
+    if (!Array.isArray(resolved)) {
+      errors.push(
+        `${prefix} ${song.id}: credits.${role} names "${resolved.unresolved}", ` +
+          `which is not in the credit registry`,
+      );
+      continue;
+    }
+
+    const canonical = renderCreditSignature(resolved);
+    if (credit.ja !== canonical.ja || credit.romaji !== canonical.romaji) {
+      errors.push(
+        `${prefix} ${song.id}: credits.${role} is not the registry form ` +
+          `(expected "${canonical.ja}" / "${canonical.romaji}", ` +
+          `found "${credit.ja}" / "${credit.romaji}")`,
       );
     }
   }
@@ -385,6 +457,11 @@ if (requested && !PROJECT_IDS.includes(requested)) {
 }
 
 let failed = false;
+if (creditRegistryErrors.length > 0) {
+  failed = true;
+  console.error(`credit registry — ${creditRegistryErrors.length} problem(s):`);
+  for (const error of creditRegistryErrors) console.error(`  - ${error}`);
+}
 for (const projectId of targets) {
   const { errors, summary } = validateProject(projectId);
   if (errors.length > 0) {

@@ -8,21 +8,23 @@ import {
   getConfirmedSongCredits,
 } from "../../src/utils/songCredits";
 
+// Credit identity comes from the shared creator registry, so these fixtures
+// have to be real registry entries rather than invented names.
 const WRITER_A: LocalizedString = {
-  ja: "作詞者A",
-  romaji: "Sakushisha A",
+  ja: "指原莉乃",
+  romaji: "Sashihara Rino",
 };
 const WRITER_B: LocalizedString = {
-  ja: "作詞者B",
-  romaji: "Sakushisha B",
+  ja: "中村歩",
+  romaji: "Nakamura Ayumu",
 };
 const COMPOSER_A: LocalizedString = {
-  ja: "作曲者A",
-  romaji: "Sakkyokusha A",
+  ja: "本多友紀",
+  romaji: "honda yuki",
 };
 const ARRANGER_A: LocalizedString = {
-  ja: "編曲者A",
-  romaji: "Henkokusha A",
+  ja: "めんま",
+  romaji: "menma",
 };
 
 function makeSong(id: string, overrides: Partial<Song> = {}): Song {
@@ -205,22 +207,25 @@ test("credit roles are confirmed independently while the legacy all-role guard s
   assert.equal(getConfirmedSongCredit(songs[4], "lyricist"), null);
 });
 
-test("credit values remain exact trimmed fields rather than split contributor names", () => {
-  const preciseCredit: LocalizedString = {
-    ja: "  指原莉乃・佐々木舞香 & feat.  ",
-    romaji: "  Sashihara Rino & Sasaki Maika feat.  ",
-  };
+test("a joint credit counts every contributor and ignores the order they are written in", () => {
   const songs = makeTopTen([
-    { credits: { lyricist: preciseCredit } },
     {
       credits: {
-        lyricist: {
-          ja: " 指原莉乃・佐々木舞香 & feat. ",
-          romaji: " Sashihara Rino & Sasaki Maika feat. ",
+        composer: {
+          ja: "中村歩・菊池博人",
+          romaji: "Nakamura Ayumu ・ Kikuchi Hiroto",
         },
       },
     },
-    { credits: {} },
+    {
+      credits: {
+        composer: {
+          ja: "菊池博人・中村歩",
+          romaji: "Kikuchi Hiroto ・ Nakamura Ayumu",
+        },
+      },
+    },
+    { credits: { composer: { ja: "中村歩", romaji: "Nakamura Ayumu" } } },
     { credits: {} },
     { credits: {} },
     { credits: {} },
@@ -229,22 +234,73 @@ test("credit values remain exact trimmed fields rather than split contributor na
     { credits: {} },
     { credits: {} },
   ]);
-  const lyricists = deriveBoardInsights(songs).credits.lyricist;
+  const composers = deriveBoardInsights(songs).credits.composer;
 
-  assert.equal(lyricists.coverage.covered, 2);
-  assert.equal(lyricists.entries.length, 1);
-  assert.deepEqual(lyricists.entries[0], {
-    key: JSON.stringify([
-      "指原莉乃・佐々木舞香 & feat.",
-      "Sashihara Rino & Sasaki Maika feat.",
-      "",
-    ]),
-    value: {
-      ja: "指原莉乃・佐々木舞香 & feat.",
-      romaji: "Sashihara Rino & Sasaki Maika feat.",
+  assert.deepEqual(composers.coverage, { covered: 3, total: 10, percent: 30 });
+  assert.deepEqual(
+    composers.entries.map((entry) => [entry.key, entry.count]),
+    [
+      ["nakamura-ayumu", 3],
+      ["kikuchi-hiroto", 2],
+    ],
+  );
+});
+
+test("a legacy written name resolves to the same creator as the canonical one", () => {
+  const songs = makeTopTen([
+    { credits: { composer: { ja: "YUU for YUU", romaji: "YUU for YUU" } } },
+    { credits: { composer: { ja: "YUU for YOU", romaji: "YUU for YOU" } } },
+    { credits: { composer: { ja: "HaggyRock", romaji: "HaggyRock" } } },
+    { credits: { composer: { ja: "Haggy Rock", romaji: "Haggy Rock" } } },
+    { credits: {} },
+    { credits: {} },
+    { credits: {} },
+    { credits: {} },
+    { credits: {} },
+    { credits: {} },
+  ]);
+  const composers = deriveBoardInsights(songs).credits.composer;
+
+  assert.deepEqual(
+    composers.entries.map((entry) => [entry.key, entry.value, entry.count]),
+    [
+      ["haggy-rock", { ja: "Haggy Rock", romaji: "Haggy Rock" }, 2],
+      ["yuu-for-you", { ja: "YUU for YOU", romaji: "YUU for YOU" }, 2],
+    ],
+  );
+});
+
+test("an unregistered credit name is not counted instead of inventing a creator", () => {
+  const songs = makeTopTen([
+    {
+      credits: {
+        composer: { ja: "未登録の人", romaji: "Mitouroku no Hito" },
+      },
     },
-    count: 2,
-  });
+    {
+      credits: {
+        composer: {
+          ja: "中村歩・未登録の人",
+          romaji: "Nakamura Ayumu ・ Mitouroku no Hito",
+        },
+      },
+    },
+    { credits: { composer: { ja: "中村歩", romaji: "Nakamura Ayumu" } } },
+    { credits: {} },
+    { credits: {} },
+    { credits: {} },
+    { credits: {} },
+    { credits: {} },
+    { credits: {} },
+    { credits: {} },
+  ]);
+  const composers = deriveBoardInsights(songs).credits.composer;
+
+  assert.deepEqual(composers.coverage, { covered: 1, total: 10, percent: 10 });
+  assert.deepEqual(
+    composers.entries.map((entry) => [entry.key, entry.count]),
+    [["nakamura-ayumu", 1]],
+  );
 });
 
 test("ties use deterministic keys and member or center fields do not affect output", () => {
@@ -252,8 +308,7 @@ test("ties use deterministic keys and member or center fields do not affect outp
     releaseDate: index % 2 === 0 ? "2024-01-01" : "2023-01-01",
     releaseType: index < 4 ? "single" : index < 8 ? "album" : "digital",
     credits: {
-      lyricist:
-        index % 2 === 0 ? { ja: "B", romaji: "B" } : { ja: "A", romaji: "A" },
+      lyricist: index % 2 === 0 ? WRITER_A : WRITER_B,
     },
   }));
   const songs = makeTopTen(overrides);
@@ -282,7 +337,7 @@ test("ties use deterministic keys and member or center fields do not affect outp
   assert.deepEqual(
     withoutMemberFacts.credits.lyricist.entries
       .slice(0, 2)
-      .map((entry) => entry.value.ja),
-    ["A", "B"],
+      .map((entry) => entry.key),
+    ["nakamura-ayumu", "sashihara-rino"],
   );
 });
