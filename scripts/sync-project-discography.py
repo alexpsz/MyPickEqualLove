@@ -140,20 +140,7 @@ UNKNOWN_CREDIT_MARKERS = (
     "mikakunin",
     "mi kakunin",
 )
-CREDIT_ROMAJI_OVERRIDES = {
-    "指原莉乃": "Sashihara Rino",
-    "小池竜暉": "Koike Ryuki",
-    "小池竜暉・齋藤奏太": "Koike Ryuki ・ Saitou Kanata",
-    "齋藤奏太": "Saitou Kanata",
-    "古川貴浩": "Furukawa Takahiro",
-    "YAmai": "YAmai",
-    "脇眞富": "Waki Masatomi",
-    "えとゆま・菊池諒": "etoyuma ・ Kikuchi Ryo",
-    "えとゆま": "etoyuma",
-    "中村歩・菊池博人": "Nakamura Ayumu ・ Kikuchi Hiroto",
-    "菊池博人・中村歩": "Kikuchi Hiroto ・ Nakamura Ayumu",
-    "めんま": "menma",
-}
+CREDIT_REGISTRY_PATH = ROOT / "src" / "data" / "credit-registry.json"
 
 ANNOUNCED_CREDITS_VERIFIED_SOURCE_NOTE = (
     "公式ディスコグラフィーで曲名・収録作品・ジャケットが公開済み。"
@@ -162,6 +149,9 @@ ANNOUNCED_CREDITS_VERIFIED_SOURCE_NOTE = (
 UNKNOWN_METADATA_MARKERS = ("タイトル未定", "後日発表", "TBD")
 
 kakasi = pykakasi.kakasi()
+HAS_JAPANESE_PATTERN = re.compile(
+    "[぀-ゟ゠-ヿ㐀-䶿一-鿿]",
+)
 
 
 def current_catalog_date() -> date:
@@ -413,19 +403,115 @@ def slugify(value: str) -> str:
     return slug or re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
 
 
+class CreditRegistry:
+    """Stable identities for songwriting credits, shared with the web app.
+
+    A credit line is looked up whole before it is split, so a single creator
+    whose name contains the separator stays intact. A name the registry has
+    never seen is registered with a machine transliteration and reported, so it
+    reaches a human as a registry diff instead of blocking the sync or quietly
+    becoming a second spelling of somebody already listed.
+    """
+
+    def __init__(self, path: Path) -> None:
+        document = json.loads(path.read_text(encoding="utf-8"))
+        self.path = path
+        self.schema_version = document["schemaVersion"]
+        self.separator_ja = document["signatureSeparator"]["ja"]
+        self.separator_romaji = document["signatureSeparator"]["romaji"]
+        self.creators = document["creators"]
+        self.registered_ids: list[str] = []
+        self._by_ja: dict[str, str] = {}
+        for creator_id, entry in self.creators.items():
+            self._by_ja[entry["ja"]] = creator_id
+            for alias in entry.get("aliasesJa", ()):
+                self._by_ja[alias] = creator_id
+
+    def resolve(self, signature: str) -> list[str]:
+        value = normalize(signature)
+        whole = self._by_ja.get(value)
+        if whole:
+            return [whole]
+
+        creator_ids: list[str] = []
+        for part in value.split(self.separator_ja):
+            token = normalize(part)
+            if not token:
+                continue
+            creator_ids.append(self._by_ja.get(token) or self.register(token))
+        if not creator_ids:
+            raise ValueError(f"Empty credit signature: {signature!r}")
+        return creator_ids
+
+    def register(self, ja: str) -> str:
+        if is_unknown_credit_value(ja):
+            raise ValueError(f"Refusing to register a placeholder credit: {ja!r}")
+
+        romaji = romanize(ja) if HAS_JAPANESE_PATTERN.search(ja) else ja
+        creator_id = slugify(romaji) or slugify(ja)
+        if not creator_id:
+            raise ValueError(f"Cannot derive a creator id for {ja!r}")
+        if creator_id in self.creators:
+            raise ValueError(
+                f"Creator id {creator_id!r} already belongs to "
+                f"{self.creators[creator_id]['ja']!r} and cannot take {ja!r}",
+            )
+
+        self.creators[creator_id] = {"ja": ja, "romaji": romaji}
+        self._by_ja[ja] = creator_id
+        self.registered_ids.append(creator_id)
+        return creator_id
+
+    def signature(self, creator_ids: list[str]) -> dict[str, str]:
+        return {
+            "ja": self.separator_ja.join(
+                self.creators[creator_id]["ja"] for creator_id in creator_ids
+            ),
+            "romaji": self.separator_romaji.join(
+                self.creators[creator_id]["romaji"] for creator_id in creator_ids
+            ),
+        }
+
+    def save(self) -> None:
+        write_json_atomically(
+            self.path,
+            {
+                "schemaVersion": self.schema_version,
+                "signatureSeparator": {
+                    "ja": self.separator_ja,
+                    "romaji": self.separator_romaji,
+                },
+                "creators": {
+                    creator_id: self.creators[creator_id]
+                    for creator_id in sorted(self.creators)
+                },
+            },
+        )
+
+
+CREDIT_REGISTRY = CreditRegistry(CREDIT_REGISTRY_PATH)
+
+
 def localized(value: str) -> dict[str, str]:
     return {"ja": normalize(value), "romaji": romanize(value)}
 
 
 def localized_credit(value: str) -> dict[str, str]:
-    normalized_value = normalize(value)
-    return {
-        "ja": normalized_value,
-        "romaji": CREDIT_ROMAJI_OVERRIDES.get(
-            normalized_value,
-            romanize(normalized_value),
-        ),
-    }
+    return CREDIT_REGISTRY.signature(CREDIT_REGISTRY.resolve(value))
+
+
+def canonicalize_song_credits(songs: list[dict]) -> None:
+    """Force every stored credit line, newly scraped or preserved, to its
+    registry form, so one creator can never be written two ways."""
+    for song in songs:
+        credits = song.get("credits")
+        if not credits:
+            continue
+        for role in ("lyricist", "composer", "arranger"):
+            credit = credits.get(role)
+            if not credit or not normalize(credit.get("ja")):
+                continue
+            credits[role] = {**credit, **localized_credit(credit["ja"])}
 
 
 def is_unknown_credit_value(value: str | None) -> bool:
@@ -3173,6 +3259,41 @@ def determine_sync_report_outcome(
     return "no-change", "none"
 
 
+def save_registered_creators() -> None:
+    if not CREDIT_REGISTRY.registered_ids:
+        return
+    CREDIT_REGISTRY.save()
+    print(
+        f"Registered {len(CREDIT_REGISTRY.registered_ids)} new creators in "
+        f"{CREDIT_REGISTRY.path}: {', '.join(CREDIT_REGISTRY.registered_ids)}",
+    )
+
+
+def normalize_project_credits(config: ProjectConfig) -> None:
+    """Rewrite a checked-in catalog so every credit matches the registry.
+
+    Run this after editing the registry. It needs no network access, which is
+    what makes a registry correction a reviewable one-command change instead of
+    a full re-scrape.
+    """
+    songs = json.loads(config.songs_path.read_text(encoding="utf-8"))
+    before = deepcopy(songs)
+    canonicalize_song_credits(songs)
+    save_registered_creators()
+
+    changed = [
+        song["id"]
+        for song, original in zip(songs, before)
+        if song.get("credits") != original.get("credits")
+    ]
+    if changed:
+        write_json_atomically(config.songs_path, songs)
+    print(
+        f"{config.project_id}: {len(changed)} of {len(songs)} songs "
+        f"re-normalized in {config.songs_path}",
+    )
+
+
 def sync_project(
     config: ProjectConfig,
     *,
@@ -3186,10 +3307,12 @@ def sync_project(
         if not members:
             raise RuntimeError(f"No existing members found for {config.project_id}")
         songs, stats = build_song_data(config, members)
+        canonicalize_song_credits(songs)
 
         if not songs_only:
             write_json_atomically(config.members_path, members)
         write_json_atomically(config.songs_path, songs)
+        save_registered_creators()
 
         added_ids = list(stats.get("publishableAddedIds", []))
         updated_ids = list(stats.get("allowedUpdatedIds", []))
@@ -3277,6 +3400,11 @@ def parse_args() -> argparse.Namespace:
         help="Use the checked-in member roster and update only songs/covers.",
     )
     parser.add_argument(
+        "--normalize-credits-only",
+        action="store_true",
+        help="Re-apply the credit registry to the checked-in catalog, offline.",
+    )
+    parser.add_argument(
         "--report-json",
         type=Path,
         help="Write a schema-versioned source-health report outside the repository.",
@@ -3286,8 +3414,12 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    config = PROJECT_CONFIGS[args.project]()
+    if args.normalize_credits_only:
+        normalize_project_credits(config)
+        return
     sync_project(
-        PROJECT_CONFIGS[args.project](),
+        config,
         songs_only=args.songs_only,
         report_path=args.report_json,
     )

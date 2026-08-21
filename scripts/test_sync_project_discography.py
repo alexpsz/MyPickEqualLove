@@ -6,6 +6,7 @@ import sys
 import unittest
 from datetime import date
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest.mock import Mock, patch
 
 
@@ -1234,6 +1235,127 @@ class DiscographyMergeTests(unittest.TestCase):
             allow_redirects=False,
         )
         redirect.close.assert_called_once()
+
+
+class CreditRegistryTests(unittest.TestCase):
+    def setUp(self) -> None:
+        directory = TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.path = Path(directory.name) / "credit-registry.json"
+        self.path.write_text(
+            json.dumps(
+                {
+                    "schemaVersion": 1,
+                    "signatureSeparator": {"ja": "・", "romaji": " ・ "},
+                    "creators": {
+                        "sashihara-rino": {
+                            "ja": "指原莉乃",
+                            "romaji": "Sashihara Rino",
+                            "aliasesRomaji": ["sasuhara rino"],
+                        },
+                        "nakamura-ayumu": {
+                            "ja": "中村歩",
+                            "romaji": "Nakamura Ayumu",
+                        },
+                        "yuu-for-you": {
+                            "ja": "YUU for YOU",
+                            "romaji": "YUU for YOU",
+                            "aliasesJa": ["YUU for YUU"],
+                        },
+                    },
+                },
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
+        self.registry = SYNC.CreditRegistry(self.path)
+        registry_patch = patch.object(SYNC, "CREDIT_REGISTRY", self.registry)
+        registry_patch.start()
+        self.addCleanup(registry_patch.stop)
+
+    def make_songs(self) -> list[dict]:
+        return [
+            {
+                "id": "song",
+                "credits": {
+                    "lyricist": {
+                        "ja": "指原莉乃",
+                        "romaji": "sasuhara rino",
+                    },
+                    "composer": {
+                        "ja": "中村歩・指原莉乃",
+                        "romaji": "nakamura ho ・ sasuhara rino",
+                    },
+                    "arranger": {"ja": "YUU for YUU", "romaji": "YUU for YUU"},
+                },
+            },
+        ]
+
+    def test_stored_credits_are_rewritten_to_the_registry_form(self) -> None:
+        songs = self.make_songs()
+        SYNC.canonicalize_song_credits(songs)
+
+        self.assertEqual(
+            songs[0]["credits"],
+            {
+                "lyricist": {
+                    "ja": "指原莉乃",
+                    "romaji": "Sashihara Rino",
+                },
+                "composer": {
+                    "ja": "中村歩・指原莉乃",
+                    "romaji": "Nakamura Ayumu ・ Sashihara Rino",
+                },
+                "arranger": {"ja": "YUU for YOU", "romaji": "YUU for YOU"},
+            },
+        )
+        self.assertEqual(self.registry.registered_ids, [])
+
+    def test_normalization_is_idempotent(self) -> None:
+        songs = self.make_songs()
+        SYNC.canonicalize_song_credits(songs)
+        once = json.dumps(songs, ensure_ascii=False, sort_keys=True)
+        SYNC.canonicalize_song_credits(songs)
+
+        self.assertEqual(json.dumps(songs, ensure_ascii=False, sort_keys=True), once)
+
+    def test_an_unregistered_name_is_registered_and_reported(self) -> None:
+        songs = [
+            {
+                "id": "song",
+                "credits": {
+                    "composer": {
+                        "ja": "中村歩・新人作曲家",
+                        "romaji": "ignored",
+                    },
+                },
+            },
+        ]
+        SYNC.canonicalize_song_credits(songs)
+
+        self.assertEqual(len(self.registry.registered_ids), 1)
+        registered = self.registry.creators[self.registry.registered_ids[0]]
+        self.assertEqual(registered["ja"], "新人作曲家")
+        self.assertTrue(
+            songs[0]["credits"]["composer"]["romaji"].startswith("Nakamura Ayumu ・ "),
+        )
+
+    def test_a_placeholder_is_never_registered(self) -> None:
+        with self.assertRaisesRegex(ValueError, "placeholder"):
+            self.registry.resolve("作詞者不明")
+        self.assertEqual(self.registry.registered_ids, [])
+
+    def test_a_creator_id_collision_fails_instead_of_merging(self) -> None:
+        with self.assertRaisesRegex(ValueError, "already belongs to"):
+            self.registry.resolve("YUU FOR YOU")
+
+    def test_saving_round_trips_through_the_registry_file(self) -> None:
+        self.registry.register("新人作曲家")
+        self.registry.save()
+        reloaded = SYNC.CreditRegistry(self.path)
+
+        self.assertEqual(reloaded.creators, self.registry.creators)
+        self.assertEqual(sorted(reloaded.creators), list(reloaded.creators))
 
 
 if __name__ == "__main__":

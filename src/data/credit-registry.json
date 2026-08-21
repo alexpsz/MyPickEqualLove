@@ -1,0 +1,619 @@
+{
+  "schemaVersion": 1,
+  "signatureSeparator": {
+    "ja": "・",
+    "romaji": " ・ "
+  },
+  "creators": {
+    "akiya-amazuti": {
+      "ja": "敬也-amazuti-",
+      "romaji": "akiya -amazuti-"
+    },
+    "apazzi": {
+      "ja": "APAZZI",
+      "romaji": "APAZZI"
+    },
+    "armyslick": {
+      "ja": "ArmySlick",
+      "romaji": "ArmySlick"
+    },
+    "bagubea": {
+      "ja": "バグベア",
+      "romaji": "bagubea"
+    },
+    "be-you": {
+      "ja": "BE YOU",
+      "romaji": "BE YOU"
+    },
+    "chiba-naotyu-naoki": {
+      "ja": "千葉“naotyu-”直樹",
+      "romaji": "chiba “naotyu-” naoki",
+      "aliasesRomaji": ["chiba “ naotyu- ” naoki"]
+    },
+    "daisy-o": {
+      "ja": "Daisy.O",
+      "romaji": "Daisy.O",
+      "aliasesRomaji": ["Daisy . O"]
+    },
+    "ebara-masaki": {
+      "ja": "家原正樹",
+      "romaji": "ebara masaki"
+    },
+    "equallove": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "etoyuma": {
+      "ja": "えとゆま",
+      "romaji": "etoyuma"
+    },
+    "fukuda-takashi": {
+      "ja": "福田貴史",
+      "romaji": "fukuda takashi"
+    },
+    "furukawa-takahiro": {
+      "ja": "古川貴浩",
+      "romaji": "Furukawa Takahiro",
+      "aliasesRomaji": ["furukawa takahiro"]
+    },
+    "furuppe-kerakera": {
+      "ja": "ふるっぺ(ケラケラ)",
+      "romaji": "furuppe (kerakera)",
+      "aliasesRomaji": ["furuppe ( kerakera )"]
+    },
+    "fuwachan": {
+      "ja": "FUWACHAN",
+      "romaji": "FUWACHAN"
+    },
+    "ga-sa-yasuhiro": {
+      "ja": "賀佐泰洋",
+      "romaji": "ga sa yasuhiro"
+    },
+    "giz-mo-from-jam9": {
+      "ja": "Giz'Mo (from Jam9)",
+      "romaji": "Giz'Mo (from Jam9)",
+      "aliasesJa": ["Giz'Mo(from Jam9)"],
+      "aliasesRomaji": ["Giz'Mo (from Jam9 )", "Giz'Mo(from Jam9 )"]
+    },
+    "gotou-yasuji-ck510": {
+      "ja": "後藤康二(ck510)",
+      "romaji": "gotou yasuji (ck510)",
+      "aliasesRomaji": ["gotou yasuji (ck510 )"]
+    },
+    "gou-ishikuro": {
+      "ja": "Gou Ishikuro",
+      "romaji": "Gou Ishikuro"
+    },
+    "haggy-rock": {
+      "ja": "Haggy Rock",
+      "romaji": "Haggy Rock",
+      "aliasesJa": ["HaggyRock"],
+      "aliasesRomaji": ["HaggyRock"]
+    },
+    "hata-yuki": {
+      "ja": "畑雄貴",
+      "romaji": "Hata Yuki"
+    },
+    "hato": {
+      "ja": "HaTo",
+      "romaji": "HaTo"
+    },
+    "hattori-takayuki": {
+      "ja": "服部隆幸",
+      "romaji": "Hattori Takayuki"
+    },
+    "hayakawa-hirotaka": {
+      "ja": "早川博隆",
+      "romaji": "hayakawa hirotaka"
+    },
+    "hironaka-tokiwa": {
+      "ja": "廣中トキワ",
+      "romaji": "Hironaka Tokiwa"
+    },
+    "honda-masaki": {
+      "ja": "本田正樹",
+      "romaji": "honda masaki"
+    },
+    "honda-yuki": {
+      "ja": "本多友紀",
+      "romaji": "honda yuki"
+    },
+    "honeyworks": {
+      "ja": "HoneyWorks",
+      "romaji": "HoneyWorks"
+    },
+    "honzawa-naoyuki": {
+      "ja": "本澤尚之",
+      "romaji": "honzawa naoyuki"
+    },
+    "ihara-shin-ichi": {
+      "ja": "伊原真一",
+      "romaji": "ihara Shin'ichi"
+    },
+    "imai-hiroshi": {
+      "ja": "今井ひろし",
+      "romaji": "imai hiroshi"
+    },
+    "invisible-manners": {
+      "ja": "invisible manners",
+      "romaji": "invisible manners"
+    },
+    "ishiguro-tsuyoshi": {
+      "ja": "石黒剛",
+      "romaji": "ishiguro tsuyoshi"
+    },
+    "isozaki-takeshi": {
+      "ja": "磯崎健史",
+      "romaji": "isozaki takeshi"
+    },
+    "itagaki-yuusuke": {
+      "ja": "板垣祐介",
+      "romaji": "itagaki yuusuke"
+    },
+    "iwasaki-tetsuya": {
+      "ja": "岩崎哲也",
+      "romaji": "iwasaki tetsuya"
+    },
+    "junkoo": {
+      "ja": "JUNKOO",
+      "romaji": "JUNKOO"
+    },
+    "kanayama-shuu-samurai": {
+      "ja": "金山秀士",
+      "romaji": "kanayama shuu samurai"
+    },
+    "kasuga-akihiro": {
+      "ja": "春日章宏",
+      "romaji": "kasuga akihiro"
+    },
+    "katou-hajime": {
+      "ja": "加藤肇",
+      "romaji": "katou hajime"
+    },
+    "katou-hiroya": {
+      "ja": "加藤弘也",
+      "romaji": "katou hiroya"
+    },
+    "katou-yamato": {
+      "ja": "加藤大和",
+      "romaji": "katou yamato"
+    },
+    "kawai-yasushi": {
+      "ja": "河合泰志",
+      "romaji": "kawai yasushi"
+    },
+    "kawata-takashi-ou": {
+      "ja": "河田貴央",
+      "romaji": "kawata takashi ou"
+    },
+    "keisuke-koyama": {
+      "ja": "Keisuke Koyama",
+      "romaji": "Keisuke Koyama"
+    },
+    "kijibato": {
+      "ja": "kijibato",
+      "romaji": "kijibato",
+      "aliasesJa": ["Kijibato(Dream Monster)"],
+      "aliasesRomaji": ["Kijibato(Dream Monster )"]
+    },
+    "kiki": {
+      "ja": "KIKI",
+      "romaji": "KIKI"
+    },
+    "kikuchi-hiroto": {
+      "ja": "菊池博人",
+      "romaji": "Kikuchi Hiroto",
+      "aliasesRomaji": ["Kikuchi Hirohito", "kikuchi hirohito"]
+    },
+    "kikuchi-ryo": {
+      "ja": "菊池諒",
+      "romaji": "Kikuchi Ryo",
+      "aliasesRomaji": ["kikuchi ryou"]
+    },
+    "kisaragi-yua": {
+      "ja": "如月結愛",
+      "romaji": "kisaragi yua"
+    },
+    "koike-ryuki": {
+      "ja": "小池竜暉",
+      "romaji": "Koike Ryuki",
+      "aliasesRomaji": ["koike ryuu ki"]
+    },
+    "kondou-keiichi": {
+      "ja": "近藤圭一",
+      "romaji": "kondou keiichi"
+    },
+    "kurauchi-tatsuya": {
+      "ja": "倉内達矢",
+      "romaji": "kurauchi tatsuya"
+    },
+    "kuwahara-yuusuke": {
+      "ja": "桑原佑介",
+      "romaji": "kuwahara yuusuke"
+    },
+    "m-sato": {
+      "ja": "M!SATO",
+      "romaji": "M!SATO",
+      "aliasesRomaji": ["M ! SATO"]
+    },
+    "maekuchi-wataru": {
+      "ja": "前口渉",
+      "romaji": "maekuchi wataru"
+    },
+    "maeyama-ta-ken-ichi": {
+      "ja": "前山田健一",
+      "romaji": "maeyama ta Ken'ichi"
+    },
+    "masuda-takeshi": {
+      "ja": "増田武史",
+      "romaji": "masuda takeshi"
+    },
+    "masutani-satoshi": {
+      "ja": "増谷賢",
+      "romaji": "masutani satoshi"
+    },
+    "match": {
+      "ja": "MATCH",
+      "romaji": "MATCH"
+    },
+    "menma": {
+      "ja": "めんま",
+      "romaji": "menma"
+    },
+    "minami-rumi": {
+      "ja": "minami rumi",
+      "romaji": "minami rumi"
+    },
+    "miyagawa-maro": {
+      "ja": "宮川麿",
+      "romaji": "miyagawa maro"
+    },
+    "miyawaki-sakura": {
+      "ja": "宮脇咲良",
+      "romaji": "miyawaki sakura"
+    },
+    "miyazaki-ryou-amazuti": {
+      "ja": "宮崎諒-amazuti-",
+      "romaji": "miyazaki ryou -amazuti-"
+    },
+    "mizunoya-rei": {
+      "ja": "水野谷怜",
+      "romaji": "mizunoya rei"
+    },
+    "morie-kaeru": {
+      "ja": "森絵カエル",
+      "romaji": "morie kaeru"
+    },
+    "motokazu-hiroshi": {
+      "ja": "原一博",
+      "romaji": "motokazu hiroshi"
+    },
+    "murashige-anna": {
+      "ja": "村重杏奈",
+      "romaji": "murashige anna"
+    },
+    "muroya-yumi": {
+      "ja": "室屋優美",
+      "romaji": "muroya yumi"
+    },
+    "n-gram": {
+      "ja": "N-Gram",
+      "romaji": "N-Gram"
+    },
+    "na-zu-na": {
+      "ja": "NA.ZU.NA",
+      "romaji": "NA.ZU.NA",
+      "aliasesRomaji": ["NA . ZU . NA"]
+    },
+    "nagahama-shunpei": {
+      "ja": "長浜駿平",
+      "romaji": "nagahama shunpei"
+    },
+    "nagano-saori": {
+      "ja": "永野小織",
+      "romaji": "nagano saori"
+    },
+    "nagasawa-chi-aki": {
+      "ja": "長沢知亜紀",
+      "romaji": "nagasawa chi aki"
+    },
+    "nakamura-ayumu": {
+      "ja": "中村歩",
+      "romaji": "Nakamura Ayumu",
+      "aliasesRomaji": ["nakamura ho"]
+    },
+    "nakamura-bou": {
+      "ja": "中村望",
+      "romaji": "nakamura bou"
+    },
+    "nakamura-ei-hiko": {
+      "ja": "中村瑛彦",
+      "romaji": "nakamura ei hiko"
+    },
+    "nao": {
+      "ja": "NaO",
+      "romaji": "NaO"
+    },
+    "narimoto-tomomi": {
+      "ja": "成本智美",
+      "romaji": "narimoto tomomi"
+    },
+    "no-my": {
+      "ja": "no_my",
+      "romaji": "no_my",
+      "aliasesRomaji": ["No_my"]
+    },
+    "noguchi-taishi": {
+      "ja": "野口大志",
+      "romaji": "noguchi taishi"
+    },
+    "noi-youji": {
+      "ja": "野井洋児",
+      "romaji": "noi youji"
+    },
+    "nonaka-masa-yuuichi": {
+      "ja": "野中“まさ”雄一",
+      "romaji": "nonaka “masa” yuuichi",
+      "aliasesRomaji": ["nonaka “ masa ” yuuichi"]
+    },
+    "one17": {
+      "ja": "ONE17",
+      "romaji": "ONE17"
+    },
+    "oni": {
+      "ja": "oni",
+      "romaji": "oni"
+    },
+    "onodera-yuusuke": {
+      "ja": "小野寺祐輔",
+      "romaji": "onodera yuusuke"
+    },
+    "onoe-shin": {
+      "ja": "尾上榛",
+      "romaji": "onoe shin"
+    },
+    "ookuma-atsuo": {
+      "ja": "大熊淳生",
+      "romaji": "ookuma atsuo"
+    },
+    "r-n": {
+      "ja": "R!N",
+      "romaji": "R!N",
+      "aliasesRomaji": ["R ! N"]
+    },
+    "ryo-ito": {
+      "ja": "Ryo Ito",
+      "romaji": "Ryo Ito"
+    },
+    "ryo-shiraki": {
+      "ja": "Ryo Shiraki",
+      "romaji": "Ryo Shiraki"
+    },
+    "ryoko": {
+      "ja": "RYOKO",
+      "romaji": "RYOKO"
+    },
+    "ryu": {
+      "ja": "Ryu",
+      "romaji": "Ryu"
+    },
+    "saito-kanata": {
+      "ja": "齋藤奏太",
+      "romaji": "Saito Kanata",
+      "aliasesRomaji": ["Saitou Kanata", "saitou souta"]
+    },
+    "saitou-ryuusuke": {
+      "ja": "斎藤竜介",
+      "romaji": "saitou ryuusuke"
+    },
+    "sashihara-rino": {
+      "ja": "指原莉乃",
+      "romaji": "Sashihara Rino",
+      "aliasesRomaji": ["sasuhara rino"]
+    },
+    "satou-atsuhito": {
+      "ja": "佐藤厚仁",
+      "romaji": "satou atsuhito"
+    },
+    "sekiguchi-fuuta": {
+      "ja": "関口颯太",
+      "romaji": "sekiguchi fuuta"
+    },
+    "shibu": {
+      "ja": "SHIBU",
+      "romaji": "SHIBU"
+    },
+    "shigenaga-ryousuke": {
+      "ja": "重永亮介",
+      "romaji": "shigenaga ryousuke"
+    },
+    "shima-ken-ru": {
+      "ja": "島軒瑠",
+      "romaji": "shima ken ru"
+    },
+    "shimizu-teppei": {
+      "ja": "清水哲平",
+      "romaji": "shimizu teppei"
+    },
+    "shin": {
+      "ja": "SHIN",
+      "romaji": "SHIN"
+    },
+    "shin-q": {
+      "ja": "新Q",
+      "romaji": "shin Q"
+    },
+    "shirato-yuusuke": {
+      "ja": "白戸佑輔",
+      "romaji": "shirato yuusuke"
+    },
+    "shirone-kazunari": {
+      "ja": "白根一成",
+      "romaji": "shirone kazunari"
+    },
+    "shouji-natsu-aoi": {
+      "ja": "庄司夏葵",
+      "romaji": "shouji natsu aoi"
+    },
+    "shun-sakaguchi": {
+      "ja": "Shun Sakaguchi",
+      "romaji": "Shun Sakaguchi"
+    },
+    "sugihara-akira": {
+      "ja": "杉原亮",
+      "romaji": "sugihara akira"
+    },
+    "sugiyama-katsuhiko": {
+      "ja": "杉山勝彦",
+      "romaji": "sugiyama katsuhiko"
+    },
+    "suiryuu-yuuichirou": {
+      "ja": "水流雄一朗",
+      "romaji": "suiryuu yuuichirou"
+    },
+    "suzuki-ereka": {
+      "ja": "鈴木エレカ",
+      "romaji": "suzuki Ereka"
+    },
+    "suzuki-hiroaki": {
+      "ja": "鈴木裕明",
+      "romaji": "suzuki hiroaki"
+    },
+    "ta-bi-tatsuya": {
+      "ja": "田靡達也",
+      "romaji": "ta bi tatsuya"
+    },
+    "tahata-takeshi": {
+      "ja": "田畑健",
+      "romaji": "tahata takeshi"
+    },
+    "tajiri-tomoyuki": {
+      "ja": "田尻知之",
+      "romaji": "tajiri tomoyuki",
+      "aliasesJa": ["田尻知之(note native)"],
+      "aliasesRomaji": ["tajiri tomoyuki (note native )"]
+    },
+    "takagi-ryuuichi": {
+      "ja": "高木龍一",
+      "romaji": "takagi ryuuichi"
+    },
+    "takahashi-ryou": {
+      "ja": "高橋涼",
+      "romaji": "takahashi ryou"
+    },
+    "takahashi-ryuusei": {
+      "ja": "高橋リュウセイ",
+      "romaji": "takahashi ryuusei"
+    },
+    "tanabe-bou": {
+      "ja": "田辺望",
+      "romaji": "tanabe bou"
+    },
+    "the-answer": {
+      "ja": "The Answer",
+      "romaji": "The Answer"
+    },
+    "tsukada-kohei": {
+      "ja": "塚田耕平",
+      "romaji": "Tsukada Kohei",
+      "aliasesRomaji": ["tsukada kouhei"]
+    },
+    "uio": {
+      "ja": "Uio",
+      "romaji": "Uio"
+    },
+    "urashima-kenta": {
+      "ja": "浦島健太",
+      "romaji": "urashima kenta"
+    },
+    "wa-on": {
+      "ja": "WA-ON",
+      "romaji": "WA-ON"
+    },
+    "wada-kouhei": {
+      "ja": "和田耕平",
+      "romaji": "wada kouhei"
+    },
+    "wakatabe-makoto": {
+      "ja": "若田部誠",
+      "romaji": "Wakatabe Makoto",
+      "aliasesRomaji": ["wakatabe makoto"]
+    },
+    "waki-masatomi": {
+      "ja": "脇眞富",
+      "romaji": "Waki Masatomi",
+      "aliasesRomaji": ["waki makoto tomi"]
+    },
+    "watanabe-kazunori": {
+      "ja": "渡辺和紀",
+      "romaji": "watanabe kazunori"
+    },
+    "watanabe-takashi": {
+      "ja": "渡辺尚",
+      "romaji": "watanabe takashi"
+    },
+    "watanabe-tsuyoshi": {
+      "ja": "渡辺剛",
+      "romaji": "watanabe tsuyoshi"
+    },
+    "yamai": {
+      "ja": "YAmai",
+      "romaji": "YAmai"
+    },
+    "yamazo": {
+      "ja": "yamazo",
+      "romaji": "yamazo"
+    },
+    "yanagawatakao": {
+      "ja": "ヤナガワタカオ",
+      "romaji": "yanagawatakao"
+    },
+    "yhanael": {
+      "ja": "YHANAEL",
+      "romaji": "YHANAEL"
+    },
+    "yokoyama-kou-mare": {
+      "ja": "横山広稀",
+      "romaji": "yokoyama kou mare"
+    },
+    "yoshimura-takayuki": {
+      "ja": "吉村隆行",
+      "romaji": "yoshimura takayuki"
+    },
+    "yu-jin": {
+      "ja": "YU-JIN",
+      "romaji": "YU-JIN"
+    },
+    "yu-ki-kokubo": {
+      "ja": "Yu-ki Kokubo",
+      "romaji": "Yu-ki Kokubo"
+    },
+    "yuasa-atsushi": {
+      "ja": "湯浅篤",
+      "romaji": "yuasa atsushi"
+    },
+    "yuma": {
+      "ja": "yuma",
+      "romaji": "yuma"
+    },
+    "yuta-sakai": {
+      "ja": "Yuta Sakai",
+      "romaji": "Yuta Sakai"
+    },
+    "yuu-for-you": {
+      "ja": "YUU for YOU",
+      "romaji": "YUU for YOU",
+      "aliasesJa": ["YUU for YUU"],
+      "aliasesRomaji": ["YUU for YUU"]
+    },
+    "yuuki-shin-ichi": {
+      "ja": "悠木真一",
+      "romaji": "yuuki Shin'ichi"
+    },
+    "yuxse-dream-monster": {
+      "ja": "YUXSE(Dream Monster)",
+      "romaji": "YUXSE(Dream Monster)",
+      "aliasesRomaji": ["YUXSE(Dream Monster )"]
+    }
+  }
+}
