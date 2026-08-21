@@ -66,6 +66,31 @@ export function getAssistantEligibleSongIds({
   return eligibleSongIds;
 }
 
+/**
+ * How many places a tournament has to settle before the board can be filled.
+ *
+ * Stopping at the number of slots is only safe when every slot would accept
+ * every candidate. A Live board whose slots draw on different setlists can need
+ * a song from further down the order to fill a later slot, so ranking has to
+ * keep going for those.
+ */
+export function getAssistantTargetCount({
+  slotIds,
+  candidateIds,
+  isEligible,
+}: {
+  slotIds: readonly string[];
+  candidateIds: readonly string[];
+  isEligible: (songId: string, slotId: string) => boolean;
+}) {
+  const everySlotTakesEverySong = slotIds.every((slotId) =>
+    candidateIds.every((songId) => isEligible(songId, slotId)),
+  );
+  return everySlotTakesEverySong
+    ? slotIds.length
+    : Math.max(slotIds.length, candidateIds.length);
+}
+
 export function getStrictContextPerformanceIds(
   experience: PickExperience,
   contextId?: string,

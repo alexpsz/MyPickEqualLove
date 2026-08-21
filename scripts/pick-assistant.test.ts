@@ -22,6 +22,7 @@ import {
   type PickAssistantSession,
 } from "../src/utils/pickAssistant";
 import {
+  readLegacyPickAssistantShortlist,
   resetPickAssistantStorageSafely,
   savePickAssistantSnapshot,
   savePickAssistantSnapshotSafely,
@@ -33,21 +34,26 @@ import {
 import {
   COMBINED_EXPERIENCE_CONTEXT_ID,
   getAssistantEligibleSongIds,
+  getAssistantTargetCount,
 } from "../src/utils/experienceEligibility";
 
 const validSongIds = new Set(
   Array.from({ length: 30 }, (_, index) => `song-${index + 1}`),
 );
 const parseOptions = {
-  schemaVersion: 1,
+  schemaVersion: 2,
+  legacySchemaVersion: 1,
   expiresAfterMs: 1_000_000,
   maximumCandidates: 24,
   now: 10_000,
   validSongIds,
 };
 
-function finishTournament(candidateIds: string[]) {
-  let session = createPickAssistantSession(candidateIds);
+function finishTournament(
+  candidateIds: string[],
+  targetCount = candidateIds.length,
+) {
+  let session = createPickAssistantSession(candidateIds, targetCount);
   while (deriveTournament(session).status === "comparing") {
     session = recordComparison(session, "left");
   }
@@ -90,18 +96,19 @@ function tournamentCandidateIds(count: number) {
   return Array.from({ length: count }, (_, index) => `candidate-${index + 1}`);
 }
 
-function reportedMaximumComparisons(count: number) {
+function reportedMaximumComparisons(count: number, targetCount = count) {
   return deriveTournament(
-    createPickAssistantSession(tournamentCandidateIds(count)),
+    createPickAssistantSession(tournamentCandidateIds(count), targetCount),
   ).maximumComparisons;
 }
 
 function playTournament(
   count: number,
   chooseOutcome: (step: number) => ComparisonOutcome,
+  targetCount = count,
 ) {
   const candidateIds = tournamentCandidateIds(count);
-  let session = createPickAssistantSession(candidateIds);
+  let session = createPickAssistantSession(candidateIds, targetCount);
   const maximumComparisons = deriveTournament(session).maximumComparisons;
   let step = 0;
 
@@ -121,11 +128,23 @@ function playTournament(
   if (state.status !== "complete") {
     throw new Error(`${count} candidates never completed`);
   }
-  assert.deepEqual(
-    [...state.orderedIds].sort(),
-    [...candidateIds].sort(),
-    `${count} candidates lost or duplicated a song`,
+  assert.equal(
+    state.orderedIds.length,
+    Math.min(count, targetCount),
+    `${count} candidates settled the wrong number of places`,
   );
+  assert.equal(
+    new Set(state.orderedIds).size,
+    state.orderedIds.length,
+    `${count} candidates duplicated a song`,
+  );
+  for (const songId of state.orderedIds) {
+    assert.ok(
+      candidateIds.includes(songId),
+      `${count} candidates invented ${songId}`,
+    );
+  }
+  return state.orderedIds;
 }
 
 function deepestDecisionCount(session: PickAssistantSession): number {
@@ -199,7 +218,7 @@ test("the reported comparison ceiling is reachable, not merely safe", () => {
   for (let count = 2; count <= 7; count += 1) {
     assert.equal(
       deepestDecisionCount(
-        createPickAssistantSession(tournamentCandidateIds(count)),
+        createPickAssistantSession(tournamentCandidateIds(count), count),
       ),
       reportedMaximumComparisons(count),
       `${count} candidates`,
@@ -207,13 +226,303 @@ test("the reported comparison ceiling is reachable, not merely safe", () => {
   }
 });
 
-test("tie is stable and skip rotates without recording a preference", () => {
-  let session = createPickAssistantSession([
-    "song-1",
-    "song-2",
-    "song-3",
-    "song-4",
+/**
+ * Answers every comparison from a fixed total order, which is what lets a test
+ * say what the right answer was.
+ */
+function settleAgainstTruth(
+  candidateIds: string[],
+  targetCount: number,
+  truth: readonly string[],
+) {
+  const rankOf = new Map(truth.map((songId, index) => [songId, index]));
+  let session = createPickAssistantSession(candidateIds, targetCount);
+
+  for (;;) {
+    const state = deriveTournament(session);
+    if (state.status !== "comparing") {
+      return {
+        orderedIds: state.orderedIds,
+        decisionsMade: state.decisionsMade,
+      };
+    }
+    const left = rankOf.get(state.pair.leftId) ?? Number.POSITIVE_INFINITY;
+    const right = rankOf.get(state.pair.rightId) ?? Number.POSITIVE_INFINITY;
+    session = recordComparison(session, left < right ? "left" : "right");
+  }
+}
+
+function shuffled(values: readonly string[], seed: number) {
+  const result = values.slice();
+  let state = seed;
+  for (let index = result.length - 1; index > 0; index -= 1) {
+    state = (state * 1103515245 + 12345) & 0x7fffffff;
+    const swap = state % (index + 1);
+    [result[index], result[swap]] = [result[swap], result[index]];
+  }
+  return result;
+}
+
+test("ranking only the places the board needs still produces the true top of the order", () => {
+  for (const count of [4, 7, 10, 17, 24, 33, 50]) {
+    const truth = tournamentCandidateIds(count);
+    for (const targetCount of [1, 2, 6, 10, count]) {
+      for (let seed = 1; seed <= 6; seed += 1) {
+        const settled = settleAgainstTruth(
+          shuffled(truth, seed * count),
+          targetCount,
+          truth,
+        );
+        assert.deepEqual(
+          settled.orderedIds,
+          truth.slice(0, Math.min(targetCount, count)),
+          `${count} candidates, target ${targetCount}, seed ${seed}`,
+        );
+      }
+    }
+  }
+});
+
+test("settling fewer places costs fewer comparisons and never more than the ceiling", () => {
+  const truth = tournamentCandidateIds(50);
+  const full = settleAgainstTruth(shuffled(truth, 7), 50, truth);
+  const topTen = settleAgainstTruth(shuffled(truth, 7), 10, truth);
+
+  assert.ok(
+    topTen.decisionsMade < full.decisionsMade,
+    `top ten cost ${topTen.decisionsMade}, full sort cost ${full.decisionsMade}`,
+  );
+  assert.ok(topTen.decisionsMade <= reportedMaximumComparisons(50, 10));
+  assert.ok(full.decisionsMade <= reportedMaximumComparisons(50, 50));
+});
+
+test("the ceiling drops with the target and stays exact for the sizes people hit", () => {
+  const expected = new Map([
+    ["17/10", 54],
+    ["17/17", 65],
+    ["24/10", 71],
+    ["31/10", 95],
+    ["62/10", 200],
+    ["85/10", 279],
+    ["100/10", 329],
+    ["100/100", 589],
+    ["31/6", 80],
+    ["85/6", 229],
   ]);
+
+  for (const [label, maximumComparisons] of expected) {
+    const [count, targetCount] = label.split("/").map(Number);
+    assert.equal(
+      reportedMaximumComparisons(count, targetCount),
+      maximumComparisons,
+      label,
+    );
+  }
+});
+
+test("a truncated ceiling is reachable too, not merely safe", () => {
+  for (let count = 2; count <= 7; count += 1) {
+    for (let targetCount = 1; targetCount <= count; targetCount += 1) {
+      assert.equal(
+        deepestDecisionCount(
+          createPickAssistantSession(
+            tournamentCandidateIds(count),
+            targetCount,
+          ),
+        ),
+        reportedMaximumComparisons(count, targetCount),
+        `${count} candidates, target ${targetCount}`,
+      );
+    }
+  }
+});
+
+test("a truncated session survives serialization, undo, and skip unchanged", () => {
+  const truth = tournamentCandidateIds(20);
+  const rankOf = new Map(truth.map((songId, index) => [songId, index]));
+  const candidateIds = shuffled(truth, 99);
+  const catalog = new Set(candidateIds);
+  let session = createPickAssistantSession(candidateIds, 10);
+
+  for (let step = 0; step < 12; step += 1) {
+    const state = deriveTournament(session);
+    if (state.status !== "comparing") break;
+    session = recordComparison(
+      session,
+      (rankOf.get(state.pair.leftId) ?? 0) <
+        (rankOf.get(state.pair.rightId) ?? 0)
+        ? "left"
+        : "right",
+    );
+  }
+
+  const skipped = skipComparison(session);
+  const restored = undoComparison(recordComparison(skipped, "left"));
+  assert.deepEqual(deriveTournament(restored), deriveTournament(skipped));
+
+  const snapshot = updatePickAssistantSnapshot(
+    createPickAssistantSnapshot(2, 9_000, "truncated"),
+    { shortlistIds: candidateIds, session },
+    9_100,
+    "truncated",
+  );
+  const parsed = parsePickAssistantSnapshot(JSON.stringify(snapshot), {
+    ...parseOptions,
+    maximumCandidates: 20,
+    validSongIds: catalog,
+  });
+
+  if (parsed.status !== "valid") {
+    throw new Error(
+      `a truncated session did not survive storage: ${parsed.status}`,
+    );
+  }
+  const resumed = parsed.snapshot.session;
+  if (!resumed) throw new Error("the resumed snapshot lost its session");
+
+  assert.equal(resumed.targetCount, 10);
+  assert.deepEqual(deriveTournament(resumed), deriveTournament(session));
+});
+
+test("a pre-Top-K saved session hands back its shortlist instead of reading as damage", () => {
+  const legacy = {
+    schemaVersion: 1,
+    revision: 4,
+    updatedAt: 9_000,
+    mutationId: "legacy",
+    shortlistIds: ["song-1", "song-2", "song-3"],
+    session: {
+      candidateIds: ["song-1", "song-2", "song-3"],
+      decisions: [{ leftId: "song-1", rightId: "song-2", outcome: "left" }],
+    },
+  };
+  const options = {
+    legacySchemaVersion: 1,
+    expiresAfterMs: 1_000_000,
+    maximumCandidates: 24,
+    validSongIds,
+    now: 10_000,
+  };
+  const storage = {
+    getItem: (key: string) =>
+      key === "legacy" ? JSON.stringify(legacy) : null,
+  };
+
+  assert.deepEqual(
+    readLegacyPickAssistantShortlist(storage, "legacy", options),
+    ["song-1", "song-2", "song-3"],
+  );
+
+  // A v2 document is not a legacy document, and neither is an expired,
+  // unreadable, or unknown-song one.
+  assert.equal(
+    readLegacyPickAssistantShortlist(
+      { getItem: () => JSON.stringify({ ...legacy, schemaVersion: 2 }) },
+      "legacy",
+      options,
+    ),
+    null,
+  );
+  assert.equal(
+    readLegacyPickAssistantShortlist(
+      { getItem: () => JSON.stringify(legacy) },
+      "legacy",
+      {
+        ...options,
+        now: 9_000 + options.expiresAfterMs + 1,
+      },
+    ),
+    null,
+  );
+  assert.equal(
+    readLegacyPickAssistantShortlist({ getItem: () => "{" }, "legacy", options),
+    null,
+  );
+  assert.equal(
+    readLegacyPickAssistantShortlist(
+      { getItem: () => JSON.stringify({ ...legacy, shortlistIds: ["nope"] }) },
+      "legacy",
+      options,
+    ),
+    null,
+  );
+  assert.equal(
+    readLegacyPickAssistantShortlist(
+      { getItem: () => null },
+      "legacy",
+      options,
+    ),
+    null,
+  );
+});
+
+test("ranking stops at the slot count only when every slot accepts every candidate", () => {
+  const slotIds = ["slot-1", "slot-2", "slot-3"];
+  const candidateIds = ["song-1", "song-2", "song-3", "song-4", "song-5"];
+
+  assert.equal(
+    getAssistantTargetCount({
+      slotIds,
+      candidateIds,
+      isEligible: () => true,
+    }),
+    slotIds.length,
+  );
+
+  // One slot that draws on a narrower setlist is enough: filling it can need a
+  // song the first three places never reach.
+  assert.equal(
+    getAssistantTargetCount({
+      slotIds,
+      candidateIds,
+      isEligible: (songId, slotId) =>
+        slotId !== "slot-3" || songId === "song-5",
+    }),
+    candidateIds.length,
+  );
+
+  // A board with more slots than candidates still asks for every place.
+  assert.equal(
+    getAssistantTargetCount({
+      slotIds: ["slot-1", "slot-2", "slot-3", "slot-4", "slot-5", "slot-6"],
+      candidateIds: ["song-1", "song-2"],
+      isEligible: (songId) => songId === "song-1",
+    }),
+    6,
+  );
+});
+
+test("a shortlist wider than the slots still fills every slot it can when eligibility is narrow", () => {
+  const slotIds = ["slot-1", "slot-2"];
+  const candidateIds = ["song-1", "song-2", "song-3", "song-4"];
+  const isEligible = (songId: string, slotId: string) =>
+    slotId === "slot-1" ? songId !== "song-4" : songId === "song-4";
+
+  const targetCount = getAssistantTargetCount({
+    slotIds,
+    candidateIds,
+    isEligible,
+  });
+  assert.equal(targetCount, candidateIds.length);
+
+  const settled = deriveTournament(finishTournament(candidateIds, targetCount));
+  if (settled.status !== "complete") throw new Error("the tournament stalled");
+  const plan = planRankedPicks({
+    orderedSongIds: settled.orderedIds,
+    slotIds,
+    isEligible,
+  });
+
+  assert.equal(settled.orderedIds.length, candidateIds.length);
+
+  assert.deepEqual(plan.nextPicks, { "slot-1": "song-1", "slot-2": "song-4" });
+});
+
+test("tie is stable and skip rotates without recording a preference", () => {
+  let session = createPickAssistantSession(
+    ["song-1", "song-2", "song-3", "song-4"],
+    4,
+  );
   const firstPair = deriveTournament(session);
   session = skipComparison(session);
   const skippedPair = deriveTournament(session);
@@ -229,23 +538,21 @@ test("tie is stable and skip rotates without recording a preference", () => {
 });
 
 test("skip returns the same recoverable session when no other pair exists", () => {
-  const session = createPickAssistantSession(["song-1", "song-2", "song-3"]);
+  const session = createPickAssistantSession(["song-1", "song-2", "song-3"], 3);
   const skipped = skipComparison(session);
   assert.equal(skipped, session);
   assert.deepEqual(deriveTournament(skipped), deriveTournament(session));
 });
 
 test("serialized session resumes exactly and undo restores the prior pair", () => {
-  let session = createPickAssistantSession([
-    "song-1",
-    "song-2",
-    "song-3",
-    "song-4",
-  ]);
+  let session = createPickAssistantSession(
+    ["song-1", "song-2", "song-3", "song-4"],
+    4,
+  );
   const originalPair = deriveTournament(session);
   session = recordComparison(session, "right");
   const snapshot = updatePickAssistantSnapshot(
-    createPickAssistantSnapshot(1, 9_000, "initial"),
+    createPickAssistantSnapshot(2, 9_000, "initial"),
     { shortlistIds: session.candidateIds, session },
     9_500,
     "saved",
@@ -266,7 +573,7 @@ test("serialized session resumes exactly and undo restores the prior pair", () =
 
 test("candidate limit and corrupt session are rejected", () => {
   const tooMany = {
-    ...createPickAssistantSnapshot(1, 9_500, "large"),
+    ...createPickAssistantSnapshot(2, 9_500, "large"),
     shortlistIds: Array.from({ length: 25 }, (_, index) => `song-${index + 1}`),
   };
   assert.equal(
@@ -276,10 +583,11 @@ test("candidate limit and corrupt session are rejected", () => {
 
   const invalidSession: PickAssistantSession = {
     candidateIds: ["song-1", "song-2"],
+    targetCount: 2,
     decisions: [{ leftId: "song-2", rightId: "song-1", outcome: "left" }],
   };
   const corrupt = {
-    ...createPickAssistantSnapshot(1, 9_500, "invalid-session"),
+    ...createPickAssistantSnapshot(2, 9_500, "invalid-session"),
     shortlistIds: invalidSession.candidateIds,
     session: invalidSession,
   };
@@ -290,7 +598,7 @@ test("candidate limit and corrupt session are rejected", () => {
 });
 
 test("expired storage is isolated until an explicit reset", () => {
-  const expired = createPickAssistantSnapshot(1, 1_000, "expired");
+  const expired = createPickAssistantSnapshot(2, 1_000, "expired");
   assert.equal(
     parsePickAssistantSnapshot(JSON.stringify(expired), {
       ...parseOptions,
@@ -684,7 +992,7 @@ test("current board songs become assistant candidates in slot order without dupl
   assert.deepEqual(candidateIds, ["song-1", "song-2"]);
 
   const snapshot = updatePickAssistantSnapshot(
-    createPickAssistantSnapshot(1, 9_000, "initial"),
+    createPickAssistantSnapshot(2, 9_000, "initial"),
     { shortlistIds: candidateIds, session: null },
     9_100,
     "board-import",
@@ -730,7 +1038,7 @@ test("assistant keys are isolated by experience and context", () => {
 });
 
 test("future and corrupt storage fail closed instead of being overwritten", () => {
-  const expected = createPickAssistantSnapshot(1, 9_000, "expected");
+  const expected = createPickAssistantSnapshot(2, 9_000, "expected");
   const next = updatePickAssistantSnapshot(
     expected,
     { shortlistIds: ["song-1"], session: null },
@@ -758,7 +1066,7 @@ test("future and corrupt storage fail closed instead of being overwritten", () =
 });
 
 test("a failed shortlist write never reports success or changes persisted state", async () => {
-  const expected = createPickAssistantSnapshot(1, 9_000, "expected");
+  const expected = createPickAssistantSnapshot(2, 9_000, "expected");
   const next = updatePickAssistantSnapshot(
     expected,
     { shortlistIds: ["song-1"], session: null },
@@ -787,7 +1095,7 @@ test("a failed shortlist write never reports success or changes persisted state"
 });
 
 test("a stale tab cannot overwrite a newer complete snapshot", () => {
-  const stale = createPickAssistantSnapshot(1, 9_000, "stale");
+  const stale = createPickAssistantSnapshot(2, 9_000, "stale");
   const newer = {
     ...updatePickAssistantSnapshot(
       stale,
@@ -824,7 +1132,7 @@ test("a stale tab cannot overwrite a newer complete snapshot", () => {
 });
 
 test("storage lock serializes concurrent writers and rejects the stale one", async () => {
-  const expected = createPickAssistantSnapshot(1, 9_000, "expected");
+  const expected = createPickAssistantSnapshot(2, 9_000, "expected");
   const first = updatePickAssistantSnapshot(
     expected,
     { shortlistIds: ["song-1"], session: null },
@@ -887,7 +1195,7 @@ test("storage lock serializes concurrent writers and rejects the stale one", asy
 });
 
 test("fallback write verifies that its mutation was not replaced", async () => {
-  const expected = createPickAssistantSnapshot(1, 9_000, "expected");
+  const expected = createPickAssistantSnapshot(2, 9_000, "expected");
   const next = updatePickAssistantSnapshot(
     expected,
     { shortlistIds: ["song-1"], session: null },
@@ -939,7 +1247,7 @@ test("fallback write verifies that its mutation was not replaced", async () => {
 });
 
 test("reset shares the save lock and cannot revive an in-flight session", async () => {
-  const expected = createPickAssistantSnapshot(1, 9_000, "expected");
+  const expected = createPickAssistantSnapshot(2, 9_000, "expected");
   const next = updatePickAssistantSnapshot(
     expected,
     { shortlistIds: ["song-1"], session: null },
@@ -991,7 +1299,7 @@ test("reset shares the save lock and cannot revive an in-flight session", async 
 
 test("application freshness gate rejects post-confirm context, board, or full snapshot changes", () => {
   const assistantSnapshot = updatePickAssistantSnapshot(
-    createPickAssistantSnapshot(1, 9_000, "initial"),
+    createPickAssistantSnapshot(2, 9_000, "initial"),
     { shortlistIds: ["song-1", "song-2"], session: null },
     9_100,
     "complete",

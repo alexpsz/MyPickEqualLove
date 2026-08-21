@@ -32,6 +32,8 @@ interface PickAssistantModalProps {
   currentBoardCandidateCount: number;
   minimumCandidates: number;
   maximumCandidates: number;
+  longSessionCandidates: number;
+  shortlistMaximumComparisons: number;
   storageIssue: PickAssistantStorageIssue | null;
   mutationsBlocked: boolean;
   reviewNotice: boolean;
@@ -60,6 +62,8 @@ export default function PickAssistantModal({
   currentBoardCandidateCount,
   minimumCandidates,
   maximumCandidates,
+  longSessionCandidates,
+  shortlistMaximumComparisons,
   storageIssue,
   mutationsBlocked,
   reviewNotice,
@@ -245,6 +249,8 @@ export default function PickAssistantModal({
               shortlist={shortlist}
               minimumCandidates={minimumCandidates}
               maximumCandidates={maximumCandidates}
+              longSessionCandidates={longSessionCandidates}
+              shortlistMaximumComparisons={shortlistMaximumComparisons}
               currentBoardCandidateCount={currentBoardCandidateCount}
               browseCandidatesRef={browseCandidatesRef}
               onBrowseCandidates={onBrowseCandidates}
@@ -265,6 +271,8 @@ function ShortlistView({
   shortlist,
   minimumCandidates,
   maximumCandidates,
+  longSessionCandidates,
+  shortlistMaximumComparisons,
   currentBoardCandidateCount,
   browseCandidatesRef,
   onBrowseCandidates,
@@ -277,6 +285,8 @@ function ShortlistView({
   shortlist: Song[];
   minimumCandidates: number;
   maximumCandidates: number;
+  longSessionCandidates: number;
+  shortlistMaximumComparisons: number;
   currentBoardCandidateCount: number;
   browseCandidatesRef: React.RefObject<HTMLButtonElement | null>;
   onBrowseCandidates: () => void;
@@ -377,7 +387,18 @@ function ShortlistView({
         <p className="text-sm text-[var(--muted)]">
           {t("assistant.minimumHint", { count: minimumCandidates })}
         </p>
-      ) : null}
+      ) : shortlist.length > longSessionCandidates ? (
+        <p
+          className="rounded-[var(--radius-sm)] bg-[var(--project-primary-wash)] px-3 py-2 text-sm leading-relaxed text-[var(--foreground)]"
+          role="status"
+        >
+          {t("assistant.longSession", { count: shortlistMaximumComparisons })}
+        </p>
+      ) : (
+        <p className="text-sm tabular-nums text-[var(--muted)]">
+          {t("assistant.startEstimate", { count: shortlistMaximumComparisons })}
+        </p>
+      )}
       <div className="grid gap-2 sm:flex sm:justify-end">
         <button
           ref={browseCandidatesRef}
@@ -458,7 +479,7 @@ function ComparisonView({
         >
           {t("assistant.progress", {
             done: decisionsMade,
-            total: maximumComparisons,
+            remaining: Math.max(0, maximumComparisons - decisionsMade),
           })}
         </p>
       </div>

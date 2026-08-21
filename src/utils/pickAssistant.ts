@@ -11,6 +11,12 @@ export interface ComparisonDecision {
 
 export interface PickAssistantSession {
   candidateIds: string[];
+  /**
+   * How many places the board actually needs filled. The tournament settles
+   * that prefix and stops: ranking songs that cannot reach the board is work
+   * nobody asked for.
+   */
+  targetCount: number;
   decisions: ComparisonDecision[];
   activePairKey?: string;
 }
@@ -227,6 +233,7 @@ export function samePickAssistantSnapshots(
 
   return (
     left.session.activePairKey === right.session.activePairKey &&
+    left.session.targetCount === right.session.targetCount &&
     left.session.candidateIds.length === right.session.candidateIds.length &&
     left.session.candidateIds.every(
       (songId, index) => songId === right.session?.candidateIds[index],
@@ -257,6 +264,7 @@ export function samePickAssistantApplicationInputs(
 
 export function createPickAssistantSession(
   candidateIds: readonly string[],
+  targetCount: number,
 ): PickAssistantSession {
   if (
     candidateIds.length < 2 ||
@@ -264,10 +272,25 @@ export function createPickAssistantSession(
   ) {
     throw new Error("A tournament requires at least two unique candidates");
   }
+  if (!Number.isInteger(targetCount) || targetCount < 1) {
+    throw new Error("A tournament needs a positive whole target count");
+  }
   return {
     candidateIds: candidateIds.slice(),
+    targetCount,
     decisions: [],
   };
+}
+
+/**
+ * The most comparisons a shortlist of this size can cost before the board's
+ * places are settled. Callers show it before anyone commits to a session.
+ */
+export function getMaximumPickComparisons(
+  candidateCount: number,
+  targetCount: number,
+) {
+  return getMaximumMergeComparisons(candidateCount, targetCount);
 }
 
 export function getBoardCandidateIds(
@@ -314,6 +337,7 @@ export function deriveTournament(
   const replay = replayTournament(session);
   const maximumComparisons = getMaximumMergeComparisons(
     session.candidateIds.length,
+    session.targetCount,
   );
 
   if (replay.complete) {
@@ -531,14 +555,15 @@ function replayTournament(session: PickAssistantSession): TournamentReplay {
     throw new Error("Invalid tournament candidates");
   }
 
+  const targetCount = resolveTargetCount(session);
   let runs = session.candidateIds.map((candidateId) => [candidateId]);
   let decisionIndex = 0;
 
   while (runs.length > 1) {
-    const jobs = createMergeJobs(runs);
+    const jobs = createMergeJobs(runs, targetCount);
 
     while (decisionIndex < session.decisions.length) {
-      const availablePairs = getAvailablePairs(jobs);
+      const availablePairs = getAvailablePairs(jobs, targetCount);
       if (availablePairs.length === 0) break;
       const decision = session.decisions[decisionIndex];
       const matchingPair = availablePairs.find(
@@ -546,11 +571,11 @@ function replayTournament(session: PickAssistantSession): TournamentReplay {
           pair.leftId === decision.leftId && pair.rightId === decision.rightId,
       );
       if (!matchingPair) throw new Error("Decision does not match tournament");
-      applyDecision(jobs[matchingPair.jobIndex], decision.outcome);
+      applyDecision(jobs[matchingPair.jobIndex], decision.outcome, targetCount);
       decisionIndex += 1;
     }
 
-    const availablePairs = getAvailablePairs(jobs);
+    const availablePairs = getAvailablePairs(jobs, targetCount);
     if (availablePairs.length > 0) {
       if (decisionIndex !== session.decisions.length) {
         throw new Error("Tournament decision replay stopped early");
@@ -585,23 +610,27 @@ function planMergeRound<TRun>(runs: readonly TRun[]) {
   return pairs;
 }
 
-function createMergeJobs(runs: string[][]): MergeJob[] {
+function createMergeJobs(runs: string[][], targetCount: number): MergeJob[] {
   return planMergeRound(runs).map(({ left, right }, index) => {
-    const rightRun = right ?? [];
-    return {
+    const job: MergeJob = {
       index,
       left,
-      right: rightRun,
-      leftIndex: rightRun.length === 0 ? left.length : 0,
+      right: right ?? [],
+      leftIndex: 0,
       rightIndex: 0,
-      merged: rightRun.length === 0 ? left.slice() : [],
+      merged: [],
     };
+    completeMergeJobIfPossible(job, targetCount);
+    return job;
   });
 }
 
-function getAvailablePairs(jobs: MergeJob[]): AvailablePair[] {
+function getAvailablePairs(
+  jobs: MergeJob[],
+  targetCount: number,
+): AvailablePair[] {
   return jobs.flatMap((job) => {
-    completeMergeJobIfPossible(job);
+    completeMergeJobIfPossible(job, targetCount);
     const leftId = job.left[job.leftIndex];
     const rightId = job.right[job.rightIndex];
     return leftId && rightId
@@ -617,7 +646,11 @@ function getAvailablePairs(jobs: MergeJob[]): AvailablePair[] {
   });
 }
 
-function applyDecision(job: MergeJob, outcome: ComparisonOutcome) {
+function applyDecision(
+  job: MergeJob,
+  outcome: ComparisonOutcome,
+  targetCount: number,
+) {
   const leftId = job.left[job.leftIndex];
   const rightId = job.right[job.rightIndex];
   if (!leftId || !rightId) throw new Error("Merge job is already complete");
@@ -630,31 +663,56 @@ function applyDecision(job: MergeJob, outcome: ComparisonOutcome) {
     job.merged.push(rightId);
     job.rightIndex += 1;
   }
-  completeMergeJobIfPossible(job);
+  completeMergeJobIfPossible(job, targetCount);
 }
 
-function completeMergeJobIfPossible(job: MergeJob) {
+/**
+ * Settles everything this merge can settle without another comparison.
+ *
+ * A side that has run out leaves the other side's tail already in order. And
+ * once the run holds the whole target prefix, nothing left can reach it, so
+ * both sides are abandoned where they stand. That truncation is what keeps a
+ * long shortlist from costing a full sort, and it is safe because every run is
+ * already ordered: no item can enter the final prefix without first being in
+ * its own run's prefix.
+ */
+function completeMergeJobIfPossible(job: MergeJob, targetCount: number) {
   if (job.leftIndex >= job.left.length && job.rightIndex < job.right.length) {
-    job.merged.push(...job.right.slice(job.rightIndex));
+    const room = targetCount - job.merged.length;
+    job.merged.push(...job.right.slice(job.rightIndex, job.rightIndex + room));
     job.rightIndex = job.right.length;
   }
   if (job.rightIndex >= job.right.length && job.leftIndex < job.left.length) {
-    job.merged.push(...job.left.slice(job.leftIndex));
+    const room = targetCount - job.merged.length;
+    job.merged.push(...job.left.slice(job.leftIndex, job.leftIndex + room));
     job.leftIndex = job.left.length;
+  }
+  if (job.merged.length >= targetCount) {
+    job.merged.length = targetCount;
+    job.leftIndex = job.left.length;
+    job.rightIndex = job.right.length;
   }
 }
 
-function getMaximumMergeComparisons(candidateCount: number) {
-  if (candidateCount < 2) return 0;
+function resolveTargetCount(session: PickAssistantSession) {
+  return Math.min(session.targetCount, session.candidateIds.length);
+}
+
+function getMaximumMergeComparisons(
+  candidateCount: number,
+  targetCount: number,
+) {
+  if (candidateCount < 2 || targetCount < 1) return 0;
+  const cap = Math.min(targetCount, candidateCount);
 
   let runLengths = Array.from({ length: candidateCount }, () => 1);
   let maximum = 0;
 
   while (runLengths.length > 1) {
     runLengths = planMergeRound(runLengths).map(({ left, right }) => {
-      if (right === null) return left;
-      maximum += left + right - 1;
-      return left + right;
+      if (right === null) return Math.min(left, cap);
+      maximum += Math.min(left + right - 1, cap);
+      return Math.min(left + right, cap);
     });
   }
 
@@ -674,6 +732,8 @@ function parseSession(
     !isRecord(value) ||
     !Array.isArray(value.candidateIds) ||
     !Array.isArray(value.decisions) ||
+    !Number.isInteger(value.targetCount) ||
+    (value.targetCount as number) < 1 ||
     (value.activePairKey !== undefined &&
       typeof value.activePairKey !== "string")
   ) {
@@ -708,6 +768,7 @@ function parseSession(
 
   return {
     candidateIds: shortlistIds.slice(),
+    targetCount: value.targetCount as number,
     decisions,
     activePairKey: value.activePairKey as string | undefined,
   };

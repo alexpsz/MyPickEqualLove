@@ -23,7 +23,8 @@ export const STORAGE_KEYS = {
   boardLibrary: `${PROJECT_CONFIG.storagePrefix}_board_library_v1`,
   songDiscovery: `${PROJECT_CONFIG.storagePrefix}_song_discovery_v1`,
   songDiscoveryV2: `${PROJECT_CONFIG.storagePrefix}_song_discovery_v2`,
-  assistant: `${PROJECT_CONFIG.storagePrefix}_standard_pick_assistant_v1`,
+  assistant: `${PROJECT_CONFIG.storagePrefix}_standard_pick_assistant_v2`,
+  assistantLegacy: `${PROJECT_CONFIG.storagePrefix}_standard_pick_assistant_v1`,
 };
 
 export const SONG_DISCOVERY_CONFIG = {
@@ -31,9 +32,16 @@ export const SONG_DISCOVERY_CONFIG = {
 } as const;
 
 export const PICK_ASSISTANT_CONFIG = {
-  schemaVersion: 1,
+  schemaVersion: 2,
+  legacySchemaVersion: 1,
   minimumCandidates: 3,
-  maximumCandidates: 24,
+  /**
+   * Above this many candidates the Assistant states the worst-case comparison
+   * count before anyone starts. There is no hard cap beyond what the
+   * experience makes eligible: the honest limit is the reader's patience, so
+   * the cost is shown rather than the choice taken away.
+   */
+  longSessionCandidates: 30,
   expiresAfterMs: 30 * 24 * 60 * 60 * 1000,
 } as const;
 
@@ -44,6 +52,7 @@ export interface ExperienceStorageKeys {
   optionsV2: string;
   boardLibrary: string;
   assistant: string;
+  assistantLegacy: string;
   context?: string;
 }
 
@@ -70,7 +79,8 @@ export function getExperienceStorageKeys(
     picksV2: `${PROJECT_CONFIG.storagePrefix}_live_${experienceSegment}${contextSegment}_picks_v2`,
     optionsV2: `${PROJECT_CONFIG.storagePrefix}_live_${experienceSegment}_options_v2`,
     boardLibrary: STORAGE_KEYS.boardLibrary,
-    assistant: `${PROJECT_CONFIG.storagePrefix}_live_${experienceSegment}${contextSegment}_pick_assistant_v1`,
+    assistant: `${PROJECT_CONFIG.storagePrefix}_live_${experienceSegment}${contextSegment}_pick_assistant_v2`,
+    assistantLegacy: `${PROJECT_CONFIG.storagePrefix}_live_${experienceSegment}${contextSegment}_pick_assistant_v1`,
     context: `${PROJECT_CONFIG.storagePrefix}_live_${experienceSegment}_context_v1`,
   };
 }

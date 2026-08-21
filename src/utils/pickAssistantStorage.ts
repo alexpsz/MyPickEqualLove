@@ -301,6 +301,82 @@ function isInitialEmptySnapshot(snapshot: PickAssistantSnapshot) {
   );
 }
 
+/**
+ * Recovers just the shortlist from a pre-Top-K saved session.
+ *
+ * The comparisons themselves cannot come across: the tournament now settles
+ * only the places the board needs, so an old decision list describes a
+ * different set of questions. Dropping them is a migration, not damage, and
+ * the caller says so rather than reporting corrupted data. The old key is left
+ * untouched so nothing is destroyed on a read path.
+ */
+export function readLegacyPickAssistantShortlist(
+  storage: Pick<Storage, "getItem">,
+  key: string,
+  options: {
+    legacySchemaVersion: number;
+    expiresAfterMs: number;
+    maximumCandidates: number;
+    validSongIds: ReadonlySet<string>;
+    now?: number;
+  },
+): string[] | null {
+  let raw: string | null;
+  try {
+    raw = storage.getItem(key);
+  } catch {
+    return null;
+  }
+  if (raw === null) return null;
+
+  let value: unknown;
+  try {
+    value = JSON.parse(raw) as unknown;
+  } catch {
+    return null;
+  }
+
+  if (
+    !isPlainRecord(value) ||
+    value.schemaVersion !== options.legacySchemaVersion ||
+    !Number.isFinite(value.updatedAt) ||
+    (value.updatedAt as number) <= 0 ||
+    !Array.isArray(value.shortlistIds)
+  ) {
+    return null;
+  }
+
+  if (
+    (options.now ?? Date.now()) - (value.updatedAt as number) >
+    options.expiresAfterMs
+  ) {
+    return null;
+  }
+
+  const shortlistIds: string[] = [];
+  const seen = new Set<string>();
+  for (const candidate of value.shortlistIds) {
+    if (
+      typeof candidate !== "string" ||
+      !options.validSongIds.has(candidate) ||
+      seen.has(candidate)
+    ) {
+      return null;
+    }
+    seen.add(candidate);
+    shortlistIds.push(candidate);
+  }
+
+  return shortlistIds.length > 0 &&
+    shortlistIds.length <= options.maximumCandidates
+    ? shortlistIds
+    : null;
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 function getPickAssistantLockName(key: string) {
   return `mypick-pick-assistant:${key}`;
 }

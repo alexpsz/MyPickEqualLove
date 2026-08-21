@@ -87,7 +87,12 @@ const en = {
   "assistant.undo": "Undo last comparison",
   "assistant.restart": "Restart",
   "assistant.restartConfirm": "Restart all comparisons for this shortlist?",
-  "assistant.progress": "{done} of at most {total} comparisons",
+  "assistant.progress": "{done} done, at most {remaining} to go",
+  "assistant.startEstimate": "At most {count} comparisons",
+  "assistant.longSession":
+    "This shortlist takes at most {count} comparisons. You can still continue.",
+  "assistant.comparisonsReset":
+    "Comparing works differently now, so the saved comparisons were cleared. Your shortlist was kept.",
   "assistant.completeTitle": "Your ordered result",
   "assistant.completeHint":
     "Review every placement and conflict before applying it to the board.",
@@ -569,7 +574,12 @@ const ja: MessageCatalog = {
   "assistant.undo": "直前の比較を取り消す",
   "assistant.restart": "最初から",
   "assistant.restartConfirm": "この候補の比較を最初からやり直しますか？",
-  "assistant.progress": "最大{total}回中{done}回の比較が完了",
+  "assistant.progress": "{done}回完了・残り最大{remaining}回",
+  "assistant.startEstimate": "最大{count}回の比較",
+  "assistant.longSession":
+    "この候補数だと最大{count}回の比較になります。そのまま続けられます。",
+  "assistant.comparisonsReset":
+    "比較の仕組みが変わったため、保存済みの比較を消去しました。候補はそのままです。",
   "assistant.completeTitle": "並び順の結果",
   "assistant.completeHint":
     "ランキングへ反映する前に、配置と競合をすべて確認してください。",
@@ -1048,7 +1058,12 @@ const zhCN: MessageCatalog = {
   "assistant.undo": "撤回最近一次比较",
   "assistant.restart": "重新开始",
   "assistant.restartConfirm": "重新开始这份候选清单的全部比较吗？",
-  "assistant.progress": "已完成 {done} 次，最多 {total} 次比较",
+  "assistant.progress": "已完成 {done} 次 · 最多还需 {remaining} 次",
+  "assistant.startEstimate": "最多 {count} 次比较",
+  "assistant.longSession":
+    "这份候选清单最多需要 {count} 次比较，你仍然可以继续。",
+  "assistant.comparisonsReset":
+    "比较方式已更新，已保存的比较记录被清除，候选清单保留。",
   "assistant.completeTitle": "最终有序结果",
   "assistant.completeHint": "应用到榜单前，请检查全部槽位和冲突。",
   "assistant.apply": "应用到榜单",
@@ -1497,7 +1512,12 @@ const ko: MessageCatalog = {
   "assistant.undo": "최근 비교 취소",
   "assistant.restart": "다시 시작",
   "assistant.restartConfirm": "이 후보 목록의 비교를 처음부터 다시 할까요?",
-  "assistant.progress": "최대 {total}회 중 {done}회 비교 완료",
+  "assistant.progress": "{done}회 완료 · 최대 {remaining}회 남음",
+  "assistant.startEstimate": "최대 {count}회 비교",
+  "assistant.longSession":
+    "이 후보 목록은 최대 {count}회 비교가 필요합니다. 그대로 계속할 수 있습니다.",
+  "assistant.comparisonsReset":
+    "비교 방식이 바뀌어 저장된 비교를 지웠습니다. 후보는 그대로입니다.",
   "assistant.completeTitle": "최종 정렬 결과",
   "assistant.completeHint":
     "보드에 적용하기 전에 모든 배치와 충돌을 확인하세요.",

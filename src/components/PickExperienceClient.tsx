@@ -69,6 +69,7 @@ import {
   relocateStoredPick,
   type RelocatePickResult,
 } from "../data/pickExperiences";
+import { getAssistantTargetCount } from "../utils/experienceEligibility";
 import { localizeExperienceUi } from "../i18n/content";
 import ContextSelector from "./ContextSelector";
 import { useLocale } from "../i18n/LocaleProvider";
@@ -155,6 +156,7 @@ import { waitForExportImageReady } from "../utils/exportImageReadiness";
 import { getMemberColorGradient } from "../utils/memberColors";
 import {
   createPickAssistantSession,
+  getMaximumPickComparisons,
   deriveTournament,
   getBoardCandidateIds,
   parsePickAssistantSnapshot,
@@ -174,6 +176,7 @@ import {
   createEmptyPickAssistantSnapshot,
   createMutationId,
   loadPickAssistantSnapshot,
+  readLegacyPickAssistantShortlist,
   resetPickAssistantStorageSafely,
   savePickAssistantSnapshotSafely,
 } from "../utils/pickAssistantStorage";
@@ -712,6 +715,7 @@ export default function PickExperienceClient({
   const pickAssistantStorageOptions = useMemo(
     () => ({
       ...PICK_ASSISTANT_CONFIG,
+      maximumCandidates: assistantEligibleSongIds.size,
       validSongIds: assistantEligibleSongIds,
     }),
     [assistantEligibleSongIds],
@@ -1051,27 +1055,40 @@ export default function PickExperienceClient({
     () => Object.fromEntries(slots.map((slot) => [slot.id, slot])),
     [slots],
   );
+  const isSongEligibleForSlotId = useCallback(
+    (songId: string, slotId: string) => {
+      const slot = slotsById[slotId];
+      return Boolean(
+        slot &&
+        isSongEligibleForSlot({
+          experience,
+          slot,
+          songId,
+          contextId: effectiveContextId,
+        }),
+      );
+    },
+    [effectiveContextId, experience, slotsById],
+  );
+  const assistantTargetCount = useMemo(
+    () =>
+      getAssistantTargetCount({
+        slotIds: slots.map((slot) => slot.id),
+        candidateIds: assistantEligibleSongs.map((song) => song.id),
+        isEligible: isSongEligibleForSlotId,
+      }),
+    [assistantEligibleSongs, isSongEligibleForSlotId, slots],
+  );
   const assistantApplicationPlan = useMemo(
     () =>
       assistantTournament?.status === "complete"
         ? planRankedPicks({
             orderedSongIds: assistantTournament.orderedIds,
             slotIds: slots.map((slot) => slot.id),
-            isEligible: (songId, slotId) => {
-              const slot = slotsById[slotId];
-              return Boolean(
-                slot &&
-                isSongEligibleForSlot({
-                  experience,
-                  slot,
-                  songId,
-                  contextId: effectiveContextId,
-                }),
-              );
-            },
+            isEligible: isSongEligibleForSlotId,
           })
         : null,
-    [assistantTournament, effectiveContextId, experience, slots, slotsById],
+    [assistantTournament, isSongEligibleForSlotId, slots],
   );
   const assistantSlotLabels = useMemo(
     () => Object.fromEntries(uiSlots.map((slot) => [slot.id, slot.label])),
@@ -1245,9 +1262,29 @@ export default function PickExperienceClient({
       return;
     }
 
-    setCurrentPickAssistantSnapshot(
-      createEmptyPickAssistantSnapshot(PICK_ASSISTANT_CONFIG.schemaVersion),
+    const empty = createEmptyPickAssistantSnapshot(
+      PICK_ASSISTANT_CONFIG.schemaVersion,
     );
+    const recoveredShortlistIds =
+      result.status === "missing"
+        ? readLegacyPickAssistantShortlist(
+            localStorage,
+            storageKeys.assistantLegacy,
+            pickAssistantStorageOptions,
+          )
+        : null;
+
+    if (recoveredShortlistIds) {
+      setCurrentPickAssistantSnapshot({
+        ...empty,
+        shortlistIds: recoveredShortlistIds,
+      });
+      setPickAssistantStorageIssue(null);
+      setBoardStatusMessage(t("assistant.comparisonsReset"));
+      return;
+    }
+
+    setCurrentPickAssistantSnapshot(empty);
     setPickAssistantStorageIssue(
       result.status === "missing" ? null : result.status,
     );
@@ -1255,8 +1292,11 @@ export default function PickExperienceClient({
     hydrated,
     isExportRealm,
     pickAssistantStorageOptions,
+    setBoardStatusMessage,
     setCurrentPickAssistantSnapshot,
     storageKeys.assistant,
+    storageKeys.assistantLegacy,
+    t,
   ]);
 
   useEffect(() => {
@@ -1824,13 +1864,11 @@ export default function PickExperienceClient({
       const update = togglePickAssistantShortlistSong(
         assistantShortlistIds,
         song.id,
-        PICK_ASSISTANT_CONFIG.maximumCandidates,
+        assistantEligibleSongIds.size,
       );
       if (update.status === "limit") {
         window.alert(
-          t("assistant.maxReached", {
-            count: PICK_ASSISTANT_CONFIG.maximumCandidates,
-          }),
+          t("assistant.maxReached", { count: assistantEligibleSongIds.size }),
         );
         return;
       }
@@ -1880,7 +1918,7 @@ export default function PickExperienceClient({
     if (
       currentBoardCandidateIds.length <
         PICK_ASSISTANT_CONFIG.minimumCandidates ||
-      currentBoardCandidateIds.length > PICK_ASSISTANT_CONFIG.maximumCandidates
+      currentBoardCandidateIds.length > assistantEligibleSongIds.size
     ) {
       return;
     }
@@ -1895,7 +1933,7 @@ export default function PickExperienceClient({
     }
     void commitPickAssistantUpdate(
       assistantShortlistIds,
-      createPickAssistantSession(assistantShortlistIds),
+      createPickAssistantSession(assistantShortlistIds, assistantTargetCount),
     );
   };
 
@@ -1929,7 +1967,7 @@ export default function PickExperienceClient({
     if (assistantShortlistIds.length < 2) return;
     void commitPickAssistantUpdate(
       assistantShortlistIds,
-      createPickAssistantSession(assistantShortlistIds),
+      createPickAssistantSession(assistantShortlistIds, assistantTargetCount),
     );
   };
 
@@ -3455,12 +3493,11 @@ export default function PickExperienceClient({
               candidateEligibleSongIds={assistantEligibleSongIds}
               selectionMode={searchPresentation.selectionMode}
               candidateLimitReached={
-                assistantShortlistIds.length >=
-                PICK_ASSISTANT_CONFIG.maximumCandidates
+                assistantShortlistIds.length >= assistantEligibleSongIds.size
               }
               candidateChangesBlocked={Boolean(pickAssistantStorageIssue)}
               candidateMutationPending={assistantMutationPending}
-              maximumCandidates={PICK_ASSISTANT_CONFIG.maximumCandidates}
+              maximumCandidates={assistantEligibleSongIds.size}
               suspended={detailLayerActive}
               resumeFocusRef={detailTriggerRef}
               presenceState={presenceState}
@@ -3496,7 +3533,7 @@ export default function PickExperienceClient({
               candidateDisabled={
                 (!candidateSongIds.has(song.id) &&
                   (assistantShortlistIds.length >=
-                    PICK_ASSISTANT_CONFIG.maximumCandidates ||
+                    assistantEligibleSongIds.size ||
                     !assistantEligibleSongIds.has(song.id))) ||
                 assistantMutationPending ||
                 Boolean(pickAssistantStorageIssue)
@@ -3567,7 +3604,14 @@ export default function PickExperienceClient({
               currentPickCount={Object.keys(storedPicks).length}
               currentBoardCandidateCount={currentBoardCandidateIds.length}
               minimumCandidates={PICK_ASSISTANT_CONFIG.minimumCandidates}
-              maximumCandidates={PICK_ASSISTANT_CONFIG.maximumCandidates}
+              maximumCandidates={assistantEligibleSongIds.size}
+              longSessionCandidates={
+                PICK_ASSISTANT_CONFIG.longSessionCandidates
+              }
+              shortlistMaximumComparisons={getMaximumPickComparisons(
+                assistantShortlistIds.length,
+                assistantTargetCount,
+              )}
               storageIssue={assistant.storageIssue}
               mutationsBlocked={assistantMutationPending}
               reviewNotice={assistantReviewNotice}
