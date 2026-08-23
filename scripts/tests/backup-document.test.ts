@@ -1072,11 +1072,25 @@ test("new durable states plan add, overwrite, remove, and skip byte-exactly", ()
   }
 });
 
-test("restore review returns focus after cancel and failed confirmation", () => {
+test("backup disclosure stays compact and restores focus to the file chooser", () => {
   const panelSource = readFileSync(
     resolve(process.cwd(), "src/components/LocalBackupPanel.tsx"),
     "utf8",
   );
+  assert.ok(panelSource.includes('className="flex justify-end"'));
+  assert.ok(
+    panelSource.includes(
+      'className="group w-fit max-w-full [&[open]]:w-full [&[open]]:max-w-2xl"',
+    ),
+  );
+  assert.ok(
+    panelSource.includes(
+      'className="official-panel-soft mt-2 w-full p-4 sm:p-5"',
+    ),
+  );
+  assert.doesNotMatch(panelSource, /<details className="official-panel-soft/);
+  assert.match(panelSource, /<summary className="official-button/);
+
   assert.match(
     panelSource,
     /const chooseFileButtonRef = useRef<HTMLButtonElement>\(null\)/,
@@ -1085,11 +1099,40 @@ test("restore review returns focus after cancel and failed confirmation", () => 
     panelSource,
     /const clearRestorePlanAndFocusFileButton = \(\) => \{[\s\S]*?setRestorePlan\(null\);[\s\S]*?requestAnimationFrame\(\(\) => chooseFileButtonRef\.current\?\.focus\(\)\)/,
   );
-  assert.match(panelSource, /ref=\{chooseFileButtonRef\}/);
+  const buttons = panelSource.match(/<button[\s\S]*?<\/button>/g) ?? [];
+  const downloadButton = buttons.find((button) =>
+    button.includes("onClick={handleDownload}"),
+  );
+  const chooseFileButton = buttons.find((button) =>
+    button.includes("fileInputRef.current?.click()"),
+  );
+  assert.ok(downloadButton, "download button must remain rendered");
+  assert.ok(chooseFileButton, "file chooser button must remain rendered");
+  assert.doesNotMatch(downloadButton, /ref=\{chooseFileButtonRef\}/);
+  assert.match(chooseFileButton, /ref=\{chooseFileButtonRef\}/);
+  assert.ok(downloadButton.includes('t("backup.download")'));
+  assert.ok(chooseFileButton.includes('t("backup.chooseFile")'));
+
   assert.equal(
     (panelSource.match(/clearRestorePlanAndFocusFileButton/g) ?? []).length,
     3,
   );
+  for (const messageKey of [
+    "backup.summary",
+    "backup.singleSite",
+    "backup.separateSites",
+    "backup.reviewTitle",
+    "backup.reviewHint",
+    "backup.add",
+    "backup.overwrite",
+    "backup.remove",
+    "backup.skip",
+    "backup.overwriteWarning",
+    "backup.confirm",
+    "backup.cancel",
+  ]) {
+    assert.ok(panelSource.includes(`t("${messageKey}"`), messageKey);
+  }
 });
 
 test("create and plan fail closed on unknown keys and storage failures", () => {

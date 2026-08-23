@@ -12,6 +12,7 @@ import {
 } from "../utils/backupDocument";
 import type { BackupRestoreTransactionResult } from "../utils/boardTransaction";
 import { downloadTextFile } from "../utils/imageActions";
+import AppIcon from "./AppIcon";
 
 interface LocalBackupPanelProps {
   projectName: string;
@@ -125,133 +126,144 @@ export default function LocalBackupPanel({
       className="app-content-shell relative z-10 px-4 pb-6 sm:px-6 md:px-8"
       aria-labelledby="local-backup-title"
     >
-      <details className="official-panel-soft p-4 sm:p-5">
-        <summary className="cursor-pointer list-none">
-          <p className="text-[11px] font-semibold tracking-[0.08em] text-[var(--project-primary)] uppercase">
-            {t("backup.eyebrow")}
-          </p>
-          <h2
-            id="local-backup-title"
-            className="mt-1 text-base font-semibold text-[var(--foreground)] sm:text-lg"
-          >
-            {t("backup.title")}
-          </h2>
-          <p className="mt-1 text-[13px] leading-relaxed text-[var(--muted)]">
-            {t("backup.summary")}
-          </p>
-        </summary>
-
-        <div className="mt-4 border-t border-[var(--border)] pt-4">
-          <p className="text-sm leading-relaxed text-[var(--foreground)]">
-            {t("backup.singleSite", { project: projectName })}
-          </p>
-          <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">
-            {t("backup.separateSites")}
-          </p>
-
-          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-            <button
-              ref={chooseFileButtonRef}
-              type="button"
-              className="official-button official-button-primary min-h-11"
-              disabled={disabled || reading}
-              onClick={handleDownload}
+      <div className="flex justify-end">
+        <details className="group w-fit max-w-full [&[open]]:w-full [&[open]]:max-w-2xl">
+          <summary className="official-button ml-auto w-fit cursor-pointer list-none !px-3 text-[13px] [&::-webkit-details-marker]:hidden">
+            <h2
+              id="local-backup-title"
+              className="flex items-center gap-1.5 font-semibold"
             >
-              {t("backup.download")}
-            </button>
-            <button
-              type="button"
-              className="official-button min-h-11"
-              disabled={disabled || reading}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              {reading ? t("backup.reading") : t("backup.chooseFile")}
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              className="sr-only"
-              accept=".json,application/json"
-              disabled={disabled || reading}
-              onChange={handleFileChange}
-              aria-label={t("backup.chooseFile")}
-            />
-          </div>
+              <AppIcon name="archive" size={16} />
+              <span>{t("backup.title")}</span>
+              <AppIcon
+                name="chevron-down"
+                size={14}
+                className="text-[var(--muted)] transition-transform duration-150 group-open:rotate-180"
+              />
+            </h2>
+          </summary>
 
-          {message ? (
-            <p
-              className="mt-3 text-sm leading-relaxed text-[var(--muted)]"
-              role="status"
-            >
-              {t(message.key, message.values)}
+          <div className="official-panel-soft mt-2 w-full p-4 sm:p-5">
+            <p className="text-[11px] font-semibold tracking-[0.08em] text-[var(--project-primary)] uppercase">
+              {t("backup.eyebrow")}
             </p>
-          ) : null}
+            <p className="mt-1 text-[13px] leading-relaxed text-[var(--muted)]">
+              {t("backup.summary")}
+            </p>
 
-          {restorePlan ? (
-            <div className="mt-5 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
-              <h3 className="text-sm font-semibold text-[var(--foreground)]">
-                {t("backup.reviewTitle")}
-              </h3>
+            <div className="mt-4 border-t border-[var(--border)] pt-4">
+              <p className="text-sm leading-relaxed text-[var(--foreground)]">
+                {t("backup.singleSite", { project: projectName })}
+              </p>
               <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">
-                {t("backup.reviewHint")}
+                {t("backup.separateSites")}
               </p>
-              <dl className="mt-3 grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
-                <SummaryCount
-                  label={t("backup.add")}
-                  value={restorePlan.summary.add}
-                />
-                <SummaryCount
-                  label={t("backup.overwrite")}
-                  value={restorePlan.summary.overwrite}
-                />
-                <SummaryCount
-                  label={t("backup.remove")}
-                  value={restorePlan.summary.remove}
-                />
-                <SummaryCount
-                  label={t("backup.skip")}
-                  value={restorePlan.summary.skip}
-                />
-              </dl>
 
-              {restorePlan.boardSummary ? (
-                <p className="mt-3 text-xs leading-relaxed text-[var(--muted)]">
-                  {t("backup.boardSummary", {
-                    add: restorePlan.boardSummary.add,
-                    overwrite: restorePlan.boardSummary.overwrite,
-                    skip: restorePlan.boardSummary.skip,
-                    remove: restorePlan.boardSummary.remove,
-                  })}
-                </p>
-              ) : null}
-              <p className="mt-2 text-xs leading-relaxed text-[var(--muted)]">
-                {restorePlan.localeIncluded
-                  ? t("backup.localeIncluded")
-                  : t("backup.localeAutomatic")}
-              </p>
-              <p className="mt-3 text-sm font-medium leading-relaxed text-[var(--foreground)]">
-                {t("backup.overwriteWarning")}
-              </p>
               <div className="mt-4 flex flex-col gap-2 sm:flex-row">
                 <button
                   type="button"
                   className="official-button official-button-primary min-h-11"
-                  onClick={handleConfirmRestore}
+                  disabled={disabled || reading}
+                  onClick={handleDownload}
                 >
-                  {t("backup.confirm")}
+                  {t("backup.download")}
                 </button>
                 <button
+                  ref={chooseFileButtonRef}
                   type="button"
                   className="official-button min-h-11"
-                  onClick={clearRestorePlanAndFocusFileButton}
+                  disabled={disabled || reading}
+                  onClick={() => fileInputRef.current?.click()}
                 >
-                  {t("backup.cancel")}
+                  {reading ? t("backup.reading") : t("backup.chooseFile")}
                 </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="sr-only"
+                  accept=".json,application/json"
+                  disabled={disabled || reading}
+                  onChange={handleFileChange}
+                  aria-label={t("backup.chooseFile")}
+                />
               </div>
+
+              {message ? (
+                <p
+                  className="mt-3 text-sm leading-relaxed text-[var(--muted)]"
+                  role="status"
+                >
+                  {t(message.key, message.values)}
+                </p>
+              ) : null}
+
+              {restorePlan ? (
+                <div className="mt-5 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
+                  <h3 className="text-sm font-semibold text-[var(--foreground)]">
+                    {t("backup.reviewTitle")}
+                  </h3>
+                  <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">
+                    {t("backup.reviewHint")}
+                  </p>
+                  <dl className="mt-3 grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
+                    <SummaryCount
+                      label={t("backup.add")}
+                      value={restorePlan.summary.add}
+                    />
+                    <SummaryCount
+                      label={t("backup.overwrite")}
+                      value={restorePlan.summary.overwrite}
+                    />
+                    <SummaryCount
+                      label={t("backup.remove")}
+                      value={restorePlan.summary.remove}
+                    />
+                    <SummaryCount
+                      label={t("backup.skip")}
+                      value={restorePlan.summary.skip}
+                    />
+                  </dl>
+
+                  {restorePlan.boardSummary ? (
+                    <p className="mt-3 text-xs leading-relaxed text-[var(--muted)]">
+                      {t("backup.boardSummary", {
+                        add: restorePlan.boardSummary.add,
+                        overwrite: restorePlan.boardSummary.overwrite,
+                        skip: restorePlan.boardSummary.skip,
+                        remove: restorePlan.boardSummary.remove,
+                      })}
+                    </p>
+                  ) : null}
+                  <p className="mt-2 text-xs leading-relaxed text-[var(--muted)]">
+                    {restorePlan.localeIncluded
+                      ? t("backup.localeIncluded")
+                      : t("backup.localeAutomatic")}
+                  </p>
+                  <p className="mt-3 text-sm font-medium leading-relaxed text-[var(--foreground)]">
+                    {t("backup.overwriteWarning")}
+                  </p>
+                  <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                    <button
+                      type="button"
+                      className="official-button official-button-primary min-h-11"
+                      onClick={handleConfirmRestore}
+                    >
+                      {t("backup.confirm")}
+                    </button>
+                    <button
+                      type="button"
+                      className="official-button min-h-11"
+                      onClick={clearRestorePlanAndFocusFileButton}
+                    >
+                      {t("backup.cancel")}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
             </div>
-          ) : null}
-        </div>
-      </details>
+          </div>
+        </details>
+      </div>
     </section>
   );
 }
