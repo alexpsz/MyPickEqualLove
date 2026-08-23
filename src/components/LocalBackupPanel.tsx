@@ -123,7 +123,7 @@ export default function LocalBackupPanel({
   return (
     <section
       data-page-reveal
-      className="app-content-shell relative z-10 px-4 pb-6 sm:px-6 md:px-8"
+      className="app-content-shell relative z-10 mt-8 px-4 pb-6 sm:mt-10 sm:px-6 md:px-8"
       aria-labelledby="local-backup-title"
     >
       <div className="flex justify-end">

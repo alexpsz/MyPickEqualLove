@@ -4207,7 +4207,7 @@ export default function PickExperienceClient({
           {boardInsights ? (
             <>
               <BoardInsightsPanel insights={boardInsights} />
-              <div className="-mt-3 mb-6 flex justify-end">
+              <div className="-mt-3 flex justify-end">
                 <button
                   ref={insightsTriggerRef}
                   type="button"

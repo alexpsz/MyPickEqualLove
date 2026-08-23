@@ -1072,11 +1072,27 @@ test("new durable states plan add, overwrite, remove, and skip byte-exactly", ()
   }
 });
 
-test("backup disclosure stays compact and restores focus to the file chooser", () => {
+test("backup disclosure keeps stable spacing and restores focus to the file chooser", () => {
   const panelSource = readFileSync(
     resolve(process.cwd(), "src/components/LocalBackupPanel.tsx"),
     "utf8",
   );
+  const clientSource = readFileSync(
+    resolve(process.cwd(), "src/components/PickExperienceClient.tsx"),
+    "utf8",
+  );
+  const globalStyles = readFileSync(
+    resolve(process.cwd(), "src/app/globals.css"),
+    "utf8",
+  );
+
+  assert.ok(
+    panelSource.includes(
+      'className="app-content-shell relative z-10 mt-8 px-4 pb-6 sm:mt-10 sm:px-6 md:px-8"',
+    ),
+  );
+  assert.ok(clientSource.includes('className="-mt-3 flex justify-end"'));
+  assert.ok(!clientSource.includes('className="-mt-3 mb-6 flex justify-end"'));
   assert.ok(panelSource.includes('className="flex justify-end"'));
   assert.ok(
     panelSource.includes(
@@ -1089,7 +1105,18 @@ test("backup disclosure stays compact and restores focus to the file chooser", (
     ),
   );
   assert.doesNotMatch(panelSource, /<details className="official-panel-soft/);
-  assert.match(panelSource, /<summary className="official-button/);
+  const summaryOpeningTag = panelSource.match(/<summary[\s\S]*?>/)?.[0];
+  assert.ok(summaryOpeningTag, "backup disclosure summary must be rendered");
+  assert.match(summaryOpeningTag, /className="official-button/);
+  assert.match(summaryOpeningTag, /\bw-fit\b/);
+  assert.doesNotMatch(summaryOpeningTag, /\bw-full\b/);
+
+  const officialButtonRule = globalStyles.match(
+    /\.official-button\s*\{[\s\S]*?\}/,
+  )?.[0];
+  assert.ok(officialButtonRule, "standard button surface must remain defined");
+  assert.match(officialButtonRule, /min-height:\s*44px/);
+  assert.match(officialButtonRule, /background:\s*var\(--paper\)/);
 
   assert.match(
     panelSource,
