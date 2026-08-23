@@ -43,7 +43,7 @@
     "check:service-worker": "node scripts/generate-service-worker.mjs --self-test",
     "test:official-media": "node scripts/test-official-media.mjs && node scripts/official-media/validate-official-media-maps.mjs && npm run check:official-media-runtime",
     "test:pick-reordering": "node scripts/test-pick-reordering.mjs",
-    "test:share-links": "node scripts/test-board-share-protocol.mjs",
+    "test:share-links": "node scripts/test-board-share-protocol.mjs && node scripts/run-ts-tests.mjs board-comparison",
     "test:export-presets": "node scripts/run-ts-tests.mjs export-presets",
     "test:cover-tone": "node scripts/run-ts-tests.mjs cover-tone && python scripts/validate-cover-tone-pilot.py",
     "test:export-board": "node scripts/run-ts-tests.mjs export-board",

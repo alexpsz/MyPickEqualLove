@@ -44,6 +44,7 @@ interface PreviewModalProps {
   sizePresetId: ExportSizePresetId;
   availableSizePresetIds: readonly ExportSizePresetId[];
   onSizePresetChange: (sizePresetId: ExportSizePresetId) => void;
+  showExportOptions?: boolean;
   generating: boolean;
   actionsDisabled: boolean;
   pageUrl: string;
@@ -75,6 +76,7 @@ export default function PreviewModal({
   sizePresetId,
   availableSizePresetIds,
   onSizePresetChange,
+  showExportOptions = true,
   generating,
   actionsDisabled,
   pageUrl,
@@ -286,137 +288,141 @@ export default function PreviewModal({
                 {previewLabel}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => setIsOptionsExpanded((expanded) => !expanded)}
-              aria-expanded={isOptionsExpanded}
-              aria-controls={mobileOptionsId}
-              className="official-button min-h-11 shrink-0 gap-1.5 px-3 text-[13px] sm:hidden"
-            >
-              <span>{t("preview.options")}</span>
-              <AppIcon
-                name="chevron-down"
-                size={14}
-                strokeWidth={1.65}
-                className={`transition-transform duration-150 ${
-                  isOptionsExpanded ? "rotate-180" : ""
-                }`}
-              />
-            </button>
+            {showExportOptions ? (
+              <button
+                type="button"
+                onClick={() => setIsOptionsExpanded((expanded) => !expanded)}
+                aria-expanded={isOptionsExpanded}
+                aria-controls={mobileOptionsId}
+                className="official-button min-h-11 shrink-0 gap-1.5 px-3 text-[13px] sm:hidden"
+              >
+                <span>{t("preview.options")}</span>
+                <AppIcon
+                  name="chevron-down"
+                  size={14}
+                  strokeWidth={1.65}
+                  className={`transition-transform duration-150 ${
+                    isOptionsExpanded ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+            ) : null}
           </div>
 
-          <div
-            id={mobileOptionsId}
-            data-preview-options-panel
-            className={`${isOptionsExpanded ? "block" : "hidden"} sm:block sm:w-full`}
-          >
-            <div className="rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--background)] p-2 sm:p-3">
-              <div
-                data-preview-options-grid
-                className="grid min-w-0 grid-cols-2 items-stretch gap-1.5 sm:flex sm:w-full sm:flex-wrap sm:items-center sm:justify-center sm:gap-3"
-              >
-                {isInsights ? (
-                  <div
-                    data-preview-option="size"
-                    className="order-1 col-span-2 min-w-0 sm:col-auto sm:w-72"
-                  >
-                    <InsightsSizeSegmentedControl
-                      label={t("insights.export.sizeLabel")}
-                      value={sizePresetId}
-                      options={availableSizePresetIds}
-                      disabled={generating}
-                      onValueChange={onSizePresetChange}
-                      getOptionLabel={(id) =>
-                        t(
-                          id === "square"
-                            ? "insights.export.sizeSquare"
-                            : "insights.export.sizePortrait",
-                        )
-                      }
-                    />
-                    <p
-                      data-preview-insights-opaque-hint
-                      className="mt-1 px-1 text-center text-[11px] leading-snug text-[var(--muted)]"
+          {showExportOptions ? (
+            <div
+              id={mobileOptionsId}
+              data-preview-options-panel
+              className={`${isOptionsExpanded ? "block" : "hidden"} sm:block sm:w-full`}
+            >
+              <div className="rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--background)] p-2 sm:p-3">
+                <div
+                  data-preview-options-grid
+                  className="grid min-w-0 grid-cols-2 items-stretch gap-1.5 sm:flex sm:w-full sm:flex-wrap sm:items-center sm:justify-center sm:gap-3"
+                >
+                  {isInsights ? (
+                    <div
+                      data-preview-option="size"
+                      className="order-1 col-span-2 min-w-0 sm:col-auto sm:w-72"
                     >
-                      {t("insights.export.opaqueHint")}
-                    </p>
-                  </div>
-                ) : (
-                  <div
-                    data-preview-option="template"
-                    className={`order-1 col-span-2 min-w-0 sm:col-auto ${
-                      availableTemplateIds.length === 4
-                        ? "sm:w-[30rem]"
-                        : locale === "zh-CN"
-                          ? "sm:w-56"
-                          : "sm:w-72"
-                    }`}
-                  >
-                    <TemplateSegmentedControl
-                      label={t("preview.templateLabel")}
-                      value={templateId}
-                      options={availableTemplateIds}
-                      disabled={generating}
-                      onValueChange={onTemplateChange}
-                      getOptionLabel={(id) =>
-                        t(getExportTemplateMessageKey(id))
-                      }
-                      compactLabels={locale !== "zh-CN"}
-                    />
-                    {templateDescriptionKey ? (
+                      <InsightsSizeSegmentedControl
+                        label={t("insights.export.sizeLabel")}
+                        value={sizePresetId}
+                        options={availableSizePresetIds}
+                        disabled={generating}
+                        onValueChange={onSizePresetChange}
+                        getOptionLabel={(id) =>
+                          t(
+                            id === "square"
+                              ? "insights.export.sizeSquare"
+                              : "insights.export.sizePortrait",
+                          )
+                        }
+                      />
                       <p
-                        data-preview-template-description
+                        data-preview-insights-opaque-hint
                         className="mt-1 px-1 text-center text-[11px] leading-snug text-[var(--muted)]"
                       >
-                        {t(templateDescriptionKey)}
+                        {t("insights.export.opaqueHint")}
                       </p>
-                    ) : null}
-                  </div>
-                )}
-                <div
-                  data-preview-option="transparent"
-                  className="order-2 min-w-0 sm:order-4"
-                >
-                  <ToggleChip
-                    checked={transparentBg}
-                    disabled={generating || !transparentBgAvailable}
-                    onPressedChange={onToggleTransparentBg}
-                    ariaLabel={t("preview.transparentBackground")}
-                    mobileLabel={t("preview.compactTransparentBackground")}
-                    desktopLabel={t("preview.transparentBackground")}
-                  />
-                </div>
-                <div
-                  data-preview-option="qr"
-                  className="order-3 min-w-0 sm:order-2"
-                >
-                  <ToggleChip
-                    checked={showQrCode}
-                    disabled={generating}
-                    onPressedChange={onToggleShowQrCode}
-                    ariaLabel={t("preview.showQrCode")}
-                    mobileLabel={t("preview.compactShowQrCode")}
-                    desktopLabel={t("preview.showQrCode")}
-                  />
-                </div>
-                {isInsights ? null : (
+                    </div>
+                  ) : (
+                    <div
+                      data-preview-option="template"
+                      className={`order-1 col-span-2 min-w-0 sm:col-auto ${
+                        availableTemplateIds.length === 4
+                          ? "sm:w-[30rem]"
+                          : locale === "zh-CN"
+                            ? "sm:w-56"
+                            : "sm:w-72"
+                      }`}
+                    >
+                      <TemplateSegmentedControl
+                        label={t("preview.templateLabel")}
+                        value={templateId}
+                        options={availableTemplateIds}
+                        disabled={generating}
+                        onValueChange={onTemplateChange}
+                        getOptionLabel={(id) =>
+                          t(getExportTemplateMessageKey(id))
+                        }
+                        compactLabels={locale !== "zh-CN"}
+                      />
+                      {templateDescriptionKey ? (
+                        <p
+                          data-preview-template-description
+                          className="mt-1 px-1 text-center text-[11px] leading-snug text-[var(--muted)]"
+                        >
+                          {t(templateDescriptionKey)}
+                        </p>
+                      ) : null}
+                    </div>
+                  )}
                   <div
-                    data-preview-option="titles"
-                    className="order-4 min-w-0 sm:order-3"
+                    data-preview-option="transparent"
+                    className="order-2 min-w-0 sm:order-4"
                   >
                     <ToggleChip
-                      checked={showTitles}
-                      disabled={generating}
-                      onPressedChange={onToggleShowTitles}
-                      ariaLabel={t("preview.showTitles")}
-                      mobileLabel={t("preview.compactShowTitles")}
-                      desktopLabel={t("preview.showTitles")}
+                      checked={transparentBg}
+                      disabled={generating || !transparentBgAvailable}
+                      onPressedChange={onToggleTransparentBg}
+                      ariaLabel={t("preview.transparentBackground")}
+                      mobileLabel={t("preview.compactTransparentBackground")}
+                      desktopLabel={t("preview.transparentBackground")}
                     />
                   </div>
-                )}
+                  <div
+                    data-preview-option="qr"
+                    className="order-3 min-w-0 sm:order-2"
+                  >
+                    <ToggleChip
+                      checked={showQrCode}
+                      disabled={generating}
+                      onPressedChange={onToggleShowQrCode}
+                      ariaLabel={t("preview.showQrCode")}
+                      mobileLabel={t("preview.compactShowQrCode")}
+                      desktopLabel={t("preview.showQrCode")}
+                    />
+                  </div>
+                  {isInsights ? null : (
+                    <div
+                      data-preview-option="titles"
+                      className="order-4 min-w-0 sm:order-3"
+                    >
+                      <ToggleChip
+                        checked={showTitles}
+                        disabled={generating}
+                        onPressedChange={onToggleShowTitles}
+                        ariaLabel={t("preview.showTitles")}
+                        mobileLabel={t("preview.compactShowTitles")}
+                        desktopLabel={t("preview.showTitles")}
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
+          ) : null}
         </div>
 
         <div

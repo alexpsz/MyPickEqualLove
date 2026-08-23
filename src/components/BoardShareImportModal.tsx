@@ -45,9 +45,11 @@ interface BoardShareImportModalProps {
   state: BoardShareDialogState;
   presenceState: PresenceState;
   comparisonAvailability: BoardComparisonResultValue | null;
+  comparisonExporting: boolean;
   onClose: () => void;
   onConfirm: () => void;
   onCompare: () => void;
+  onExportComparison: () => void;
 }
 
 const COMPARISON_UNAVAILABLE_KEYS = {
@@ -65,9 +67,11 @@ export default function BoardShareImportModal({
   state,
   presenceState,
   comparisonAvailability,
+  comparisonExporting,
   onClose,
   onConfirm,
   onCompare,
+  onExportComparison,
 }: BoardShareImportModalProps) {
   const { t } = useLocale();
   const panelRef = useRef<HTMLDivElement>(null);
@@ -79,10 +83,13 @@ export default function BoardShareImportModal({
     comparisonAvailability?.availability === "unavailable"
       ? t(COMPARISON_UNAVAILABLE_KEYS[comparisonAvailability.reason])
       : null;
+  const handleClose = () => {
+    if (!comparisonExporting) onClose();
+  };
 
   useDialogA11y({
     dialogRef: panelRef,
-    onClose,
+    onClose: handleClose,
     active: presenceState !== "exiting",
     initialFocusRef: cancelButtonRef,
     returnFocusKey: DIALOG_RETURN_KEYS.copyBoardLink,
@@ -103,8 +110,8 @@ export default function BoardShareImportModal({
     >
       <m.button
         type="button"
-        onClick={onClose}
-        disabled={presenceState === "exiting"}
+        onClick={handleClose}
+        disabled={presenceState === "exiting" || comparisonExporting}
         tabIndex={-1}
         aria-hidden={presenceState === "exiting"}
         className="overlay-scrim absolute inset-0 cursor-default bg-black/25 backdrop-blur-[2px]"
@@ -120,6 +127,7 @@ export default function BoardShareImportModal({
         tabIndex={-1}
         role="dialog"
         aria-modal="true"
+        aria-busy={comparisonExporting}
         aria-hidden={presenceState === "exiting"}
         inert={presenceState === "exiting"}
         aria-labelledby="board-share-dialog-title"
@@ -171,7 +179,8 @@ export default function BoardShareImportModal({
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
+            disabled={comparisonExporting}
             className="icon-button icon-button-compact shrink-0"
             aria-label={t("boardShare.closeAria")}
           >
@@ -241,7 +250,11 @@ export default function BoardShareImportModal({
                   {comparisonUnavailableMessage}
                 </p>
               ) : state.comparison ? (
-                <BoardComparisonResult result={state.comparison} />
+                <BoardComparisonResult
+                  result={state.comparison}
+                  exporting={comparisonExporting}
+                  onExport={onExportComparison}
+                />
               ) : (
                 <p className="mt-2 text-[13px] leading-relaxed text-[var(--muted)]">
                   {t("boardComparison.ready")}
@@ -264,7 +277,8 @@ export default function BoardShareImportModal({
           <button
             ref={cancelButtonRef}
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
+            disabled={comparisonExporting}
             className={
               isImport
                 ? "official-button official-button-quiet"
@@ -277,7 +291,7 @@ export default function BoardShareImportModal({
             <button
               type="button"
               onClick={onCompare}
-              disabled={!comparisonAvailable}
+              disabled={!comparisonAvailable || comparisonExporting}
               aria-describedby={
                 comparisonAvailable ? undefined : "board-comparison-unavailable"
               }
@@ -290,6 +304,7 @@ export default function BoardShareImportModal({
             <button
               type="button"
               onClick={onConfirm}
+              disabled={comparisonExporting}
               className="official-button official-button-primary"
             >
               {t("boardShare.confirm")}

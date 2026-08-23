@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { SONGS_BY_ID } from "../data/songs";
 import { useLocale } from "../i18n/LocaleProvider";
+import { deriveBoardAffinity } from "../utils/boardAffinity";
 import type {
   AvailableBoardComparison,
   BoardComparisonRankedSong,
@@ -12,12 +13,18 @@ import JapaneseContent from "./JapaneseContent";
 
 interface BoardComparisonResultProps {
   result: AvailableBoardComparison;
+  exporting: boolean;
+  onExport: () => void;
 }
 
 export default function BoardComparisonResult({
   result,
+  exporting,
+  onExport,
 }: BoardComparisonResultProps) {
   const { t } = useLocale();
+  const affinity = deriveBoardAffinity(result);
+  if (!affinity) return null;
 
   return (
     <section
@@ -36,16 +43,34 @@ export default function BoardComparisonResult({
           aria-live="polite"
           className="text-lg font-semibold tracking-[-0.02em] text-[var(--foreground)]"
         >
-          {t("boardComparison.score", { score: result.compatibilityScore })}
+          {t("boardComparison.score", { score: affinity.points })}
         </p>
       </div>
 
       <div className="mt-3 rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--paper)] px-3 py-3 text-[12px] leading-relaxed text-[var(--muted)] sm:px-4">
         <p>{t("boardComparison.formulaBase")}</p>
-        <p className="mt-1">{t("boardComparison.formulaRank")}</p>
-        {result.shared.length > 0 ? (
-          <p className="mt-1">{t("boardComparison.formulaRounded")}</p>
-        ) : null}
+        <p className="mt-1">
+          {t("boardComparison.formulaRank", {
+            shared: affinity.sharedSongCount,
+            boardSize: affinity.boardSize,
+            distance: affinity.totalRankDistance,
+            score: affinity.points,
+          })}
+        </p>
+        <p className="mt-1">{t("boardComparison.formulaRounded")}</p>
+      </div>
+
+      <div className="mt-3 flex justify-end">
+        <button
+          type="button"
+          onClick={onExport}
+          disabled={exporting}
+          className="official-button official-button-primary"
+        >
+          {exporting
+            ? t("boardComparison.exportGenerating")
+            : t("boardComparison.exportAction")}
+        </button>
       </div>
 
       <ComparisonSection

@@ -6,6 +6,7 @@ import ExportBoard, {
   ArchetypeDossierPoster,
   InsightsExportBoard,
 } from "../../src/components/ExportBoard";
+import BoardComparisonExport from "../../src/components/BoardComparisonExport";
 import {
   LIVE_EXPERIENCES,
   STANDARD_PICK_EXPERIENCE,
@@ -24,9 +25,16 @@ import {
 } from "../../src/config/exportPresets";
 import type { PickExperience } from "../../src/schema/pick-experience";
 import type { ExportHeaderPresentation } from "../../src/schema/export";
-import type { Picks } from "../../src/schema/music";
+import type { Picks, StoredPicks } from "../../src/schema/music";
 import { translate } from "../../src/i18n/translate";
 import { deriveBoardInsights } from "../../src/utils/boardInsights";
+import { deriveBoardAffinity } from "../../src/utils/boardAffinity";
+import { compareBoardPicks } from "../../src/utils/boardComparison";
+import {
+  EXPORT_CAPTURE_PROTOCOL_VERSION,
+  EXPORT_REALM_RENDER_TYPE,
+  isExportRenderRequest,
+} from "../../src/utils/exportCapture";
 import {
   EXPORT_IMAGE_READY_TIMEOUT_MS,
   waitForExportImageReady,
@@ -150,6 +158,73 @@ function renderPoster(
       headerPresentation,
     }),
   );
+}
+
+function createStoredBoard(songIds: readonly string[]): StoredPicks {
+  const slots = getSortedExperienceSlots(STANDARD_PICK_EXPERIENCE);
+  const entries = slots.map((slot, index) => {
+    const songId = songIds[index];
+    if (!songId) throw new Error(`Missing song for ${slot.id}.`);
+    return [slot.id, songId] as const;
+  });
+  return Object.fromEntries(entries);
+}
+
+function renderComparisonPoster({
+  sizePresetId,
+  showTitles = true,
+  sharedSongIds = [
+    SONGS[1].id,
+    SONGS[0].id,
+    ...SONGS.slice(2, 10).map((song) => song.id),
+  ],
+}: {
+  sizePresetId: "portrait" | "square";
+  showTitles?: boolean;
+  sharedSongIds?: readonly string[];
+}) {
+  const slots = getSortedExperienceSlots(STANDARD_PICK_EXPERIENCE);
+  const comparison = compareBoardPicks({
+    slots,
+    current: {
+      scope: {
+        projectId: STANDARD_PICK_EXPERIENCE.projectId,
+        experienceId: STANDARD_PICK_EXPERIENCE.id,
+      },
+      picks: createStoredBoard(SONGS.slice(0, 10).map((song) => song.id)),
+    },
+    shared: {
+      scope: {
+        projectId: STANDARD_PICK_EXPERIENCE.projectId,
+        experienceId: STANDARD_PICK_EXPERIENCE.id,
+      },
+      picks: createStoredBoard(sharedSongIds),
+    },
+  });
+  if (comparison.availability !== "available") {
+    throw new Error(`Expected comparison export input: ${comparison.reason}`);
+  }
+  const affinity = deriveBoardAffinity(comparison);
+  if (!affinity) throw new Error("Expected board affinity export input.");
+
+  return {
+    affinity,
+    markup: renderToStaticMarkup(
+      createElement(BoardComparisonExport, {
+        exportCanvasId: "test-board-comparison",
+        experience: STANDARD_PICK_EXPERIENCE,
+        comparison,
+        affinity,
+        locale: "en",
+        showTitles,
+        showQrCode: false,
+        templateId: "classic",
+        sizePresetId,
+        selectedBy: "Test Picker",
+        pageUrl: "https://mypick.kozueginko.com/",
+      }),
+    ),
+  };
 }
 
 const realArchetypeResults = Array.from({ length: SONGS.length }, (_, offset) =>
@@ -421,23 +496,107 @@ test("insights SSR uses every reviewed locale catalog", () => {
   }
 });
 
-test("insights rejects story while comparison remains a reserved dispatch boundary", () => {
+test("insights rejects the unsupported story preset", () => {
   assert.throws(() => renderInsightsPoster("story"), /does not support story/);
-  assert.throws(
-    () =>
-      renderToStaticMarkup(
-        createElement(ExportBoard, {
-          contentKind: "comparison",
-          experience: STANDARD_PICK_EXPERIENCE,
-          exportCanvasId: "test-comparison-boundary",
-          slots: getSortedExperienceSlots(STANDARD_PICK_EXPERIENCE),
-          picks: createPicks(STANDARD_PICK_EXPERIENCE),
-          templateId: "classic",
-          sizePresetId: "portrait",
-          pageUrl: "https://mypick.kozueginko.com/",
-        }),
+});
+
+test("comparison export fits fixed square and portrait canvases with its formula visible", () => {
+  const expectedSizes = {
+    square: [1080, 1080],
+    portrait: [1080, 1350],
+  } as const;
+
+  for (const sizePresetId of ["square", "portrait"] as const) {
+    const { affinity, markup } = renderComparisonPoster({ sizePresetId });
+    const visibleText = markup.replace(/<[^>]*>/g, " ");
+    const [width, height] = expectedSizes[sizePresetId];
+
+    assert.equal(affinity.sharedSongCount, 10);
+    assert.equal(affinity.totalRankDistance, 2);
+    assert.equal(affinity.points, 98);
+    assert.match(markup, /data-export-content-kind="comparison"/);
+    assert.match(markup, /data-board-affinity-points="98"/);
+    assert.match(markup, /data-board-affinity-shared="10"/);
+    assert.match(markup, /data-board-affinity-distance="2"/);
+    assert.match(markup, /data-board-affinity-equation="true"/);
+    assert.match(
+      markup,
+      new RegExp(
+        `id="test-board-comparison"[^>]*width:${width}px;height:${height}px[^>]*overflow:hidden`,
       ),
-    /not implemented/,
+    );
+    for (const boundary of [
+      "comparison-header",
+      "comparison-affinity",
+      "comparison-shared-songs",
+      "comparison-exclusive-counts",
+      "comparison-footer",
+    ]) {
+      assert.match(markup, new RegExp(`data-export-boundary="${boundary}"`));
+    }
+    assert.equal(
+      (markup.match(/data-comparison-shared-song=/g) ?? []).length,
+      10,
+    );
+    assert.match(visibleText, /10 × 10 − 2 = 98 points/);
+    assert.doesNotMatch(visibleText, /%|\/\s*100/);
+  }
+});
+
+test("comparison export handles disjoint boards and title hiding without percentages", () => {
+  const { affinity, markup } = renderComparisonPoster({
+    sizePresetId: "portrait",
+    showTitles: false,
+    sharedSongIds: SONGS.slice(10, 20).map((song) => song.id),
+  });
+  const visibleText = markup.replace(/<[^>]*>/g, " ");
+
+  assert.equal(affinity.sharedSongCount, 0);
+  assert.equal(affinity.points, 0);
+  assert.equal((markup.match(/data-comparison-shared-song=/g) ?? []).length, 0);
+  assert.match(visibleText, /0 × 10 − 0 = 0 points/);
+  assert.doesNotMatch(visibleText, /%|\/\s*100/);
+});
+
+test("comparison capture keeps protocol v4 and all four frozen content kinds", () => {
+  assert.equal(EXPORT_CAPTURE_PROTOCOL_VERSION, 4);
+  const baseRequest = {
+    type: EXPORT_REALM_RENDER_TYPE,
+    version: EXPORT_CAPTURE_PROTOCOL_VERSION,
+    requestId: "comparison-request",
+    experienceId: "standard",
+    picks: { "pick-1": SONGS[0].id },
+    showTitles: true,
+    transparentBg: false,
+    showQrCode: true,
+    templateId: "classic",
+    sizePresetId: "portrait",
+    selectedBy: "Fan",
+    pageUrl: "https://mypick.kozueginko.com/",
+  };
+  const comparison = {
+    locale: "en",
+    shared: {
+      projectId: "equal-love",
+      experienceId: "standard",
+      picks: { "pick-1": SONGS[0].id },
+    },
+  };
+
+  for (const kind of ["picks", "archetype", "insights"] as const) {
+    assert.equal(isExportRenderRequest({ ...baseRequest, kind }), true);
+  }
+  assert.equal(
+    isExportRenderRequest({ ...baseRequest, kind: "comparison", comparison }),
+    true,
+  );
+  assert.equal(
+    isExportRenderRequest({ ...baseRequest, kind: "comparison" }),
+    false,
+  );
+  assert.equal(
+    isExportRenderRequest({ ...baseRequest, kind: "picks", comparison }),
+    false,
   );
 });
 

@@ -6,6 +6,7 @@ import {
   type BoardComparisonInput,
   type BoardComparisonSlot,
 } from "../../src/utils/boardComparison";
+import { deriveBoardAffinity } from "../../src/utils/boardAffinity";
 import type { StoredPicks } from "../../src/schema/music";
 
 const SLOTS: BoardComparisonSlot[] = [
@@ -268,4 +269,150 @@ test("one-slot boards receive the full rank-closeness component", () => {
       rankDifference: 0,
     },
   ]);
+});
+
+test("affinity gives identical boards one board-size point per shared song", () => {
+  const picks = {
+    "slot-1": "song-a",
+    "slot-2": "song-b",
+    "slot-3": "song-c",
+    "slot-4": "song-d",
+  };
+  const comparison = compare({ currentPicks: picks, sharedPicks: picks });
+
+  assert.deepEqual(deriveBoardAffinity(comparison), {
+    formulaId:
+      "shared-song-count-times-board-size-minus-total-rank-distance-v1",
+    boardSize: 4,
+    sharedSongCount: 4,
+    totalRankDistance: 0,
+    points: 16,
+  });
+});
+
+test("affinity is zero for complete boards with no shared songs", () => {
+  const comparison = compare({
+    currentPicks: {
+      "slot-1": "song-a",
+      "slot-2": "song-b",
+      "slot-3": "song-c",
+      "slot-4": "song-d",
+    },
+    sharedPicks: {
+      "slot-1": "song-e",
+      "slot-2": "song-f",
+      "slot-3": "song-g",
+      "slot-4": "song-h",
+    },
+  });
+
+  assert.deepEqual(deriveBoardAffinity(comparison), {
+    formulaId:
+      "shared-song-count-times-board-size-minus-total-rank-distance-v1",
+    boardSize: 4,
+    sharedSongCount: 0,
+    totalRankDistance: 0,
+    points: 0,
+  });
+});
+
+test("rank distance lowers affinity and equal total distance produces a tie", () => {
+  const currentPicks = {
+    "slot-1": "song-a",
+    "slot-2": "song-b",
+    "slot-3": "song-c",
+    "slot-4": "song-d",
+  };
+  const firstSwap = deriveBoardAffinity(
+    compare({
+      currentPicks,
+      sharedPicks: {
+        "slot-1": "song-b",
+        "slot-2": "song-a",
+        "slot-3": "song-c",
+        "slot-4": "song-d",
+      },
+    }),
+  );
+  const secondSwap = deriveBoardAffinity(
+    compare({
+      currentPicks,
+      sharedPicks: {
+        "slot-1": "song-a",
+        "slot-2": "song-b",
+        "slot-3": "song-d",
+        "slot-4": "song-c",
+      },
+    }),
+  );
+  const reversed = deriveBoardAffinity(
+    compare({
+      currentPicks,
+      sharedPicks: {
+        "slot-1": "song-d",
+        "slot-2": "song-c",
+        "slot-3": "song-b",
+        "slot-4": "song-a",
+      },
+    }),
+  );
+
+  assert.equal(firstSwap?.totalRankDistance, 2);
+  assert.equal(firstSwap?.points, 14);
+  assert.deepEqual(secondSwap, firstSwap);
+  assert.equal(reversed?.totalRankDistance, 8);
+  assert.equal(reversed?.points, 8);
+});
+
+test("affinity rejects every cross-scope comparison", () => {
+  const picks = {
+    "slot-1": "song-a",
+    "slot-2": "song-b",
+    "slot-3": "song-c",
+    "slot-4": "song-d",
+  };
+  const mismatches = [
+    compare({
+      currentPicks: picks,
+      sharedPicks: picks,
+      sharedProjectId: "nearly-equal-joy",
+    }),
+    compare({
+      currentPicks: picks,
+      sharedPicks: picks,
+      sharedExperienceId: "live",
+    }),
+    compare({
+      currentPicks: picks,
+      sharedPicks: picks,
+      currentContextId: "day-1",
+      sharedContextId: "day-2",
+    }),
+  ];
+
+  assert.deepEqual(
+    mismatches.map((comparison) => deriveBoardAffinity(comparison)),
+    [null, null, null],
+  );
+});
+
+test("affinity derivation is memory-only and leaves the comparison unchanged", () => {
+  const comparison = compare({
+    currentPicks: {
+      "slot-1": "song-a",
+      "slot-2": "song-b",
+      "slot-3": "song-c",
+      "slot-4": "song-d",
+    },
+    sharedPicks: {
+      "slot-1": "song-b",
+      "slot-2": "song-a",
+      "slot-3": "song-c",
+      "slot-4": "song-d",
+    },
+  });
+  const before = JSON.stringify(comparison);
+
+  assert.equal(deriveBoardAffinity(comparison)?.points, 14);
+  assert.equal(JSON.stringify(comparison), before);
 });

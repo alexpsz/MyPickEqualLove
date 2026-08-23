@@ -11,6 +11,7 @@ import type {
   ExportTemplateId,
 } from "../schema/export";
 import type { StoredPicks } from "../schema/music";
+import { isAppLocale, type AppLocale } from "../i18n/locales";
 import { isExportQrTarget } from "./exportQr";
 
 export const EXPORT_CAPTURE_PROTOCOL_VERSION = 4 as const;
@@ -41,6 +42,17 @@ export interface ExportRenderRequest {
   sizePresetId: ExportSizePresetId;
   selectedBy: string;
   pageUrl: string;
+  comparison?: ExportComparisonPayload;
+}
+
+export interface ExportComparisonPayload {
+  locale: AppLocale;
+  shared: {
+    projectId: string;
+    experienceId: string;
+    contextId?: string;
+    picks: StoredPicks;
+  };
 }
 
 export interface ExportRenderResult {
@@ -100,6 +112,9 @@ export function isExportRenderRequest(
     isExportSizePresetId(value.sizePresetId) &&
     typeof value.selectedBy === "string" &&
     isExportQrTarget(value.pageUrl) &&
+    (value.kind === "comparison"
+      ? isExportComparisonPayload(value.comparison)
+      : value.comparison === undefined) &&
     (expectedPageUrl === undefined || value.pageUrl === expectedPageUrl)
   );
 }
@@ -280,6 +295,22 @@ function isStoredPicks(value: unknown): value is StoredPicks {
     Object.entries(value).every(
       ([slotId, songId]) => slotId.length > 0 && typeof songId === "string",
     )
+  );
+}
+
+function isExportComparisonPayload(
+  value: unknown,
+): value is ExportComparisonPayload {
+  if (!isRecord(value) || !isAppLocale(value.locale)) return false;
+  const shared = value.shared;
+  return (
+    isRecord(shared) &&
+    typeof shared.projectId === "string" &&
+    shared.projectId.length > 0 &&
+    typeof shared.experienceId === "string" &&
+    shared.experienceId.length > 0 &&
+    (shared.contextId === undefined || typeof shared.contextId === "string") &&
+    isStoredPicks(shared.picks)
   );
 }
 

@@ -140,6 +140,7 @@ import {
   type BoardShareDialogPlan,
 } from "../utils/boardShareImport";
 import { compareBoardPicks } from "../utils/boardComparison";
+import { deriveBoardAffinity } from "../utils/boardAffinity";
 import { resolveExportRealmRequest } from "../utils/exportRealmRequest";
 import {
   planAssistantSnapshotSync,
@@ -217,6 +218,7 @@ import AppleMotion from "./AppleMotion";
 import BoardLibraryModal, {
   type BoardLibraryActionResult,
 } from "./BoardLibraryModal";
+import BoardComparisonExport from "./BoardComparisonExport";
 import BoardInsightsPanel from "./BoardInsightsPanel";
 import BoardShareImportModal, {
   type BoardShareDialogState,
@@ -284,6 +286,7 @@ interface AssistantApplyBaseline {
 interface PreviewSnapshot {
   kind: ExportContentKind;
   archetypeInputKey?: string;
+  comparisonInputKey?: string;
   dataUrl: string;
   optionsKey: string;
   imageFileName: string;
@@ -301,7 +304,7 @@ const getPreviewOptionsKey = (
   templateId: ExportTemplateId,
   kind: ExportContentKind = "picks",
   sizePresetId: ExportSizePresetId = DEFAULT_EXPORT_SIZE_PRESET_ID,
-  archetypeInputKey = "",
+  contentInputKey = "",
 ) =>
   [
     showTitles ? "titles" : "no-titles",
@@ -310,7 +313,7 @@ const getPreviewOptionsKey = (
     templateId,
     sizePresetId,
     kind,
-    archetypeInputKey,
+    contentInputKey,
   ].join(":");
 
 const isTransparentBackgroundAvailable = (
@@ -954,6 +957,44 @@ export default function PickExperienceClient({
         picks,
       }),
     [picks, slots],
+  );
+  const frameBoardComparison = useMemo(() => {
+    const request = frameCaptureRequest;
+    if (request?.kind !== "comparison" || !request.comparison) return null;
+
+    const requestContextId = request.contextId ?? defaultContextId;
+    return compareBoardPicks({
+      slots,
+      current: {
+        scope: {
+          projectId: experience.projectId,
+          experienceId: experience.id,
+          contextId: requestContextId,
+        },
+        picks: filterStoredPicksForExperience({
+          experience,
+          storedPicks: request.picks,
+          contextId: requestContextId,
+        }),
+      },
+      shared: {
+        scope: {
+          projectId: request.comparison.shared.projectId,
+          experienceId: request.comparison.shared.experienceId,
+          contextId: request.comparison.shared.contextId,
+        },
+        picks: filterStoredPicksForExperience({
+          experience,
+          storedPicks: request.comparison.shared.picks,
+          contextId: request.comparison.shared.contextId,
+        }),
+      },
+    });
+  }, [defaultContextId, experience, frameCaptureRequest, slots]);
+  const frameBoardAffinity = useMemo(
+    () =>
+      frameBoardComparison ? deriveBoardAffinity(frameBoardComparison) : null,
+    [frameBoardComparison],
   );
   const availableTemplateIds = useMemo(
     () =>
@@ -2871,8 +2912,13 @@ export default function PickExperienceClient({
       if (frameCaptureRequest?.kind === "insights" && !boardInsights) {
         throw new Error("Insights export data is unavailable");
       }
-      if (frameCaptureRequest?.kind === "comparison") {
-        throw new Error("Comparison export content is not implemented");
+      if (
+        frameCaptureRequest?.kind === "comparison" &&
+        (!frameBoardComparison ||
+          frameBoardComparison.availability !== "available" ||
+          !frameBoardAffinity)
+      ) {
+        throw new Error("Board comparison export result is unavailable");
       }
 
       const exportElement = document.getElementById(exportCanvasId);
@@ -2917,6 +2963,8 @@ export default function PickExperienceClient({
     archetypeExportPresentation,
     boardInsights,
     exportCanvasId,
+    frameBoardAffinity,
+    frameBoardComparison,
     frameCaptureRequest?.kind,
     frameSizePresetId,
   ]);
@@ -3141,6 +3189,128 @@ export default function PickExperienceClient({
     () => generateImage("insights"),
     [generateImage],
   );
+  const handleGenerateComparisonImage = useCallback(async () => {
+    if (
+      generatingRef.current ||
+      boardShareDialog?.kind !== "import" ||
+      !boardShareDialog.comparison ||
+      !pendingBoardShareImport ||
+      boardShareComparisonAvailability?.availability !== "available"
+    ) {
+      return;
+    }
+
+    // The comparison export consumes only this verified in-memory snapshot.
+    // It does not call reset/import transactions or mutate export options.
+    const comparison = boardShareComparisonAvailability;
+    const affinity = deriveBoardAffinity(comparison);
+    if (!affinity) return;
+
+    const currentPicks = filterStoredPicksForExperience({
+      experience,
+      storedPicks: storedPicksRef.current,
+      contextId: effectiveContextId,
+    });
+    const comparisonInputKey = JSON.stringify({
+      projectId: experience.projectId,
+      experienceId: experience.id,
+      contextId: effectiveContextId ?? null,
+      formulaId: affinity.formulaId,
+      shared: comparison.shared,
+      onlyCurrent: comparison.onlyCurrent,
+      onlyShared: comparison.onlyShared,
+    });
+    const generationId = ++previewGenerationIdRef.current;
+    const optionsKey = getPreviewOptionsKey(
+      showTitles,
+      false,
+      showQrCode,
+      activeTemplateId,
+      "comparison",
+      DEFAULT_EXPORT_SIZE_PRESET_ID,
+      comparisonInputKey,
+    );
+    const captureController = new AbortController();
+    activePreviewCaptureAbortRef.current = captureController;
+    generatingRef.current = true;
+    setGenerating(true);
+
+    try {
+      const dataUrl = await captureExportImageInFrame(
+        {
+          kind: "comparison",
+          experienceId: experience.id,
+          contextId: effectiveContextId,
+          picks: { ...currentPicks },
+          showTitles,
+          transparentBg: false,
+          showQrCode,
+          templateId: activeTemplateId,
+          sizePresetId: DEFAULT_EXPORT_SIZE_PRESET_ID,
+          selectedBy: exportNickname,
+          pageUrl,
+          comparison: {
+            locale,
+            shared: {
+              projectId: pendingBoardShareImport.payload.p,
+              experienceId: pendingBoardShareImport.payload.e,
+              contextId: pendingBoardShareImport.payload.c ?? undefined,
+              picks: { ...pendingBoardShareImport.picks },
+            },
+          },
+        },
+        { signal: captureController.signal },
+      );
+
+      if (generationId === previewGenerationIdRef.current) {
+        setPendingBoardShareImport(null);
+        setBoardShareDialog(null);
+        setPreview({
+          kind: "comparison",
+          comparisonInputKey,
+          dataUrl,
+          optionsKey,
+          imageFileName: getComparisonImageFileName(posterImageFileName),
+          pageUrl,
+          previewLabel: t("boardComparison.exportPreviewLabel"),
+          shareText: t("boardComparison.exportShareText", {
+            shared: affinity.sharedSongCount,
+            score: affinity.points,
+          }),
+          shareHashtags: experience.share.hashtags.slice(),
+          shareTitle: t("boardComparison.exportShareTitle"),
+        });
+      }
+    } catch (error) {
+      if (!isAbortError(error)) {
+        console.error("Failed to generate board comparison image", error);
+        if (generationId === previewGenerationIdRef.current) {
+          window.alert(t("errors.imageGenerationFailed"));
+        }
+      }
+    } finally {
+      if (activePreviewCaptureAbortRef.current === captureController) {
+        activePreviewCaptureAbortRef.current = null;
+      }
+      generatingRef.current = false;
+      setGenerating(false);
+    }
+  }, [
+    activeTemplateId,
+    boardShareComparisonAvailability,
+    boardShareDialog,
+    effectiveContextId,
+    experience,
+    exportNickname,
+    locale,
+    pageUrl,
+    pendingBoardShareImport,
+    posterImageFileName,
+    showQrCode,
+    showTitles,
+    storedPicksRef,
+    t,
+  ]);
 
   const previewKind = preview?.kind ?? "picks";
   const previewSizePresetId =
@@ -3165,13 +3335,16 @@ export default function PickExperienceClient({
     previewSizePresetId,
     preview?.kind === "archetype"
       ? (archetypeResult?.inputKey ?? preview.archetypeInputKey)
-      : undefined,
+      : preview?.kind === "comparison"
+        ? preview.comparisonInputKey
+        : undefined,
   );
 
   useEffect(() => {
     if (!preview || preview.optionsKey === previewOptionsKey) {
       return;
     }
+    if (preview.kind === "comparison") return;
     const timer = window.setTimeout(() => {
       void generateImage(preview.kind);
     }, 100);
@@ -3871,9 +4044,13 @@ export default function PickExperienceClient({
               state={dialogState}
               presenceState={presenceState}
               comparisonAvailability={boardShareComparisonAvailability}
+              comparisonExporting={generating}
               onClose={handleCloseBoardShareDialog}
               onConfirm={handleConfirmBoardShareImport}
               onCompare={handleCompareBoardShare}
+              onExportComparison={() => {
+                void handleGenerateComparisonImage();
+              }}
             />
           )}
         </MotionPresence>
@@ -3976,6 +4153,7 @@ export default function PickExperienceClient({
               sizePresetId={previewSizePresetId}
               availableSizePresetIds={EXPORT_CONTENT_SIZE_PRESET_IDS.insights}
               onSizePresetChange={handleInsightsSizePresetChange}
+              showExportOptions={renderedPreview.kind !== "comparison"}
               generating={generating}
               actionsDisabled={
                 generating || renderedPreview.optionsKey !== previewOptionsKey
@@ -3992,14 +4170,18 @@ export default function PickExperienceClient({
                   ? archetypeTriggerRef
                   : renderedPreview.kind === "insights"
                     ? insightsTriggerRef
-                    : previewTriggerRef
+                    : renderedPreview.kind === "comparison"
+                      ? undefined
+                      : previewTriggerRef
               }
               returnFocusKey={
                 renderedPreview.kind === "archetype"
                   ? DIALOG_RETURN_KEYS.archetype
                   : renderedPreview.kind === "insights"
                     ? INSIGHTS_DIALOG_RETURN_KEY
-                    : DIALOG_RETURN_KEYS.generateImage
+                    : renderedPreview.kind === "comparison"
+                      ? DIALOG_RETURN_KEYS.copyBoardLink
+                      : DIALOG_RETURN_KEYS.generateImage
               }
               returnFocusFallbackKey={DIALOG_RETURN_KEYS.globalSearch}
             />
@@ -4016,27 +4198,48 @@ export default function PickExperienceClient({
           aria-hidden="true"
           inert
         >
-          <ExportBoard
-            contentKind={frameCaptureRequest?.kind ?? "picks"}
-            experience={experience}
-            context={activeContext}
-            exportCanvasId={exportCanvasId}
-            slots={slots}
-            picks={picks}
-            showTitles={showTitles}
-            transparentBg={transparentBg}
-            showQrCode={showQrCode}
-            templateId={activeTemplateId}
-            sizePresetId={frameSizePresetId}
-            selectedBy={exportNickname}
-            pageUrl={framePageUrl ?? pageUrl}
-            headerPresentation={archetypeExportPresentation}
-            insights={
-              frameCaptureRequest?.kind === "insights"
-                ? (boardInsights ?? undefined)
-                : undefined
-            }
-          />
+          {frameCaptureRequest?.kind === "comparison" &&
+          frameCaptureRequest.comparison &&
+          frameBoardComparison?.availability === "available" &&
+          frameBoardAffinity ? (
+            <BoardComparisonExport
+              experience={experience}
+              context={activeContext}
+              exportCanvasId={exportCanvasId}
+              comparison={frameBoardComparison}
+              affinity={frameBoardAffinity}
+              locale={frameCaptureRequest.comparison.locale}
+              showTitles={showTitles}
+              showQrCode={showQrCode}
+              templateId={activeTemplateId}
+              sizePresetId={frameSizePresetId}
+              coverTonePalette={coverToneAvailability.palette}
+              selectedBy={exportNickname}
+              pageUrl={framePageUrl ?? pageUrl}
+            />
+          ) : (
+            <ExportBoard
+              contentKind={frameCaptureRequest?.kind ?? "picks"}
+              experience={experience}
+              context={activeContext}
+              exportCanvasId={exportCanvasId}
+              slots={slots}
+              picks={picks}
+              showTitles={showTitles}
+              transparentBg={transparentBg}
+              showQrCode={showQrCode}
+              templateId={activeTemplateId}
+              sizePresetId={frameSizePresetId}
+              selectedBy={exportNickname}
+              pageUrl={framePageUrl ?? pageUrl}
+              headerPresentation={archetypeExportPresentation}
+              insights={
+                frameCaptureRequest?.kind === "insights"
+                  ? (boardInsights ?? undefined)
+                  : undefined
+              }
+            />
+          )}
         </div>
       ) : null}
     </div>
@@ -4135,6 +4338,12 @@ function getInsightsImageFileName(
     DEFAULT_EXPORT_TEMPLATE_ID,
     sizePresetId,
   ).replace(/\.png$/i, "_INSIGHTS.png");
+}
+
+function getComparisonImageFileName(fileName: string) {
+  return fileName.toLowerCase().endsWith(".png")
+    ? `${fileName.slice(0, -4)}_AFFINITY.png`
+    : `${fileName}_AFFINITY.png`;
 }
 
 function isWritableStorageStatus(status: StorageLoadStatus) {

@@ -45,6 +45,17 @@ const SUITES = {
     project: "scripts/tsconfig.archetype-affinity-tests.json",
     emittedTestFiles: ["scripts/archetype-affinity.test.js"],
   },
+  "board-comparison": {
+    tempPrefix: "mypick-board-comparison-tests-",
+    compilerArgs: NODE16_ARGS,
+    sourceFiles: [
+      "scripts/tests/board-comparison.test.ts",
+      "src/schema/music.ts",
+      "src/utils/boardComparison.ts",
+      "src/utils/boardAffinity.ts",
+    ],
+    emittedTestFiles: ["scripts/tests/board-comparison.test.js"],
+  },
   orchestrator: {
     tempPrefix: "mypick-orchestrator-tests-",
     project: "scripts/tsconfig.orchestrator-tests.json",
