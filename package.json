@@ -11,7 +11,7 @@
     "dev:equal-love": "node scripts/run-project-command.mjs equal-love dev",
     "dev:nearly-equal-joy": "node scripts/run-project-command.mjs nearly-equal-joy dev",
     "dev:not-equal-me": "node scripts/run-project-command.mjs not-equal-me dev",
-    "build": "node scripts/clean-static-export.mjs && next build && node scripts/copy-public-assets.mjs",
+    "build": "node scripts/clean-static-export.mjs && next build && node scripts/copy-public-assets.mjs && npm run generate:service-worker",
     "build:equal-love": "node scripts/run-project-command.mjs equal-love build",
     "build:nearly-equal-joy": "node scripts/run-project-command.mjs nearly-equal-joy build",
     "build:not-equal-me": "node scripts/run-project-command.mjs not-equal-me build",
@@ -38,6 +38,9 @@
     "test:song-search": "node --test scripts/test-song-search.mjs",
     "generate:official-media-runtime": "node scripts/official-media/generate-runtime-projections.mjs",
     "check:official-media-runtime": "node scripts/official-media/generate-runtime-projections.mjs --check",
+    "generate:service-worker": "node scripts/generate-service-worker.mjs",
+    "disable:service-worker": "node scripts/generate-service-worker.mjs --disable",
+    "check:service-worker": "node scripts/generate-service-worker.mjs --self-test",
     "test:official-media": "node scripts/test-official-media.mjs && node scripts/official-media/validate-official-media-maps.mjs && npm run check:official-media-runtime",
     "test:pick-reordering": "node scripts/test-pick-reordering.mjs",
     "test:share-links": "node scripts/test-board-share-protocol.mjs",
@@ -50,7 +53,7 @@
     "test:archetype-labeler": "node scripts/archetype/test-archetype-labeler.mjs",
     "test:archetype-affinity": "node scripts/run-ts-tests.mjs archetype-affinity",
     "test:archetype-ui": "node scripts/test-archetype-ui.mjs",
-    "test": "npm run test:discography && npm run test:board-state && npm run test:song-search && npm run test:official-media && npm run test:pick-reordering && npm run test:share-links && npm run test:export-presets && npm run test:cover-tone && npm run test:export-board && npm run test:pick-assistant && npm run test:image-actions && npm run test:orchestrator && npm run test:current-project-runtime && npm run test:archetype-labeler && npm run test:archetype-affinity && npm run test:archetype-ui && npm run test:theme && npm run test:keyboard-shortcuts && npm run test:command-palette-ui",
+    "test": "npm run test:discography && npm run test:board-state && npm run test:song-search && npm run test:official-media && npm run test:pick-reordering && npm run test:share-links && npm run test:export-presets && npm run test:cover-tone && npm run test:export-board && npm run test:pick-assistant && npm run test:image-actions && npm run test:orchestrator && npm run test:current-project-runtime && npm run test:archetype-labeler && npm run test:archetype-affinity && npm run test:archetype-ui && npm run test:theme && npm run test:keyboard-shortcuts && npm run test:command-palette-ui && npm run test:install-prompt && npm run check:service-worker",
     "verify:static-export": "node scripts/run-project-command.mjs equal-love build-and-verify && node scripts/run-project-command.mjs nearly-equal-joy build-and-verify && node scripts/run-project-command.mjs not-equal-me build-and-verify",
     "verify": "npm run check:repo-boundary && npm run lint && npm run typecheck && npm run validate:data && npm test && npm run verify:static-export",
     "check:repo-boundary": "node scripts/check-repository-boundary.mjs",
@@ -60,7 +63,8 @@
     "test:orchestrator": "node scripts/run-ts-tests.mjs orchestrator",
     "test:theme": "node scripts/run-ts-tests.mjs theme",
     "test:keyboard-shortcuts": "node scripts/run-ts-tests.mjs keyboard-shortcuts",
-    "test:command-palette-ui": "node scripts/test-command-palette-ui.mjs"
+    "test:command-palette-ui": "node scripts/test-command-palette-ui.mjs",
+    "test:install-prompt": "node scripts/test-install-prompt.mjs"
   },
   "dependencies": {
     "html2canvas": "^1.4.1",

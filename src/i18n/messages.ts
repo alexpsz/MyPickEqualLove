@@ -7,6 +7,13 @@ const en = {
   "theme.auto": "Follow system",
   "theme.light": "Light",
   "theme.dark": "Dark",
+  "install.title": "Keep MyPick ready offline",
+  "install.description":
+    "Install this site for faster repeat visits and offline use after it has loaded once.",
+  "install.iosDescription":
+    "In Safari, tap Share, then ‘Add to Home Screen’ to install MyPick.",
+  "install.action": "Install",
+  "install.dismiss": "Not now",
   "header.showActivityDetails": "Activity details",
   "header.hideActivityDetails": "Hide activity details",
 
@@ -495,6 +502,13 @@ const ja: MessageCatalog = {
   "theme.auto": "システムに従う",
   "theme.light": "ライト",
   "theme.dark": "ダーク",
+  "install.title": "MyPickをオフラインでもすぐ使えるように",
+  "install.description":
+    "このサイトをインストールすると、次回からすばやく開き、一度読み込んだ後はオフラインでも使えます。",
+  "install.iosDescription":
+    "Safariの共有ボタンをタップし、「ホーム画面に追加」を選んでMyPickをインストールできます。",
+  "install.action": "インストール",
+  "install.dismiss": "今はしない",
   "header.showActivityDetails": "公演の説明",
   "header.hideActivityDetails": "説明を閉じる",
 
@@ -982,6 +996,13 @@ const zhCN: MessageCatalog = {
   "theme.auto": "跟随系统",
   "theme.light": "浅色",
   "theme.dark": "深色",
+  "install.title": "让 MyPick 随时可离线使用",
+  "install.description":
+    "安装此站点后，下次打开会更快；已加载过的内容也可在离线时使用。",
+  "install.iosDescription":
+    "在 Safari 中点按“共享”，再选择“添加到主屏幕”即可安装 MyPick。",
+  "install.action": "安装",
+  "install.dismiss": "暂不",
   "header.showActivityDetails": "活动说明",
   "header.hideActivityDetails": "收起活动说明",
 
@@ -1433,6 +1454,13 @@ const ko: MessageCatalog = {
   "theme.auto": "시스템 설정",
   "theme.light": "라이트",
   "theme.dark": "다크",
+  "install.title": "MyPick을 오프라인에서도 바로 사용",
+  "install.description":
+    "이 사이트를 설치하면 다음 방문부터 더 빠르게 열리고, 한 번 불러온 콘텐츠는 오프라인에서도 사용할 수 있습니다.",
+  "install.iosDescription":
+    "Safari에서 공유를 누른 다음 ‘홈 화면에 추가’를 선택해 MyPick을 설치하세요.",
+  "install.action": "설치",
+  "install.dismiss": "나중에",
   "header.showActivityDetails": "공연 안내",
   "header.hideActivityDetails": "공연 안내 닫기",
 

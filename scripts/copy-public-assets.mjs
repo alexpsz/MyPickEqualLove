@@ -7,6 +7,11 @@ const root = path.resolve(__dirname, "..");
 const outDir = path.join(root, "out");
 const projectsDir = path.join(root, "src", "projects");
 const currentProjectId = process.env.NEXT_PUBLIC_PROJECT_ID || "equal-love";
+const projectIds = new Set(["equal-love", "nearly-equal-joy", "not-equal-me"]);
+
+if (!projectIds.has(currentProjectId)) {
+  throw new Error(`Unknown project id: ${currentProjectId}`);
+}
 
 const nextStaticSource = path.join(root, ".next", "static");
 const nextStaticDestination = path.join(outDir, "_next", "static");
@@ -23,6 +28,11 @@ if (fs.existsSync(publicDir)) {
   for (const assetName of fs.readdirSync(publicDir)) {
     const source = path.join(publicDir, assetName);
     const destination = path.join(outDir, assetName);
+
+    if (assetName === "covers") {
+      copyCurrentProjectCovers(source, destination);
+      continue;
+    }
 
     fs.rmSync(destination, { force: true, recursive: true });
     fs.mkdirSync(path.dirname(destination), { recursive: true });
@@ -42,6 +52,25 @@ if (fs.existsSync(liveDir) && fs.readdirSync(liveDir).length === 0) {
 }
 
 console.log(`Synced static export assets to ${outDir}.`);
+
+function copyCurrentProjectCovers(coversSource, coversDestination) {
+  const projectCoversSource = path.join(coversSource, currentProjectId);
+  if (!fs.existsSync(projectCoversSource)) {
+    throw new Error(
+      `Missing cover directory for ${currentProjectId}: ${projectCoversSource}`,
+    );
+  }
+
+  fs.rmSync(coversDestination, { force: true, recursive: true });
+  const projectCoversDestination = path.join(
+    coversDestination,
+    currentProjectId,
+  );
+  fs.mkdirSync(path.dirname(projectCoversDestination), { recursive: true });
+  fs.cpSync(projectCoversSource, projectCoversDestination, {
+    recursive: true,
+  });
+}
 
 function removeExportedLiveRoute(slug) {
   fs.rmSync(path.join(outDir, "live", slug), { force: true, recursive: true });

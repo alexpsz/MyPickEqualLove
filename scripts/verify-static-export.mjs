@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { verifyGeneratedServiceWorker } from "./generate-service-worker.mjs";
 
 export const PROJECT_CONTRACTS = Object.freeze({
   "equal-love": Object.freeze({
@@ -84,6 +85,23 @@ export async function verifyStaticExport({
     });
   }
   await verifyManifest(out, contract, projectId, violations);
+  await verifyProjectPublicAssets(root, out, projectId, violations);
+  try {
+    const serviceWorker = await verifyGeneratedServiceWorker({
+      outputDirectory: out,
+      projectId,
+      songCount: songIds.length,
+    });
+    for (const entry of serviceWorker.entries) {
+      if (entry.url.startsWith("/covers/") || entry.url.startsWith("/og/")) {
+        violations.push(
+          `sw.js must not precache covers or social cards: ${entry.url}`,
+        );
+      }
+    }
+  } catch (error) {
+    violations.push(`service worker contract failed: ${error.message}`);
+  }
   await verifyRscArtifact(path.join(out, "index.txt"), "index.txt", violations);
   await verifySongCatalog(out, contract, songIds, violations);
 
@@ -423,6 +441,77 @@ async function verifySocialCard({
   }
 }
 
+async function verifyProjectPublicAssets(
+  repositoryRoot,
+  out,
+  projectId,
+  violations,
+) {
+  const publicDirectory = path.join(repositoryRoot, "public");
+  const publicFiles = await walkFiles(publicDirectory);
+  const expectedFiles = publicFiles.filter((filePath) => {
+    const relativePath = toPosixPath(path.relative(publicDirectory, filePath));
+    return (
+      !relativePath.startsWith("covers/") ||
+      relativePath.startsWith(`covers/${projectId}/`)
+    );
+  });
+
+  for (const sourcePath of expectedFiles) {
+    const relativePath = path.relative(publicDirectory, sourcePath);
+    const destinationPath = path.join(out, relativePath);
+    let source;
+    let destination;
+    try {
+      [source, destination] = await Promise.all([
+        readFile(sourcePath),
+        readFile(destinationPath),
+      ]);
+    } catch {
+      violations.push(
+        `public asset subset is missing ${toPosixPath(relativePath)}`,
+      );
+      continue;
+    }
+    if (!source.equals(destination)) {
+      violations.push(
+        `public asset subset differs at ${toPosixPath(relativePath)}`,
+      );
+    }
+  }
+
+  const expectedCoverFiles = expectedFiles
+    .map((filePath) => toPosixPath(path.relative(publicDirectory, filePath)))
+    .filter((relativePath) => relativePath.startsWith("covers/"))
+    .sort();
+  const outputCoversDirectory = path.join(out, "covers");
+  if (existsSync(outputCoversDirectory)) {
+    const coverProjects = (
+      await readdir(outputCoversDirectory, {
+        withFileTypes: true,
+      })
+    )
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name)
+      .sort();
+    if (JSON.stringify(coverProjects) !== JSON.stringify([projectId])) {
+      violations.push(
+        `cover directory must contain only ${projectId} (received ${JSON.stringify(coverProjects)})`,
+      );
+    }
+  }
+  const actualCoverFiles = existsSync(outputCoversDirectory)
+    ? (await walkFiles(outputCoversDirectory))
+        .map((filePath) => toPosixPath(path.relative(out, filePath)))
+        .sort()
+    : [];
+  if (JSON.stringify(actualCoverFiles) !== JSON.stringify(expectedCoverFiles)) {
+    violations.push(
+      `cover subset must contain only ${projectId}: expected ${JSON.stringify(expectedCoverFiles)}, received ${JSON.stringify(actualCoverFiles)}`,
+    );
+  }
+}
+
 async function verifySitemap(out, contract, experiences, songIds, violations) {
   const sitemapPath = path.join(out, "sitemap.xml");
   const sitemap = await readRequiredText(sitemapPath, violations);
@@ -585,6 +674,10 @@ async function walkFiles(directory) {
     }
   }
   return files;
+}
+
+function toPosixPath(value) {
+  return value.split(path.sep).join("/");
 }
 
 async function readRequiredText(filePath, violations) {

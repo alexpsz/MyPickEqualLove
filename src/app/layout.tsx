@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import type { CSSProperties, ReactNode } from "react";
 import "./globals.css";
+import InstallPrompt from "../components/InstallPrompt";
+import ServiceWorkerRegistration from "../components/ServiceWorkerRegistration";
 import ThemeProvider from "../components/ThemeProvider";
 import { PROJECT_CONFIG, STORAGE_KEYS } from "../config/project";
 import { localizeProjectCopy } from "../i18n/content";
@@ -100,7 +102,11 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <ThemeProvider>
-          <LocaleProvider>{children}</LocaleProvider>
+          <LocaleProvider>
+            {children}
+            <InstallPrompt />
+            <ServiceWorkerRegistration />
+          </LocaleProvider>
         </ThemeProvider>
       </body>
     </html>

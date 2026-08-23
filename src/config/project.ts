@@ -25,7 +25,13 @@ export const STORAGE_KEYS = {
   songDiscoveryV2: `${PROJECT_CONFIG.storagePrefix}_song_discovery_v2`,
   assistant: `${PROJECT_CONFIG.storagePrefix}_standard_pick_assistant_v2`,
   assistantLegacy: `${PROJECT_CONFIG.storagePrefix}_standard_pick_assistant_v1`,
+  installHint: `${PROJECT_CONFIG.storagePrefix}_install_hint_v1`,
 };
+
+export const SERVICE_WORKER_CONFIG = {
+  scriptUrl: "/sw.js",
+  scope: "/",
+} as const;
 
 export const SONG_DISCOVERY_CONFIG = {
   recentLimit: 20,
