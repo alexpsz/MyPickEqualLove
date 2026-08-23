@@ -184,7 +184,8 @@
     },
     "kawata-takashi-ou": {
       "ja": "河田貴央",
-      "romaji": "kawata takashi ou"
+      "romaji": "Kawata Takahiro",
+      "aliasesRomaji": ["kawata takashi ou"]
     },
     "keisuke-koyama": {
       "ja": "Keisuke Koyama",
@@ -242,7 +243,8 @@
     },
     "maeyama-ta-ken-ichi": {
       "ja": "前山田健一",
-      "romaji": "maeyama ta Ken'ichi"
+      "romaji": "Maeyamada Kenichi",
+      "aliasesRomaji": ["maeyama ta Ken'ichi"]
     },
     "masuda-takeshi": {
       "ja": "増田武史",
@@ -286,7 +288,8 @@
     },
     "motokazu-hiroshi": {
       "ja": "原一博",
-      "romaji": "motokazu hiroshi"
+      "romaji": "Hara Kazuhiro",
+      "aliasesRomaji": ["motokazu hiroshi"]
     },
     "murashige-anna": {
       "ja": "村重杏奈",
@@ -315,7 +318,8 @@
     },
     "nagasawa-chi-aki": {
       "ja": "長沢知亜紀",
-      "romaji": "nagasawa chi aki"
+      "romaji": "Nagasawa Chiaki",
+      "aliasesRomaji": ["nagasawa chi aki"]
     },
     "nakamura-ayumu": {
       "ja": "中村歩",
@@ -328,7 +332,8 @@
     },
     "nakamura-ei-hiko": {
       "ja": "中村瑛彦",
-      "romaji": "nakamura ei hiko"
+      "romaji": "Nakamura Akihiko",
+      "aliasesRomaji": ["nakamura ei hiko"]
     },
     "nao": {
       "ja": "NaO",
@@ -453,7 +458,8 @@
     },
     "shouji-natsu-aoi": {
       "ja": "庄司夏葵",
-      "romaji": "shouji natsu aoi"
+      "romaji": "Shoji Natsuki",
+      "aliasesRomaji": ["shouji natsu aoi"]
     },
     "shun-sakaguchi": {
       "ja": "Shun Sakaguchi",
@@ -481,7 +487,8 @@
     },
     "ta-bi-tatsuya": {
       "ja": "田靡達也",
-      "romaji": "ta bi tatsuya"
+      "romaji": "Tanabiki Tatsuya",
+      "aliasesRomaji": ["ta bi tatsuya"]
     },
     "tahata-takeshi": {
       "ja": "田畑健",
