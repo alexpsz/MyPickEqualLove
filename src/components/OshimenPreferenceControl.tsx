@@ -35,7 +35,7 @@ export default function OshimenPreferenceControl({
   return (
     <div
       data-oshimen-preference="true"
-      className="grid gap-2 rounded-[var(--radius-sm)] border border-[var(--line)] bg-[var(--background)] p-3"
+      className="grid gap-2 rounded-[var(--radius-sm)] border border-[var(--line)] bg-[var(--paper)] p-3"
     >
       <div className="flex flex-wrap items-end gap-2">
         <div className="min-w-0 flex-1 basis-56">

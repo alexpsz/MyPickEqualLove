@@ -289,6 +289,48 @@ test("Classic and Spotlight retain their locked visual values", () => {
   });
 });
 
+test("ordinary oshimen accents reach every locked Classic and Spotlight emphasis token", () => {
+  const color = "#9B6BC8";
+  const accent = { color, visibleColor: color };
+
+  for (const templateId of ["classic", "spotlight"] as const) {
+    const baseline = resolveExportComposition(
+      templateId,
+      "portrait",
+      "top10-grid",
+      "#ff74a8",
+    );
+    const accented = resolveExportComposition(
+      templateId,
+      "portrait",
+      "top10-grid",
+      "#ff74a8",
+      undefined,
+      accent,
+    );
+
+    assert.notDeepEqual(accented.visual, baseline.visual);
+    assert.equal(
+      accented.visual.rootBorder,
+      `${templateId === "spotlight" ? 6 : 2}px solid ${color}`,
+    );
+    assert.equal(accented.visual.headerTitleColor, color);
+    assert.equal(accented.visual.cardBorder, `2px solid ${color}`);
+    assert.equal(accented.visual.cardDivider, `2px solid ${color}`);
+    assert.equal(accented.visual.footerBorder, `2px solid ${color}`);
+    assert.equal(accented.visual.footerColor, color);
+    assert.equal(accented.visual.slotLabelColor, color);
+    assert.equal(accented.visual.yearTagBorder, `1px solid ${color}`);
+    assert.equal(accented.visual.yearTagColor, color);
+    assert.equal(
+      accented.visual.headerBorder,
+      templateId === "spotlight" ? `2px solid ${color}` : "none",
+    );
+    assert.equal(accented.visual.canvasBackground, "#ffffff");
+    assert.equal(accented.visual.songTitleColor, "#000");
+  }
+});
+
 test("Midnight is fixed while cover-tone requires an approved palette", () => {
   const palette = COVER_TONE_PILOT_ENTRIES[0]?.palette;
   assert.ok(palette);

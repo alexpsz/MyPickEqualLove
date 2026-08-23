@@ -607,13 +607,8 @@ test("comparison capture keeps protocol v4 and all four frozen content kinds", (
 });
 
 test("ordinary light posters use a known oshimen color and fail closed for unknown members", () => {
-  const nonWhiteMember = Object.values(MEMBERS_BY_ID).find(
-    (member) =>
-      member.color &&
-      /^#[0-9a-f]{6}$/i.test(member.color) &&
-      member.color.toLowerCase() !== "#ffffff",
-  );
-  assert.ok(nonWhiteMember?.color);
+  const nonWhiteMember = MEMBERS_BY_ID["otani-emiri"];
+  assert.equal(nonWhiteMember?.color, "#9B6BC8");
 
   for (const templateId of ["classic", "spotlight"] as const) {
     const baseline = renderPoster(
@@ -647,7 +642,24 @@ test("ordinary light posters use a known oshimen color and fail closed for unkno
       accented,
       new RegExp(`data-oshimen-accent-color="${nonWhiteMember.color}"`),
     );
-    assert.ok(accented.includes(nonWhiteMember.color));
+    const baselineColorUses = baseline.split(nonWhiteMember.color).length - 1;
+    const accentedColorUses = accented.split(nonWhiteMember.color).length - 1;
+    assert.ok(
+      accentedColorUses >= baselineColorUses + 10,
+      `${templateId} must apply the oshimen color beyond the always-present member strip`,
+    );
+    assert.match(
+      accented,
+      new RegExp(
+        `id="test-export-board"[^>]*border:${templateId === "spotlight" ? 6 : 2}px solid ${nonWhiteMember.color}`,
+      ),
+    );
+    assert.match(
+      accented,
+      new RegExp(
+        `data-export-boundary="footer"[^>]*border-top:2px solid ${nonWhiteMember.color}[^>]*color:${nonWhiteMember.color}`,
+      ),
+    );
     assert.doesNotMatch(accented, /data-oshimen-accent-outline=/);
   }
 });

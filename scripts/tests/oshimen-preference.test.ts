@@ -408,6 +408,36 @@ test("capture protocol accepts oshimen only on ordinary pick requests", () => {
   assert.equal(isExportRenderRequest({ ...request, kind: "archetype" }), false);
 });
 
+test("ordinary preview identity and iframe capture preserve the resolved oshimen id", () => {
+  const clientSource = readFileSync(
+    resolve(process.cwd(), "src/components/PickExperienceClient.tsx"),
+    "utf8",
+  ).replace(/\s+/g, " ");
+
+  assert.match(
+    clientSource,
+    /kind === "picks" \? oshimenMemberId : ""/,
+    "the preview options key must vary with the ordinary oshimen id",
+  );
+  assert.equal(
+    clientSource.split(
+      'kind === "picks" && isStandard ? oshimenMember?.id : undefined',
+    ).length - 1,
+    2,
+    "generation identity and capture payload must share the resolved standard oshimen id",
+  );
+  assert.match(
+    clientSource,
+    /previewKind === "picks" && isStandard \? oshimenMember\?\.id : undefined/,
+    "an open ordinary preview must become stale when the oshimen changes",
+  );
+  assert.match(
+    clientSource,
+    /frameCaptureRequest\?\.kind === "picks" \? frameCaptureRequest\.oshimenMemberId : undefined/,
+    "the export realm must pass the captured oshimen id to ExportBoard",
+  );
+});
+
 test("oshimen copy makes only the explicit solo claim", () => {
   const forbiddenClaim =
     /\bcenter\b|participat|センター|参加|参与|主唱|센터|참여/i;
@@ -491,6 +521,8 @@ test("oshimen control uses the anchored menu without changing its nullable prefe
 
   assert.match(controlSource, /import AnchoredOptionMenu/);
   assert.doesNotMatch(controlSource, /<select\b|<option\b/);
+  assert.match(controlSource, /bg-\[var\(--paper\)\]/);
+  assert.doesNotMatch(controlSource, /bg-\[var\(--background\)\]/);
   assert.match(
     controlSource,
     /\.sort\(\(left, right\) => left\.sortOrder - right\.sortOrder\)/,
