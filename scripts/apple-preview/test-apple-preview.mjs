@@ -101,6 +101,30 @@ test("cross-project exclusive URLs cannot leak into another runtime", () => {
   );
 });
 
+test("cross-project shared Apple media requires the same normalized title and track tuple", () => {
+  const left = createIsolationArtifact("left", 1, "Alpha");
+  const right = createIsolationArtifact("right", 2, "Beta");
+  left.sourceMap.songs[0] = {
+    ...left.sourceMap.songs[0],
+    trackId: right.sourceMap.songs[0].trackId,
+    previewUrl: right.sourceMap.songs[0].previewUrl,
+    trackViewUrl: right.sourceMap.songs[0].trackViewUrl,
+  };
+  left.runtime[0] = {
+    ...left.runtime[0],
+    previewUrl: right.runtime[0].previewUrl,
+    trackViewUrl: right.runtime[0].trackViewUrl,
+  };
+  assert.throws(
+    () => validateCrossProjectIsolation([left, right]),
+    /must preserve normalized title and the complete track tuple/,
+  );
+
+  left.sourceMap.songs[0].title = " Ｔriple・Date ";
+  right.sourceMap.songs[0].title = "Triple Date";
+  assert.doesNotThrow(() => validateCrossProjectIsolation([left, right]));
+});
+
 function createGeneratedFixture() {
   return buildProjectArtifacts({
     project,
@@ -170,13 +194,21 @@ function createAppleTrack(trackId, trackName, collectionName, releaseDate) {
   };
 }
 
-function createIsolationArtifact(projectId, id) {
+function createIsolationArtifact(projectId, id, title = `Title ${id}`) {
   const previewUrl = `https://audio-ssl.itunes.apple.com/preview-${id}.m4a`;
   const trackViewUrl = `https://music.apple.com/jp/album/${id}`;
   return {
     projectId,
     sourceMap: {
-      songs: [{ previewUrl, trackViewUrl }],
+      songs: [
+        {
+          songId: `song-${id}`,
+          title,
+          trackId: id,
+          previewUrl,
+          trackViewUrl,
+        },
+      ],
     },
     runtime: [{ songId: `song-${id}`, previewUrl, trackViewUrl }],
   };

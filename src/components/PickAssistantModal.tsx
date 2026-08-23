@@ -41,6 +41,7 @@ interface PickAssistantModalProps {
   reviewNotice: boolean;
   presenceState: PresenceState;
   returnFocusKey: string;
+  returnFocusFallbackKey: string;
   onClose: () => void;
   onBrowseCandidates: () => void;
   onCreateRandomSample: () => void;
@@ -74,6 +75,7 @@ export default function PickAssistantModal({
   reviewNotice,
   presenceState,
   returnFocusKey,
+  returnFocusFallbackKey,
   onClose,
   onBrowseCandidates,
   onCreateRandomSample,
@@ -112,6 +114,7 @@ export default function PickAssistantModal({
     active: presenceState !== "exiting",
     autoFocus: false,
     returnFocusKey,
+    returnFocusFallbackKey,
   });
 
   useEffect(() => {

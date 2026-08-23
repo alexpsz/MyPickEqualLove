@@ -364,6 +364,49 @@ function validateSourceReport({ project, songs, sourceMap, sourceReport }) {
 }
 
 export function validateCrossProjectIsolation(projectArtifacts) {
+  const sourceReferences = projectArtifacts.flatMap(
+    ({ projectId, sourceMap }) =>
+      sourceMap.songs
+        .filter(
+          ({ trackId, previewUrl, trackViewUrl }) =>
+            trackId !== null && previewUrl !== null && trackViewUrl !== null,
+        )
+        .map(({ songId, title, trackId, previewUrl, trackViewUrl }) => ({
+          projectId,
+          songId,
+          normalizedTitle: normalizePreviewTitle(title),
+          trackId,
+          previewUrl,
+          trackViewUrl,
+        })),
+  );
+
+  for (let leftIndex = 0; leftIndex < sourceReferences.length; leftIndex += 1) {
+    const left = sourceReferences[leftIndex];
+    for (
+      let rightIndex = leftIndex + 1;
+      rightIndex < sourceReferences.length;
+      rightIndex += 1
+    ) {
+      const right = sourceReferences[rightIndex];
+      if (left.projectId === right.projectId) continue;
+      const sharesAppleIdentity =
+        left.trackId === right.trackId ||
+        left.previewUrl === right.previewUrl ||
+        left.trackViewUrl === right.trackViewUrl;
+      if (!sharesAppleIdentity) continue;
+
+      assert(
+        left.normalizedTitle !== "" &&
+          left.normalizedTitle === right.normalizedTitle &&
+          left.trackId === right.trackId &&
+          left.previewUrl === right.previewUrl &&
+          left.trackViewUrl === right.trackViewUrl,
+        `cross-project Apple media reuse must preserve normalized title and the complete track tuple: ${left.projectId}/${left.songId} vs ${right.projectId}/${right.songId}`,
+      );
+    }
+  }
+
   const sourceUrlSets = new Map(
     projectArtifacts.map(({ projectId, sourceMap }) => [
       projectId,

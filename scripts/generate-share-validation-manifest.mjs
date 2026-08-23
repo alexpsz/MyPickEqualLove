@@ -33,12 +33,14 @@ async function buildManifest() {
       "projects",
       projectId,
     );
-    const [songs, liveExperiences] = await Promise.all([
+    const [members, songs, liveExperiences] = await Promise.all([
+      readJson(path.join(projectDirectory, "members.json")),
       readJson(path.join(projectDirectory, "songs.json")),
       readJson(path.join(projectDirectory, "live-experiences.json")),
     ]);
 
     projects[projectId] = {
+      memberIds: members.map((member) => member.id),
       songIds: songs.map((song) => song.id),
       experiences: Object.fromEntries(
         liveExperiences

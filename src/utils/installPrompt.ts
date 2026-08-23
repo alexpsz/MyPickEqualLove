@@ -1,4 +1,9 @@
 export const INSTALL_HINT_SCHEMA_VERSION = 1;
+const INSTALL_HINT_STATE_KEYS = [
+  "schemaVersion",
+  "hasCompletedPick",
+  "dismissed",
+] as const;
 
 export interface InstallHintState {
   schemaVersion: typeof INSTALL_HINT_SCHEMA_VERSION;
@@ -52,6 +57,7 @@ export function readInstallHintState(
     return { status: "unsupported", state: null };
   }
   if (
+    !hasExactKeys(parsed, INSTALL_HINT_STATE_KEYS) ||
     typeof parsed.hasCompletedPick !== "boolean" ||
     typeof parsed.dismissed !== "boolean"
   ) {
@@ -234,6 +240,16 @@ function canMutateInstallHint(status: InstallHintReadStatus) {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function hasExactKeys(
+  value: Record<string, unknown>,
+  expectedKeys: readonly string[],
+) {
+  return (
+    Object.keys(value).length === expectedKeys.length &&
+    expectedKeys.every((key) => Object.hasOwn(value, key))
+  );
 }
 
 function escapeRegExp(value: string) {

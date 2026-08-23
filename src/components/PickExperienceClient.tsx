@@ -4258,6 +4258,7 @@ export default function PickExperienceClient({
               resumeFocusRef={detailTriggerRef}
               presenceState={presenceState}
               returnFocusKey={searchPresentation.returnFocusKey}
+              returnFocusFallbackKey={DIALOG_RETURN_KEYS.globalSearch}
               onClose={() => {
                 setShowModal(false);
                 setSearchSelectionMode("board");
@@ -4380,6 +4381,7 @@ export default function PickExperienceClient({
               reviewNotice={assistantReviewNotice}
               presenceState={presenceState}
               returnFocusKey={pickAssistantReturnFocusKeyRef.current}
+              returnFocusFallbackKey={DIALOG_RETURN_KEYS.pickAssistant}
               onClose={() => setShowPickAssistant(false)}
               onBrowseCandidates={handleBrowseAssistantCandidates}
               onCreateRandomSample={() => {

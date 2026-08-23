@@ -75,6 +75,17 @@ test("install hint state is versioned and corrupt/future values fail closed", ()
   );
   assert.equal(utility.dismissInstallHint(storage, "hint"), false);
   assert.equal(JSON.parse(storage.getItem("hint")).schemaVersion, 2);
+
+  const sameVersionWithUnknownField = JSON.stringify({
+    schemaVersion: 1,
+    hasCompletedPick: false,
+    dismissed: false,
+    unknown: true,
+  });
+  storage.setItem("hint", sameVersionWithUnknownField);
+  assert.equal(utility.readInstallHintState(storage, "hint").status, "invalid");
+  assert.equal(utility.markInstallHintPickCompleted(storage, "hint"), false);
+  assert.equal(storage.getItem("hint"), sameVersionWithUnknownField);
 });
 
 test("first pick and dismiss state persist without losing either fact", () => {
@@ -249,7 +260,7 @@ test("layout, registration, copy, and build wiring retain the narrow contracts",
   assert.match(layout, /<ServiceWorkerRegistration \/>/);
   assert.match(
     projectConfig,
-    /installHint: `\$\{PROJECT_CONFIG\.storagePrefix\}_install_hint_v1`/,
+    /installHint: `\$\{storagePrefix\}_install_hint_v1`/,
   );
   assert.match(copyAssets, /copyCurrentProjectCovers\(source, destination\)/);
   assert.match(verifier, /verifyProjectPublicAssets/);

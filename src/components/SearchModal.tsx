@@ -66,6 +66,7 @@ interface SearchModalProps {
   resumeFocusRef?: RefObject<HTMLElement | null>;
   presenceState: PresenceState;
   returnFocusKey: string;
+  returnFocusFallbackKey?: string;
   onClose: () => void;
   onSelect: (song: Song) => void;
   onToggleCandidate?: (song: Song) => void;
@@ -176,6 +177,7 @@ export default function SearchModal({
   resumeFocusRef,
   presenceState,
   returnFocusKey,
+  returnFocusFallbackKey,
   onClose,
   onSelect,
   onToggleCandidate,
@@ -225,6 +227,7 @@ export default function SearchModal({
     autoFocus: false,
     initialFocusRef: resumeFocusRef,
     returnFocusKey,
+    returnFocusFallbackKey,
   });
 
   useEffect(() => {

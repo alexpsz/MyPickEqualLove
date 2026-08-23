@@ -95,6 +95,7 @@ class FailAfterMutationStorage extends MemoryStorage {
 
 interface ProjectFixture {
   projectId: ProjectId;
+  memberIds: string[];
   songIds: string[];
   standardKeys: ReturnType<typeof getProjectStorageKeys>;
   liveExperienceId: string;
@@ -125,6 +126,7 @@ function getFixture(projectId: ProjectId): ProjectFixture {
 
   return {
     projectId,
+    memberIds: project.memberIds,
     songIds: project.songIds,
     standardKeys: getProjectStorageKeys(projectId),
     liveExperienceId,
@@ -241,6 +243,20 @@ function validEntries(projectId: ProjectId) {
       favoriteSongIds: [standardSongs[0]],
       recentSongIds: [standardSongs[1]],
       seenSongIds: [standardSongs[0], standardSongs[1]],
+    }),
+    [fixture.standardKeys.onboarding]: JSON.stringify({
+      version: 1,
+      completed: true,
+    }),
+    [fixture.standardKeys.installHint]: JSON.stringify({
+      schemaVersion: 1,
+      hasCompletedPick: true,
+      dismissed: false,
+    }),
+    [fixture.standardKeys.oshimen]: JSON.stringify({
+      version: 1,
+      projectId,
+      memberId: fixture.memberIds[0],
     }),
     [fixture.standardKeys.assistantLegacy]: makeAssistant(standardSongs, 1),
     [fixture.standardKeys.assistant]: makeAssistant(standardSongs, 2),
@@ -933,6 +949,125 @@ test("rejects invalid option versions and unknown option fields", () => {
     fixture.standardKeys.options,
     '{"showTitles":true,"transparentBg":false,"unknown":true}',
   );
+});
+
+test("validates onboarding, install hint, and oshimen documents exactly", () => {
+  const fixture = getFixture("equal-love");
+  const [memberId] = fixture.memberIds;
+  assert.ok(memberId);
+
+  const validDocuments = {
+    [fixture.standardKeys.onboarding]: JSON.stringify({
+      version: 1,
+      completed: true,
+    }),
+    [fixture.standardKeys.installHint]: JSON.stringify({
+      schemaVersion: 1,
+      hasCompletedPick: false,
+      dismissed: true,
+    }),
+    [fixture.standardKeys.oshimen]: JSON.stringify({
+      version: 1,
+      projectId: fixture.projectId,
+      memberId,
+    }),
+  };
+  assert.equal(parseDocument(documentWithEntries(validDocuments)).ok, true);
+
+  for (const rawValue of [
+    JSON.stringify({ version: 2, completed: true }),
+    JSON.stringify({ version: 1, completed: false }),
+    JSON.stringify({ version: 1, completed: true, extra: true }),
+  ]) {
+    assertInvalidEntry(fixture.standardKeys.onboarding, rawValue);
+  }
+  for (const rawValue of [
+    JSON.stringify({
+      schemaVersion: 2,
+      hasCompletedPick: false,
+      dismissed: false,
+    }),
+    JSON.stringify({
+      schemaVersion: 1,
+      hasCompletedPick: "yes",
+      dismissed: false,
+    }),
+    JSON.stringify({
+      schemaVersion: 1,
+      hasCompletedPick: false,
+      dismissed: false,
+      extra: true,
+    }),
+  ]) {
+    assertInvalidEntry(fixture.standardKeys.installHint, rawValue);
+  }
+  for (const rawValue of [
+    JSON.stringify({ version: 2, projectId: fixture.projectId, memberId }),
+    JSON.stringify({
+      version: 1,
+      projectId: fixture.projectId,
+      memberId,
+      extra: true,
+    }),
+    JSON.stringify({ version: 1, projectId: "not-equal-me", memberId }),
+    JSON.stringify({
+      version: 1,
+      projectId: fixture.projectId,
+      memberId: "unknown-member",
+    }),
+  ]) {
+    assertInvalidEntry(fixture.standardKeys.oshimen, rawValue);
+  }
+});
+
+test("new durable states plan add, overwrite, remove, and skip byte-exactly", () => {
+  const fixture = getFixture("equal-love");
+  const [memberId] = fixture.memberIds;
+  assert.ok(memberId);
+  const cases = [
+    {
+      key: fixture.standardKeys.onboarding,
+      current: '{"version":1,"completed":true}',
+      backup: '{ "version": 1, "completed": true }',
+    },
+    {
+      key: fixture.standardKeys.installHint,
+      current: '{"schemaVersion":1,"hasCompletedPick":false,"dismissed":true}',
+      backup: '{"schemaVersion":1,"hasCompletedPick":true,"dismissed":false}',
+    },
+    {
+      key: fixture.standardKeys.oshimen,
+      current: JSON.stringify({
+        version: 1,
+        projectId: fixture.projectId,
+        memberId,
+      }),
+      backup: `{"version":1,"projectId":"${fixture.projectId}","memberId":"${memberId}" }`,
+    },
+  ];
+
+  for (const { key, current, backup } of cases) {
+    for (const [expectedAction, documentEntries, currentEntries] of [
+      ["add", { [key]: backup }, {}],
+      ["overwrite", { [key]: backup }, { [key]: current }],
+      ["remove", {}, { [key]: current }],
+      ["skip", { [key]: backup }, { [key]: backup }],
+    ] as const) {
+      const storage = new MemoryStorage(currentEntries);
+      const plan = planBackupRestore(
+        documentWithEntries(documentEntries),
+        currentStorage(storage),
+        fixture.projectId,
+      );
+      assert.equal(plan.ok, true, `${key}/${expectedAction}`);
+      if (!plan.ok) throw new Error("durable-state restore did not plan");
+      assert.equal(
+        plan.entries.find((entry) => entry.key === key)?.action,
+        expectedAction,
+        key,
+      );
+    }
+  }
 });
 
 test("create and plan fail closed on unknown keys and storage failures", () => {

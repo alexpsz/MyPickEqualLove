@@ -27,6 +27,9 @@ import {
   parseCurrentExportOptions,
   parseLegacyExportOptions,
 } from "./exportOptions";
+import { INSTALL_HINT_SCHEMA_VERSION } from "./installPrompt";
+import { ONBOARDING_STATE_VERSION } from "./onboardingState";
+import { OSHIMEN_PREFERENCE_VERSION } from "./oshimenPreference";
 import {
   deriveTournament,
   parsePickAssistantSnapshot,
@@ -299,6 +302,9 @@ type BackupEntryKind =
   | "board-library"
   | "song-discovery-v1"
   | "song-discovery-v2"
+  | "onboarding"
+  | "install-hint"
+  | "oshimen"
   | "assistant-v1"
   | "assistant-v2"
   | "context"
@@ -327,6 +333,7 @@ interface ProjectValidationFacts {
   projectId: ProjectId;
   storagePrefix: string;
   catalogSongIds: ReadonlySet<string>;
+  memberIds: ReadonlySet<string>;
   entries: ReadonlyMap<string, BackupEntryContract>;
   scopes: ReadonlyMap<string, ExperienceValidationScope>;
 }
@@ -341,6 +348,7 @@ function getProjectValidationFacts(projectId: ProjectId) {
   const project = getShareValidationProject(projectId);
   const storagePrefix = getProjectBackupConfig(projectId).storagePrefix;
   const catalogSongIds = new Set(project.songIds);
+  const memberIds = new Set(project.memberIds);
   const entries = new Map<string, BackupEntryContract>();
   const scopes = new Map<string, ExperienceValidationScope>();
   const projectKeys = getProjectStorageKeys(projectId);
@@ -353,6 +361,9 @@ function getProjectValidationFacts(projectId: ProjectId) {
   addEntry(entries, projectKeys.songDiscoveryV2, {
     kind: "song-discovery-v2",
   });
+  addEntry(entries, projectKeys.onboarding, { kind: "onboarding" });
+  addEntry(entries, projectKeys.installHint, { kind: "install-hint" });
+  addEntry(entries, projectKeys.oshimen, { kind: "oshimen" });
   addEntry(entries, LOCALE_STORAGE_KEY, { kind: "locale" });
 
   const standardSource: ExperienceSource = {
@@ -418,6 +429,7 @@ function getProjectValidationFacts(projectId: ProjectId) {
     projectId,
     storagePrefix,
     catalogSongIds,
+    memberIds,
     entries,
     scopes,
   };
@@ -647,6 +659,15 @@ function validateEntryValue(
     case "song-discovery-v2":
       validateSongDiscovery(key, rawValue, 2, facts.catalogSongIds);
       return;
+    case "onboarding":
+      validateOnboarding(key, rawValue);
+      return;
+    case "install-hint":
+      validateInstallHint(key, rawValue);
+      return;
+    case "oshimen":
+      validateOshimen(key, rawValue, facts);
+      return;
     case "assistant-v1":
       validateAssistant(
         key,
@@ -664,6 +685,46 @@ function validateEntryValue(
         requireScope(key, contract),
         validationNow,
       );
+  }
+}
+
+function validateOnboarding(key: string, rawValue: string) {
+  const value = parseJsonRecord(key, rawValue);
+  if (
+    !hasExactKeys(value, ["version", "completed"]) ||
+    value.version !== ONBOARDING_STATE_VERSION ||
+    value.completed !== true
+  ) {
+    invalidEntry(key);
+  }
+}
+
+function validateInstallHint(key: string, rawValue: string) {
+  const value = parseJsonRecord(key, rawValue);
+  if (
+    !hasExactKeys(value, ["schemaVersion", "hasCompletedPick", "dismissed"]) ||
+    value.schemaVersion !== INSTALL_HINT_SCHEMA_VERSION ||
+    typeof value.hasCompletedPick !== "boolean" ||
+    typeof value.dismissed !== "boolean"
+  ) {
+    invalidEntry(key);
+  }
+}
+
+function validateOshimen(
+  key: string,
+  rawValue: string,
+  facts: ProjectValidationFacts,
+) {
+  const value = parseJsonRecord(key, rawValue);
+  if (
+    !hasExactKeys(value, ["version", "projectId", "memberId"]) ||
+    value.version !== OSHIMEN_PREFERENCE_VERSION ||
+    value.projectId !== facts.projectId ||
+    typeof value.memberId !== "string" ||
+    !facts.memberIds.has(value.memberId)
+  ) {
+    invalidEntry(key);
   }
 }
 

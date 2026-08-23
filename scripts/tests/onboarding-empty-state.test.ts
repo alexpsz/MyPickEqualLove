@@ -188,10 +188,7 @@ test("client wiring preserves parser reuse, focus return, and first-pick dismiss
     "utf8",
   );
 
-  assert.match(
-    configSource,
-    /onboarding: `\$\{PROJECT_CONFIG\.storagePrefix\}_onboarding_v1`/,
-  );
+  assert.match(configSource, /onboarding: `\$\{storagePrefix\}_onboarding_v1`/);
   assert.match(
     clientSource,
     /onboardingVariant = isStandard \? "standard" : "live"/,
@@ -225,6 +222,14 @@ test("client wiring preserves parser reuse, focus return, and first-pick dismiss
   assert.match(
     clientSource,
     /returnFocusKey=\{pickAssistantReturnFocusKeyRef\.current\}/,
+  );
+  assert.match(
+    clientSource,
+    /returnFocusKey=\{searchPresentation\.returnFocusKey\}[\s\S]*?returnFocusFallbackKey=\{DIALOG_RETURN_KEYS\.globalSearch\}/,
+  );
+  assert.match(
+    clientSource,
+    /returnFocusKey=\{pickAssistantReturnFocusKeyRef\.current\}[\s\S]*?returnFocusFallbackKey=\{DIALOG_RETURN_KEYS\.pickAssistant\}/,
   );
   assert.equal(
     (clientSource.match(/prepareBoardShareImport\(\{/g) ?? []).length,

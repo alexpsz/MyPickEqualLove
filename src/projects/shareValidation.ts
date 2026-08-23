@@ -17,6 +17,7 @@ export interface ShareValidationExperience {
 }
 
 interface ShareValidationProject {
+  memberIds: string[];
   songIds: string[];
   experiences: Record<string, ShareValidationExperience>;
 }
