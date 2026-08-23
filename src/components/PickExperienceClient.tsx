@@ -3948,6 +3948,7 @@ export default function PickExperienceClient({
     if (!parsed.ok) return parsed;
     try {
       return planBackupRestore(parsed.document, {
+        now: Date.now(),
         keys: getLocalStorageKeys(localStorage),
         getItem: (key) => localStorage.getItem(key),
       });

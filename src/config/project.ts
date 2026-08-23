@@ -34,21 +34,26 @@ export function getProjectBackupConfig(
 
 export const BACKUP_CONFIG = getProjectBackupConfig(PROJECT_ID);
 
-export const STORAGE_KEYS = {
-  picks: `${PROJECT_CONFIG.storagePrefix}_mypicks_v1`,
-  options: `${PROJECT_CONFIG.storagePrefix}_options_v1`,
-  theme: `${PROJECT_CONFIG.storagePrefix}_theme_preference_v1`,
-  picksV2: `${PROJECT_CONFIG.storagePrefix}_mypicks_v2`,
-  optionsV2: `${PROJECT_CONFIG.storagePrefix}_options_v2`,
-  boardLibrary: `${PROJECT_CONFIG.storagePrefix}_board_library_v1`,
-  songDiscovery: `${PROJECT_CONFIG.storagePrefix}_song_discovery_v1`,
-  songDiscoveryV2: `${PROJECT_CONFIG.storagePrefix}_song_discovery_v2`,
-  onboarding: `${PROJECT_CONFIG.storagePrefix}_onboarding_v1`,
-  oshimen: getOshimenPreferenceStorageKey(PROJECT_CONFIG.storagePrefix),
-  assistant: `${PROJECT_CONFIG.storagePrefix}_standard_pick_assistant_v2`,
-  assistantLegacy: `${PROJECT_CONFIG.storagePrefix}_standard_pick_assistant_v1`,
-  installHint: `${PROJECT_CONFIG.storagePrefix}_install_hint_v1`,
-};
+export function getProjectStorageKeys(projectId: ProjectId) {
+  const { storagePrefix } = getProjectBackupConfig(projectId);
+  return {
+    picks: `${storagePrefix}_mypicks_v1`,
+    options: `${storagePrefix}_options_v1`,
+    theme: `${storagePrefix}_theme_preference_v1`,
+    picksV2: `${storagePrefix}_mypicks_v2`,
+    optionsV2: `${storagePrefix}_options_v2`,
+    boardLibrary: `${storagePrefix}_board_library_v1`,
+    songDiscovery: `${storagePrefix}_song_discovery_v1`,
+    songDiscoveryV2: `${storagePrefix}_song_discovery_v2`,
+    onboarding: `${storagePrefix}_onboarding_v1`,
+    oshimen: getOshimenPreferenceStorageKey(storagePrefix),
+    assistant: `${storagePrefix}_standard_pick_assistant_v2`,
+    assistantLegacy: `${storagePrefix}_standard_pick_assistant_v1`,
+    installHint: `${storagePrefix}_install_hint_v1`,
+  };
+}
+
+export const STORAGE_KEYS = getProjectStorageKeys(PROJECT_ID);
 
 export const SERVICE_WORKER_CONFIG = {
   scriptUrl: "/sw.js",
@@ -94,22 +99,32 @@ export function getExperienceStorageKeys(
   experienceId: string,
   contextId?: string,
 ): ExperienceStorageKeys {
+  return getProjectExperienceStorageKeys(PROJECT_ID, experienceId, contextId);
+}
+
+export function getProjectExperienceStorageKeys(
+  projectId: ProjectId,
+  experienceId: string,
+  contextId?: string,
+): ExperienceStorageKeys {
+  const projectStorageKeys = getProjectStorageKeys(projectId);
   if (experienceId === STANDARD_EXPERIENCE_ID) {
-    return STORAGE_KEYS;
+    return projectStorageKeys;
   }
 
+  const { storagePrefix } = getProjectBackupConfig(projectId);
   const experienceSegment = toStorageSegment(experienceId);
   const contextSegment = contextId ? `_${toStorageSegment(contextId)}` : "";
 
   return {
-    picks: `${PROJECT_CONFIG.storagePrefix}_live_${experienceSegment}${contextSegment}_picks_v1`,
-    options: `${PROJECT_CONFIG.storagePrefix}_live_${experienceSegment}_options_v1`,
-    picksV2: `${PROJECT_CONFIG.storagePrefix}_live_${experienceSegment}${contextSegment}_picks_v2`,
-    optionsV2: `${PROJECT_CONFIG.storagePrefix}_live_${experienceSegment}_options_v2`,
-    boardLibrary: STORAGE_KEYS.boardLibrary,
-    assistant: `${PROJECT_CONFIG.storagePrefix}_live_${experienceSegment}${contextSegment}_pick_assistant_v2`,
-    assistantLegacy: `${PROJECT_CONFIG.storagePrefix}_live_${experienceSegment}${contextSegment}_pick_assistant_v1`,
-    context: `${PROJECT_CONFIG.storagePrefix}_live_${experienceSegment}_context_v1`,
+    picks: `${storagePrefix}_live_${experienceSegment}${contextSegment}_picks_v1`,
+    options: `${storagePrefix}_live_${experienceSegment}_options_v1`,
+    picksV2: `${storagePrefix}_live_${experienceSegment}${contextSegment}_picks_v2`,
+    optionsV2: `${storagePrefix}_live_${experienceSegment}_options_v2`,
+    boardLibrary: projectStorageKeys.boardLibrary,
+    assistant: `${storagePrefix}_live_${experienceSegment}${contextSegment}_pick_assistant_v2`,
+    assistantLegacy: `${storagePrefix}_live_${experienceSegment}${contextSegment}_pick_assistant_v1`,
+    context: `${storagePrefix}_live_${experienceSegment}_context_v1`,
   };
 }
 

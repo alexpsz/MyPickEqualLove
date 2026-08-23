@@ -1,12 +1,23 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { getProjectBackupConfig } from "../../src/config/project";
+import {
+  DEFAULT_PICK_SLOTS,
+  getProjectBackupConfig,
+  getProjectExperienceStorageKeys,
+  getProjectStorageKeys,
+  PICK_ASSISTANT_CONFIG,
+} from "../../src/config/project";
 import { LOCALE_STORAGE_KEY } from "../../src/i18n/locales";
+import {
+  getShareValidationProject,
+  type ShareValidationExperience,
+} from "../../src/projects/shareValidation";
 import { PROJECT_IDS, type ProjectId } from "../../src/schema/project";
 import {
   BACKUP_FORMAT,
   BACKUP_MAX_DOCUMENT_CHARACTERS,
   BACKUP_MAX_ENTRIES,
+  BACKUP_MAX_ENTRY_CHARACTERS,
   BACKUP_VERSION,
   BackupDocumentError,
   createBackupDocument,
@@ -18,6 +29,8 @@ import {
 import { applyBackupRestoreTransaction } from "../../src/utils/boardTransaction";
 
 const EXPORTED_AT = "2026-08-24T01:02:03.456Z";
+const EXPORTED_AT_MS = Date.parse(EXPORTED_AT);
+const ASSISTANT_UPDATED_AT = EXPORTED_AT_MS - 60_000;
 
 class MemoryStorage {
   protected readonly data = new Map<string, string>();
@@ -80,38 +93,129 @@ class FailAfterMutationStorage extends MemoryStorage {
   }
 }
 
+interface ProjectFixture {
+  projectId: ProjectId;
+  songIds: string[];
+  standardKeys: ReturnType<typeof getProjectStorageKeys>;
+  liveExperienceId: string;
+  liveExperience: ShareValidationExperience;
+  liveContextId: string;
+  liveKeys: ReturnType<typeof getProjectExperienceStorageKeys>;
+  liveEligibleSongIds: string[];
+  liveIneligibleSongId: string;
+}
+
+function getFixture(projectId: ProjectId): ProjectFixture {
+  const project = getShareValidationProject(projectId);
+  const liveEntry = Object.entries(project.experiences).find(
+    ([, experience]) =>
+      experience.performances.length > 0 &&
+      experience.slots.some(
+        (slot) => slot.eligibility === "selected-performance",
+      ),
+  );
+  assert.ok(liveEntry, `${projectId} needs a strict live fixture`);
+  const [liveExperienceId, liveExperience] = liveEntry;
+  const performance = liveExperience.performances[0];
+  assert.ok(performance, `${projectId} needs a real performance`);
+  const liveIneligibleSongId = project.songIds.find(
+    (songId) => !performance.songIds.includes(songId),
+  );
+  assert.ok(liveIneligibleSongId, `${projectId} needs an ineligible song`);
+
+  return {
+    projectId,
+    songIds: project.songIds,
+    standardKeys: getProjectStorageKeys(projectId),
+    liveExperienceId,
+    liveExperience,
+    liveContextId: performance.id,
+    liveKeys: getProjectExperienceStorageKeys(
+      projectId,
+      liveExperienceId,
+      performance.id,
+    ),
+    liveEligibleSongIds: performance.songIds,
+    liveIneligibleSongId,
+  };
+}
+
 function makeSnapshot(
-  projectId: ProjectId,
+  fixture: ProjectFixture,
   id: string,
   name: string,
-  songId = `${id}-song`,
+  options: {
+    experienceId?: string;
+    contextId?: string | null;
+    picks?: Record<string, string>;
+  } = {},
 ) {
   return {
     id,
     name,
     createdAt: EXPORTED_AT,
     updatedAt: EXPORTED_AT,
-    projectId,
-    experienceId: "standard",
-    contextId: null,
-    picks: { "slot-1": songId },
+    projectId: fixture.projectId,
+    experienceId: options.experienceId ?? "standard",
+    contextId: options.contextId ?? null,
+    picks:
+      options.picks ??
+      ({ [DEFAULT_PICK_SLOTS[0].id]: fixture.songIds[0] } as Record<
+        string,
+        string
+      >),
   };
 }
 
+function makeAssistant(
+  candidateIds: readonly string[],
+  schemaVersion: 1 | 2,
+  overrides: Record<string, unknown> = {},
+) {
+  const session =
+    schemaVersion === 1
+      ? { candidateIds: [...candidateIds], decisions: [] }
+      : {
+          candidateIds: [...candidateIds],
+          targetCount: 2,
+          decisions: [],
+        };
+  return JSON.stringify({
+    schemaVersion,
+    revision: schemaVersion,
+    updatedAt: ASSISTANT_UPDATED_AT,
+    mutationId: `mutation-${schemaVersion}`,
+    shortlistIds: [...candidateIds],
+    session,
+    ...overrides,
+  });
+}
+
 function validEntries(projectId: ProjectId) {
-  const { storagePrefix } = getProjectBackupConfig(projectId);
+  const fixture = getFixture(projectId);
+  const standardSongs = fixture.songIds.slice(0, 3);
+  const liveSongs = fixture.liveEligibleSongIds.slice(0, 3);
+  assert.equal(standardSongs.length, 3);
+  assert.equal(liveSongs.length, 3);
+  const liveSlots = fixture.liveExperience.slots.slice(0, 2);
+  assert.equal(liveSlots.length, 2);
+
   return {
-    [`${storagePrefix}_mypicks_v1`]: '{\n  "slot-1": "song-愛"\n}',
-    [`${storagePrefix}_mypicks_v2`]: JSON.stringify({
+    [fixture.standardKeys.picks]:
+      `{\n  "${DEFAULT_PICK_SLOTS[0].id}": "${standardSongs[0]}"\n}`,
+    [fixture.standardKeys.picksV2]: JSON.stringify({
       schemaVersion: 2,
-      picks: { "slot-1": "song-愛", "slot-2": "song-b" },
+      picks: {
+        [DEFAULT_PICK_SLOTS[0].id]: standardSongs[0],
+        [DEFAULT_PICK_SLOTS[1].id]: standardSongs[1],
+      },
     }),
-    [`${storagePrefix}_options_v1`]: JSON.stringify({
+    [fixture.standardKeys.options]: JSON.stringify({
       showTitles: true,
       transparentBg: false,
       showQrCode: true,
     }),
-    [`${storagePrefix}_options_v2`]: JSON.stringify({
+    [fixture.standardKeys.optionsV2]: JSON.stringify({
       version: 2,
       showTitles: false,
       transparentBg: true,
@@ -119,59 +223,52 @@ function validEntries(projectId: ProjectId) {
       templateId: "spotlight",
       sizePresetId: "square",
     }),
-    [`${storagePrefix}_theme_preference_v1`]: "dark",
-    [`${storagePrefix}_board_library_v1`]: JSON.stringify({
+    [fixture.standardKeys.theme]: "dark",
+    [fixture.standardKeys.boardLibrary]: JSON.stringify({
       schemaVersion: 1,
       snapshots: [
-        makeSnapshot(projectId, "board-a", "A board"),
-        makeSnapshot(projectId, "board-b", "B board"),
+        makeSnapshot(fixture, "board-a", "A board"),
+        makeSnapshot(fixture, "board-b", "B board"),
       ],
     }),
-    [`${storagePrefix}_song_discovery_v1`]: JSON.stringify({
+    [fixture.standardKeys.songDiscovery]: JSON.stringify({
       version: 1,
-      favoriteSongIds: ["song-愛"],
-      recentSongIds: ["song-b"],
+      favoriteSongIds: [standardSongs[0]],
+      recentSongIds: [standardSongs[1]],
     }),
-    [`${storagePrefix}_song_discovery_v2`]: JSON.stringify({
+    [fixture.standardKeys.songDiscoveryV2]: JSON.stringify({
       version: 2,
-      favoriteSongIds: ["song-愛"],
-      recentSongIds: ["song-b"],
-      seenSongIds: ["song-愛", "song-b"],
+      favoriteSongIds: [standardSongs[0]],
+      recentSongIds: [standardSongs[1]],
+      seenSongIds: [standardSongs[0], standardSongs[1]],
     }),
-    [`${storagePrefix}_standard_pick_assistant_v1`]: JSON.stringify({
-      schemaVersion: 1,
-      revision: 1,
-      updatedAt: 1_700_000_000_000,
-      mutationId: "legacy-mutation",
-      shortlistIds: ["song-愛", "song-b"],
-      session: {
-        candidateIds: ["song-愛", "song-b"],
-        decisions: [],
+    [fixture.standardKeys.assistantLegacy]: makeAssistant(standardSongs, 1),
+    [fixture.standardKeys.assistant]: makeAssistant(standardSongs, 2),
+    [fixture.liveKeys.picks]: JSON.stringify({
+      [liveSlots[0].id]: liveSongs[0],
+    }),
+    [fixture.liveKeys.picksV2]: JSON.stringify({
+      schemaVersion: 2,
+      picks: {
+        [liveSlots[0].id]: liveSongs[0],
+        [liveSlots[1].id]: liveSongs[1],
       },
     }),
-    [`${storagePrefix}_standard_pick_assistant_v2`]: JSON.stringify({
-      schemaVersion: 2,
-      revision: 2,
-      updatedAt: 1_700_000_000_001,
-      mutationId: "current-mutation",
-      shortlistIds: ["song-愛", "song-b"],
-      session: {
-        candidateIds: ["song-愛", "song-b"],
-        targetCount: 2,
-        decisions: [],
-      },
+    [fixture.liveKeys.options]: JSON.stringify({
+      showTitles: false,
+      transparentBg: false,
     }),
-    [`${storagePrefix}_live_kokuritsu_2026_both_picks_v2`]: JSON.stringify({
-      schemaVersion: 2,
-      picks: { "memory-1": "song-愛" },
-    }),
-    [`${storagePrefix}_live_kokuritsu_2026_options_v2`]: JSON.stringify({
-      schemaVersion: 2,
+    [fixture.liveKeys.optionsV2]: JSON.stringify({
+      version: 2,
       showTitles: true,
       transparentBg: false,
       showQrCode: true,
+      templateId: "classic",
+      sizePresetId: "portrait",
     }),
-    [`${storagePrefix}_live_kokuritsu_2026_context_v1`]: "both",
+    [fixture.liveKeys.assistantLegacy]: makeAssistant(liveSongs, 1),
+    [fixture.liveKeys.assistant]: makeAssistant(liveSongs, 2),
+    [fixture.liveKeys.context!]: fixture.liveContextId,
     [LOCALE_STORAGE_KEY]: "ja",
   };
 }
@@ -193,6 +290,14 @@ function parseDocument(document: unknown, projectId: ProjectId = "equal-love") {
   return parseBackupDocument(JSON.stringify(document), projectId);
 }
 
+function currentStorage(storage: MemoryStorage, now = EXPORTED_AT_MS) {
+  return {
+    now,
+    keys: storage.keys(),
+    getItem: (key: string) => storage.getItem(key),
+  };
+}
+
 function assertFailure(
   result:
     | ReturnType<typeof parseBackupDocument>
@@ -204,17 +309,25 @@ function assertFailure(
   assert.equal(result.error.code, code);
 }
 
-test("round-trips every included key byte-for-byte through dry-run and one transaction", () => {
+function assertInvalidEntry(key: string, value: string) {
+  assertFailure(
+    parseDocument(documentWithEntries({ [key]: value })),
+    "invalid-entry",
+  );
+}
+
+test("round-trips every real Standard and Live key byte-for-byte", () => {
   const projectId = "equal-love";
   const entries = validEntries(projectId);
-  const { storagePrefix } = getProjectBackupConfig(projectId);
+  const fixture = getFixture(projectId);
+  const otherFixture = getFixture("not-equal-me");
   const source = new MemoryStorage({
     ...entries,
     unrelated_key: "leave me alone",
-    [`${getProjectBackupConfig("not-equal-me").storagePrefix}_mypicks_v1`]:
-      '{"slot-1":"other-site"}',
-    [`${storagePrefix}_standard_pick_assistant_v2.__mutation__.pending`]:
-      '{"version":1}',
+    [otherFixture.standardKeys.picks]: JSON.stringify({
+      [DEFAULT_PICK_SLOTS[0].id]: otherFixture.songIds[0],
+    }),
+    [`${fixture.standardKeys.assistant}.__mutation__.pending`]: '{"version":1}',
   });
 
   const created = createBackupDocument(
@@ -237,7 +350,7 @@ test("round-trips every included key byte-for-byte through dry-run and one trans
   const destination = new MemoryStorage();
   const plan = planBackupRestore(
     parsed.document,
-    { keys: destination.keys(), getItem: (key) => destination.getItem(key) },
+    currentStorage(destination),
     projectId,
   );
   assert.equal(plan.ok, true);
@@ -266,7 +379,7 @@ test("round-trips every included key byte-for-byte through dry-run and one trans
 
   const noChangePlan = planBackupRestore(
     parsed.document,
-    { keys: destination.keys(), getItem: (key) => destination.getItem(key) },
+    currentStorage(destination),
     projectId,
   );
   assert.equal(noChangePlan.ok, true);
@@ -279,23 +392,29 @@ test("round-trips every included key byte-for-byte through dry-run and one trans
   );
 });
 
-test("full restore removes recognized keys, transient journals, and a missing locale override", () => {
-  const { storagePrefix } = getProjectBackupConfig("equal-love");
+test("full restore removes missing recognized keys, journals, and locale", () => {
+  const fixture = getFixture("equal-love");
+  const slotId = DEFAULT_PICK_SLOTS[0].id;
   const backupEntries = {
-    [`${storagePrefix}_mypicks_v1`]: '{"slot-1":"from-backup"}',
+    [fixture.standardKeys.picks]: JSON.stringify({
+      [slotId]: fixture.songIds[0],
+    }),
   };
   const current = new MemoryStorage({
-    [`${storagePrefix}_mypicks_v1`]: '{"slot-1":"old"}',
-    [`${storagePrefix}_mypicks_v2`]:
-      '{"schemaVersion":2,"picks":{"slot-1":"newer-old"}}',
-    [`${storagePrefix}_standard_pick_assistant_v2.__mutation__.pending`]:
-      '{"version":1}',
+    [fixture.standardKeys.picks]: JSON.stringify({
+      [slotId]: fixture.songIds[1],
+    }),
+    [fixture.standardKeys.picksV2]: JSON.stringify({
+      schemaVersion: 2,
+      picks: { [slotId]: fixture.songIds[2] },
+    }),
+    [`${fixture.standardKeys.assistant}.__mutation__.pending`]: '{"version":1}',
     [LOCALE_STORAGE_KEY]: "en",
     unrelated: "preserved",
   });
   const plan = planBackupRestore(
     documentWithEntries(backupEntries),
-    { keys: current.keys(), getItem: (key) => current.getItem(key) },
+    currentStorage(current),
     "equal-love",
   );
   assert.equal(plan.ok, true);
@@ -309,27 +428,30 @@ test("full restore removes recognized keys, transient journals, and a missing lo
     "committed",
   );
   assert.deepEqual(current.snapshot(), {
-    [`${storagePrefix}_mypicks_v1`]: '{"slot-1":"from-backup"}',
+    [fixture.standardKeys.picks]: backupEntries[fixture.standardKeys.picks],
     unrelated: "preserved",
   });
 });
 
 test("a write that throws after mutating leaves zero partial changes", () => {
-  const { storagePrefix } = getProjectBackupConfig("equal-love");
+  const fixture = getFixture("equal-love");
+  const slotId = DEFAULT_PICK_SLOTS[0].id;
   const before = {
-    [`${storagePrefix}_mypicks_v1`]: '{"slot-1":"old-a"}',
-    [`${storagePrefix}_options_v1`]:
-      '{"showTitles":true,"transparentBg":false}',
+    [fixture.standardKeys.picks]: JSON.stringify({
+      [slotId]: fixture.songIds[0],
+    }),
+    [fixture.standardKeys.options]: '{"showTitles":true,"transparentBg":false}',
   };
   const storage = new FailAfterMutationStorage(before, 2);
   const document = documentWithEntries({
-    [`${storagePrefix}_mypicks_v1`]: '{"slot-1":"new-a"}',
-    [`${storagePrefix}_options_v1`]:
-      '{"showTitles":false,"transparentBg":true}',
+    [fixture.standardKeys.picks]: JSON.stringify({
+      [slotId]: fixture.songIds[1],
+    }),
+    [fixture.standardKeys.options]: '{"showTitles":false,"transparentBg":true}',
   });
   const plan = planBackupRestore(
     document,
-    { keys: storage.keys(), getItem: (key) => storage.getItem(key) },
+    currentStorage(storage),
     "equal-love",
   );
   assert.equal(plan.ok, true);
@@ -341,21 +463,21 @@ test("a write that throws after mutating leaves zero partial changes", () => {
 });
 
 test("freshness conflicts and read failures happen before the first write", () => {
-  const { storagePrefix } = getProjectBackupConfig("equal-love");
-  const key = `${storagePrefix}_mypicks_v1`;
-  const storage = new MemoryStorage({ [key]: '{"slot-1":"old"}' });
+  const fixture = getFixture("equal-love");
+  const key = fixture.standardKeys.picks;
+  const slotId = DEFAULT_PICK_SLOTS[0].id;
+  const oldValue = JSON.stringify({ [slotId]: fixture.songIds[0] });
+  const backupValue = JSON.stringify({ [slotId]: fixture.songIds[1] });
+  const storage = new MemoryStorage({ [key]: oldValue });
   const plan = planBackupRestore(
-    documentWithEntries({ [key]: '{"slot-1":"backup"}' }),
-    {
-      keys: storage.keys(),
-      getItem: (candidate) => storage.getItem(candidate),
-    },
+    documentWithEntries({ [key]: backupValue }),
+    currentStorage(storage),
     "equal-love",
   );
   assert.equal(plan.ok, true);
   if (!plan.ok) throw new Error("restore did not plan");
 
-  storage.setItem(key, '{"slot-1":"changed-after-review"}');
+  storage.setItem(key, JSON.stringify({ [slotId]: fixture.songIds[2] }));
   storage.writes = 0;
   assert.deepEqual(applyBackupRestoreTransaction({ storage, plan }), {
     status: "conflict",
@@ -363,18 +485,14 @@ test("freshness conflicts and read failures happen before the first write", () =
   });
   assert.equal(storage.writes, 0);
 
-  const blockedStorage = new MemoryStorage({ [key]: '{"slot-1":"old"}' });
+  const blockedStorage = new MemoryStorage({ [key]: oldValue });
   const blockedPlan = planBackupRestore(
-    documentWithEntries({ [key]: '{"slot-1":"backup"}' }),
-    {
-      keys: blockedStorage.keys(),
-      getItem: (candidate) => blockedStorage.getItem(candidate),
-    },
+    documentWithEntries({ [key]: backupValue }),
+    currentStorage(blockedStorage),
     "equal-love",
   );
   assert.equal(blockedPlan.ok, true);
   if (!blockedPlan.ok) throw new Error("restore did not plan");
-  const originalGet = blockedStorage.getItem.bind(blockedStorage);
   blockedStorage.getItem = () => {
     throw new Error("storage unavailable");
   };
@@ -386,15 +504,23 @@ test("freshness conflicts and read failures happen before the first write", () =
     { status: "blocked", key },
   );
   assert.equal(blockedStorage.writes, 0);
-  blockedStorage.getItem = originalGet;
 });
 
-test("all three project IDs accept only their own storage namespace", () => {
+test("all three projects accept real Standard and Live keys only in their namespace", () => {
   for (const projectId of PROJECT_IDS) {
-    const { storagePrefix } = getProjectBackupConfig(projectId);
-    const source = new MemoryStorage({
-      [`${storagePrefix}_mypicks_v1`]: '{"slot-1":"song"}',
-    });
+    const fixture = getFixture(projectId);
+    const liveSlot = fixture.liveExperience.slots[0].id;
+    const sourceEntries = {
+      [fixture.standardKeys.picks]: JSON.stringify({
+        [DEFAULT_PICK_SLOTS[0].id]: fixture.songIds[0],
+      }),
+      [fixture.liveKeys.picksV2]: JSON.stringify({
+        schemaVersion: 2,
+        picks: { [liveSlot]: fixture.liveEligibleSongIds[0] },
+      }),
+      [fixture.liveKeys.context!]: fixture.liveContextId,
+    };
+    const source = new MemoryStorage(sourceEntries);
     const document = createBackupDocument(
       {
         exportedAt: EXPORTED_AT,
@@ -403,6 +529,7 @@ test("all three project IDs accept only their own storage namespace", () => {
       },
       projectId,
     );
+    assert.deepEqual(document.entries, sourceEntries, projectId);
     assert.equal(parseDocument(document, projectId).ok, true, projectId);
     for (const otherProjectId of PROJECT_IDS) {
       if (otherProjectId === projectId) continue;
@@ -414,10 +541,12 @@ test("all three project IDs accept only their own storage namespace", () => {
   }
 });
 
-test("rejects the complete document and entry negative matrix", () => {
-  const { storagePrefix } = getProjectBackupConfig("equal-love");
+test("rejects the document, version, field, namespace, and size matrix", () => {
+  const fixture = getFixture("equal-love");
   const valid = documentWithEntries({
-    [`${storagePrefix}_mypicks_v1`]: '{"slot-1":"song"}',
+    [fixture.standardKeys.picks]: JSON.stringify({
+      [DEFAULT_PICK_SLOTS[0].id]: fixture.songIds[0],
+    }),
   });
 
   assertFailure(parseBackupDocument("{"), "invalid-json");
@@ -435,7 +564,7 @@ test("rejects the complete document and entry negative matrix", () => {
   assertFailure(
     parseDocument({
       ...valid,
-      entries: { [`${storagePrefix}_mypicks_v1`]: 7 },
+      entries: { [fixture.standardKeys.picks]: 7 },
     }),
     "invalid-entry",
   );
@@ -443,86 +572,11 @@ test("rejects the complete document and entry negative matrix", () => {
     parseDocument({ ...valid, entries: { other_key: "{}" } }),
     "invalid-entry",
   );
+  const otherFixture = getFixture("not-equal-me");
   assertFailure(
     parseDocument({
       ...valid,
-      entries: {
-        [`${getProjectBackupConfig("not-equal-me").storagePrefix}_mypicks_v1`]:
-          "{}",
-      },
-    }),
-    "invalid-entry",
-  );
-  assertFailure(
-    parseDocument({
-      ...valid,
-      entries: { [`${storagePrefix}_mypicks_v1`]: '{"slot-1":""}' },
-    }),
-    "invalid-entry",
-  );
-  assertFailure(
-    parseDocument({
-      ...valid,
-      entries: {
-        [`${storagePrefix}_mypicks_v2`]:
-          '{"schemaVersion":3,"picks":{"slot-1":"song"}}',
-      },
-    }),
-    "invalid-entry",
-  );
-  assertFailure(
-    parseDocument({
-      ...valid,
-      entries: {
-        [`${storagePrefix}_mypicks_v2`]:
-          '{"schemaVersion":2,"picks":{},"unknown":true}',
-      },
-    }),
-    "invalid-entry",
-  );
-  assertFailure(
-    parseDocument({
-      ...valid,
-      entries: {
-        [`${storagePrefix}_options_v2`]:
-          '{"version":3,"showTitles":true,"transparentBg":false,"templateId":"classic","sizePresetId":"portrait"}',
-      },
-    }),
-    "invalid-entry",
-  );
-  assertFailure(
-    parseDocument({
-      ...valid,
-      entries: {
-        [`${storagePrefix}_options_v1`]:
-          '{"showTitles":true,"transparentBg":false,"unknown":true}',
-      },
-    }),
-    "invalid-entry",
-  );
-  assertFailure(
-    parseDocument({
-      ...valid,
-      entries: {
-        [`${storagePrefix}_song_discovery_v2`]:
-          '{"version":2,"favoriteSongIds":[],"recentSongIds":[],"seenSongIds":[],"unknown":true}',
-      },
-    }),
-    "invalid-entry",
-  );
-  assertFailure(
-    parseDocument({
-      ...valid,
-      entries: {
-        [`${storagePrefix}_standard_pick_assistant_v2`]: JSON.stringify({
-          schemaVersion: 3,
-          revision: 0,
-          updatedAt: 1,
-          mutationId: "m",
-          shortlistIds: [],
-          session: null,
-        }),
-      },
+      entries: { [otherFixture.standardKeys.picks]: "{}" },
     }),
     "invalid-entry",
   );
@@ -531,20 +585,23 @@ test("rejects the complete document and entry negative matrix", () => {
     "invalid-entry",
   );
   assertFailure(
-    parseDocument({
-      ...valid,
-      entries: { [`${storagePrefix}_live_event_context_v1`]: "has spaces" },
-    }),
-    "invalid-entry",
+    parseBackupDocument(" ".repeat(BACKUP_MAX_DOCUMENT_CHARACTERS + 1)),
+    "limit-exceeded",
   );
   assertFailure(
-    parseBackupDocument(" ".repeat(BACKUP_MAX_DOCUMENT_CHARACTERS + 1)),
+    parseDocument(
+      documentWithEntries({
+        [fixture.standardKeys.theme]: "x".repeat(
+          BACKUP_MAX_ENTRY_CHARACTERS + 1,
+        ),
+      }),
+    ),
     "limit-exceeded",
   );
 
   const tooManyEntries = Object.fromEntries(
     Array.from({ length: BACKUP_MAX_ENTRIES + 1 }, (_, index) => [
-      `${storagePrefix}_live_event_${index}_picks_v1`,
+      `${getProjectBackupConfig("equal-love").storagePrefix}_future_${index}`,
       "{}",
     ]),
   );
@@ -554,52 +611,339 @@ test("rejects the complete document and entry negative matrix", () => {
   );
 });
 
-test("rejects board library unknown fields, versions, project forgery, and both capacity limits", () => {
-  const { storagePrefix } = getProjectBackupConfig("equal-love");
-  const key = `${storagePrefix}_board_library_v1`;
-  const withLibrary = (snapshots: unknown[], schemaVersion = 1) =>
+test("rejects picks that hydration would drop or normalize", () => {
+  const fixture = getFixture("equal-love");
+  const slots = DEFAULT_PICK_SLOTS;
+  assertInvalidEntry(
+    fixture.standardKeys.picks,
+    JSON.stringify({ unknown_slot: fixture.songIds[0] }),
+  );
+  assertInvalidEntry(
+    fixture.standardKeys.picks,
+    JSON.stringify({ [slots[0].id]: "unknown-song" }),
+  );
+  assertInvalidEntry(
+    fixture.standardKeys.picksV2,
+    JSON.stringify({
+      schemaVersion: 2,
+      picks: {
+        [slots[0].id]: fixture.songIds[0],
+        [slots[1].id]: fixture.songIds[0],
+      },
+    }),
+  );
+
+  const strictSlot = fixture.liveExperience.slots.find(
+    (slot) => slot.eligibility === "selected-performance",
+  );
+  assert.ok(strictSlot);
+  assertInvalidEntry(
+    fixture.liveKeys.picksV2,
+    JSON.stringify({
+      schemaVersion: 2,
+      picks: { [strictSlot.id]: fixture.liveIneligibleSongId },
+    }),
+  );
+  assertInvalidEntry(
+    fixture.standardKeys.picksV2,
+    JSON.stringify({
+      schemaVersion: 3,
+      picks: { [slots[0].id]: fixture.songIds[0] },
+    }),
+  );
+  assertInvalidEntry(
+    fixture.standardKeys.picksV2,
+    JSON.stringify({
+      schemaVersion: 2,
+      picks: {},
+      unknown: true,
+    }),
+  );
+});
+
+test("rejects forged Live experience/context keys and false context values", () => {
+  const fixture = getFixture("equal-love");
+  const prefix = getProjectBackupConfig("equal-love").storagePrefix;
+  const slot = fixture.liveExperience.slots[0].id;
+  const validPicks = JSON.stringify({
+    schemaVersion: 2,
+    picks: { [slot]: fixture.liveEligibleSongIds[0] },
+  });
+
+  assertInvalidEntry(
+    `${prefix}_live_forged_event_${fixture.liveContextId}_picks_v2`,
+    validPicks,
+  );
+  assertInvalidEntry(
+    `${prefix}_live_${fixture.liveExperienceId}_forged_context_picks_v2`,
+    validPicks,
+  );
+  assertInvalidEntry(
+    getProjectExperienceStorageKeys("equal-love", fixture.liveExperienceId)
+      .picksV2,
+    validPicks,
+  );
+  assertInvalidEntry(fixture.liveKeys.context!, "forged-context");
+});
+
+test("rejects saved boards whose scope or picks would be sanitized", () => {
+  const fixture = getFixture("equal-love");
+  const key = fixture.standardKeys.boardLibrary;
+  const parseSnapshots = (snapshots: unknown[], schemaVersion = 1) =>
     parseDocument(
       documentWithEntries({
         [key]: JSON.stringify({ schemaVersion, snapshots }),
       }),
     );
+  const duplicatePicks = {
+    [DEFAULT_PICK_SLOTS[0].id]: fixture.songIds[0],
+    [DEFAULT_PICK_SLOTS[1].id]: fixture.songIds[0],
+  };
+  const strictSlot = fixture.liveExperience.slots.find(
+    (slot) => slot.eligibility === "selected-performance",
+  );
+  assert.ok(strictSlot);
 
-  assertFailure(withLibrary([], 2), "invalid-entry");
+  assertFailure(parseSnapshots([], 2), "invalid-entry");
   assertFailure(
-    withLibrary([{ ...makeSnapshot("equal-love", "a", "A"), unknown: true }]),
+    parseSnapshots([{ ...makeSnapshot(fixture, "a", "A"), unknown: true }]),
     "invalid-entry",
   );
   assertFailure(
-    withLibrary([makeSnapshot("not-equal-me", "a", "A")]),
+    parseSnapshots([
+      { ...makeSnapshot(fixture, "a", "A"), projectId: "not-equal-me" },
+    ]),
     "invalid-entry",
   );
   assertFailure(
-    withLibrary(
-      Array.from({ length: 201 }, (_, index) => ({
-        ...makeSnapshot("equal-love", `board-${index}`, `Board ${index}`),
-        experienceId: `experience-${index}`,
-      })),
+    parseSnapshots([
+      makeSnapshot(fixture, "a", "A", { experienceId: "forged" }),
+    ]),
+    "invalid-entry",
+  );
+  assertFailure(
+    parseSnapshots([
+      makeSnapshot(fixture, "a", "A", {
+        experienceId: fixture.liveExperienceId,
+        contextId: "forged",
+      }),
+    ]),
+    "invalid-entry",
+  );
+  assertFailure(
+    parseSnapshots([
+      makeSnapshot(fixture, "a", "A", {
+        picks: { unknown_slot: fixture.songIds[0] },
+      }),
+    ]),
+    "invalid-entry",
+  );
+  assertFailure(
+    parseSnapshots([
+      makeSnapshot(fixture, "a", "A", {
+        picks: { [DEFAULT_PICK_SLOTS[0].id]: "unknown-song" },
+      }),
+    ]),
+    "invalid-entry",
+  );
+  assertFailure(
+    parseSnapshots([
+      makeSnapshot(fixture, "a", "A", { picks: duplicatePicks }),
+    ]),
+    "invalid-entry",
+  );
+  assertFailure(
+    parseSnapshots([
+      makeSnapshot(fixture, "a", "A", {
+        experienceId: fixture.liveExperienceId,
+        contextId: fixture.liveContextId,
+        picks: { [strictSlot.id]: fixture.liveIneligibleSongId },
+      }),
+    ]),
+    "invalid-entry",
+  );
+  assertFailure(
+    parseSnapshots(
+      Array.from({ length: 201 }, (_, index) =>
+        makeSnapshot(fixture, `board-${index}`, `Board ${index}`),
+      ),
     ),
     "invalid-entry",
   );
   assertFailure(
-    withLibrary(
+    parseSnapshots(
       Array.from({ length: 21 }, (_, index) =>
-        makeSnapshot("equal-love", `board-${index}`, `Board ${index}`),
+        makeSnapshot(fixture, `board-${index}`, `Board ${index}`),
       ),
     ),
     "invalid-entry",
   );
 });
 
-test("create and plan fail closed on unknown project keys and storage read errors", () => {
-  const { storagePrefix } = getProjectBackupConfig("equal-love");
+test("rejects discovery arrays that runtime would filter or deduplicate", () => {
+  const fixture = getFixture("equal-love");
+  assertInvalidEntry(
+    fixture.standardKeys.songDiscovery,
+    JSON.stringify({
+      version: 1,
+      favoriteSongIds: ["unknown-song"],
+      recentSongIds: [],
+    }),
+  );
+  assertInvalidEntry(
+    fixture.standardKeys.songDiscoveryV2,
+    JSON.stringify({
+      version: 2,
+      favoriteSongIds: [fixture.songIds[0], fixture.songIds[0]],
+      recentSongIds: [],
+      seenSongIds: [],
+    }),
+  );
+  assertInvalidEntry(
+    fixture.standardKeys.songDiscoveryV2,
+    JSON.stringify({
+      version: 3,
+      favoriteSongIds: [],
+      recentSongIds: [],
+      seenSongIds: [],
+    }),
+  );
+  assertInvalidEntry(
+    fixture.standardKeys.songDiscoveryV2,
+    JSON.stringify({
+      version: 2,
+      favoriteSongIds: [],
+      recentSongIds: [],
+      seenSongIds: [],
+      unknown: true,
+    }),
+  );
+});
+
+test("rejects corrupt, ineligible, inconsistent, and expired Assistant state", () => {
+  const fixture = getFixture("equal-love");
+  const candidates = fixture.songIds.slice(0, 3);
+  const liveCandidates = fixture.liveEligibleSongIds.slice(0, 3);
+
+  assertInvalidEntry(
+    fixture.standardKeys.assistant,
+    makeAssistant([candidates[0], "unknown-song"], 2),
+  );
+  assertInvalidEntry(
+    fixture.standardKeys.assistant,
+    makeAssistant(candidates, 2, { schemaVersion: 3 }),
+  );
+  assertInvalidEntry(
+    fixture.standardKeys.assistant,
+    makeAssistant(candidates, 2, { unknown: true }),
+  );
+  assertInvalidEntry(
+    fixture.standardKeys.assistant,
+    makeAssistant([candidates[0], candidates[0]], 2),
+  );
+  assertInvalidEntry(
+    fixture.liveKeys.assistant,
+    makeAssistant(
+      [liveCandidates[0], fixture.liveIneligibleSongId, liveCandidates[1]],
+      2,
+    ),
+  );
+  assertInvalidEntry(
+    fixture.standardKeys.assistant,
+    makeAssistant(candidates, 2, {
+      session: {
+        candidateIds: candidates,
+        targetCount: 0,
+        decisions: [],
+      },
+    }),
+  );
+  assertInvalidEntry(
+    fixture.standardKeys.assistant,
+    makeAssistant(candidates, 2, {
+      session: {
+        candidateIds: candidates,
+        targetCount: 2,
+        decisions: [
+          {
+            leftId: candidates[1],
+            rightId: candidates[2],
+            outcome: "left",
+          },
+        ],
+      },
+    }),
+  );
+  assertInvalidEntry(
+    fixture.standardKeys.assistant,
+    makeAssistant(candidates, 2, {
+      session: {
+        candidateIds: candidates,
+        targetCount: 2,
+        decisions: [],
+        activePairKey: JSON.stringify([candidates[1], candidates[2]]),
+      },
+    }),
+  );
+  assertInvalidEntry(
+    fixture.standardKeys.assistant,
+    makeAssistant(candidates, 2, {
+      session: {
+        candidateIds: [candidates[1], candidates[0], candidates[2]],
+        targetCount: 2,
+        decisions: [],
+      },
+    }),
+  );
+  assertInvalidEntry(
+    fixture.standardKeys.assistantLegacy,
+    makeAssistant([], 1),
+  );
+
+  const expiredAtExport = makeAssistant(candidates, 2, {
+    updatedAt: EXPORTED_AT_MS - PICK_ASSISTANT_CONFIG.expiresAfterMs - 1,
+  });
+  assertInvalidEntry(fixture.standardKeys.assistant, expiredAtExport);
+
+  const document = documentWithEntries({
+    [fixture.standardKeys.assistant]: makeAssistant(candidates, 2),
+  });
+  const parsed = parseDocument(document);
+  assert.equal(parsed.ok, true);
+  if (!parsed.ok) throw new Error("fresh Assistant backup did not parse");
+  const destination = new MemoryStorage();
+  const plan = planBackupRestore(
+    parsed.document,
+    currentStorage(
+      destination,
+      ASSISTANT_UPDATED_AT + PICK_ASSISTANT_CONFIG.expiresAfterMs + 1,
+    ),
+  );
+  assertFailure(plan, "invalid-entry");
+  assert.equal(destination.writes, 0);
+});
+
+test("rejects invalid option versions and unknown option fields", () => {
+  const fixture = getFixture("equal-love");
+  assertInvalidEntry(
+    fixture.standardKeys.optionsV2,
+    '{"version":3,"showTitles":true,"transparentBg":false,"showQrCode":true,"templateId":"classic","sizePresetId":"portrait"}',
+  );
+  assertInvalidEntry(
+    fixture.standardKeys.options,
+    '{"showTitles":true,"transparentBg":false,"unknown":true}',
+  );
+});
+
+test("create and plan fail closed on unknown keys and storage failures", () => {
+  const fixture = getFixture("equal-love");
+  const prefix = getProjectBackupConfig("equal-love").storagePrefix;
   assert.throws(
     () =>
       createBackupDocument(
         {
           exportedAt: EXPORTED_AT,
-          keys: [`${storagePrefix}_future_state_v9`],
+          keys: [`${prefix}_future_state_v9`],
           getItem: () => "{}",
         },
         "equal-love",
@@ -612,7 +956,7 @@ test("create and plan fail closed on unknown project keys and storage read error
       createBackupDocument(
         {
           exportedAt: EXPORTED_AT,
-          keys: [`${storagePrefix}_mypicks_v1`],
+          keys: [fixture.standardKeys.picks],
           getItem: () => {
             throw new Error("denied");
           },
@@ -623,45 +967,69 @@ test("create and plan fail closed on unknown project keys and storage read error
       error instanceof BackupDocumentError &&
       error.code === "storage-unavailable",
   );
+  assert.throws(
+    () =>
+      createBackupDocument(
+        {
+          exportedAt: EXPORTED_AT,
+          keys: [fixture.standardKeys.picks],
+          getItem: () => JSON.stringify({ unknown_slot: fixture.songIds[0] }),
+        },
+        "equal-love",
+      ),
+    (error) =>
+      error instanceof BackupDocumentError && error.code === "invalid-entry",
+  );
 
+  const empty = new MemoryStorage();
   const plan = planBackupRestore(
     documentWithEntries({}),
     {
-      keys: [`${storagePrefix}_future_state_v9`],
+      now: EXPORTED_AT_MS,
+      keys: [`${prefix}_future_state_v9`],
       getItem: () => "{}",
     },
     "equal-love",
   );
   assertFailure(plan, "invalid-entry");
+  assertFailure(
+    planBackupRestore(
+      documentWithEntries({}),
+      { ...currentStorage(empty), now: Number.NaN },
+      "equal-love",
+    ),
+    "storage-unavailable",
+  );
 });
 
-test("saved-board dry run distinguishes add, overwrite, skip, and removal", () => {
-  const { storagePrefix } = getProjectBackupConfig("equal-love");
-  const key = `${storagePrefix}_board_library_v1`;
-  const unchanged = makeSnapshot("equal-love", "same", "Same");
+test("saved-board dry-run distinguishes add, overwrite, skip, and removal", () => {
+  const fixture = getFixture("equal-love");
+  const key = fixture.standardKeys.boardLibrary;
+  const unchanged = makeSnapshot(fixture, "same", "Same");
   const backupLibrary = {
     schemaVersion: 1,
     snapshots: [
       unchanged,
-      makeSnapshot("equal-love", "changed", "Changed in backup", "new-song"),
-      makeSnapshot("equal-love", "added", "Added"),
+      makeSnapshot(fixture, "changed", "Changed in backup", {
+        picks: { [DEFAULT_PICK_SLOTS[0].id]: fixture.songIds[1] },
+      }),
+      makeSnapshot(fixture, "added", "Added"),
     ],
   };
   const currentLibrary = {
     schemaVersion: 1,
     snapshots: [
       unchanged,
-      makeSnapshot("equal-love", "changed", "Old name", "old-song"),
-      makeSnapshot("equal-love", "removed", "Removed"),
+      makeSnapshot(fixture, "changed", "Old name", {
+        picks: { [DEFAULT_PICK_SLOTS[0].id]: fixture.songIds[2] },
+      }),
+      makeSnapshot(fixture, "removed", "Removed"),
     ],
   };
   const storage = new MemoryStorage({ [key]: JSON.stringify(currentLibrary) });
   const plan = planBackupRestore(
     documentWithEntries({ [key]: JSON.stringify(backupLibrary) }),
-    {
-      keys: storage.keys(),
-      getItem: (candidate) => storage.getItem(candidate),
-    },
+    currentStorage(storage),
     "equal-love",
   );
   assert.equal(plan.ok, true);

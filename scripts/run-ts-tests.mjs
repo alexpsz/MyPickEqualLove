@@ -116,7 +116,7 @@ const SUITES = {
   },
   backup: {
     tempPrefix: "mypick-backup-tests-",
-    compilerArgs: [...NODE16_ARGS],
+    compilerArgs: [...NODE16_ARGS, "--resolveJsonModule"],
     sourceFiles: ["scripts/tests/backup-document.test.ts"],
     emittedTestFiles: ["scripts/tests/backup-document.test.js"],
     successMessage: "Backup document tests passed.",

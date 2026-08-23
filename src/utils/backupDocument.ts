@@ -1,6 +1,22 @@
-import { BACKUP_CONFIG, getProjectBackupConfig } from "../config/project";
+import {
+  BACKUP_CONFIG,
+  DEFAULT_PICK_SLOTS,
+  getProjectBackupConfig,
+  getProjectExperienceStorageKeys,
+  getProjectStorageKeys,
+  PICK_ASSISTANT_CONFIG,
+  STANDARD_EXPERIENCE_ID,
+} from "../config/project";
 import { isAppLocale, LOCALE_STORAGE_KEY } from "../i18n/locales";
-import { isProjectId, type ProjectId } from "../schema/project";
+import {
+  getShareValidationProject,
+  type ShareValidationExperience,
+} from "../projects/shareValidation";
+import {
+  COMBINED_CONTEXT_ID,
+  isProjectId,
+  type ProjectId,
+} from "../schema/project";
 import {
   BOARD_LIBRARY_SCHEMA_VERSION,
   CURRENT_BOARD_SCHEMA_VERSION,
@@ -11,6 +27,12 @@ import {
   parseCurrentExportOptions,
   parseLegacyExportOptions,
 } from "./exportOptions";
+import {
+  deriveTournament,
+  parsePickAssistantSnapshot,
+  type ComparisonDecision,
+  type PickAssistantSession,
+} from "./pickAssistant";
 import { isThemePreference } from "./themePreference";
 
 export const BACKUP_FORMAT = "mypick.backup" as const;
@@ -34,6 +56,7 @@ export interface BackupStorageReader {
 }
 
 export interface BackupCurrentStorage {
+  now: number;
   keys: readonly string[];
   getItem(key: string): string | null;
 }
@@ -130,16 +153,17 @@ export function createBackupDocument(
     throw new BackupDocumentError("invalid-document");
   }
 
-  const config = getProjectBackupConfig(projectId);
+  const facts = getProjectValidationFacts(projectId);
   const entries: Record<string, string> = {};
   const keys = Array.from(new Set(readStorage.keys)).sort();
+  const validationNow = Date.parse(readStorage.exportedAt);
 
   for (const key of keys) {
-    if (isAssistantJournalKey(key, config.storagePrefix)) continue;
+    if (isAssistantJournalKey(key, facts)) continue;
 
-    const kind = getBackupEntryKind(key, config.storagePrefix);
-    if (kind === null) {
-      if (key.startsWith(`${config.storagePrefix}_`)) {
+    const contract = facts.entries.get(key);
+    if (!contract) {
+      if (key.startsWith(`${facts.storagePrefix}_`)) {
         throw new BackupDocumentError("invalid-entry", key);
       }
       continue;
@@ -152,7 +176,7 @@ export function createBackupDocument(
       throw new BackupDocumentError("storage-unavailable", key);
     }
     if (value === null) continue;
-    validateEntryValue(key, value, kind, projectId);
+    validateEntryValue(key, value, contract, facts, validationNow);
     entries[key] = value;
   }
 
@@ -191,21 +215,28 @@ export function planBackupRestore(
   currentStorage: BackupCurrentStorage,
   expectedProjectId: ProjectId = BACKUP_CONFIG.projectId,
 ): RestorePlan {
-  const validation = validateBackupDocument(document, expectedProjectId);
+  if (!Number.isFinite(currentStorage.now)) {
+    return failure("storage-unavailable");
+  }
+  const validation = validateBackupDocument(
+    document,
+    expectedProjectId,
+    currentStorage.now,
+  );
   if (!validation.ok) return validation;
 
-  const config = getProjectBackupConfig(expectedProjectId);
+  const facts = getProjectValidationFacts(expectedProjectId);
   const entryKeys = new Set(Object.keys(validation.document.entries));
   for (const key of currentStorage.keys) {
-    if (isAssistantJournalKey(key, config.storagePrefix)) {
+    if (isAssistantJournalKey(key, facts)) {
       entryKeys.add(key);
       continue;
     }
-    if (getBackupEntryKind(key, config.storagePrefix) !== null) {
+    if (facts.entries.has(key)) {
       entryKeys.add(key);
       continue;
     }
-    if (key.startsWith(`${config.storagePrefix}_`)) {
+    if (key.startsWith(`${facts.storagePrefix}_`)) {
       return failure("invalid-entry", key);
     }
   }
@@ -273,9 +304,238 @@ type BackupEntryKind =
   | "context"
   | "locale";
 
+interface BackupEntryContract {
+  kind: BackupEntryKind;
+  scope?: ExperienceValidationScope;
+  allowedContextIds?: ReadonlySet<string>;
+}
+
+interface StoredPickValidationRules {
+  songIds: Set<string>;
+  slots: Array<{ id: string; eligibleSongIds: Set<string> }>;
+}
+
+interface ExperienceValidationScope {
+  projectId: ProjectId;
+  experienceId: string;
+  contextId: string | null;
+  rules: StoredPickValidationRules;
+  assistantSongIds: ReadonlySet<string>;
+}
+
+interface ProjectValidationFacts {
+  projectId: ProjectId;
+  storagePrefix: string;
+  catalogSongIds: ReadonlySet<string>;
+  entries: ReadonlyMap<string, BackupEntryContract>;
+  scopes: ReadonlyMap<string, ExperienceValidationScope>;
+}
+
+interface ExperienceSource {
+  slots: ShareValidationExperience["slots"];
+  performances: ShareValidationExperience["performances"];
+  includeCombinedPerformance: boolean;
+}
+
+function getProjectValidationFacts(projectId: ProjectId) {
+  const project = getShareValidationProject(projectId);
+  const storagePrefix = getProjectBackupConfig(projectId).storagePrefix;
+  const catalogSongIds = new Set(project.songIds);
+  const entries = new Map<string, BackupEntryContract>();
+  const scopes = new Map<string, ExperienceValidationScope>();
+  const projectKeys = getProjectStorageKeys(projectId);
+
+  addEntry(entries, projectKeys.theme, { kind: "theme" });
+  addEntry(entries, projectKeys.boardLibrary, { kind: "board-library" });
+  addEntry(entries, projectKeys.songDiscovery, {
+    kind: "song-discovery-v1",
+  });
+  addEntry(entries, projectKeys.songDiscoveryV2, {
+    kind: "song-discovery-v2",
+  });
+  addEntry(entries, LOCALE_STORAGE_KEY, { kind: "locale" });
+
+  const standardSource: ExperienceSource = {
+    slots: DEFAULT_PICK_SLOTS.map((slot) => ({
+      id: slot.id,
+      eligibility: "catalog" as const,
+    })),
+    performances: [],
+    includeCombinedPerformance: false,
+  };
+  const standardScope = createExperienceScope(
+    projectId,
+    STANDARD_EXPERIENCE_ID,
+    null,
+    standardSource,
+    catalogSongIds,
+  );
+  addScope(scopes, standardScope);
+  addExperienceEntries(entries, projectKeys, standardScope);
+
+  for (const [experienceId, experience] of Object.entries(
+    project.experiences,
+  )) {
+    const source: ExperienceSource = {
+      slots: experience.slots,
+      performances: experience.performances,
+      includeCombinedPerformance: experience.includeCombinedPerformance,
+    };
+    const contextIds = getRealContextIds(source);
+    const baseKeys = getProjectExperienceStorageKeys(projectId, experienceId);
+    addEntry(entries, baseKeys.options, { kind: "options-v1" });
+    addEntry(entries, baseKeys.optionsV2, { kind: "options-v2" });
+    if (contextIds.length > 0 && baseKeys.context) {
+      addEntry(entries, baseKeys.context, {
+        kind: "context",
+        allowedContextIds: new Set(contextIds),
+      });
+    }
+
+    for (const contextId of contextIds.length > 0 ? contextIds : [null]) {
+      const scope = createExperienceScope(
+        projectId,
+        experienceId,
+        contextId,
+        source,
+        catalogSongIds,
+      );
+      addScope(scopes, scope);
+      addExperienceEntries(
+        entries,
+        getProjectExperienceStorageKeys(
+          projectId,
+          experienceId,
+          contextId ?? undefined,
+        ),
+        scope,
+        false,
+      );
+    }
+  }
+
+  return {
+    projectId,
+    storagePrefix,
+    catalogSongIds,
+    entries,
+    scopes,
+  };
+}
+
+function addExperienceEntries(
+  entries: Map<string, BackupEntryContract>,
+  keys: ReturnType<typeof getProjectExperienceStorageKeys>,
+  scope: ExperienceValidationScope,
+  includeOptions = true,
+) {
+  addEntry(entries, keys.picks, { kind: "picks-v1", scope });
+  addEntry(entries, keys.picksV2, { kind: "picks-v2", scope });
+  addEntry(entries, keys.assistantLegacy, { kind: "assistant-v1", scope });
+  addEntry(entries, keys.assistant, { kind: "assistant-v2", scope });
+  if (includeOptions) {
+    addEntry(entries, keys.options, { kind: "options-v1" });
+    addEntry(entries, keys.optionsV2, { kind: "options-v2" });
+  }
+}
+
+function addEntry(
+  entries: Map<string, BackupEntryContract>,
+  key: string,
+  contract: BackupEntryContract,
+) {
+  if (entries.has(key)) {
+    throw new Error(`Duplicate backup storage contract: ${key}`);
+  }
+  entries.set(key, contract);
+}
+
+function addScope(
+  scopes: Map<string, ExperienceValidationScope>,
+  scope: ExperienceValidationScope,
+) {
+  const key = getExperienceScopeKey(scope.experienceId, scope.contextId);
+  if (scopes.has(key)) {
+    throw new Error(`Duplicate backup experience scope: ${key}`);
+  }
+  scopes.set(key, scope);
+}
+
+function createExperienceScope(
+  projectId: ProjectId,
+  experienceId: string,
+  contextId: string | null,
+  source: ExperienceSource,
+  catalogSongIds: ReadonlySet<string>,
+): ExperienceValidationScope {
+  const performances = source.performances;
+  const selectedPerformances =
+    contextId === COMBINED_CONTEXT_ID && source.includeCombinedPerformance
+      ? performances
+      : performances.filter((performance) => performance.id === contextId);
+  const selectedPerformanceSongIds = new Set(
+    selectedPerformances
+      .flatMap((performance) => performance.songIds)
+      .filter((songId) => catalogSongIds.has(songId)),
+  );
+  const eventSongIds = new Set(
+    performances
+      .flatMap((performance) => performance.songIds)
+      .filter((songId) => catalogSongIds.has(songId)),
+  );
+  const rules: StoredPickValidationRules = {
+    songIds: new Set(catalogSongIds),
+    slots: source.slots.map((slot) => ({
+      id: slot.id,
+      eligibleSongIds:
+        slot.eligibility === "catalog"
+          ? new Set(catalogSongIds)
+          : slot.eligibility === "event-union"
+            ? eventSongIds
+            : selectedPerformanceSongIds,
+    })),
+  };
+  const strictSlotIds = new Set(
+    source.slots
+      .filter((slot) => slot.eligibility !== "catalog")
+      .map((slot) => slot.id),
+  );
+  const assistantSongIds =
+    strictSlotIds.size === 0
+      ? contextId === null
+        ? new Set(catalogSongIds)
+        : new Set<string>()
+      : new Set(
+          rules.slots
+            .filter((slot) => strictSlotIds.has(slot.id))
+            .flatMap((slot) => [...slot.eligibleSongIds]),
+        );
+
+  return {
+    projectId,
+    experienceId,
+    contextId,
+    rules,
+    assistantSongIds,
+  };
+}
+
+function getRealContextIds(source: ExperienceSource) {
+  const contextIds = source.performances.map((performance) => performance.id);
+  if (source.includeCombinedPerformance && source.performances.length > 1) {
+    contextIds.push(COMBINED_CONTEXT_ID);
+  }
+  return contextIds;
+}
+
+function getExperienceScopeKey(experienceId: string, contextId: string | null) {
+  return JSON.stringify([experienceId, contextId]);
+}
+
 function validateBackupDocument(
   value: unknown,
   expectedProjectId: ProjectId,
+  validationNow?: number,
 ): BackupParseResult {
   if (!isPlainRecord(value)) return failure("invalid-document");
   if (value.format !== BACKUP_FORMAT) return failure("unsupported-format");
@@ -308,7 +568,9 @@ function validateBackupDocument(
   }
   if (!isPlainRecord(value.entries)) return failure("invalid-entry");
 
-  const config = getProjectBackupConfig(expectedProjectId);
+  const semanticNow = validationNow ?? Date.parse(value.exportedAt);
+  if (!Number.isFinite(semanticNow)) return failure("invalid-document");
+  const facts = getProjectValidationFacts(expectedProjectId);
   const entries: Record<string, string> = {};
   try {
     validateEntryLimits(value.entries);
@@ -316,11 +578,11 @@ function validateBackupDocument(
       if (typeof rawValue !== "string") {
         throw new BackupDocumentError("invalid-entry", key);
       }
-      const kind = getBackupEntryKind(key, config.storagePrefix);
-      if (kind === null || isAssistantJournalKey(key, config.storagePrefix)) {
+      const contract = facts.entries.get(key);
+      if (!contract || isAssistantJournalKey(key, facts)) {
         throw new BackupDocumentError("invalid-entry", key);
       }
-      validateEntryValue(key, rawValue, kind, expectedProjectId);
+      validateEntryValue(key, rawValue, contract, facts, semanticNow);
       entries[key] = rawValue;
     }
   } catch (error) {
@@ -342,55 +604,18 @@ function validateBackupDocument(
   return { ok: true, document };
 }
 
-function getBackupEntryKind(
-  key: string,
-  storagePrefix: string,
-): BackupEntryKind | null {
-  if (key === LOCALE_STORAGE_KEY) return "locale";
-
-  const standardEntries: Record<string, BackupEntryKind> = {
-    [`${storagePrefix}_mypicks_v1`]: "picks-v1",
-    [`${storagePrefix}_mypicks_v2`]: "picks-v2",
-    [`${storagePrefix}_options_v1`]: "options-v1",
-    [`${storagePrefix}_options_v2`]: "options-v2",
-    [`${storagePrefix}_theme_preference_v1`]: "theme",
-    [`${storagePrefix}_board_library_v1`]: "board-library",
-    [`${storagePrefix}_song_discovery_v1`]: "song-discovery-v1",
-    [`${storagePrefix}_song_discovery_v2`]: "song-discovery-v2",
-    [`${storagePrefix}_standard_pick_assistant_v1`]: "assistant-v1",
-    [`${storagePrefix}_standard_pick_assistant_v2`]: "assistant-v2",
-  };
-  const standardKind = standardEntries[key];
-  if (standardKind) return standardKind;
-
-  const escapedPrefix = escapeRegExp(storagePrefix);
-  const storageSegments = "[A-Za-z0-9]+(?:_[A-Za-z0-9]+)*";
-  const liveBase = `${escapedPrefix}_live_${storageSegments}`;
-  if (new RegExp(`^${liveBase}_picks_v1$`).test(key)) return "picks-v1";
-  if (new RegExp(`^${liveBase}_picks_v2$`).test(key)) return "picks-v2";
-  if (new RegExp(`^${liveBase}_options_v1$`).test(key)) return "options-v1";
-  if (new RegExp(`^${liveBase}_options_v2$`).test(key)) return "options-v2";
-  if (new RegExp(`^${liveBase}_pick_assistant_v1$`).test(key)) {
-    return "assistant-v1";
-  }
-  if (new RegExp(`^${liveBase}_pick_assistant_v2$`).test(key)) {
-    return "assistant-v2";
-  }
-  if (new RegExp(`^${liveBase}_context_v1$`).test(key)) return "context";
-  return null;
-}
-
 function validateEntryValue(
   key: string,
   rawValue: string,
-  kind: BackupEntryKind,
-  projectId: ProjectId,
+  contract: BackupEntryContract,
+  facts: ProjectValidationFacts,
+  validationNow: number,
 ) {
   if (rawValue.length > BACKUP_MAX_ENTRY_CHARACTERS) {
     throw new BackupDocumentError("limit-exceeded", key);
   }
 
-  switch (kind) {
+  switch (contract.kind) {
     case "theme":
       if (!isThemePreference(rawValue)) invalidEntry(key);
       return;
@@ -399,13 +624,13 @@ function validateEntryValue(
       if (!isAppLocale(rawValue)) invalidEntry(key);
       return;
     case "context":
-      if (!isStorageIdentifier(rawValue)) invalidEntry(key);
+      if (!contract.allowedContextIds?.has(rawValue)) invalidEntry(key);
       return;
     case "picks-v1":
-      validateLegacyPicks(key, rawValue);
+      validateLegacyPicks(key, rawValue, requireScope(key, contract));
       return;
     case "picks-v2":
-      validateCurrentPicks(key, rawValue);
+      validateCurrentPicks(key, rawValue, requireScope(key, contract));
       return;
     case "options-v1":
       validateLegacyOptions(key, rawValue);
@@ -414,35 +639,84 @@ function validateEntryValue(
       validateCurrentOptions(key, rawValue);
       return;
     case "board-library":
-      validateBoardLibraryEntry(key, rawValue, projectId);
+      validateBoardLibraryEntry(key, rawValue, facts);
       return;
     case "song-discovery-v1":
-      validateSongDiscovery(key, rawValue, 1);
+      validateSongDiscovery(key, rawValue, 1, facts.catalogSongIds);
       return;
     case "song-discovery-v2":
-      validateSongDiscovery(key, rawValue, 2);
+      validateSongDiscovery(key, rawValue, 2, facts.catalogSongIds);
       return;
     case "assistant-v1":
-      validateAssistant(key, rawValue, 1);
+      validateAssistant(
+        key,
+        rawValue,
+        1,
+        requireScope(key, contract),
+        validationNow,
+      );
       return;
     case "assistant-v2":
-      validateAssistant(key, rawValue, 2);
+      validateAssistant(
+        key,
+        rawValue,
+        2,
+        requireScope(key, contract),
+        validationNow,
+      );
   }
 }
 
-function validateLegacyPicks(key: string, rawValue: string) {
-  const value = parseJsonRecord(key, rawValue);
-  if (!isStrictPicks(value)) invalidEntry(key);
+function requireScope(key: string, contract: BackupEntryContract) {
+  if (!contract.scope) invalidEntry(key);
+  return contract.scope;
 }
 
-function validateCurrentPicks(key: string, rawValue: string) {
+function validateLegacyPicks(
+  key: string,
+  rawValue: string,
+  scope: ExperienceValidationScope,
+) {
+  validateStoredPicks(key, parseJsonRecord(key, rawValue), scope);
+}
+
+function validateCurrentPicks(
+  key: string,
+  rawValue: string,
+  scope: ExperienceValidationScope,
+) {
   const value = parseJsonRecord(key, rawValue);
   if (
     !hasExactKeys(value, ["schemaVersion", "picks"]) ||
-    value.schemaVersion !== CURRENT_BOARD_SCHEMA_VERSION ||
-    !isStrictPicks(value.picks)
+    value.schemaVersion !== CURRENT_BOARD_SCHEMA_VERSION
   ) {
     invalidEntry(key);
+  }
+  validateStoredPicks(key, value.picks, scope);
+}
+
+function validateStoredPicks(
+  key: string,
+  value: unknown,
+  scope: ExperienceValidationScope,
+) {
+  if (!isStrictPicks(value)) invalidEntry(key);
+  const pairs = Object.entries(value);
+  if (new Set(pairs.map(([, songId]) => songId)).size !== pairs.length) {
+    invalidEntry(key);
+  }
+
+  if (pairs.length > scope.rules.slots.length) invalidEntry(key);
+  const slots = new Map(scope.rules.slots.map((slot) => [slot.id, slot]));
+  for (const [slotId, songId] of pairs) {
+    const slot = slots.get(slotId);
+    if (
+      !slot ||
+      !scope.rules.songIds.has(songId) ||
+      !slot.eligibleSongIds.has(songId)
+    ) {
+      invalidEntry(key);
+    }
   }
 }
 
@@ -493,7 +767,7 @@ function validateCurrentOptions(key: string, rawValue: string) {
 function validateBoardLibraryEntry(
   key: string,
   rawValue: string,
-  projectId: ProjectId,
+  facts: ProjectValidationFacts,
 ) {
   const value = parseJsonRecord(key, rawValue);
   if (
@@ -516,17 +790,29 @@ function validateBoardLibraryEntry(
         "contextId",
         "picks",
       ]) ||
-      !isStrictPicks(snapshot.picks)
+      snapshot.projectId !== facts.projectId ||
+      typeof snapshot.experienceId !== "string" ||
+      (snapshot.contextId !== null && typeof snapshot.contextId !== "string")
     ) {
       invalidEntry(key);
     }
+    const scope = facts.scopes.get(
+      getExperienceScopeKey(snapshot.experienceId, snapshot.contextId),
+    );
+    if (!scope) invalidEntry(key);
+    validateStoredPicks(key, snapshot.picks, scope);
   }
-  if (parseBoardLibrary(rawValue, projectId).status !== "loaded") {
+  if (parseBoardLibrary(rawValue, facts.projectId).status !== "loaded") {
     invalidEntry(key);
   }
 }
 
-function validateSongDiscovery(key: string, rawValue: string, version: 1 | 2) {
+function validateSongDiscovery(
+  key: string,
+  rawValue: string,
+  version: 1 | 2,
+  catalogSongIds: ReadonlySet<string>,
+) {
   const value = parseJsonRecord(key, rawValue);
   const expectedKeys =
     version === 1
@@ -535,18 +821,33 @@ function validateSongDiscovery(key: string, rawValue: string, version: 1 | 2) {
   if (
     !hasExactKeys(value, expectedKeys) ||
     value.version !== version ||
-    !isStringArray(value.favoriteSongIds) ||
-    !isStringArray(value.recentSongIds) ||
-    (version === 2 && !isStringArray(value.seenSongIds))
+    !isLosslessSongIdArray(value.favoriteSongIds, catalogSongIds) ||
+    !isLosslessSongIdArray(value.recentSongIds, catalogSongIds) ||
+    (version === 2 && !isLosslessSongIdArray(value.seenSongIds, catalogSongIds))
   ) {
     invalidEntry(key);
   }
+}
+
+function isLosslessSongIdArray(
+  value: unknown,
+  catalogSongIds: ReadonlySet<string>,
+): value is string[] {
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (songId) => typeof songId === "string" && catalogSongIds.has(songId),
+    ) &&
+    new Set(value).size === value.length
+  );
 }
 
 function validateAssistant(
   key: string,
   rawValue: string,
   schemaVersion: 1 | 2,
+  scope: ExperienceValidationScope,
+  validationNow: number,
 ) {
   const value = parseJsonRecord(key, rawValue);
   if (
@@ -566,33 +867,85 @@ function validateAssistant(
     value.updatedAt <= 0 ||
     typeof value.mutationId !== "string" ||
     value.mutationId.length === 0 ||
-    !isUniqueStringArray(value.shortlistIds)
+    !isLosslessSongIdArray(value.shortlistIds, scope.assistantSongIds)
   ) {
     invalidEntry(key);
   }
-  if (value.session === null) return;
-  if (!isPlainRecord(value.session)) invalidEntry(key);
 
-  const requiredSessionKeys =
+  const session = parseRawAssistantSession(
+    key,
+    value.session,
+    value.shortlistIds,
+    schemaVersion,
+  );
+  const maximumCandidates = scope.assistantSongIds.size;
+  if (schemaVersion === 1) {
+    if (
+      value.shortlistIds.length === 0 ||
+      value.shortlistIds.length > maximumCandidates ||
+      validationNow - value.updatedAt > PICK_ASSISTANT_CONFIG.expiresAfterMs
+    ) {
+      invalidEntry(key);
+    }
+    if (session) {
+      validateTournamentActivePair(key, {
+        ...session,
+        targetCount: session.candidateIds.length,
+      });
+    }
+    return;
+  }
+
+  const parsed = parsePickAssistantSnapshot(rawValue, {
+    schemaVersion: PICK_ASSISTANT_CONFIG.schemaVersion,
+    expiresAfterMs: PICK_ASSISTANT_CONFIG.expiresAfterMs,
+    maximumCandidates,
+    now: validationNow,
+    validSongIds: scope.assistantSongIds,
+  });
+  if (parsed.status !== "valid") invalidEntry(key);
+  if (parsed.snapshot.session) {
+    validateTournamentActivePair(key, parsed.snapshot.session);
+  }
+}
+
+interface RawAssistantSession {
+  candidateIds: string[];
+  decisions: ComparisonDecision[];
+  activePairKey?: string;
+  targetCount?: number;
+}
+
+function parseRawAssistantSession(
+  key: string,
+  value: unknown,
+  shortlistIds: readonly string[],
+  schemaVersion: 1 | 2,
+): RawAssistantSession | null {
+  if (value === null) return null;
+  if (!isPlainRecord(value)) invalidEntry(key);
+  const requiredKeys =
     schemaVersion === 1
       ? ["candidateIds", "decisions"]
       : ["candidateIds", "targetCount", "decisions"];
   if (
-    !hasExactOptionalKeys(value.session, requiredSessionKeys, [
-      "activePairKey",
-    ]) ||
-    !isUniqueStringArray(value.session.candidateIds) ||
-    !sameStringArray(value.session.candidateIds, value.shortlistIds) ||
-    !Array.isArray(value.session.decisions) ||
+    !hasExactOptionalKeys(value, requiredKeys, ["activePairKey"]) ||
+    !Array.isArray(value.candidateIds) ||
+    !value.candidateIds.every(
+      (candidateId) => typeof candidateId === "string",
+    ) ||
+    !sameStringArray(value.candidateIds, shortlistIds) ||
+    !Array.isArray(value.decisions) ||
     (schemaVersion === 2 &&
-      (!Number.isInteger(value.session.targetCount) ||
-        (value.session.targetCount as number) < 1)) ||
-    (Object.hasOwn(value.session, "activePairKey") &&
-      typeof value.session.activePairKey !== "string")
+      (!Number.isInteger(value.targetCount) ||
+        (value.targetCount as number) < 1)) ||
+    (Object.hasOwn(value, "activePairKey") &&
+      typeof value.activePairKey !== "string")
   ) {
     invalidEntry(key);
   }
-  for (const decision of value.session.decisions) {
+
+  const decisions: ComparisonDecision[] = value.decisions.map((decision) => {
     if (
       !isPlainRecord(decision) ||
       !hasExactKeys(decision, ["leftId", "rightId", "outcome"]) ||
@@ -604,6 +957,42 @@ function validateAssistant(
     ) {
       invalidEntry(key);
     }
+    return {
+      leftId: decision.leftId,
+      rightId: decision.rightId,
+      outcome: decision.outcome,
+    };
+  });
+
+  return {
+    candidateIds: value.candidateIds.slice(),
+    decisions,
+    activePairKey: value.activePairKey as string | undefined,
+    targetCount:
+      schemaVersion === 2 ? (value.targetCount as number) : undefined,
+  };
+}
+
+function validateTournamentActivePair(
+  key: string,
+  session: PickAssistantSession,
+) {
+  let state: ReturnType<typeof deriveTournament>;
+  try {
+    state = deriveTournament(session);
+  } catch {
+    invalidEntry(key);
+  }
+  if (state.status === "complete") {
+    if (session.activePairKey !== undefined) invalidEntry(key);
+    return;
+  }
+  if (
+    session.activePairKey !== undefined &&
+    session.activePairKey !==
+      JSON.stringify([state.pair.leftId, state.pair.rightId])
+  ) {
+    invalidEntry(key);
   }
 }
 
@@ -695,7 +1084,7 @@ function parseJsonRecord(key: string, rawValue: string) {
   return value;
 }
 
-function isStrictPicks(value: unknown) {
+function isStrictPicks(value: unknown): value is Record<string, string> {
   return (
     isPlainRecord(value) &&
     Object.entries(value).every(
@@ -703,20 +1092,6 @@ function isStrictPicks(value: unknown) {
         slotId.length > 0 && typeof songId === "string" && songId.length > 0,
     )
   );
-}
-
-function isStorageIdentifier(value: string) {
-  return /^[A-Za-z0-9]+(?:[_-][A-Za-z0-9]+)*$/.test(value);
-}
-
-function isStringArray(value: unknown): value is string[] {
-  return (
-    Array.isArray(value) && value.every((item) => typeof item === "string")
-  );
-}
-
-function isUniqueStringArray(value: unknown): value is string[] {
-  return isStringArray(value) && new Set(value).size === value.length;
 }
 
 function sameStringArray(left: readonly string[], right: readonly string[]) {
@@ -774,15 +1149,14 @@ function isIsoTimestamp(value: string) {
   );
 }
 
-function isAssistantJournalKey(key: string, storagePrefix: string) {
-  if (!key.includes(".__mutation__.")) return false;
-  const baseKey = key.slice(0, key.indexOf(".__mutation__."));
-  const kind = getBackupEntryKind(baseKey, storagePrefix);
-  return kind === "assistant-v1" || kind === "assistant-v2";
-}
-
-function escapeRegExp(value: string) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+function isAssistantJournalKey(key: string, facts: ProjectValidationFacts) {
+  const marker = ".__mutation__.";
+  const markerIndex = key.indexOf(marker);
+  if (markerIndex < 0 || markerIndex + marker.length === key.length) {
+    return false;
+  }
+  const contract = facts.entries.get(key.slice(0, markerIndex));
+  return contract?.kind === "assistant-v1" || contract?.kind === "assistant-v2";
 }
 
 function invalidEntry(key: string): never {
