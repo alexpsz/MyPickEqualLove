@@ -1,4 +1,4 @@
-import pilotManifest from "./cover-tone-pilot.json";
+import { CURRENT_PROJECT_RUNTIME } from "@current-project/runtime";
 
 import type { Picks, PickSlot } from "../schema/music";
 import type {
@@ -6,21 +6,11 @@ import type {
   ExportTemplateId,
 } from "../schema/export";
 import type { ProjectId } from "../schema/project";
+import type { CoverTonePilotRuntimeEntry } from "../projects/runtimeTypes";
 
 export const COVER_TONE_ALGORITHM_VERSION = 1 as const;
 
-export interface CoverTonePilotEntry {
-  projectId: ProjectId;
-  songId: string;
-  coverUrl: string;
-  sha256: string;
-  palette: ExportCoverTonePalette;
-}
-
-interface CoverTonePilotManifest {
-  algorithmVersion: typeof COVER_TONE_ALGORITHM_VERSION;
-  entries: readonly CoverTonePilotEntry[];
-}
+export type CoverTonePilotEntry = CoverTonePilotRuntimeEntry;
 
 export interface CoverToneAvailability {
   isSupported: boolean;
@@ -28,16 +18,16 @@ export interface CoverToneAvailability {
   palette?: ExportCoverTonePalette;
 }
 
-const coverTonePilot = pilotManifest as CoverTonePilotManifest;
+const coverTonePilot = CURRENT_PROJECT_RUNTIME.coverTonePilot;
 
 const PILOT_BY_PROJECT_AND_SONG = new Map(
-  coverTonePilot.entries.map((entry) => [
+  coverTonePilot.map((entry) => [
     getPilotKey(entry.projectId, entry.songId),
     entry,
   ]),
 );
 
-export const COVER_TONE_PILOT_ENTRIES = coverTonePilot.entries;
+export const COVER_TONE_PILOT_ENTRIES = coverTonePilot;
 
 export function getCoverToneAvailability({
   projectId,

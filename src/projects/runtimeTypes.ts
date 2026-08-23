@@ -1,4 +1,5 @@
 import type { Member, Song } from "../schema/music";
+import type { ExportCoverTonePalette } from "../schema/export";
 import type { PickExperience } from "../schema/pick-experience";
 import type { ProjectId } from "../schema/project";
 
@@ -24,6 +25,14 @@ export interface PreviewMediaRuntimeEntry {
   readonly trackViewUrl: string;
 }
 
+export interface CoverTonePilotRuntimeEntry {
+  readonly projectId: ProjectId;
+  readonly songId: string;
+  readonly coverUrl: string;
+  readonly sha256: string;
+  readonly palette: ExportCoverTonePalette;
+}
+
 export interface CurrentProjectRuntime {
   readonly projectId: ProjectId;
   readonly members: Member[];
@@ -31,4 +40,5 @@ export interface CurrentProjectRuntime {
   readonly liveExperiences: PickExperience[];
   readonly officialMedia: OfficialMediaRuntimeEntry[];
   readonly previewMedia: PreviewMediaRuntimeEntry[];
+  readonly coverTonePilot: CoverTonePilotRuntimeEntry[];
 }

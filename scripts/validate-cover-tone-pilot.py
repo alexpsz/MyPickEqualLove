@@ -61,6 +61,18 @@ def validate() -> None:
         if sum(entry[0] == expected_project_id for entry in actual_entries) != 3:
             fail(f"Pilot must contain exactly three entries for {expected_project_id}")
 
+        runtime_path = (
+            ROOT / "src" / "projects" / expected_project_id / "cover-tone-pilot.json"
+        )
+        runtime_entries = json.loads(runtime_path.read_text(encoding="utf-8"))
+        expected_runtime_entries = [
+            entry for entry in entries if entry["projectId"] == expected_project_id
+        ]
+        if runtime_entries != expected_runtime_entries:
+            fail(
+                f"Runtime cover-tone projection is stale for {expected_project_id}"
+            )
+
     seen = set()
     for entry in entries:
         if set(entry) != {"projectId", "songId", "coverUrl", "sha256", "palette"}:

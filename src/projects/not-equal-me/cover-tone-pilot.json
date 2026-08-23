@@ -1,0 +1,50 @@
+[
+  {
+    "projectId": "not-equal-me",
+    "songId": "tsugini-ae-ta-toki-naniwo-hanaso-ukana",
+    "coverUrl": "/covers/not-equal-me/tsugini-ae-ta-toki-naniwo-hanaso-ukana.jpg",
+    "sha256": "efaf0353eb1b6f175d84019455733435492e085be2abdf6fd1703d04ca30c1bc",
+    "palette": {
+      "background": "rgba(49, 51, 59, 1)",
+      "surface": "rgba(75, 80, 92, 1)",
+      "border": "rgba(206, 175, 144, 1)",
+      "text": "rgba(241, 232, 223, 1)",
+      "mutedText": "rgba(207, 197, 192, 1)",
+      "yearBackground": "rgba(70, 71, 79, 1)",
+      "yearBorder": "rgba(206, 175, 144, 0.88)",
+      "yearText": "rgba(241, 232, 223, 1)"
+    }
+  },
+  {
+    "projectId": "not-equal-me",
+    "songId": "kun-no-oto-dattanda",
+    "coverUrl": "/covers/not-equal-me/kun-no-oto-dattanda.jpg",
+    "sha256": "4d16216713dd73457a7d4df1884fe1c6f12e17b4ad73df8377b5ff30fc71c06a",
+    "palette": {
+      "background": "rgba(31, 35, 48, 1)",
+      "surface": "rgba(48, 56, 75, 1)",
+      "border": "rgba(117, 155, 195, 1)",
+      "text": "rgba(216, 226, 238, 1)",
+      "mutedText": "rgba(156, 185, 221, 1)",
+      "yearBackground": "rgba(53, 57, 69, 1)",
+      "yearBorder": "rgba(117, 155, 195, 0.88)",
+      "yearText": "rgba(216, 226, 238, 1)"
+    }
+  },
+  {
+    "projectId": "not-equal-me",
+    "songId": "kun-to-boku-no-uta",
+    "coverUrl": "/covers/not-equal-me/kun-to-boku-no-uta.jpg",
+    "sha256": "85f6d4056efb68839fae2da574af81aca4ff9de7b09ef5e9e496253cedca0669",
+    "palette": {
+      "background": "rgba(26, 27, 35, 1)",
+      "surface": "rgba(41, 43, 56, 1)",
+      "border": "rgba(87, 170, 214, 1)",
+      "text": "rgba(207, 231, 243, 1)",
+      "mutedText": "rgba(139, 194, 231, 1)",
+      "yearBackground": "rgba(49, 50, 57, 1)",
+      "yearBorder": "rgba(87, 170, 214, 0.88)",
+      "yearText": "rgba(207, 231, 243, 1)"
+    }
+  }
+]

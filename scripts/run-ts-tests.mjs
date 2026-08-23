@@ -81,6 +81,8 @@ const SUITES = {
     compilerArgs: [...NODE16_ARGS, "--resolveJsonModule"],
     sourceFiles: [
       "scripts/test-export-presets.ts",
+      "src/projects/current-runtime.d.ts",
+      "src/projects/equal-love/runtime.ts",
       "src/schema/export.ts",
       "src/schema/music.ts",
       "src/schema/project.ts",
@@ -91,18 +93,26 @@ const SUITES = {
       "src/utils/exportQr.ts",
     ],
     emittedTestFiles: ["scripts/test-export-presets.js"],
+    moduleAliases: {
+      "@current-project/runtime": "src/projects/equal-love/runtime.js",
+    },
   },
   "cover-tone": {
     tempPrefix: "mypick-cover-tone-tests-",
     compilerArgs: [...NODE16_ARGS, "--resolveJsonModule"],
     sourceFiles: [
       "scripts/test-cover-tone.ts",
+      "src/projects/current-runtime.d.ts",
+      "src/projects/equal-love/runtime.ts",
       "src/schema/export.ts",
       "src/schema/music.ts",
       "src/schema/project.ts",
       "src/data/coverTonePilot.ts",
     ],
     emittedTestFiles: ["scripts/test-cover-tone.js"],
+    moduleAliases: {
+      "@current-project/runtime": "src/projects/equal-love/runtime.js",
+    },
   },
   "image-actions": {
     tempPrefix: "mypick-image-actions-tests-",

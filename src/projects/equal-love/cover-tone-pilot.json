@@ -1,0 +1,50 @@
+[
+  {
+    "projectId": "equal-love",
+    "songId": "equal-love",
+    "coverUrl": "/covers/equal-love/equal-love.jpg",
+    "sha256": "1a4c40d0d44ab6083c6ed51f70a838bef4a4753466d286add41d8f716f18a63c",
+    "palette": {
+      "background": "rgba(8, 22, 39, 1)",
+      "surface": "rgba(15, 37, 62, 1)",
+      "border": "rgba(77, 147, 200, 1)",
+      "text": "rgba(204, 224, 239, 1)",
+      "mutedText": "rgba(133, 181, 224, 1)",
+      "yearBackground": "rgba(33, 45, 61, 1)",
+      "yearBorder": "rgba(77, 147, 200, 0.88)",
+      "yearText": "rgba(204, 224, 239, 1)"
+    }
+  },
+  {
+    "projectId": "equal-love",
+    "songId": "sutaato",
+    "coverUrl": "/covers/equal-love/sutaato.jpg",
+    "sha256": "4950d90656c714a0ca91efc77e302eae5900d82842e153f403ddb2d63ecebe8c",
+    "palette": {
+      "background": "rgba(36, 44, 56, 1)",
+      "surface": "rgba(56, 69, 88, 1)",
+      "border": "rgba(149, 191, 225, 1)",
+      "text": "rgba(225, 237, 246, 1)",
+      "mutedText": "rgba(174, 206, 238, 1)",
+      "yearBackground": "rgba(58, 65, 76, 1)",
+      "yearBorder": "rgba(149, 191, 225, 0.88)",
+      "yearText": "rgba(225, 237, 246, 1)"
+    }
+  },
+  {
+    "projectId": "equal-love",
+    "songId": "kioku-nodokokade",
+    "coverUrl": "/covers/equal-love/kioku-nodokokade.jpg",
+    "sha256": "1a4c40d0d44ab6083c6ed51f70a838bef4a4753466d286add41d8f716f18a63c",
+    "palette": {
+      "background": "rgba(8, 22, 39, 1)",
+      "surface": "rgba(15, 37, 62, 1)",
+      "border": "rgba(77, 147, 200, 1)",
+      "text": "rgba(204, 224, 239, 1)",
+      "mutedText": "rgba(133, 181, 224, 1)",
+      "yearBackground": "rgba(33, 45, 61, 1)",
+      "yearBorder": "rgba(77, 147, 200, 0.88)",
+      "yearText": "rgba(204, 224, 239, 1)"
+    }
+  }
+]

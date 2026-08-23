@@ -1,0 +1,50 @@
+[
+  {
+    "projectId": "nearly-equal-joy",
+    "songId": "toripurudeeto",
+    "coverUrl": "/covers/nearly-equal-joy/toripurudeeto.jpg",
+    "sha256": "82decafd9e0b0ea2f93331cbf832d3f20623584d1ee0f47421a84aefc5172a5a",
+    "palette": {
+      "background": "rgba(53, 56, 62, 1)",
+      "surface": "rgba(82, 88, 96, 1)",
+      "border": "rgba(251, 245, 190, 1)",
+      "text": "rgba(254, 252, 236, 1)",
+      "mutedText": "rgba(232, 237, 218, 1)",
+      "yearBackground": "rgba(73, 76, 81, 1)",
+      "yearBorder": "rgba(251, 245, 190, 0.88)",
+      "yearText": "rgba(254, 252, 236, 1)"
+    }
+  },
+  {
+    "projectId": "nearly-equal-joy",
+    "songId": "mubou-nin",
+    "coverUrl": "/covers/nearly-equal-joy/mubou-nin.jpg",
+    "sha256": "061b3d1dfcaeb37ca569ee763dfb002940723f9f19ac2ab51e315f88fa677dcd",
+    "palette": {
+      "background": "rgba(19, 29, 34, 1)",
+      "surface": "rgba(32, 46, 54, 1)",
+      "border": "rgba(118, 163, 203, 1)",
+      "text": "rgba(216, 229, 240, 1)",
+      "mutedText": "rgba(156, 190, 225, 1)",
+      "yearBackground": "rgba(43, 52, 56, 1)",
+      "yearBorder": "rgba(118, 163, 203, 0.88)",
+      "yearText": "rgba(216, 229, 240, 1)"
+    }
+  },
+  {
+    "projectId": "nearly-equal-joy",
+    "songId": "nearly-equal-joy",
+    "coverUrl": "/covers/nearly-equal-joy/nearly-equal-joy.jpg",
+    "sha256": "d3e2b8396ec445de2f5a3c562bde62940607de4dfa7d272a55c6a886573962b6",
+    "palette": {
+      "background": "rgba(53, 51, 39, 1)",
+      "surface": "rgba(82, 80, 62, 1)",
+      "border": "rgba(251, 233, 163, 1)",
+      "text": "rgba(254, 249, 229, 1)",
+      "mutedText": "rgba(232, 230, 203, 1)",
+      "yearBackground": "rgba(73, 71, 61, 1)",
+      "yearBorder": "rgba(251, 233, 163, 0.88)",
+      "yearText": "rgba(254, 249, 229, 1)"
+    }
+  }
+]

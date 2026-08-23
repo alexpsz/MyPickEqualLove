@@ -2,15 +2,18 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import test from "node:test";
+import pilotManifest from "../src/data/cover-tone-pilot.json";
 import {
   COVER_TONE_ALGORITHM_VERSION,
   COVER_TONE_PILOT_ENTRIES,
+  type CoverTonePilotEntry,
   getCoverToneAvailability,
   isExportTemplateAvailable,
   resolveAvailableExportTemplateId,
 } from "../src/data/coverTonePilot";
 import type { Picks, PickSlot, Song } from "../src/schema/music";
 
+const allPilotEntries = pilotManifest.entries as CoverTonePilotEntry[];
 const supportedEntry = COVER_TONE_PILOT_ENTRIES[0];
 
 if (!supportedEntry) {
@@ -39,12 +42,16 @@ function song(id: string, coverUrl: string): Song {
 
 test("pilot remains fixed at v1 with exactly nine approved covers", () => {
   assert.equal(COVER_TONE_ALGORITHM_VERSION, 1);
-  assert.equal(COVER_TONE_PILOT_ENTRIES.length, 9);
+  assert.equal(pilotManifest.algorithmVersion, 1);
+  assert.equal(allPilotEntries.length, 9);
   assert.deepEqual(
-    [
-      ...new Set(COVER_TONE_PILOT_ENTRIES.map((entry) => entry.projectId)),
-    ].sort(),
+    [...new Set(allPilotEntries.map((entry) => entry.projectId))].sort(),
     ["equal-love", "nearly-equal-joy", "not-equal-me"],
+  );
+  assert.equal(COVER_TONE_PILOT_ENTRIES.length, 3);
+  assert.deepEqual(
+    COVER_TONE_PILOT_ENTRIES,
+    allPilotEntries.filter((entry) => entry.projectId === "equal-love"),
   );
 });
 
