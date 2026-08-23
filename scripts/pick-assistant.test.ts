@@ -1050,6 +1050,19 @@ test("random sample wiring only commits the current Assistant shortlist", () => 
     resolve(process.cwd(), "src/components/PickExperienceClient.tsx"),
     "utf8",
   );
+  const commitHelperStart = source.indexOf("const commitPickAssistantUpdate");
+  const commitHelperEnd = source.indexOf(
+    "\n  const handleToggleCandidate",
+    commitHelperStart,
+  );
+  assert.ok(commitHelperStart >= 0 && commitHelperEnd > commitHelperStart);
+  const commitHelper = source.slice(commitHelperStart, commitHelperEnd);
+  assert.match(
+    commitHelper,
+    /if \(result\.status === "saved"\) \{\s*setCurrentPickAssistantSnapshot\(next\);[\s\S]*?return true;\s*\}[\s\S]*?return false;/,
+    "failed CAS must return without replacing the current shortlist snapshot",
+  );
+
   const handlerStart = source.indexOf("const handleCreateRandomSample");
   const handlerEnd = source.indexOf(
     "\n  const handleRemoveCandidate",
@@ -1063,12 +1076,65 @@ test("random sample wiring only commits the current Assistant shortlist", () => 
     /planRandomSample\(\s*assistantEligibleSongs,\s*assistantRandomSampleSize,\s*Math\.random,/,
   );
   assert.match(handler, /commitPickAssistantUpdate\(randomSampleIds, null\)/);
+  const commit = handler.indexOf(
+    "commitPickAssistantUpdate(randomSampleIds, null)",
+  );
+  const successfulSave = handler.indexOf("if (saved)");
+  const retainProvenance = handler.indexOf(
+    "setAssistantRandomSampleActive(true)",
+  );
+  assert.ok(
+    commit >= 0 && commit < successfulSave && successfulSave < retainProvenance,
+    "a failed reroll must retain the current shortlist and random provenance",
+  );
+  assert.doesNotMatch(
+    handler,
+    /setAssistantRandomSampleActive\(false\)|setCurrentPickAssistantSnapshot/,
+  );
   assert.doesNotMatch(
     handler,
     /commitUserMutation|commitBoardTransaction|setStoredPicks|nextPicks/,
     "creating a random sample must never write the board directly",
   );
   assert.match(source, /randomSampleCount=\{assistantRandomSampleCount\}/);
+});
+
+test("non-empty random shortlists reroll through the existing pending-safe handler", () => {
+  const source = readFileSync(
+    resolve(process.cwd(), "src/components/PickAssistantModal.tsx"),
+    "utf8",
+  );
+  const shortlistStart = source.indexOf("function ShortlistView");
+  const emptyStateStart = source.indexOf(
+    "if (shortlist.length === 0)",
+    shortlistStart,
+  );
+  const nonEmptyStart = source.indexOf("\n  return (\n", emptyStateStart);
+  const shortlistEnd = source.indexOf(
+    "\nfunction ComparisonView",
+    nonEmptyStart,
+  );
+  assert.ok(
+    shortlistStart >= 0 &&
+      emptyStateStart > shortlistStart &&
+      nonEmptyStart > emptyStateStart &&
+      shortlistEnd > nonEmptyStart,
+  );
+  const emptyState = source.slice(emptyStateStart, nonEmptyStart);
+  const nonEmptyState = source.slice(nonEmptyStart, shortlistEnd);
+  const rerollStart = nonEmptyState.indexOf("{randomSampleActive ? (");
+  const rerollEnd = nonEmptyState.indexOf(") : null}", rerollStart);
+  assert.ok(rerollStart >= 0 && rerollEnd > rerollStart);
+  const reroll = nonEmptyState.slice(rerollStart, rerollEnd);
+
+  assert.doesNotMatch(emptyState, /assistant\.randomSampleReroll/);
+  assert.match(reroll, /onClick=\{onCreateRandomSample\}/);
+  assert.match(reroll, /disabled=\{mutationsBlocked\}/);
+  assert.match(reroll, /assistant\.randomSampleReroll/);
+  assert.match(
+    source,
+    /<ShortlistView[\s\S]*?randomSampleActive=\{randomSampleActive\}[\s\S]*?onCreateRandomSample=\{onCreateRandomSample\}/,
+  );
 });
 
 test("random sample provenance stays visible through every Assistant runtime phase", () => {
@@ -1149,6 +1215,21 @@ test("random sample UI stays explicit in all four locales", () => {
       ja: "ランダムサンプル",
       "zh-CN": "随机样本",
       ko: "무작위 샘플",
+    },
+  );
+
+  assert.deepEqual(
+    {
+      en: messages.en["assistant.randomSampleReroll"],
+      ja: messages.ja["assistant.randomSampleReroll"],
+      "zh-CN": messages["zh-CN"]["assistant.randomSampleReroll"],
+      ko: messages.ko["assistant.randomSampleReroll"],
+    },
+    {
+      en: "Draw again",
+      ja: "引き直す",
+      "zh-CN": "换一批",
+      ko: "다시 뽑기",
     },
   );
 

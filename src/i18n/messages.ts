@@ -109,6 +109,7 @@ const en = {
   "assistant.randomSampleHint":
     "Draw {count} eligible songs at random. Review, add, or remove songs before comparing; your board will not change.",
   "assistant.randomSampleAction": "Create random sample ({count})",
+  "assistant.randomSampleReroll": "Draw again",
   "assistant.randomSampleReady":
     "{count} songs were drawn. Review, add, or remove them before comparing.",
   "assistant.searchTitle": "Choose songs for Pick Assistant",
@@ -726,6 +727,7 @@ const ja: MessageCatalog = {
   "assistant.randomSampleHint":
     "対象曲から{count}曲をランダムに抽出します。比較前に追加・削除でき、ランキングは変わりません。",
   "assistant.randomSampleAction": "ランダムサンプルを作る（{count}曲）",
+  "assistant.randomSampleReroll": "引き直す",
   "assistant.randomSampleReady":
     "{count}曲を抽出しました。比較前に追加・削除できます。",
   "assistant.searchTitle": "Pick Assistantの曲を選ぶ",
@@ -1340,6 +1342,7 @@ const zhCN: MessageCatalog = {
   "assistant.randomSampleHint":
     "从当前合法候选中随机抽取 {count} 首。比较前可继续增删，当前榜单不会改变。",
   "assistant.randomSampleAction": "生成随机样本（{count} 首）",
+  "assistant.randomSampleReroll": "换一批",
   "assistant.randomSampleReady": "已抽取 {count} 首，可在比较前继续增删。",
   "assistant.searchTitle": "选择选曲助手歌曲",
   "assistant.searchHint":
@@ -1910,6 +1913,7 @@ const ko: MessageCatalog = {
   "assistant.randomSampleHint":
     "현재 선택 가능한 곡에서 {count}곡을 무작위로 뽑습니다. 비교 전에 추가하거나 제거할 수 있으며 현재 보드는 바뀌지 않습니다.",
   "assistant.randomSampleAction": "무작위 샘플 만들기 ({count}곡)",
+  "assistant.randomSampleReroll": "다시 뽑기",
   "assistant.randomSampleReady":
     "{count}곡을 뽑았습니다. 비교 전에 추가하거나 제거할 수 있습니다.",
   "assistant.searchTitle": "선곡 도우미 곡 선택",

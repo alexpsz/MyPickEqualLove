@@ -269,6 +269,7 @@ export default function PickAssistantModal({
               shortlist={shortlist}
               minimumCandidates={minimumCandidates}
               maximumCandidates={maximumCandidates}
+              randomSampleActive={randomSampleActive}
               randomSampleCount={randomSampleCount}
               longSessionCandidates={longSessionCandidates}
               shortlistMaximumComparisons={shortlistMaximumComparisons}
@@ -293,6 +294,7 @@ function ShortlistView({
   shortlist,
   minimumCandidates,
   maximumCandidates,
+  randomSampleActive,
   randomSampleCount,
   longSessionCandidates,
   shortlistMaximumComparisons,
@@ -309,6 +311,7 @@ function ShortlistView({
   shortlist: Song[];
   minimumCandidates: number;
   maximumCandidates: number;
+  randomSampleActive: boolean;
   randomSampleCount: number;
   longSessionCandidates: number;
   shortlistMaximumComparisons: number;
@@ -392,18 +395,31 @@ function ShortlistView({
 
   return (
     <div className="grid gap-4">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h3 className="text-sm font-semibold text-[var(--foreground)]">
           {t("assistant.shortlistTitle")}
         </h3>
-        <button
-          type="button"
-          onClick={onClear}
-          disabled={mutationsBlocked}
-          className="official-button official-button-quiet !px-3"
-        >
-          {t("assistant.clear")}
-        </button>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {randomSampleActive ? (
+            <button
+              type="button"
+              onClick={onCreateRandomSample}
+              disabled={mutationsBlocked}
+              className="official-button !px-3"
+            >
+              <AppIcon name="sparkles" size={16} />
+              {t("assistant.randomSampleReroll")}
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={onClear}
+            disabled={mutationsBlocked}
+            className="official-button official-button-quiet !px-3"
+          >
+            {t("assistant.clear")}
+          </button>
+        </div>
       </div>
       <div className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--paper)]">
         {shortlist.map((song, index) => (
