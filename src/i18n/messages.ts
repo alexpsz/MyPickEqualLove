@@ -60,6 +60,7 @@ const en = {
   "onboarding.live.importDescription":
     "Paste a link for this experience, then confirm its performance and changes.",
   "onboarding.dismiss": "Hide guide",
+  "onboarding.reopen": "Show guide again",
   "onboarding.importPrompt": "Paste a MyPick board link:",
   "boardReveal.title": "Your Top 10 is taking shape",
   "boardReveal.progress": "Revealing pick {current} of {total}",
@@ -678,6 +679,7 @@ const ja: MessageCatalog = {
   "onboarding.live.importDescription":
     "同じイベントの共有リンクを貼り付け、公演と変更内容を確認して読み込みます。",
   "onboarding.dismiss": "この案内を閉じる",
+  "onboarding.reopen": "案内をもう一度表示",
   "onboarding.importPrompt": "MyPick の共有リンクを貼り付けてください：",
   "boardReveal.title": "あなたのTop 10をお披露目します",
   "boardReveal.progress": "{total}曲中{current}曲目をお披露目",
@@ -1297,6 +1299,7 @@ const zhCN: MessageCatalog = {
   "onboarding.live.importDescription":
     "粘贴同一活动的分享链接，确认场次与差异后再导入。",
   "onboarding.dismiss": "收起引导",
+  "onboarding.reopen": "再次打开引导",
   "onboarding.importPrompt": "粘贴 MyPick 分享链接：",
   "boardReveal.title": "正在揭晓你的 Top 10",
   "boardReveal.progress": "正在揭晓第 {current}/{total} 首",
@@ -1864,6 +1867,7 @@ const ko: MessageCatalog = {
   "onboarding.live.importDescription":
     "같은 이벤트의 공유 링크를 붙여넣고 공연과 변경 내용을 확인한 뒤 가져옵니다.",
   "onboarding.dismiss": "안내 숨기기",
+  "onboarding.reopen": "안내 다시 열기",
   "onboarding.importPrompt": "MyPick 공유 링크를 붙여넣으세요:",
   "boardReveal.title": "나의 Top 10을 공개합니다",
   "boardReveal.progress": "{total}곡 중 {current}번째 곡 공개 중",

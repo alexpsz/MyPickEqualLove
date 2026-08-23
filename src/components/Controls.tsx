@@ -15,6 +15,7 @@ interface ControlsProps {
   onRedo: () => void;
   onOpenBoardLibrary: () => void;
   onCopyBoardLink: () => void;
+  onOpenOnboarding: (trigger: HTMLButtonElement) => void;
   nickname: string;
   nicknameMaxLength: number;
   onNicknameChange: (nickname: string) => void;
@@ -31,6 +32,8 @@ interface ControlsProps {
   generateButtonRef?: React.Ref<HTMLButtonElement>;
   pickAssistantButtonRef?: React.Ref<HTMLButtonElement>;
   boardLinkCopied?: boolean;
+  isOnboardingVisible: boolean;
+  isOnboardingManuallyOpen: boolean;
   children?: React.ReactNode;
 }
 
@@ -44,6 +47,7 @@ export default function Controls({
   onRedo,
   onOpenBoardLibrary,
   onCopyBoardLink,
+  onOpenOnboarding,
   nickname,
   nicknameMaxLength,
   onNicknameChange,
@@ -60,6 +64,8 @@ export default function Controls({
   generateButtonRef,
   pickAssistantButtonRef,
   boardLinkCopied = false,
+  isOnboardingVisible,
+  isOnboardingManuallyOpen,
   children,
 }: ControlsProps) {
   const { t } = useLocale();
@@ -91,7 +97,7 @@ export default function Controls({
   };
 
   useEffect(() => {
-    if (!isMoreOpen) return;
+    if (!isMoreOpen || isOnboardingManuallyOpen) return;
 
     const closeMore = () => {
       setIsMoreOpen(false);
@@ -116,7 +122,7 @@ export default function Controls({
       document.removeEventListener("pointerdown", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isMoreOpen]);
+  }, [isMoreOpen, isOnboardingManuallyOpen]);
 
   return (
     <div
@@ -146,6 +152,7 @@ export default function Controls({
           <button
             ref={moreButtonRef}
             type="button"
+            data-onboarding-reopen-fallback
             onClick={() => setIsMoreOpen((open) => !open)}
             aria-expanded={isMoreOpen}
             aria-controls={isMoreOpen ? morePanelId : undefined}
@@ -168,7 +175,7 @@ export default function Controls({
             <div className="grid gap-3 sm:hidden">{children}</div>
           ) : null}
 
-          <div className="grid grid-cols-4 gap-2 sm:hidden">
+          <div className="grid grid-cols-3 gap-2 sm:hidden">
             <button
               type="button"
               onClick={() => {
@@ -185,22 +192,6 @@ export default function Controls({
               </span>
             </button>
             <button
-              type="button"
-              onClick={() => {
-                setIsMoreOpen(false);
-                onOpenCommandPalette();
-              }}
-              data-command-palette-entry="mobile"
-              data-dialog-return-key={DIALOG_RETURN_KEYS.commandPalette}
-              aria-label={t("commands.entryAria")}
-              className="official-button min-w-0 gap-0.5 !px-1 !text-[12px] leading-tight"
-            >
-              <AppIcon name="keyboard" size={16} />
-              <span className="min-w-0 truncate">
-                {t("commands.entryShort")}
-              </span>
-            </button>
-            <button
               ref={pickAssistantButtonRef}
               type="button"
               onClick={() => {
@@ -209,11 +200,11 @@ export default function Controls({
               }}
               data-dialog-return-key={DIALOG_RETURN_KEYS.pickAssistant}
               aria-label={t("controls.pickAssistant")}
-              className="official-button min-w-0 gap-0.5 !px-1 !text-[13px] leading-tight"
+              className="official-button min-w-0 gap-1 !px-1.5 !text-[13px] leading-tight"
             >
               <AppIcon name="music" size={16} />
-              <span className="min-w-0 truncate">
-                {t("controls.pickAssistantShort")}
+              <span className="min-w-0 text-center whitespace-normal">
+                {t("controls.pickAssistant")}
               </span>
               {shortlistCount > 0 ? (
                 <span className="rounded-full bg-[var(--background)] px-1 text-[10px] tabular-nums text-[var(--muted)]">
@@ -305,6 +296,16 @@ export default function Controls({
                   <AppIcon name="redo" />
                   {t("controls.redo")}
                 </button>
+                <button
+                  type="button"
+                  data-onboarding-reopen-entry="mobile"
+                  onClick={(event) => onOpenOnboarding(event.currentTarget)}
+                  disabled={isOnboardingVisible}
+                  className="official-button col-span-2 w-full"
+                >
+                  <AppIcon name="info" />
+                  {t("onboarding.reopen")}
+                </button>
                 {hasPicks ? (
                   <button
                     ref={mobileClearButtonRef}
@@ -358,6 +359,16 @@ export default function Controls({
               >
                 <AppIcon name="keyboard" />
                 {t("commands.entry")}
+              </button>
+              <button
+                type="button"
+                data-onboarding-reopen-entry="desktop"
+                onClick={(event) => onOpenOnboarding(event.currentTarget)}
+                disabled={isOnboardingVisible}
+                className="official-button w-full sm:w-auto"
+              >
+                <AppIcon name="info" />
+                {t("onboarding.reopen")}
               </button>
               <button
                 ref={pickAssistantButtonRef}

@@ -67,8 +67,31 @@ assert.match(digitFocusBranch, /slot\.scrollIntoView\(/);
 assert.match(digitFocusBranch, /slotAction\.focus\(/);
 assert.doesNotMatch(digitFocusBranch, /\.click\(/);
 
-assert.match(controlsSource, /data-command-palette-entry="mobile"/);
+const mobilePrimaryActionsStart = controlsSource.indexOf(
+  '<div className="grid grid-cols-3 gap-2 sm:hidden">',
+);
+const mobilePrimaryActions = controlsSource.slice(
+  mobilePrimaryActionsStart,
+  controlsSource.indexOf("{isMoreOpen ?", mobilePrimaryActionsStart),
+);
+const mobileAssistantAction = mobilePrimaryActions.slice(
+  mobilePrimaryActions.indexOf("ref={pickAssistantButtonRef}"),
+  mobilePrimaryActions.indexOf(
+    "</button>",
+    mobilePrimaryActions.indexOf("ref={pickAssistantButtonRef}"),
+  ),
+);
+
+assert.match(mobilePrimaryActions, /grid grid-cols-3 gap-2 sm:hidden/);
+assert.equal(
+  (mobilePrimaryActions.match(/<button/g) ?? []).length,
+  3,
+  "mobile primary controls must contain exactly search, Assistant, and generate",
+);
+assert.doesNotMatch(controlsSource, /data-command-palette-entry="mobile"/);
 assert.match(controlsSource, /data-command-palette-entry="desktop"/);
+assert.match(mobileAssistantAction, /t\("controls\.pickAssistant"\)/);
+assert.doesNotMatch(mobileAssistantAction, /pickAssistantShort|truncate/);
 assert.match(paletteSource, /role="dialog"/);
 assert.match(paletteSource, /aria-modal="true"/);
 assert.match(paletteSource, /useDialogA11y\(/);

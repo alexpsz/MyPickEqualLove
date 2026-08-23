@@ -164,6 +164,7 @@ test("all four catalogs expose an isomorphic onboarding copy surface", () => {
     "onboarding.live.assistantDescription",
     "onboarding.live.importDescription",
     "onboarding.dismiss",
+    "onboarding.reopen",
     "onboarding.importPrompt",
   ] as const;
   const englishKeys = Object.keys(messages.en).sort();
@@ -187,6 +188,10 @@ test("client wiring preserves parser reuse, focus return, and first-pick dismiss
     resolve(repositoryRoot, "src/config/project.ts"),
     "utf8",
   );
+  const controlsSource = readFileSync(
+    resolve(repositoryRoot, "src/components/Controls.tsx"),
+    "utf8",
+  );
 
   assert.match(configSource, /onboarding: `\$\{storagePrefix\}_onboarding_v1`/);
   assert.match(
@@ -195,7 +200,7 @@ test("client wiring preserves parser reuse, focus return, and first-pick dismiss
   );
   assert.match(
     clientSource,
-    /selectedPickCount === 0\s*&&\s*onboardingVisibility === "visible"/,
+    /manualOnboardingOpen\s*\|\|\s*\(\s*selectedPickCount === 0\s*&&\s*onboardingVisibility === "visible"\s*\)/,
   );
   assert.match(
     clientSource,
@@ -210,7 +215,57 @@ test("client wiring preserves parser reuse, focus return, and first-pick dismiss
     clientSource,
     /onImportShareLink=\{handleOnboardingImportBoardShareLink\}/,
   );
-  assert.match(clientSource, /onDismiss=\{finishOnboarding\}/);
+  assert.match(clientSource, /onDismiss=\{handleDismissOnboarding\}/);
+  assert.match(
+    clientSource,
+    /const \[manualOnboardingOpen, setManualOnboardingOpen\] = useState\(false\);/,
+  );
+  assert.match(
+    clientSource,
+    /const handleOpenOnboarding = useCallback\([\s\S]*?onboardingReturnFocusRef\.current = trigger;[\s\S]*?setManualOnboardingOpen\(true\);[\s\S]*?requestAnimationFrame[\s\S]*?data-onboarding-action="search"/,
+  );
+  assert.match(
+    clientSource,
+    /const handleDismissOnboarding = useCallback\([\s\S]*?if \(!manualOnboardingOpen\)[\s\S]*?finishOnboarding\(\);[\s\S]*?return;[\s\S]*?setManualOnboardingOpen\(false\);[\s\S]*?returnTarget\.focus\(\)/,
+  );
+  assert.equal(
+    (clientSource.match(/setManualOnboardingOpen\(false\)/g) ?? []).length,
+    1,
+    "only an explicit manual dismissal may close the reopened guide",
+  );
+  const firstPickEffects = clientSource.slice(
+    clientSource.indexOf("const result = loadOnboardingState"),
+    clientSource.indexOf("const oshimenMember"),
+  );
+  const commitMutation = clientSource.slice(
+    clientSource.indexOf("const commitUserMutation"),
+    clientSource.indexOf("const applyHistoryAction"),
+  );
+  assert.doesNotMatch(firstPickEffects, /setManualOnboardingOpen/);
+  assert.doesNotMatch(commitMutation, /setManualOnboardingOpen/);
+  assert.match(clientSource, /onOpenOnboarding=\{handleOpenOnboarding\}/);
+  assert.match(clientSource, /isOnboardingVisible=\{showOnboarding\}/);
+  assert.match(
+    clientSource,
+    /data-onboarding-mode=\{[\s\S]*?manualOnboardingOpen \? "manual" : "first-run"/,
+  );
+  assert.match(
+    controlsSource,
+    /onOpenOnboarding: \(trigger: HTMLButtonElement\) => void;/,
+  );
+  assert.equal(
+    (controlsSource.match(/data-onboarding-reopen-entry=/g) ?? []).length,
+    2,
+    "mobile More and desktop controls must each expose a reopen entry",
+  );
+  assert.equal(
+    (controlsSource.match(/disabled=\{isOnboardingVisible\}/g) ?? []).length,
+    2,
+  );
+  assert.match(
+    controlsSource,
+    /if \(!isMoreOpen \|\| isOnboardingManuallyOpen\) return;/,
+  );
   assert.match(
     clientSource,
     /const handleOnboardingImportBoardShareLink = \(\) => \{[\s\S]*?returnFocusKey: DIALOG_RETURN_KEYS\.onboardingImport/,

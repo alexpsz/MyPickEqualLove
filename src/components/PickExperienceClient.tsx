@@ -845,6 +845,7 @@ export default function PickExperienceClient({
   const [optionsStorageWritable, setOptionsStorageWritable] = useState(false);
   const [onboardingVisibility, setOnboardingVisibility] =
     useState<OnboardingVisibility>("pending");
+  const [manualOnboardingOpen, setManualOnboardingOpen] = useState(false);
   const [oshimenMemberId, setOshimenMemberId] = useState<string | null>(null);
   const [oshimenStorageWritable, setOshimenStorageWritable] = useState(false);
   const [boardLinkCopied, setBoardLinkCopied] = useState(false);
@@ -862,6 +863,8 @@ export default function PickExperienceClient({
   const capturedFrameRequestIdRef = useRef<string | null>(null);
   const previewTriggerRef = useRef<HTMLButtonElement>(null);
   const pickAssistantTriggerRef = useRef<HTMLButtonElement>(null);
+  const onboardingRegionRef = useRef<HTMLDivElement>(null);
+  const onboardingReturnFocusRef = useRef<HTMLButtonElement>(null);
   const archetypeTriggerRef = useRef<HTMLButtonElement>(null);
   const insightsTriggerRef = useRef<HTMLButtonElement>(null);
   const pickAssistantSnapshotRef = useRef(pickAssistantSnapshot);
@@ -965,6 +968,54 @@ export default function PickExperienceClient({
     completeOnboarding(localStorage, STORAGE_KEYS.onboarding);
     setOnboardingVisibility("hidden");
   }, []);
+  const handleOpenOnboarding = useCallback(
+    (trigger: HTMLButtonElement) => {
+      if (!hydrated || isExportRealm) return;
+
+      onboardingReturnFocusRef.current = trigger;
+      setManualOnboardingOpen(true);
+      window.requestAnimationFrame(() => {
+        onboardingRegionRef.current
+          ?.querySelector<HTMLButtonElement>(
+            '[data-onboarding-action="search"]',
+          )
+          ?.focus();
+      });
+    },
+    [hydrated, isExportRealm],
+  );
+  const handleDismissOnboarding = useCallback(() => {
+    if (!manualOnboardingOpen) {
+      finishOnboarding();
+      return;
+    }
+
+    const returnTarget = onboardingReturnFocusRef.current;
+    onboardingReturnFocusRef.current = null;
+    setManualOnboardingOpen(false);
+    window.requestAnimationFrame(() => {
+      if (
+        returnTarget?.isConnected &&
+        !returnTarget.disabled &&
+        returnTarget.getClientRects().length
+      ) {
+        returnTarget.focus();
+        return;
+      }
+
+      const fallbackTarget = Array.from(
+        document.querySelectorAll<HTMLButtonElement>(
+          "[data-onboarding-reopen-entry], [data-onboarding-reopen-fallback]",
+        ),
+      ).find(
+        (candidate) =>
+          candidate.isConnected &&
+          !candidate.disabled &&
+          candidate.getClientRects().length > 0,
+      );
+      fallbackTarget?.focus();
+    });
+  }, [finishOnboarding, manualOnboardingOpen]);
 
   useEffect(() => {
     if (!hydrated || isExportRealm) return;
@@ -3760,8 +3811,8 @@ export default function PickExperienceClient({
   const showOnboarding =
     hydrated &&
     !isExportRealm &&
-    selectedPickCount === 0 &&
-    onboardingVisibility === "visible";
+    (manualOnboardingOpen ||
+      (selectedPickCount === 0 && onboardingVisibility === "visible"));
   const canGenerateImage = !generating && selectedPickCount > 0;
   const commandPaletteCommands = useMemo<CommandPaletteCommand[]>(() => {
     const commands: CommandPaletteCommand[] = [
@@ -4007,6 +4058,7 @@ export default function PickExperienceClient({
           onRedo={() => applyHistoryAction("redo")}
           onOpenBoardLibrary={handleOpenBoardLibrary}
           onCopyBoardLink={handleCopyBoardLink}
+          onOpenOnboarding={handleOpenOnboarding}
           nickname={nicknameDraft}
           nicknameMaxLength={MAX_NICKNAME_LENGTH}
           onNicknameChange={handleNicknameChange}
@@ -4025,6 +4077,8 @@ export default function PickExperienceClient({
           generateButtonRef={previewTriggerRef}
           pickAssistantButtonRef={pickAssistantTriggerRef}
           boardLinkCopied={boardLinkCopied}
+          isOnboardingVisible={showOnboarding}
+          isOnboardingManuallyOpen={manualOnboardingOpen}
         >
           {isStandard ? (
             <OshimenPreferenceControl
@@ -4116,14 +4170,21 @@ export default function PickExperienceClient({
 
         <main className="app-content-shell flex flex-1 flex-col px-4 sm:px-6 md:px-8">
           {showOnboarding ? (
-            <OnboardingEmptyState
-              variant={onboardingVariant}
-              copy={onboardingCopy}
-              onSearch={handleOnboardingSearchClick}
-              onOpenAssistant={handleOnboardingOpenPickAssistant}
-              onImportShareLink={handleOnboardingImportBoardShareLink}
-              onDismiss={finishOnboarding}
-            />
+            <div
+              ref={onboardingRegionRef}
+              data-onboarding-mode={
+                manualOnboardingOpen ? "manual" : "first-run"
+              }
+            >
+              <OnboardingEmptyState
+                variant={onboardingVariant}
+                copy={onboardingCopy}
+                onSearch={handleOnboardingSearchClick}
+                onOpenAssistant={handleOnboardingOpenPickAssistant}
+                onImportShareLink={handleOnboardingImportBoardShareLink}
+                onDismiss={handleDismissOnboarding}
+              />
+            </div>
           ) : null}
           <PickBoard
             slots={uiSlots}
