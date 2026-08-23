@@ -20,6 +20,9 @@ export const DIALOG_RETURN_KEYS = {
   commandPalette: "command-palette",
   pickAssistant: "pick-assistant",
   archetype: "archetype-result",
+  onboardingSearch: "onboarding-search",
+  onboardingAssistant: "onboarding-assistant",
+  onboardingImport: "onboarding-import",
 } as const;
 
 export function getPickSlotReturnKey(slotId: string) {

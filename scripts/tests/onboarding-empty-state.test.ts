@@ -12,6 +12,7 @@ import {
   completeOnboarding,
   loadOnboardingState,
 } from "../../src/utils/onboardingState";
+import { DIALOG_RETURN_KEYS } from "../../src/utils/useDialogA11y";
 
 const STORAGE_KEY = "equal_love_onboarding_v1";
 
@@ -131,6 +132,18 @@ test("standard and Live empty states render the same three real actions", () => 
     for (const action of ["search", "assistant", "import", "dismiss"]) {
       assert.match(markup, new RegExp(`data-onboarding-action="${action}"`));
     }
+    for (const [action, returnFocusKey] of [
+      ["search", DIALOG_RETURN_KEYS.onboardingSearch],
+      ["assistant", DIALOG_RETURN_KEYS.onboardingAssistant],
+      ["import", DIALOG_RETURN_KEYS.onboardingImport],
+    ] as const) {
+      assert.match(
+        markup,
+        new RegExp(
+          `data-onboarding-action="${action}"[^>]*data-dialog-return-key="${returnFocusKey}"`,
+        ),
+      );
+    }
     assert.equal((markup.match(/<button/g) ?? []).length, 4);
   }
 });
@@ -164,7 +177,7 @@ test("all four catalogs expose an isomorphic onboarding copy surface", () => {
   }
 });
 
-test("client wiring reuses existing handlers and hides after the first pick", () => {
+test("client wiring preserves parser reuse, focus return, and first-pick dismissal", () => {
   const repositoryRoot = process.cwd();
   const clientSource = readFileSync(
     resolve(repositoryRoot, "src/components/PickExperienceClient.tsx"),
@@ -191,16 +204,27 @@ test("client wiring reuses existing handlers and hides after the first pick", ()
     clientSource,
     /selectedPickCount === 0[\s\S]*?finishOnboarding\(\);/,
   );
-  assert.match(clientSource, /onSearch=\{handleGlobalSearchClick\}/);
-  assert.match(clientSource, /onOpenAssistant=\{handleOpenPickAssistant\}/);
+  assert.match(clientSource, /onSearch=\{handleOnboardingSearchClick\}/);
   assert.match(
     clientSource,
-    /onImportShareLink=\{handleImportBoardShareLink\}/,
+    /onOpenAssistant=\{handleOnboardingOpenPickAssistant\}/,
+  );
+  assert.match(
+    clientSource,
+    /onImportShareLink=\{handleOnboardingImportBoardShareLink\}/,
   );
   assert.match(clientSource, /onDismiss=\{finishOnboarding\}/);
   assert.match(
     clientSource,
-    /const handleImportBoardShareLink = \(\) => \{[\s\S]*?prepareBoardShareImport\(\{ originalUrl, originalHash \}\);/,
+    /const handleOnboardingImportBoardShareLink = \(\) => \{[\s\S]*?returnFocusKey: DIALOG_RETURN_KEYS\.onboardingImport/,
+  );
+  assert.match(
+    clientSource,
+    /returnFocusKey=\{boardShareReturnFocusKeyRef\.current\}/,
+  );
+  assert.match(
+    clientSource,
+    /returnFocusKey=\{pickAssistantReturnFocusKeyRef\.current\}/,
   );
   assert.equal(
     (clientSource.match(/prepareBoardShareImport\(\{/g) ?? []).length,

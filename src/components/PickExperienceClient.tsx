@@ -862,6 +862,12 @@ export default function PickExperienceClient({
   const searchReturnFocusKeyRef = useRef<string>(
     DIALOG_RETURN_KEYS.globalSearch,
   );
+  const pickAssistantReturnFocusKeyRef = useRef<string>(
+    DIALOG_RETURN_KEYS.pickAssistant,
+  );
+  const boardShareReturnFocusKeyRef = useRef<string>(
+    DIALOG_RETURN_KEYS.copyBoardLink,
+  );
   const detailTriggerRef = useRef<HTMLElement>(null);
   const previewGenerationIdRef = useRef(0);
   const activePreviewCaptureAbortRef = useRef<AbortController | null>(null);
@@ -1825,7 +1831,9 @@ export default function PickExperienceClient({
     (
       dialog: BoardShareDialogState,
       pendingImport: PendingBoardShareImport | null = null,
+      returnFocusKey: string = DIALOG_RETURN_KEYS.copyBoardLink,
     ) => {
+      boardShareReturnFocusKeyRef.current = returnFocusKey;
       cancelStalePreview();
       setShowBoardLibrary(false);
       setShowPickAssistant(false);
@@ -1886,27 +1894,37 @@ export default function PickExperienceClient({
       originalUrl,
       originalHash,
       isCancelled,
+      returnFocusKey = DIALOG_RETURN_KEYS.copyBoardLink,
     }: {
       originalUrl: string;
       originalHash: string;
       isCancelled?: () => boolean;
+      returnFocusKey?: string;
     }) => {
       const parsed = await parseBoardShareUrl(originalUrl);
       if (isCancelled?.()) return;
 
       if (parsed.status === "not-share") {
-        presentBoardShareDialog({
-          kind: "invalid",
-          unsupportedVersion: false,
-        });
+        presentBoardShareDialog(
+          {
+            kind: "invalid",
+            unsupportedVersion: false,
+          },
+          null,
+          returnFocusKey,
+        );
         return;
       }
 
       if (parsed.status === "invalid") {
-        presentBoardShareDialog({
-          kind: "invalid",
-          unsupportedVersion: parsed.reason === "unsupported-version",
-        });
+        presentBoardShareDialog(
+          {
+            kind: "invalid",
+            unsupportedVersion: parsed.reason === "unsupported-version",
+          },
+          null,
+          returnFocusKey,
+        );
         return;
       }
 
@@ -1931,6 +1949,8 @@ export default function PickExperienceClient({
             getSongTitle: (songId) => SONGS_BY_ID[songId]?.title.ja,
             createPreviewDiff: createBoardSharePreviewDiff,
           }) as Exclude<BoardShareDialogPlan, { kind: "import" }>,
+          null,
+          returnFocusKey,
         );
         return;
       }
@@ -1970,6 +1990,7 @@ export default function PickExperienceClient({
           picks: resolved.picks,
           baselinePicks: currentTargetPicks,
         },
+        returnFocusKey,
       );
     },
     [presentBoardShareDialog],
@@ -2024,8 +2045,8 @@ export default function PickExperienceClient({
     setShowModal(true);
   };
 
-  const handleGlobalSearchClick = () => {
-    searchReturnFocusKeyRef.current = DIALOG_RETURN_KEYS.globalSearch;
+  const openGlobalSearch = (returnFocusKey: string) => {
+    searchReturnFocusKeyRef.current = returnFocusKey;
     setSearchSelectionMode("board");
     detailTriggerRef.current = null;
     setDetailSongId(null);
@@ -2033,8 +2054,17 @@ export default function PickExperienceClient({
     setShowModal(true);
   };
 
-  const handleOpenPickAssistant = () => {
+  const handleGlobalSearchClick = () => {
+    openGlobalSearch(DIALOG_RETURN_KEYS.globalSearch);
+  };
+
+  const handleOnboardingSearchClick = () => {
+    openGlobalSearch(DIALOG_RETURN_KEYS.onboardingSearch);
+  };
+
+  const openPickAssistant = (returnFocusKey: string) => {
     if (!hydrated || isExportRealm) return;
+    pickAssistantReturnFocusKeyRef.current = returnFocusKey;
     setShowBoardLibrary(false);
     setShowModal(false);
     setSearchSelectionMode("board");
@@ -2043,7 +2073,15 @@ export default function PickExperienceClient({
     setShowPickAssistant(true);
   };
 
-  const handleImportBoardShareLink = () => {
+  const handleOpenPickAssistant = () => {
+    openPickAssistant(DIALOG_RETURN_KEYS.pickAssistant);
+  };
+
+  const handleOnboardingOpenPickAssistant = () => {
+    openPickAssistant(DIALOG_RETURN_KEYS.onboardingAssistant);
+  };
+
+  const handleOnboardingImportBoardShareLink = () => {
     if (!hydrated || isExportRealm) return;
 
     const enteredUrl = window.prompt(t("onboarding.importPrompt"));
@@ -2057,7 +2095,11 @@ export default function PickExperienceClient({
       // The existing share parser will present the localized invalid-link UI.
     }
 
-    void prepareBoardShareImport({ originalUrl, originalHash });
+    void prepareBoardShareImport({
+      originalUrl,
+      originalHash,
+      returnFocusKey: DIALOG_RETURN_KEYS.onboardingImport,
+    });
   };
 
   const handleOpenBoardLibrary = () => {
@@ -4037,9 +4079,9 @@ export default function PickExperienceClient({
             <OnboardingEmptyState
               variant={onboardingVariant}
               copy={onboardingCopy}
-              onSearch={handleGlobalSearchClick}
-              onOpenAssistant={handleOpenPickAssistant}
-              onImportShareLink={handleImportBoardShareLink}
+              onSearch={handleOnboardingSearchClick}
+              onOpenAssistant={handleOnboardingOpenPickAssistant}
+              onImportShareLink={handleOnboardingImportBoardShareLink}
               onDismiss={finishOnboarding}
             />
           ) : null}
@@ -4240,6 +4282,7 @@ export default function PickExperienceClient({
               presenceState={presenceState}
               comparisonAvailability={boardShareComparisonAvailability}
               comparisonExporting={generating}
+              returnFocusKey={boardShareReturnFocusKeyRef.current}
               onClose={handleCloseBoardShareDialog}
               onConfirm={handleConfirmBoardShareImport}
               onCompare={handleCompareBoardShare}
@@ -4285,7 +4328,7 @@ export default function PickExperienceClient({
               mutationsBlocked={assistantMutationPending}
               reviewNotice={assistantReviewNotice}
               presenceState={presenceState}
-              returnFocusKey={DIALOG_RETURN_KEYS.pickAssistant}
+              returnFocusKey={pickAssistantReturnFocusKeyRef.current}
               onClose={() => setShowPickAssistant(false)}
               onBrowseCandidates={handleBrowseAssistantCandidates}
               onCreateRandomSample={() => {

@@ -1,4 +1,5 @@
 import AppIcon, { type AppIconName } from "./AppIcon";
+import { DIALOG_RETURN_KEYS } from "../utils/useDialogA11y";
 
 export interface OnboardingEmptyStateCopy {
   title: string;
@@ -61,6 +62,7 @@ export default function OnboardingEmptyState({
       <div className="mt-4 grid gap-2 sm:grid-cols-3 sm:gap-3">
         <OnboardingAction
           action="search"
+          returnFocusKey={DIALOG_RETURN_KEYS.onboardingSearch}
           icon="search"
           title={copy.searchTitle}
           description={copy.searchDescription}
@@ -68,6 +70,7 @@ export default function OnboardingEmptyState({
         />
         <OnboardingAction
           action="assistant"
+          returnFocusKey={DIALOG_RETURN_KEYS.onboardingAssistant}
           icon="music"
           title={copy.assistantTitle}
           description={copy.assistantDescription}
@@ -75,6 +78,7 @@ export default function OnboardingEmptyState({
         />
         <OnboardingAction
           action="import"
+          returnFocusKey={DIALOG_RETURN_KEYS.onboardingImport}
           icon="share"
           title={copy.importTitle}
           description={copy.importDescription}
@@ -87,12 +91,14 @@ export default function OnboardingEmptyState({
 
 function OnboardingAction({
   action,
+  returnFocusKey,
   icon,
   title,
   description,
   onClick,
 }: {
   action: "search" | "assistant" | "import";
+  returnFocusKey: string;
   icon: AppIconName;
   title: string;
   description: string;
@@ -102,6 +108,7 @@ function OnboardingAction({
     <button
       type="button"
       data-onboarding-action={action}
+      data-dialog-return-key={returnFocusKey}
       onClick={onClick}
       className="group flex min-h-24 w-full items-start gap-3 rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--paper)] p-3.5 text-left transition-colors hover:border-[var(--line-strong)] hover:bg-[var(--paper-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--project-primary)]"
     >

@@ -46,6 +46,7 @@ interface BoardShareImportModalProps {
   presenceState: PresenceState;
   comparisonAvailability: BoardComparisonResultValue | null;
   comparisonExporting: boolean;
+  returnFocusKey: string;
   onClose: () => void;
   onConfirm: () => void;
   onCompare: () => void;
@@ -68,6 +69,7 @@ export default function BoardShareImportModal({
   presenceState,
   comparisonAvailability,
   comparisonExporting,
+  returnFocusKey,
   onClose,
   onConfirm,
   onCompare,
@@ -92,7 +94,7 @@ export default function BoardShareImportModal({
     onClose: handleClose,
     active: presenceState !== "exiting",
     initialFocusRef: cancelButtonRef,
-    returnFocusKey: DIALOG_RETURN_KEYS.copyBoardLink,
+    returnFocusKey,
     returnFocusFallbackKey: DIALOG_RETURN_KEYS.globalSearch,
   });
 
