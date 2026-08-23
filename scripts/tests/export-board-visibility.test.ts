@@ -743,13 +743,24 @@ test("oshimen control exposes selection, explicit clearing, and only the solo co
   assert.match(selected, /data-oshimen-solo-count="2"/);
   assert.match(selected, /Her solo songs in this Top 10: 2/);
   assert.match(selected, /Clear oshimen/);
+  const selectedMemberNamePattern = selectedMember.name.ja.replace(
+    /[.*+?^${}()|[\]\\]/g,
+    "\\$&",
+  );
   assert.match(
     selected,
-    new RegExp(`option value="${selectedMember.id}"[^>]*selected=""`),
+    new RegExp(`<span[^>]*lang="ja"[^>]*>${selectedMemberNamePattern}</span>`),
   );
+  for (const markup of [selected, unset]) {
+    assert.match(
+      markup,
+      /<button[^>]*type="button"[^>]*aria-haspopup="menu"[^>]*aria-expanded="false"/,
+    );
+    assert.doesNotMatch(markup, /<(?:select|option)\b/i);
+  }
   assert.doesNotMatch(unset, /data-oshimen-solo-count=/);
   assert.doesNotMatch(unset, /Clear oshimen/);
-  assert.match(unset, /option value="" selected=""/);
+  assert.match(unset, />Not set<\/span>/);
 });
 
 test("dark ordinary templates stay opaque while light and archetype exports preserve transparency", () => {
