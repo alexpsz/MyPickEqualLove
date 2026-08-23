@@ -172,6 +172,7 @@ import {
   parseOshimenPreference,
   planOshimenPreferenceStorageMutation,
   resolveOshimenMember,
+  resolveOshimenPreferenceAccess,
 } from "../utils/oshimenPreference";
 import {
   createPickAssistantSession,
@@ -1658,8 +1659,9 @@ export default function PickExperienceClient({
           PROJECT_ID,
           MEMBERS,
         );
-        setOshimenMemberId(result.memberId);
-        setOshimenStorageWritable(true);
+        const access = resolveOshimenPreferenceAccess(result);
+        setOshimenMemberId(access.memberId);
+        setOshimenStorageWritable(access.writable);
       } catch {
         setOshimenMemberId(null);
         setOshimenStorageWritable(false);
@@ -1684,9 +1686,10 @@ export default function PickExperienceClient({
 
   const handleOshimenChange = useCallback(
     (memberId: string | null) => {
-      if (!oshimenStorageWritable || isExportRealm || !isStandard) return;
+      if (isExportRealm || !isStandard) return;
 
       const mutation = planOshimenPreferenceStorageMutation(
+        oshimenStorageWritable,
         memberId,
         PROJECT_ID,
         MEMBERS,

@@ -18,9 +18,16 @@ export type OshimenPreferenceLoadStatus =
   | "project-mismatch"
   | "unknown-member";
 
-export interface OshimenPreferenceLoadResult {
-  status: OshimenPreferenceLoadStatus;
+export type OshimenPreferenceLoadResult =
+  | { status: "valid"; memberId: string }
+  | {
+      status: Exclude<OshimenPreferenceLoadStatus, "valid">;
+      memberId: null;
+    };
+
+export interface OshimenPreferenceAccess {
   memberId: string | null;
+  writable: boolean;
 }
 
 export interface OshimenPosterAccent {
@@ -38,6 +45,7 @@ export type OshimenPreferenceStorageMutation =
   | { action: "reject" };
 
 const HEX_COLOR_PATTERN = /^#[0-9a-f]{6}$/i;
+const OSHIMEN_PREFERENCE_KEYS = ["version", "projectId", "memberId"] as const;
 
 export function getOshimenPreferenceStorageKey(storagePrefix: string): string {
   return `${storagePrefix}_oshimen_preference_v1`;
@@ -65,7 +73,10 @@ export function parseOshimenPreference(
     return { status: "invalid", memberId: null };
   }
 
-  if (!isRecord(value) || typeof value.version !== "number") {
+  if (!isRecord(value) || !hasExactPreferenceKeys(value)) {
+    return { status: "invalid", memberId: null };
+  }
+  if (typeof value.version !== "number") {
     return { status: "invalid", memberId: null };
   }
   if (value.version !== OSHIMEN_PREFERENCE_VERSION) {
@@ -88,6 +99,19 @@ export function parseOshimenPreference(
   return { status: "valid", memberId: value.memberId };
 }
 
+export function resolveOshimenPreferenceAccess(
+  result: OshimenPreferenceLoadResult,
+): OshimenPreferenceAccess {
+  if (result.status === "valid") {
+    return { memberId: result.memberId, writable: true };
+  }
+
+  return {
+    memberId: null,
+    writable: result.status === "empty",
+  };
+}
+
 export function serializeOshimenPreference(
   memberId: string,
   projectId: ProjectId,
@@ -104,10 +128,12 @@ export function serializeOshimenPreference(
 }
 
 export function planOshimenPreferenceStorageMutation(
+  storageWritable: boolean,
   memberId: string | null,
   projectId: ProjectId,
   members: readonly Member[],
 ): OshimenPreferenceStorageMutation {
+  if (!storageWritable) return { action: "reject" };
   if (memberId === null) return { action: "remove" };
 
   const value = serializeOshimenPreference(memberId, projectId, members);
@@ -133,4 +159,14 @@ export function resolveOshimenPosterAccent(
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function hasExactPreferenceKeys(value: Record<string, unknown>): boolean {
+  const keys = Object.keys(value);
+  return (
+    keys.length === OSHIMEN_PREFERENCE_KEYS.length &&
+    OSHIMEN_PREFERENCE_KEYS.every((key) =>
+      Object.prototype.hasOwnProperty.call(value, key),
+    )
+  );
 }

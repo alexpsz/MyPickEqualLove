@@ -19,6 +19,7 @@ import {
   parseOshimenPreference,
   planOshimenPreferenceStorageMutation,
   resolveOshimenPosterAccent,
+  resolveOshimenPreferenceAccess,
   serializeOshimenPreference,
 } from "../../src/utils/oshimenPreference";
 
@@ -100,48 +101,112 @@ test("preference keys and documents stay isolated across all three projects", ()
   assert.equal(keys.size, PROJECT_CASES.length);
 });
 
-test("unknown, malformed, and future preferences fail closed", () => {
+test("only empty and exact valid documents enter a writable state", () => {
+  const serialized = serializeOshimenPreference(
+    "member-a",
+    "equal-love",
+    MEMBERS,
+  );
+  assert.ok(serialized);
+  assert.deepEqual(
+    resolveOshimenPreferenceAccess(
+      parseOshimenPreference(null, "equal-love", MEMBERS),
+    ),
+    { memberId: null, writable: true },
+  );
+  assert.deepEqual(
+    resolveOshimenPreferenceAccess(
+      parseOshimenPreference(serialized, "equal-love", MEMBERS),
+    ),
+    { memberId: "member-a", writable: true },
+  );
+});
+
+test("noncanonical raw documents stay read-only and cannot be overwritten or removed", () => {
   assert.equal(
     serializeOshimenPreference("missing-member", "equal-love", MEMBERS),
     null,
   );
-  assert.deepEqual(
-    parseOshimenPreference(
-      JSON.stringify({
-        version: 1,
-        projectId: "equal-love",
-        memberId: "missing-member",
-      }),
-      "equal-love",
-      MEMBERS,
-    ),
-    { status: "unknown-member", memberId: null },
-  );
-  assert.deepEqual(parseOshimenPreference("not-json", "equal-love", MEMBERS), {
-    status: "invalid",
-    memberId: null,
-  });
-  assert.deepEqual(
-    parseOshimenPreference(
-      JSON.stringify({
+
+  const cases = [
+    {
+      label: "future",
+      raw: JSON.stringify({
         version: 2,
         projectId: "equal-love",
         memberId: "member-a",
       }),
-      "equal-love",
-      MEMBERS,
-    ),
-    { status: "unsupported-version", memberId: null },
-  );
+      status: "unsupported-version",
+    },
+    {
+      label: "invalid",
+      raw: "not-json",
+      status: "invalid",
+    },
+    {
+      label: "unknown member",
+      raw: JSON.stringify({
+        version: 1,
+        projectId: "equal-love",
+        memberId: "missing-member",
+      }),
+      status: "unknown-member",
+    },
+    {
+      label: "project mismatch",
+      raw: JSON.stringify({
+        version: 1,
+        projectId: "not-equal-me",
+        memberId: "member-a",
+      }),
+      status: "project-mismatch",
+    },
+    {
+      label: "extra key",
+      raw: JSON.stringify({
+        version: 1,
+        projectId: "equal-love",
+        memberId: "member-a",
+        displayName: "must-not-be-accepted",
+      }),
+      status: "invalid",
+    },
+  ] as const;
+
+  for (const testCase of cases) {
+    const result = parseOshimenPreference(testCase.raw, "equal-love", MEMBERS);
+    assert.equal(result.status, testCase.status, testCase.label);
+    const access = resolveOshimenPreferenceAccess(result);
+    assert.deepEqual(
+      access,
+      { memberId: null, writable: false },
+      testCase.label,
+    );
+
+    let storedValue: string | null = testCase.raw;
+    for (const nextMemberId of ["member-a", null]) {
+      const mutation = planOshimenPreferenceStorageMutation(
+        access.writable,
+        nextMemberId,
+        "equal-love",
+        MEMBERS,
+      );
+      if (mutation.action === "set") storedValue = mutation.value;
+      if (mutation.action === "remove") storedValue = null;
+      assert.deepEqual(mutation, { action: "reject" }, testCase.label);
+    }
+    assert.equal(storedValue, testCase.raw, testCase.label);
+  }
 });
 
 test("clear is an explicit remove mutation and unknown selections are rejected", () => {
   assert.deepEqual(
-    planOshimenPreferenceStorageMutation(null, "equal-love", MEMBERS),
+    planOshimenPreferenceStorageMutation(true, null, "equal-love", MEMBERS),
     { action: "remove" },
   );
   assert.deepEqual(
     planOshimenPreferenceStorageMutation(
+      true,
       "missing-member",
       "equal-love",
       MEMBERS,
@@ -149,6 +214,7 @@ test("clear is an explicit remove mutation and unknown selections are rejected",
     { action: "reject" },
   );
   const mutation = planOshimenPreferenceStorageMutation(
+    true,
     "member-a",
     "equal-love",
     MEMBERS,
