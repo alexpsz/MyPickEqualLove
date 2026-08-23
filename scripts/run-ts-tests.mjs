@@ -133,6 +133,23 @@ const SUITES = {
     includeRepositoryNodePath: true,
     successMessage: "Onboarding empty-state tests passed.",
   },
+  motion: {
+    tempPrefix: "mypick-motion-tests-",
+    compilerArgs: [...NODE16_ARGS],
+    sourceFiles: ["scripts/tests/motion.test.ts", "src/config/motion.ts"],
+    emittedTestFiles: ["scripts/tests/motion.test.js"],
+    successMessage: "Motion tests passed.",
+  },
+  "export-readiness": {
+    tempPrefix: "mypick-export-readiness-tests-",
+    compilerArgs: [...NODE16_ARGS, "--lib", "ES2022,DOM"],
+    sourceFiles: [
+      "scripts/tests/export-readiness.test.ts",
+      "src/utils/exportImageReadiness.ts",
+    ],
+    emittedTestFiles: ["scripts/tests/export-readiness.test.js"],
+    successMessage: "Export readiness tests passed.",
+  },
   "export-board": {
     tempPrefix: "mypick-export-board-tests-",
     compilerArgs: [

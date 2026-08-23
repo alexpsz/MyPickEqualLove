@@ -30,6 +30,10 @@ import {
   isTransparentBackgroundAvailableForContent,
 } from "../config/exportPresets";
 import {
+  shouldStartBoardReveal,
+  type BoardRevealPhase,
+} from "../config/motion";
+import {
   MEMBERS,
   RELEASE_TYPES,
   RELEASE_YEARS,
@@ -158,7 +162,11 @@ import {
   type ExportRenderRequest,
   type ExportRenderResult,
 } from "../utils/exportCapture";
-import { waitForExportImageReady } from "../utils/exportImageReadiness";
+import {
+  assertNoActiveExportAnimations,
+  waitForExportAnimationsReady,
+  waitForExportImageReady,
+} from "../utils/exportImageReadiness";
 import { getMemberColorGradient } from "../utils/memberColors";
 import {
   createPickAssistantSession,
@@ -770,6 +778,10 @@ export default function PickExperienceClient({
   const [openArchetypeInputKey, setOpenArchetypeInputKey] = useState<
     string | null
   >(null);
+  const [boardReveal, setBoardReveal] = useState<{
+    phase: BoardRevealPhase;
+    runId: number;
+  } | null>(null);
   const [generating, setGenerating] = useState(false);
   const [showTitles, setShowTitles] = useState(
     DEFAULT_EXPORT_OPTIONS.showTitles,
@@ -822,6 +834,9 @@ export default function PickExperienceClient({
   const [commandPaletteView, setCommandPaletteView] =
     useState<CommandPaletteView | null>(null);
   const generatingRef = useRef(false);
+  const boardRevealRunIdRef = useRef(0);
+  const boardRevealScopeRef = useRef<string | null>(null);
+  const previousBoardRevealPickCountRef = useRef<number | null>(null);
   const activeFrameRequestIdRef = useRef<string | null>(null);
   const capturedFrameRequestIdRef = useRef<string | null>(null);
   const previewTriggerRef = useRef<HTMLButtonElement>(null);
@@ -1047,6 +1062,63 @@ export default function PickExperienceClient({
     [songDiscoveryNewSongIds],
   );
   const isStandardTopTen = isStandard && slots.length === 10;
+  const boardRevealScopeKey = `${experience.id}:${effectiveContextId}`;
+  const completeBoardReveal = useCallback(() => {
+    setBoardReveal((current) =>
+      current?.phase === "revealing" ? { ...current, phase: "ready" } : current,
+    );
+  }, []);
+  const dismissBoardReveal = useCallback(() => {
+    setBoardReveal(null);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated || isExportRealm || !isStandardTopTen) {
+      boardRevealScopeRef.current = null;
+      previousBoardRevealPickCountRef.current = null;
+      setBoardReveal((current) => (current === null ? current : null));
+      return;
+    }
+
+    if (boardRevealScopeRef.current !== boardRevealScopeKey) {
+      boardRevealScopeRef.current = boardRevealScopeKey;
+      previousBoardRevealPickCountRef.current = selectedPickCount;
+      setBoardReveal((current) => (current === null ? current : null));
+      return;
+    }
+
+    const previousCount = previousBoardRevealPickCountRef.current;
+    previousBoardRevealPickCountRef.current = selectedPickCount;
+
+    if (
+      shouldStartBoardReveal({
+        enabled: isStandardTopTen,
+        hydrated,
+        isExportRealm,
+        previousCount,
+        currentCount: selectedPickCount,
+        slotCount: slots.length,
+      })
+    ) {
+      boardRevealRunIdRef.current += 1;
+      setBoardReveal({
+        phase: "revealing",
+        runId: boardRevealRunIdRef.current,
+      });
+      return;
+    }
+
+    if (selectedPickCount < slots.length) {
+      setBoardReveal((current) => (current === null ? current : null));
+    }
+  }, [
+    boardRevealScopeKey,
+    hydrated,
+    isExportRealm,
+    isStandardTopTen,
+    selectedPickCount,
+    slots.length,
+  ]);
   const showNewSongsBanner =
     hydrated &&
     !isExportRealm &&
@@ -2932,6 +3004,7 @@ export default function PickExperienceClient({
         waitForExportImages(exportElement),
       ]);
       await new Promise((resolve) => window.setTimeout(resolve, 150));
+      await waitForExportAnimationsReady(exportElement);
       assertExportLayoutFits(exportElement);
       const sizePreset = getExportSizePreset(frameSizePresetId);
       const exportBackgroundColor =
@@ -2941,6 +3014,7 @@ export default function PickExperienceClient({
         exportBackgroundColor === "rgba(0, 0, 0, 0)"
           ? null
           : exportBackgroundColor;
+      assertNoActiveExportAnimations(exportElement);
       const canvas = await html2canvas(exportElement, {
         useCORS: true,
         backgroundColor: canvasBackgroundColor,
@@ -3038,6 +3112,8 @@ export default function PickExperienceClient({
         }
       }
 
+      if (kind === "picks") completeBoardReveal();
+
       const generationId = ++previewGenerationIdRef.current;
       const effectiveSizePresetId =
         kind === "insights"
@@ -3088,6 +3164,7 @@ export default function PickExperienceClient({
           { signal: captureController.signal },
         );
         if (generationId === previewGenerationIdRef.current) {
+          if (kind === "picks") setBoardReveal(null);
           setPreview({
             kind,
             archetypeInputKey: archetypeForExport?.inputKey,
@@ -3158,6 +3235,7 @@ export default function PickExperienceClient({
       activeTemplateId,
       boardInsights,
       boardStorageWritable,
+      completeBoardReveal,
       effectiveContextId,
       experience,
       exportNickname,
@@ -3861,10 +3939,18 @@ export default function PickExperienceClient({
             picks={picks}
             layout={isStandard ? "top10-grid" : "live-memory-grid"}
             showSlotMetadata={!isStandard}
+            boardReveal={boardReveal}
+            posterGenerating={generating}
             onSlotClick={handleSlotClick}
             onClearSlot={handleClearSlot}
             previewRelocation={previewRelocation}
             onRelocate={handleRelocate}
+            onRevealComplete={completeBoardReveal}
+            onRevealSkip={completeBoardReveal}
+            onRevealDismiss={dismissBoardReveal}
+            onGeneratePoster={() => {
+              void handleGenerateImage();
+            }}
           />
           {boardInsights ? (
             <>

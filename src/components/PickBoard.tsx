@@ -8,6 +8,13 @@ import React, {
   useState,
 } from "react";
 import { flushSync } from "react-dom";
+import { useReducedMotion } from "motion/react";
+import * as m from "motion/react-m";
+import {
+  BOARD_REVEAL_MOTION,
+  createBoardRevealSchedule,
+  type BoardRevealPhase,
+} from "../config/motion";
 import type { RelocatePickResult } from "../data/pickExperiences";
 import { useLocale } from "../i18n/LocaleProvider";
 import type { PickSlot, PickSlotId, Picks } from "../schema/music";
@@ -39,6 +46,15 @@ interface PickBoardProps {
     fromSlotId: PickSlotId,
     toSlotId: PickSlotId,
   ) => RelocatePickResult;
+  boardReveal?: {
+    phase: BoardRevealPhase;
+    runId: number;
+  } | null;
+  posterGenerating?: boolean;
+  onRevealComplete?: () => void;
+  onRevealSkip?: () => void;
+  onRevealDismiss?: () => void;
+  onGeneratePoster?: () => void;
 }
 
 interface KeyboardReorderSession {
@@ -76,8 +92,15 @@ export default function PickBoard({
   onClearSlot,
   previewRelocation,
   onRelocate,
+  boardReveal = null,
+  posterGenerating = false,
+  onRevealComplete,
+  onRevealSkip,
+  onRevealDismiss,
+  onGeneratePoster,
 }: PickBoardProps) {
   const { t } = useLocale();
+  const reducedMotion = useReducedMotion() === true;
   const sortedSlots = useMemo(
     () => slots.slice().sort((a, b) => a.sortOrder - b.sortOrder),
     [slots],
@@ -99,6 +122,25 @@ export default function PickBoard({
     valid: boolean;
   } | null>(null);
   const [announcement, setAnnouncement] = useState("");
+  const [revealSequence, setRevealSequence] = useState({
+    revealedCount: 0,
+    runId: 0,
+  });
+  const [instantRevealRunId, setInstantRevealRunId] = useState(0);
+
+  const revealIsActive = boardReveal?.phase === "revealing";
+  const revealRunId = boardReveal?.runId ?? 0;
+  const revealUsesInstantMotion =
+    reducedMotion || instantRevealRunId === revealRunId;
+  const revealProgress = revealIsActive
+    ? revealSequence.runId === revealRunId
+      ? revealSequence.revealedCount
+      : 0
+    : sortedSlots.length;
+  const displayedRevealProgress = Math.max(
+    1,
+    Math.min(revealProgress, sortedSlots.length),
+  );
 
   const gridClassName =
     layout === "live-memory-grid"
@@ -110,6 +152,49 @@ export default function PickBoard({
       sortedSlots.find((candidate) => candidate.id === slotId),
     [sortedSlots],
   );
+
+  const finishRevealForInteraction = useCallback(() => {
+    if (!revealIsActive) return;
+    setInstantRevealRunId(revealRunId);
+    onRevealSkip?.();
+  }, [onRevealSkip, revealIsActive, revealRunId]);
+
+  useEffect(() => {
+    if (!revealIsActive || revealRunId === 0) return;
+
+    const schedule = createBoardRevealSchedule(
+      sortedSlots.length,
+      reducedMotion,
+    );
+    if (schedule.length === 0) {
+      onRevealComplete?.();
+      return;
+    }
+
+    const timerIds = schedule.map((step) =>
+      window.setTimeout(() => {
+        setRevealSequence({
+          revealedCount: step.revealedCount,
+          runId: revealRunId,
+        });
+      }, step.atMs),
+    );
+    const finalStep = schedule[schedule.length - 1];
+    timerIds.push(
+      window.setTimeout(
+        () => onRevealComplete?.(),
+        finalStep.atMs + (reducedMotion ? 0 : BOARD_REVEAL_MOTION.settleMs),
+      ),
+    );
+
+    return () => timerIds.forEach((timerId) => window.clearTimeout(timerId));
+  }, [
+    onRevealComplete,
+    reducedMotion,
+    revealIsActive,
+    revealRunId,
+    sortedSlots.length,
+  ]);
 
   const focusReorderHandle = useCallback((slotId: PickSlotId) => {
     window.requestAnimationFrame(() => {
@@ -480,6 +565,7 @@ export default function PickBoard({
         return;
       }
       event.stopPropagation();
+      finishRevealForInteraction();
       cancelPointerReorder();
       setKeyboardSession(null);
       const wrapper = wrappersRef.current.get(slotId);
@@ -558,6 +644,7 @@ export default function PickBoard({
       beginPointerDrag,
       cancelPointerReorder,
       clearLongPressTimer,
+      finishRevealForInteraction,
       picks,
       updatePointerDrag,
     ],
@@ -641,9 +728,10 @@ export default function PickBoard({
         return;
       }
       suppressSurfaceClickRef.current = null;
+      finishRevealForInteraction();
       onSlotClick(slotId);
     },
-    [onSlotClick],
+    [finishRevealForInteraction, onSlotClick],
   );
 
   const handleReorderClick = useCallback(
@@ -655,6 +743,7 @@ export default function PickBoard({
         return;
       }
       suppressHandleClickUntilRef.current = 0;
+      finishRevealForInteraction();
       if (keyboardSession?.sourceSlotId === slotId) {
         finishKeyboardReorder();
       } else {
@@ -663,6 +752,7 @@ export default function PickBoard({
     },
     [
       finishKeyboardReorder,
+      finishRevealForInteraction,
       keyboardSession?.sourceSlotId,
       startKeyboardReorder,
     ],
@@ -761,6 +851,101 @@ export default function PickBoard({
         {announcement || t("reorder.instructions")}
       </div>
 
+      {boardReveal ? (
+        <section
+          aria-busy={posterGenerating || revealIsActive}
+          aria-labelledby="board-reveal-title"
+          data-board-reveal-phase={
+            posterGenerating ? "generating" : boardReveal.phase
+          }
+          className="official-panel-soft mb-4 grid gap-3 p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:px-5"
+        >
+          <div className="min-w-0">
+            <h3
+              id="board-reveal-title"
+              className="text-sm font-semibold tracking-[-0.01em] text-[var(--foreground)] sm:text-base"
+            >
+              {posterGenerating
+                ? t("boardReveal.generatingTitle")
+                : revealIsActive
+                  ? t("boardReveal.title")
+                  : t("boardReveal.readyTitle")}
+            </h3>
+            <p
+              aria-live="polite"
+              aria-atomic="true"
+              className="mt-1 text-[12px] font-medium leading-relaxed text-[var(--muted)] sm:text-[13px]"
+            >
+              {posterGenerating
+                ? t("boardReveal.generatingHint")
+                : revealIsActive
+                  ? t("boardReveal.progress", {
+                      current: displayedRevealProgress,
+                      total: sortedSlots.length,
+                    })
+                  : t("boardReveal.readyHint")}
+            </p>
+            <div
+              role="progressbar"
+              aria-label={t("boardReveal.progressLabel")}
+              aria-valuemin={0}
+              aria-valuemax={sortedSlots.length}
+              aria-valuenow={
+                revealIsActive ? revealProgress : sortedSlots.length
+              }
+              className="mt-3 h-1.5 overflow-hidden rounded-full bg-[var(--line)]"
+            >
+              <m.div
+                className="h-full origin-left rounded-full bg-[var(--project-primary)]"
+                initial={false}
+                animate={{
+                  scaleX:
+                    sortedSlots.length === 0
+                      ? 1
+                      : revealProgress / sortedSlots.length,
+                }}
+                transition={
+                  revealUsesInstantMotion
+                    ? { duration: 0 }
+                    : BOARD_REVEAL_MOTION.transition
+                }
+              />
+            </div>
+          </div>
+
+          <div className="flex min-w-0 flex-wrap items-center gap-2 sm:justify-end">
+            {revealIsActive ? (
+              <button
+                type="button"
+                onClick={finishRevealForInteraction}
+                className="official-button official-button-quiet min-h-11"
+              >
+                {t("boardReveal.skip")}
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={onRevealDismiss}
+                  className="official-button official-button-quiet min-h-11"
+                >
+                  {t("boardReveal.dismiss")}
+                </button>
+                {!posterGenerating ? (
+                  <button
+                    type="button"
+                    onClick={onGeneratePoster}
+                    className="official-button official-button-primary min-h-11"
+                  >
+                    {t("boardReveal.generate")}
+                  </button>
+                ) : null}
+              </>
+            )}
+          </div>
+        </section>
+      ) : null}
+
       {keyboardSession ? (
         <div
           id="pick-reorder-toolbar"
@@ -811,89 +996,128 @@ export default function PickBoard({
       ) : null}
 
       <div className={gridClassName}>
-        {sortedSlots.map((slot) => (
-          <div
-            key={slot.id}
-            ref={(node) => {
-              if (node) wrappersRef.current.set(slot.id, node);
-              else wrappersRef.current.delete(slot.id);
-            }}
-            data-reorder-slot-id={slot.id}
-            data-reorder-source={
-              keyboardSession?.sourceSlotId === slot.id ||
-              dragSourceSlotId === slot.id
-                ? "true"
-                : undefined
-            }
-            data-reorder-target={
-              keyboardSession?.targetSlotId === slot.id &&
-              keyboardSession.sourceSlotId !== slot.id
-                ? keyboardSession.valid
-                  ? "valid"
-                  : "invalid"
-                : dragTarget?.slotId === slot.id
-                  ? dragTarget.valid
+        {sortedSlots.map((slot, index) => {
+          const slotIsRevealed =
+            !revealIsActive || index < revealProgress || reducedMotion;
+
+          return (
+            <div
+              key={slot.id}
+              ref={(node) => {
+                if (node) wrappersRef.current.set(slot.id, node);
+                else wrappersRef.current.delete(slot.id);
+              }}
+              data-reorder-slot-id={slot.id}
+              data-reorder-source={
+                keyboardSession?.sourceSlotId === slot.id ||
+                dragSourceSlotId === slot.id
+                  ? "true"
+                  : undefined
+              }
+              data-reorder-target={
+                keyboardSession?.targetSlotId === slot.id &&
+                keyboardSession.sourceSlotId !== slot.id
+                  ? keyboardSession.valid
                     ? "valid"
                     : "invalid"
-                  : undefined
-            }
-            className="pick-reorder-slot relative min-w-0"
-          >
-            <PickSlotCard
-              slot={slot}
-              song={picks[slot.id]}
-              layout={layout}
-              showSlotMetadata={showSlotMetadata}
-              onClick={(event) => handleSlotClick(slot.id, event)}
-              onClear={(event) => onClearSlot(slot.id, event)}
-              reorderHandleProps={
-                picks[slot.id]
-                  ? {
-                      active:
-                        keyboardSession?.sourceSlotId === slot.id ||
-                        dragSourceSlotId === slot.id,
-                      controlsKeyboardToolbar:
-                        keyboardSession?.sourceSlotId === slot.id,
-                      onClick: (event) => handleReorderClick(slot.id, event),
-                      onKeyDown: (event) =>
-                        handleReorderKeyDown(slot.id, event),
-                      onPointerDown: (event) =>
-                        handlePointerDown(slot.id, "handle", event),
-                      onPointerMove: handlePointerMove,
-                      onPointerUp: handlePointerUp,
-                      onPointerCancel: handlePointerCancellation,
-                      onLostPointerCapture: handlePointerCancellation,
-                    }
-                  : undefined
+                  : dragTarget?.slotId === slot.id
+                    ? dragTarget.valid
+                      ? "valid"
+                      : "invalid"
+                    : undefined
               }
-              reorderSurfaceProps={
-                picks[slot.id]
-                  ? {
-                      onPointerDown: (event) =>
-                        handlePointerDown(slot.id, "surface", event),
-                      onPointerMove: handlePointerMove,
-                      onPointerUp: handlePointerUp,
-                      onPointerCancel: handlePointerCancellation,
-                      onLostPointerCapture: handlePointerCancellation,
-                      onContextMenu: (event) => {
-                        const activeSession = pointerSessionRef.current;
-                        if (
-                          activeSession?.sourceSlotId === slot.id ||
-                          shouldSuppressSurfaceClick({
-                            suppression: suppressSurfaceClickRef.current,
-                            slotId: slot.id,
-                            now: Date.now(),
-                          })
-                        ) {
-                          event.preventDefault();
+              className="pick-reorder-slot relative min-w-0"
+            >
+              <m.div
+                data-board-reveal-motion
+                data-board-reveal-state={
+                  revealIsActive
+                    ? slotIsRevealed
+                      ? "revealed"
+                      : "waiting"
+                    : undefined
+                }
+                initial={false}
+                animate={
+                  reducedMotion
+                    ? { opacity: 1, scale: 1, y: 0 }
+                    : {
+                        opacity: slotIsRevealed
+                          ? 1
+                          : BOARD_REVEAL_MOTION.concealedOpacity,
+                        scale: slotIsRevealed
+                          ? 1
+                          : BOARD_REVEAL_MOTION.concealedScale,
+                        y: slotIsRevealed ? 0 : BOARD_REVEAL_MOTION.concealedY,
+                      }
+                }
+                transition={
+                  revealUsesInstantMotion
+                    ? { duration: 0 }
+                    : BOARD_REVEAL_MOTION.transition
+                }
+              >
+                <PickSlotCard
+                  slot={slot}
+                  song={picks[slot.id]}
+                  layout={layout}
+                  showSlotMetadata={showSlotMetadata}
+                  onClick={(event) => handleSlotClick(slot.id, event)}
+                  onClear={(event) => {
+                    finishRevealForInteraction();
+                    onClearSlot(slot.id, event);
+                  }}
+                  reorderHandleProps={
+                    picks[slot.id]
+                      ? {
+                          active:
+                            keyboardSession?.sourceSlotId === slot.id ||
+                            dragSourceSlotId === slot.id,
+                          controlsKeyboardToolbar:
+                            keyboardSession?.sourceSlotId === slot.id,
+                          onClick: (event) =>
+                            handleReorderClick(slot.id, event),
+                          onKeyDown: (event) =>
+                            handleReorderKeyDown(slot.id, event),
+                          onPointerDown: (event) =>
+                            handlePointerDown(slot.id, "handle", event),
+                          onPointerMove: handlePointerMove,
+                          onPointerUp: handlePointerUp,
+                          onPointerCancel: handlePointerCancellation,
+                          onLostPointerCapture: handlePointerCancellation,
                         }
-                      },
-                    }
-                  : undefined
-              }
-            />
-          </div>
-        ))}
+                      : undefined
+                  }
+                  reorderSurfaceProps={
+                    picks[slot.id]
+                      ? {
+                          onPointerDown: (event) =>
+                            handlePointerDown(slot.id, "surface", event),
+                          onPointerMove: handlePointerMove,
+                          onPointerUp: handlePointerUp,
+                          onPointerCancel: handlePointerCancellation,
+                          onLostPointerCapture: handlePointerCancellation,
+                          onContextMenu: (event) => {
+                            const activeSession = pointerSessionRef.current;
+                            if (
+                              activeSession?.sourceSlotId === slot.id ||
+                              shouldSuppressSurfaceClick({
+                                suppression: suppressSurfaceClickRef.current,
+                                slotId: slot.id,
+                                now: Date.now(),
+                              })
+                            ) {
+                              event.preventDefault();
+                            }
+                          },
+                        }
+                      : undefined
+                  }
+                />
+              </m.div>
+            </div>
+          );
+        })}
       </div>
     </section>
   );
