@@ -286,6 +286,8 @@ const en = {
   "oshimen.none": "Not set",
   "oshimen.clear": "Clear oshimen",
   "oshimen.soloCount": "Her solo songs in this Top 10: {count}",
+  "oshimen.posterAccentHint":
+    "Classic and Spotlight posters for the standard board use your oshimen’s color as a light accent. Other templates and Live stay unchanged.",
 
   "search.closeAria": "Close song search",
   "search.title": "Select a song",
@@ -905,6 +907,8 @@ const ja: MessageCatalog = {
   "oshimen.none": "設定しない",
   "oshimen.clear": "推しを解除",
   "oshimen.soloCount": "このTop 10にある推しのソロ曲：{count}曲",
+  "oshimen.posterAccentHint":
+    "通常版のクラシック／スポットライト画像に、推しのメンバーカラーをさりげなく反映します。ほかのテンプレートとLive版は変わりません。",
 
   "search.closeAria": "楽曲検索を閉じる",
   "search.title": "楽曲を選ぶ",
@@ -1499,6 +1503,8 @@ const zhCN: MessageCatalog = {
   "oshimen.none": "未设置",
   "oshimen.clear": "清除推し",
   "oshimen.soloCount": "这份 Top 10 中她的 solo 曲：{count} 首",
+  "oshimen.posterAccentHint":
+    "普通榜单的经典／聚光海报会用推し应援色作轻量点缀；其他模板和 Live 不变。",
 
   "search.closeAria": "关闭歌曲搜索",
   "search.title": "选择歌曲",
@@ -2089,6 +2095,8 @@ const ko: MessageCatalog = {
   "oshimen.none": "설정 안 함",
   "oshimen.clear": "오시 해제",
   "oshimen.soloCount": "이 Top 10의 오시 솔로곡: {count}곡",
+  "oshimen.posterAccentHint":
+    "일반 보드의 클래식/스포트라이트 포스터에 오시의 멤버 컬러를 가볍게 반영합니다. 다른 템플릿과 Live는 바뀌지 않습니다.",
 
   "search.closeAria": "곡 검색 닫기",
   "search.title": "곡 선택",

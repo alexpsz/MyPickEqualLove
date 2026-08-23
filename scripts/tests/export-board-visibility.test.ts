@@ -813,7 +813,7 @@ test("oshimen cannot alter Live, fixed-color, or Archetype export contracts", ()
   }
 });
 
-test("oshimen control exposes selection, explicit clearing, and only the solo count", () => {
+test("oshimen control exposes its scoped purpose, selection, clearing, and solo count", () => {
   const members = Object.values(MEMBERS_BY_ID).slice(0, 3);
   const selectedMember = members[0];
   assert.ok(selectedMember);
@@ -842,6 +842,8 @@ test("oshimen control exposes selection, explicit clearing, and only the solo co
   assert.match(selected, /data-oshimen-solo-count="2"/);
   assert.match(selected, /Her solo songs in this Top 10: 2/);
   assert.match(selected, /Clear oshimen/);
+  const purposeCopy =
+    "Classic and Spotlight posters for the standard board use your oshimen’s color as a light accent. Other templates and Live stay unchanged.";
   const selectedMemberNamePattern = selectedMember.name.ja.replace(
     /[.*+?^${}()|[\]\\]/g,
     "\\$&",
@@ -856,7 +858,22 @@ test("oshimen control exposes selection, explicit clearing, and only the solo co
       /<button[^>]*type="button"[^>]*aria-haspopup="menu"[^>]*aria-expanded="false"/,
     );
     assert.doesNotMatch(markup, /<(?:select|option)\b/i);
+    assert.match(markup, /data-oshimen-purpose-copy="true"/);
+    assert.ok(markup.includes(purposeCopy));
+    const purposeNode = markup.match(
+      /<p[^>]*data-oshimen-purpose-copy="true"[^>]*>/,
+    )?.[0];
+    assert.ok(purposeNode);
+    assert.doesNotMatch(purposeNode, /\bhidden\b|aria-hidden=/);
+    assert.ok(
+      markup.indexOf('aria-haspopup="menu"') <
+        markup.indexOf('data-oshimen-purpose-copy="true"'),
+    );
   }
+  assert.ok(
+    selected.indexOf('data-oshimen-purpose-copy="true"') <
+      selected.indexOf('data-oshimen-solo-count="2"'),
+  );
   assert.doesNotMatch(unset, /data-oshimen-solo-count=/);
   assert.doesNotMatch(unset, /Clear oshimen/);
   assert.match(unset, />Not set<\/span>/);

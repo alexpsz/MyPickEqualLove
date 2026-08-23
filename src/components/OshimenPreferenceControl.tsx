@@ -61,6 +61,13 @@ export default function OshimenPreferenceControl({
         ) : null}
       </div>
 
+      <p
+        data-oshimen-purpose-copy="true"
+        className="text-[12px] leading-relaxed text-[var(--muted)]"
+      >
+        {t("oshimen.posterAccentHint")}
+      </p>
+
       {memberId && soloSongCount !== null ? (
         <p
           data-oshimen-solo-count={soloSongCount}

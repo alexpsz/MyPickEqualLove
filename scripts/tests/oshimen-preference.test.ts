@@ -448,9 +448,28 @@ test("oshimen copy makes only the explicit solo claim", () => {
       catalog["oshimen.none"],
       catalog["oshimen.clear"],
       catalog["oshimen.soloCount"],
+      catalog["oshimen.posterAccentHint"],
     ].join(" ");
     assert.doesNotMatch(copy, forbiddenClaim);
     assert.match(catalog["oshimen.soloCount"], /\{count\}/);
+  }
+});
+
+test("four-language purpose copy limits the accent to standard Classic and Spotlight posters", () => {
+  const expectedCopy = {
+    en: "Classic and Spotlight posters for the standard board use your oshimen’s color as a light accent. Other templates and Live stay unchanged.",
+    ja: "通常版のクラシック／スポットライト画像に、推しのメンバーカラーをさりげなく反映します。ほかのテンプレートとLive版は変わりません。",
+    "zh-CN":
+      "普通榜单的经典／聚光海报会用推し应援色作轻量点缀；其他模板和 Live 不变。",
+    ko: "일반 보드의 클래식/스포트라이트 포스터에 오시의 멤버 컬러를 가볍게 반영합니다. 다른 템플릿과 Live는 바뀌지 않습니다.",
+  } as const;
+
+  for (const locale of ["en", "ja", "zh-CN", "ko"] as const) {
+    assert.equal(
+      messages[locale]["oshimen.posterAccentHint"],
+      expectedCopy[locale],
+      locale,
+    );
   }
 });
 
@@ -535,6 +554,8 @@ test("oshimen control uses the anchored menu without changing its nullable prefe
     /onValueChange=\{\(nextMemberId\) => onChange\(nextMemberId \|\| null\)\}/,
   );
   assert.match(controlSource, /onClick=\{\(\) => onChange\(null\)\}/);
+  assert.match(controlSource, /data-oshimen-purpose-copy="true"/);
+  assert.match(controlSource, /t\("oshimen\.posterAccentHint"\)/);
   assert.match(controlSource, /data-oshimen-solo-count=\{soloSongCount\}/);
 });
 
