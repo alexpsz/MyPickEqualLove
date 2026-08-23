@@ -8,7 +8,11 @@ import {
 } from "../i18n/content";
 import { useLocale } from "../i18n/LocaleProvider";
 import type { MessageKey } from "../i18n/messages";
-import type { ExportTemplateId } from "../schema/export";
+import type {
+  ExportContentKind,
+  ExportSizePresetId,
+  ExportTemplateId,
+} from "../schema/export";
 import { useDialogA11y } from "../utils/useDialogA11y";
 import {
   preparePreviewImageArtifact,
@@ -24,6 +28,7 @@ import { APPLE_OPACITY, APPLE_SPRING_GENTLE } from "./AppleMotion";
 import type { PresenceState } from "./MotionPresence";
 
 interface PreviewModalProps {
+  contentKind: ExportContentKind;
   previewUrl: string;
   onClose: () => void;
   showTitles: boolean;
@@ -36,6 +41,9 @@ interface PreviewModalProps {
   templateId: ExportTemplateId;
   availableTemplateIds: readonly ExportTemplateId[];
   onTemplateChange: (templateId: ExportTemplateId) => void;
+  sizePresetId: ExportSizePresetId;
+  availableSizePresetIds: readonly ExportSizePresetId[];
+  onSizePresetChange: (sizePresetId: ExportSizePresetId) => void;
   generating: boolean;
   actionsDisabled: boolean;
   pageUrl: string;
@@ -51,6 +59,7 @@ interface PreviewModalProps {
 }
 
 export default function PreviewModal({
+  contentKind,
   previewUrl,
   onClose,
   showTitles,
@@ -63,6 +72,9 @@ export default function PreviewModal({
   templateId,
   availableTemplateIds,
   onTemplateChange,
+  sizePresetId,
+  availableSizePresetIds,
+  onSizePresetChange,
   generating,
   actionsDisabled,
   pageUrl,
@@ -108,8 +120,10 @@ export default function PreviewModal({
     shareText,
     shareHashtags,
   };
-  const templateDescriptionKey =
-    getExportTemplateDescriptionMessageKey(templateId);
+  const isInsights = contentKind === "insights";
+  const templateDescriptionKey = isInsights
+    ? null
+    : getExportTemplateDescriptionMessageKey(templateId);
 
   useDialogA11y({
     dialogRef: panelRef,
@@ -301,34 +315,64 @@ export default function PreviewModal({
                 data-preview-options-grid
                 className="grid min-w-0 grid-cols-2 items-stretch gap-1.5 sm:flex sm:w-full sm:flex-wrap sm:items-center sm:justify-center sm:gap-3"
               >
-                <div
-                  data-preview-option="template"
-                  className={`order-1 col-span-2 min-w-0 sm:col-auto ${
-                    availableTemplateIds.length === 4
-                      ? "sm:w-[30rem]"
-                      : locale === "zh-CN"
-                        ? "sm:w-56"
-                        : "sm:w-72"
-                  }`}
-                >
-                  <TemplateSegmentedControl
-                    label={t("preview.templateLabel")}
-                    value={templateId}
-                    options={availableTemplateIds}
-                    disabled={generating}
-                    onValueChange={onTemplateChange}
-                    getOptionLabel={(id) => t(getExportTemplateMessageKey(id))}
-                    compactLabels={locale !== "zh-CN"}
-                  />
-                  {templateDescriptionKey ? (
+                {isInsights ? (
+                  <div
+                    data-preview-option="size"
+                    className="order-1 col-span-2 min-w-0 sm:col-auto sm:w-72"
+                  >
+                    <InsightsSizeSegmentedControl
+                      label={t("insights.export.sizeLabel")}
+                      value={sizePresetId}
+                      options={availableSizePresetIds}
+                      disabled={generating}
+                      onValueChange={onSizePresetChange}
+                      getOptionLabel={(id) =>
+                        t(
+                          id === "square"
+                            ? "insights.export.sizeSquare"
+                            : "insights.export.sizePortrait",
+                        )
+                      }
+                    />
                     <p
-                      data-preview-template-description
+                      data-preview-insights-opaque-hint
                       className="mt-1 px-1 text-center text-[11px] leading-snug text-[var(--muted)]"
                     >
-                      {t(templateDescriptionKey)}
+                      {t("insights.export.opaqueHint")}
                     </p>
-                  ) : null}
-                </div>
+                  </div>
+                ) : (
+                  <div
+                    data-preview-option="template"
+                    className={`order-1 col-span-2 min-w-0 sm:col-auto ${
+                      availableTemplateIds.length === 4
+                        ? "sm:w-[30rem]"
+                        : locale === "zh-CN"
+                          ? "sm:w-56"
+                          : "sm:w-72"
+                    }`}
+                  >
+                    <TemplateSegmentedControl
+                      label={t("preview.templateLabel")}
+                      value={templateId}
+                      options={availableTemplateIds}
+                      disabled={generating}
+                      onValueChange={onTemplateChange}
+                      getOptionLabel={(id) =>
+                        t(getExportTemplateMessageKey(id))
+                      }
+                      compactLabels={locale !== "zh-CN"}
+                    />
+                    {templateDescriptionKey ? (
+                      <p
+                        data-preview-template-description
+                        className="mt-1 px-1 text-center text-[11px] leading-snug text-[var(--muted)]"
+                      >
+                        {t(templateDescriptionKey)}
+                      </p>
+                    ) : null}
+                  </div>
+                )}
                 <div
                   data-preview-option="transparent"
                   className="order-2 min-w-0 sm:order-4"
@@ -355,19 +399,21 @@ export default function PreviewModal({
                     desktopLabel={t("preview.showQrCode")}
                   />
                 </div>
-                <div
-                  data-preview-option="titles"
-                  className="order-4 min-w-0 sm:order-3"
-                >
-                  <ToggleChip
-                    checked={showTitles}
-                    disabled={generating}
-                    onPressedChange={onToggleShowTitles}
-                    ariaLabel={t("preview.showTitles")}
-                    mobileLabel={t("preview.compactShowTitles")}
-                    desktopLabel={t("preview.showTitles")}
-                  />
-                </div>
+                {isInsights ? null : (
+                  <div
+                    data-preview-option="titles"
+                    className="order-4 min-w-0 sm:order-3"
+                  >
+                    <ToggleChip
+                      checked={showTitles}
+                      disabled={generating}
+                      onPressedChange={onToggleShowTitles}
+                      ariaLabel={t("preview.showTitles")}
+                      mobileLabel={t("preview.compactShowTitles")}
+                      desktopLabel={t("preview.showTitles")}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -587,6 +633,60 @@ function isIOSDevice() {
 
 function isAndroidDevice() {
   return /Android/i.test(navigator.userAgent);
+}
+
+function InsightsSizeSegmentedControl({
+  label,
+  value,
+  options,
+  disabled,
+  onValueChange,
+  getOptionLabel,
+}: {
+  label: string;
+  value: ExportSizePresetId;
+  options: readonly ExportSizePresetId[];
+  disabled: boolean;
+  onValueChange: (value: ExportSizePresetId) => void;
+  getOptionLabel: (value: ExportSizePresetId) => string;
+}) {
+  return (
+    <div
+      role="group"
+      aria-label={label}
+      className="grid min-h-11 grid-cols-2 rounded-[var(--radius-sm)] border border-[var(--line-strong)] bg-[var(--paper)] p-0.5"
+    >
+      {options.map((option) => {
+        const selected = option === value;
+
+        return (
+          <button
+            key={option}
+            type="button"
+            data-preview-size-segment={option}
+            aria-pressed={selected}
+            disabled={disabled}
+            onClick={() => onValueChange(option)}
+            className={`flex min-h-11 min-w-0 items-center justify-center gap-1 rounded-[calc(var(--radius-sm)-2px)] px-2 text-[11px] font-semibold outline-none transition-[background-color,color,box-shadow] duration-150 focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] disabled:opacity-50 sm:text-[12px] ${
+              selected
+                ? "bg-[var(--project-primary)] text-[var(--project-contrast)] shadow-sm"
+                : "text-[var(--foreground)] hover:bg-[var(--background)]"
+            }`}
+          >
+            <span
+              className="flex h-4 w-4 shrink-0 items-center justify-center"
+              aria-hidden="true"
+            >
+              {selected ? (
+                <AppIcon name="check" size={14} strokeWidth={2.25} />
+              ) : null}
+            </span>
+            <span className="min-w-0 truncate">{getOptionLabel(option)}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
 }
 
 function TemplateSegmentedControl({

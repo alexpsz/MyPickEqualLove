@@ -1,4 +1,5 @@
 import type {
+  ExportContentKind,
   ExportExperienceLayout,
   ExportCoverTonePalette,
   ExportOptions,
@@ -70,6 +71,13 @@ export const EXPORT_SIZE_PRESET_ORDER: readonly ExportSizePresetId[] = [
   "square",
   "story",
 ];
+
+export const EXPORT_CONTENT_SIZE_PRESET_IDS = {
+  picks: EXPORT_SIZE_PRESET_ORDER,
+  archetype: EXPORT_SIZE_PRESET_ORDER,
+  insights: ["portrait", "square"],
+  comparison: ["portrait", "square"],
+} as const satisfies Record<ExportContentKind, readonly ExportSizePresetId[]>;
 
 export const DEFAULT_EXPORT_OPTIONS: Readonly<ExportOptions> = {
   showTitles: true,
@@ -273,6 +281,27 @@ export function isExportSizePresetId(
   return (
     typeof value === "string" &&
     Object.prototype.hasOwnProperty.call(EXPORT_SIZE_PRESETS, value)
+  );
+}
+
+export function isExportSizePresetAvailableForContent(
+  kind: ExportContentKind,
+  sizePresetId: ExportSizePresetId,
+) {
+  return EXPORT_CONTENT_SIZE_PRESET_IDS[kind].some(
+    (candidate) => candidate === sizePresetId,
+  );
+}
+
+export function isTransparentBackgroundAvailableForContent(
+  kind: ExportContentKind,
+  templateId: ExportTemplateId,
+) {
+  return (
+    kind === "archetype" ||
+    (kind === "picks" &&
+      templateId !== "midnight" &&
+      templateId !== "cover-tone")
   );
 }
 

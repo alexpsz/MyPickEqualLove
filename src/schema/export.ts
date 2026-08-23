@@ -8,7 +8,14 @@ export type ExportSizePresetId = "portrait" | "square" | "story";
 
 export type ExportExperienceLayout = "top10-grid" | "five-memory-list";
 
-export type ExportContentKind = "picks" | "archetype";
+export const EXPORT_CONTENT_KINDS = [
+  "picks",
+  "archetype",
+  "insights",
+  "comparison",
+] as const;
+
+export type ExportContentKind = (typeof EXPORT_CONTENT_KINDS)[number];
 
 export interface ExportHeaderPresentation {
   title: string;

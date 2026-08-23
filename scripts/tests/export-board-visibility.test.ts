@@ -4,6 +4,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import ExportBoard, {
   ArchetypeDossierPoster,
+  InsightsExportBoard,
 } from "../../src/components/ExportBoard";
 import {
   LIVE_EXPERIENCES,
@@ -24,6 +25,8 @@ import {
 import type { PickExperience } from "../../src/schema/pick-experience";
 import type { ExportHeaderPresentation } from "../../src/schema/export";
 import type { Picks } from "../../src/schema/music";
+import { translate } from "../../src/i18n/translate";
+import { deriveBoardInsights } from "../../src/utils/boardInsights";
 import {
   EXPORT_IMAGE_READY_TIMEOUT_MS,
   waitForExportImageReady,
@@ -134,6 +137,7 @@ function renderPoster(
 ) {
   return renderToStaticMarkup(
     createElement(ExportBoard, {
+      contentKind: "picks",
       experience,
       exportCanvasId: "test-export-board",
       slots: getSortedExperienceSlots(experience),
@@ -212,6 +216,7 @@ function renderDossierThroughExportBoard(
 
   return renderToStaticMarkup(
     createElement(ExportBoard, {
+      contentKind: "archetype",
       experience: STANDARD_PICK_EXPERIENCE,
       exportCanvasId: "test-archetype-template-contract",
       slots,
@@ -229,6 +234,48 @@ function renderDossierThroughExportBoard(
         highlights: ["TEMPLATE CONTRACT"],
         footerLabel: "MY PICK ARCHETYPE",
       },
+    }),
+  );
+}
+
+const realBoardInsights = deriveBoardInsights(SONGS.slice(0, 10));
+
+function renderInsightsPoster(
+  sizePresetId: "portrait" | "square" | "story",
+  locale: "en" | "zh-CN" | "ja" | "ko" = "en",
+  showQrCode = false,
+) {
+  return renderToStaticMarkup(
+    createElement(InsightsExportBoard, {
+      exportCanvasId: "test-insights-export",
+      insights: realBoardInsights,
+      sizePresetId,
+      selectedBy: "Test Picker",
+      showQrCode,
+      pageUrl: "https://mypick.kozueginko.com/",
+      locale,
+    }),
+  );
+}
+
+function renderInsightsThroughExportBoard(
+  sizePresetId: "portrait" | "square" = "portrait",
+) {
+  return renderToStaticMarkup(
+    createElement(ExportBoard, {
+      contentKind: "insights",
+      experience: STANDARD_PICK_EXPERIENCE,
+      exportCanvasId: "test-insights-through-export-board",
+      slots: getSortedExperienceSlots(STANDARD_PICK_EXPERIENCE),
+      picks: createPicks(STANDARD_PICK_EXPERIENCE),
+      showTitles: false,
+      transparentBg: true,
+      showQrCode: true,
+      templateId: "midnight",
+      sizePresetId,
+      selectedBy: "Test Picker",
+      pageUrl: "https://mypick.kozueginko.com/",
+      insights: realBoardInsights,
     }),
   );
 }
@@ -316,6 +363,82 @@ test("ordinary poster retains its existing header, grid, metadata, and footer DO
   assert.equal((markup.match(/data-export-year-tag/g) ?? []).length, 10);
   assert.doesNotMatch(markup, /data-archetype-radar/);
   assert.doesNotMatch(markup, /data-export-boundary="archetype-dossier"/);
+});
+
+test("insights is a dedicated opaque SSR board in portrait and square", () => {
+  const portrait = renderInsightsPoster("portrait", "en", true);
+  const square = renderInsightsPoster("square");
+  const dispatched = renderInsightsThroughExportBoard();
+
+  for (const markup of [portrait, square, dispatched]) {
+    assert.match(markup, /data-export-content-kind="insights"/);
+    assert.match(markup, /data-export-boundary="insights-header"/);
+    assert.match(markup, /data-export-boundary="insights-summary"/);
+    assert.match(markup, /data-export-boundary="insights-content"/);
+    assert.match(markup, /data-export-boundary="insights-footer"/);
+    assert.doesNotMatch(markup, /background-color:transparent/);
+    assert.doesNotMatch(markup, /data-export-song-metadata/);
+    assert.doesNotMatch(markup, /data-archetype-radar/);
+  }
+
+  assert.match(
+    portrait,
+    /id="test-insights-export"[^>]*width:1080px;height:1350px/,
+  );
+  assert.match(
+    square,
+    /id="test-insights-export"[^>]*width:1080px;height:1080px/,
+  );
+  assert.match(dispatched, /background-color:#ffffff/);
+  assert.match(portrait, /data-export-qr-code="true"/);
+  assert.doesNotMatch(square, /data-export-qr-code="true"/);
+});
+
+test("insights SSR uses every reviewed locale catalog", () => {
+  for (const locale of ["en", "zh-CN", "ja", "ko"] as const) {
+    const markup = renderInsightsPoster("portrait", locale);
+    for (const key of [
+      "insights.title",
+      "insights.description",
+      "insights.releaseYears",
+      "insights.releaseTypes",
+      "insights.trackTypes",
+      "insights.credits",
+    ] as const) {
+      assert.ok(
+        markup.includes(translate(locale, key)),
+        `${locale} insights export omitted ${key}`,
+      );
+    }
+    assert.ok(
+      markup.includes(
+        translate(locale, "insights.export.selectedBy", {
+          name: "Test Picker",
+        }),
+      ),
+      `${locale} insights export omitted its selected-by label`,
+    );
+  }
+});
+
+test("insights rejects story while comparison remains a reserved dispatch boundary", () => {
+  assert.throws(() => renderInsightsPoster("story"), /does not support story/);
+  assert.throws(
+    () =>
+      renderToStaticMarkup(
+        createElement(ExportBoard, {
+          contentKind: "comparison",
+          experience: STANDARD_PICK_EXPERIENCE,
+          exportCanvasId: "test-comparison-boundary",
+          slots: getSortedExperienceSlots(STANDARD_PICK_EXPERIENCE),
+          picks: createPicks(STANDARD_PICK_EXPERIENCE),
+          templateId: "classic",
+          sizePresetId: "portrait",
+          pageUrl: "https://mypick.kozueginko.com/",
+        }),
+      ),
+    /not implemented/,
+  );
 });
 
 test("dark ordinary templates stay opaque while light and archetype exports preserve transparency", () => {

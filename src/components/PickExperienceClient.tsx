@@ -22,9 +22,12 @@ import {
 import {
   DEFAULT_EXPORT_OPTIONS,
   DEFAULT_EXPORT_SIZE_PRESET_ID,
+  DEFAULT_EXPORT_TEMPLATE_ID,
+  EXPORT_CONTENT_SIZE_PRESET_IDS,
   EXPORT_SCALE,
   EXPORT_TEMPLATE_ORDER,
   getExportSizePreset,
+  isTransparentBackgroundAvailableForContent,
 } from "../config/exportPresets";
 import {
   MEMBERS,
@@ -67,6 +70,7 @@ import {
   getStorageKeysForExperience,
   isSongEligibleForSlot,
   relocateStoredPick,
+  type ExperienceContext,
   type RelocatePickResult,
 } from "../data/pickExperiences";
 import { getAssistantTargetCount } from "../utils/experienceEligibility";
@@ -148,6 +152,7 @@ import {
   EXPORT_REALM_READY_TYPE,
   EXPORT_REALM_RESULT_TYPE,
   captureExportImageInFrame,
+  getExportContentConstraintError,
   isExportRenderRequest,
   type ExportRenderRequest,
   type ExportRenderResult,
@@ -260,6 +265,7 @@ const MAX_NICKNAME_LENGTH = 32;
 const CATALOG_SONG_IDS = SONGS.map((song) => song.id);
 const BOARD_LINK_COPIED_DURATION_MS = 2_000;
 type OnboardingVisibility = "pending" | "visible" | "hidden";
+const INSIGHTS_DIALOG_RETURN_KEY = "generate-insights";
 
 interface PendingBoardShareImport {
   payload: BoardSharePayload;
@@ -294,6 +300,7 @@ const getPreviewOptionsKey = (
   showQrCode: boolean,
   templateId: ExportTemplateId,
   kind: ExportContentKind = "picks",
+  sizePresetId: ExportSizePresetId = DEFAULT_EXPORT_SIZE_PRESET_ID,
   archetypeInputKey = "",
 ) =>
   [
@@ -301,7 +308,7 @@ const getPreviewOptionsKey = (
     transparentBg ? "transparent" : "opaque",
     showQrCode ? "qr" : "no-qr",
     templateId,
-    DEFAULT_EXPORT_SIZE_PRESET_ID,
+    sizePresetId,
     kind,
     archetypeInputKey,
   ].join(":");
@@ -309,9 +316,7 @@ const getPreviewOptionsKey = (
 const isTransparentBackgroundAvailable = (
   kind: ExportContentKind,
   templateId: ExportTemplateId,
-) =>
-  kind === "archetype" ||
-  (templateId !== "midnight" && templateId !== "cover-tone");
+) => isTransparentBackgroundAvailableForContent(kind, templateId);
 
 export default function PickExperienceClient({
   experience,
@@ -777,6 +782,8 @@ export default function PickExperienceClient({
   );
   const [frameSizePresetId, setFrameSizePresetId] =
     useState<ExportSizePresetId>(DEFAULT_EXPORT_SIZE_PRESET_ID);
+  const [insightsSizePresetId, setInsightsSizePresetId] =
+    useState<ExportSizePresetId>(DEFAULT_EXPORT_SIZE_PRESET_ID);
   const [nicknameDraft, setNicknameDraft] = useState("");
   const [frameCaptureRequest, setFrameCaptureRequest] =
     useState<ExportRenderRequest | null>(null);
@@ -817,6 +824,7 @@ export default function PickExperienceClient({
   const previewTriggerRef = useRef<HTMLButtonElement>(null);
   const pickAssistantTriggerRef = useRef<HTMLButtonElement>(null);
   const archetypeTriggerRef = useRef<HTMLButtonElement>(null);
+  const insightsTriggerRef = useRef<HTMLButtonElement>(null);
   const pickAssistantSnapshotRef = useRef(pickAssistantSnapshot);
   const pickAssistantStorageKeyRef = useRef(storageKeys.assistant);
   const assistantMutationPendingRef = useRef(false);
@@ -958,7 +966,12 @@ export default function PickExperienceClient({
     ? resolveAvailableExportTemplateId(templateId, coverToneAvailability)
     : templateId;
   const boardInsights = useMemo(() => {
-    if (!hydrated || isExportRealm || !isStandard || slots.length !== 10) {
+    if (
+      !hydrated ||
+      !isStandard ||
+      slots.length !== 10 ||
+      (isExportRealm && frameCaptureRequest?.kind !== "insights")
+    ) {
       return null;
     }
 
@@ -974,7 +987,14 @@ export default function PickExperienceClient({
     }
 
     return deriveBoardInsights(topTen);
-  }, [hydrated, isExportRealm, isStandard, picks, slots]);
+  }, [
+    frameCaptureRequest?.kind,
+    hydrated,
+    isExportRealm,
+    isStandard,
+    picks,
+    slots,
+  ]);
   const showArchetypeEntry =
     hydrated &&
     !isExportRealm &&
@@ -2741,6 +2761,18 @@ export default function PickExperienceClient({
         return;
       }
 
+      const contentConstraintError = getExportContentConstraintError(request);
+      if (contentConstraintError) {
+        postResult(
+          createExportRenderResult(
+            request.requestId,
+            undefined,
+            contentConstraintError,
+          ),
+        );
+        return;
+      }
+
       const nextContextId = verdict.contextId;
       const nextPicks = filterStoredPicksForExperience({
         experience,
@@ -2754,13 +2786,29 @@ export default function PickExperienceClient({
             Boolean(entry[1]),
           ),
       );
+      if (
+        request.kind === "insights" &&
+        (!isStandard ||
+          slots.length !== 10 ||
+          Object.keys(nextPicks).length !== slots.length ||
+          new Set(Object.values(nextPicks)).size !== slots.length)
+      ) {
+        postResult(
+          createExportRenderResult(
+            request.requestId,
+            undefined,
+            "Insights export requires a complete unique standard Top 10",
+          ),
+        );
+        return;
+      }
       const requestCoverToneAvailability = getCoverToneAvailability({
         projectId: PROJECT_ID,
         slots,
         picks: requestPicks,
       });
       if (
-        request.kind !== "archetype" &&
+        request.kind === "picks" &&
         !isExportTemplateAvailable(
           request.templateId,
           requestCoverToneAvailability,
@@ -2804,6 +2852,7 @@ export default function PickExperienceClient({
     hydrated,
     injectEphemeralBoard,
     isExportRealm,
+    isStandard,
     pageUrl,
     slots,
   ]);
@@ -2818,6 +2867,12 @@ export default function PickExperienceClient({
         !archetypeExportPresentation
       ) {
         throw new Error("Archetype export result is unavailable");
+      }
+      if (frameCaptureRequest?.kind === "insights" && !boardInsights) {
+        throw new Error("Insights export data is unavailable");
+      }
+      if (frameCaptureRequest?.kind === "comparison") {
+        throw new Error("Comparison export content is not implemented");
       }
 
       const exportElement = document.getElementById(exportCanvasId);
@@ -2860,6 +2915,7 @@ export default function PickExperienceClient({
     }
   }, [
     archetypeExportPresentation,
+    boardInsights,
     exportCanvasId,
     frameCaptureRequest?.kind,
     frameSizePresetId,
@@ -2915,6 +2971,9 @@ export default function PickExperienceClient({
 
       const archetypeForExport = kind === "archetype" ? archetypeResult : null;
       if (kind === "archetype" && !archetypeForExport) return;
+      const insightsForExport = kind === "insights" ? boardInsights : null;
+      if (kind === "insights" && !insightsForExport) return;
+      if (kind === "comparison") return;
 
       const filteredPicks = filterStoredPicksForExperience({
         experience,
@@ -2932,15 +2991,23 @@ export default function PickExperienceClient({
       }
 
       const generationId = ++previewGenerationIdRef.current;
+      const effectiveSizePresetId =
+        kind === "insights"
+          ? insightsSizePresetId
+          : DEFAULT_EXPORT_SIZE_PRESET_ID;
+      const effectiveTemplateId =
+        kind === "insights" ? DEFAULT_EXPORT_TEMPLATE_ID : activeTemplateId;
+      const effectiveShowTitles = kind === "insights" ? true : showTitles;
       const effectiveTransparentBg =
         transparentBg &&
-        isTransparentBackgroundAvailable(kind, activeTemplateId);
+        isTransparentBackgroundAvailable(kind, effectiveTemplateId);
       const optionsKey = getPreviewOptionsKey(
-        showTitles,
+        effectiveShowTitles,
         effectiveTransparentBg,
         showQrCode,
-        activeTemplateId,
+        effectiveTemplateId,
         kind,
+        effectiveSizePresetId,
         archetypeForExport?.inputKey,
       );
       const captureController = new AbortController();
@@ -2962,11 +3029,11 @@ export default function PickExperienceClient({
             experienceId: experience.id,
             contextId: effectiveContextId,
             picks: filteredPicks,
-            showTitles,
+            showTitles: effectiveShowTitles,
             transparentBg: effectiveTransparentBg,
             showQrCode,
-            templateId: activeTemplateId,
-            sizePresetId: DEFAULT_EXPORT_SIZE_PRESET_ID,
+            templateId: effectiveTemplateId,
+            sizePresetId: effectiveSizePresetId,
             selectedBy: exportNickname,
             pageUrl,
           },
@@ -2978,30 +3045,48 @@ export default function PickExperienceClient({
             archetypeInputKey: archetypeForExport?.inputKey,
             dataUrl,
             optionsKey,
-            imageFileName: archetypeForExport
-              ? getArchetypeImageFileName(archetypeForExport.characters)
-              : posterImageFileName,
+            imageFileName: insightsForExport
+              ? getInsightsImageFileName(
+                  experience,
+                  activeContext,
+                  effectiveSizePresetId,
+                )
+              : archetypeForExport
+                ? getArchetypeImageFileName(archetypeForExport.characters)
+                : posterImageFileName,
             pageUrl: sharePageUrl,
-            previewLabel: archetypeForExport
-              ? formatArchetypeTemplate(
-                  archetypeForExport.ui.export.previewLabel,
-                  { characterNames },
-                )
-              : previewLabel,
-            shareText: archetypeForExport
-              ? formatArchetypeTemplate(
-                  archetypeForExport.ui.export.shareText,
-                  {
-                    characterNames,
-                  },
-                )
-              : uiCopy.shareText,
+            previewLabel: insightsForExport
+              ? t("insights.export.previewLabel", {
+                  group: PROJECT_CONFIG.groupName,
+                })
+              : archetypeForExport
+                ? formatArchetypeTemplate(
+                    archetypeForExport.ui.export.previewLabel,
+                    { characterNames },
+                  )
+                : previewLabel,
+            shareText: insightsForExport
+              ? t("insights.export.shareText", {
+                  group: PROJECT_CONFIG.groupName,
+                })
+              : archetypeForExport
+                ? formatArchetypeTemplate(
+                    archetypeForExport.ui.export.shareText,
+                    {
+                      characterNames,
+                    },
+                  )
+                : uiCopy.shareText,
             shareHashtags: archetypeForExport
               ? [...experience.share.hashtags, "#恋はじめました"]
               : experience.share.hashtags.slice(),
-            shareTitle: archetypeForExport
-              ? archetypeForExport.ui.title
-              : uiCopy.title,
+            shareTitle: insightsForExport
+              ? t("insights.export.shareTitle", {
+                  group: PROJECT_CONFIG.groupName,
+                })
+              : archetypeForExport
+                ? archetypeForExport.ui.title
+                : uiCopy.title,
           });
         }
       } catch (error) {
@@ -3021,11 +3106,14 @@ export default function PickExperienceClient({
     },
     [
       archetypeResult,
+      activeContext,
       activeTemplateId,
+      boardInsights,
       boardStorageWritable,
       effectiveContextId,
       experience,
       exportNickname,
+      insightsSizePresetId,
       optionsStorageWritable,
       pageUrl,
       posterImageFileName,
@@ -3049,20 +3137,32 @@ export default function PickExperienceClient({
     () => generateImage("archetype"),
     [generateImage],
   );
+  const handleGenerateInsightsImage = useCallback(
+    () => generateImage("insights"),
+    [generateImage],
+  );
 
   const previewKind = preview?.kind ?? "picks";
+  const previewSizePresetId =
+    previewKind === "insights"
+      ? insightsSizePresetId
+      : DEFAULT_EXPORT_SIZE_PRESET_ID;
+  const previewTemplateId =
+    previewKind === "insights" ? DEFAULT_EXPORT_TEMPLATE_ID : activeTemplateId;
+  const previewShowTitles = previewKind === "insights" ? true : showTitles;
   const previewTransparentBgAvailable = isTransparentBackgroundAvailable(
     previewKind,
-    activeTemplateId,
+    previewTemplateId,
   );
   const effectivePreviewTransparentBg =
     transparentBg && previewTransparentBgAvailable;
   const previewOptionsKey = getPreviewOptionsKey(
-    showTitles,
+    previewShowTitles,
     effectivePreviewTransparentBg,
     showQrCode,
-    activeTemplateId,
+    previewTemplateId,
     previewKind,
+    previewSizePresetId,
     preview?.kind === "archetype"
       ? (archetypeResult?.inputKey ?? preview.archetypeInputKey)
       : undefined,
@@ -3155,6 +3255,17 @@ export default function PickExperienceClient({
       ...current,
       templateId: value,
     }));
+  };
+
+  const handleInsightsSizePresetChange = (value: ExportSizePresetId) => {
+    if (
+      !EXPORT_CONTENT_SIZE_PRESET_IDS.insights.some(
+        (candidate) => candidate === value,
+      )
+    ) {
+      return;
+    }
+    setInsightsSizePresetId(value);
   };
 
   const handleSaveBoard = (name: string): BoardLibraryActionResult => {
@@ -3583,7 +3694,25 @@ export default function PickExperienceClient({
             onRelocate={handleRelocate}
           />
           {boardInsights ? (
-            <BoardInsightsPanel insights={boardInsights} />
+            <>
+              <BoardInsightsPanel insights={boardInsights} />
+              <div className="-mt-3 mb-6 flex justify-end">
+                <button
+                  ref={insightsTriggerRef}
+                  type="button"
+                  data-dialog-return-key={INSIGHTS_DIALOG_RETURN_KEY}
+                  onClick={() => {
+                    void handleGenerateInsightsImage();
+                  }}
+                  disabled={generating}
+                  className="official-button official-button-primary min-h-11 w-full sm:w-auto"
+                >
+                  {generating && preview?.kind === "insights"
+                    ? t("controls.generating")
+                    : t("insights.export.cta")}
+                </button>
+              </div>
+            </>
           ) : null}
         </main>
 
@@ -3831,6 +3960,7 @@ export default function PickExperienceClient({
         <MotionPresence value={preview}>
           {(renderedPreview, presenceState) => (
             <PreviewModal
+              contentKind={renderedPreview.kind}
               previewUrl={renderedPreview.dataUrl}
               onClose={handleClosePreview}
               showTitles={showTitles}
@@ -3840,9 +3970,12 @@ export default function PickExperienceClient({
               onToggleTransparentBg={handleTransparentBackgroundChange}
               showQrCode={showQrCode}
               onToggleShowQrCode={handleShowQrCodeChange}
-              templateId={activeTemplateId}
+              templateId={previewTemplateId}
               availableTemplateIds={availableTemplateIds}
               onTemplateChange={handleTemplateChange}
+              sizePresetId={previewSizePresetId}
+              availableSizePresetIds={EXPORT_CONTENT_SIZE_PRESET_IDS.insights}
+              onSizePresetChange={handleInsightsSizePresetChange}
               generating={generating}
               actionsDisabled={
                 generating || renderedPreview.optionsKey !== previewOptionsKey
@@ -3857,12 +3990,16 @@ export default function PickExperienceClient({
               returnFocusRef={
                 renderedPreview.kind === "archetype"
                   ? archetypeTriggerRef
-                  : previewTriggerRef
+                  : renderedPreview.kind === "insights"
+                    ? insightsTriggerRef
+                    : previewTriggerRef
               }
               returnFocusKey={
                 renderedPreview.kind === "archetype"
                   ? DIALOG_RETURN_KEYS.archetype
-                  : DIALOG_RETURN_KEYS.generateImage
+                  : renderedPreview.kind === "insights"
+                    ? INSIGHTS_DIALOG_RETURN_KEY
+                    : DIALOG_RETURN_KEYS.generateImage
               }
               returnFocusFallbackKey={DIALOG_RETURN_KEYS.globalSearch}
             />
@@ -3880,6 +4017,7 @@ export default function PickExperienceClient({
           inert
         >
           <ExportBoard
+            contentKind={frameCaptureRequest?.kind ?? "picks"}
             experience={experience}
             context={activeContext}
             exportCanvasId={exportCanvasId}
@@ -3893,6 +4031,11 @@ export default function PickExperienceClient({
             selectedBy={exportNickname}
             pageUrl={framePageUrl ?? pageUrl}
             headerPresentation={archetypeExportPresentation}
+            insights={
+              frameCaptureRequest?.kind === "insights"
+                ? (boardInsights ?? undefined)
+                : undefined
+            }
           />
         </div>
       ) : null}
@@ -3979,6 +4122,19 @@ function getArchetypeImageFileName(
     .filter(Boolean)
     .join("_");
   return `EqualLove_AdventurePartner_${names || "Result"}.png`;
+}
+
+function getInsightsImageFileName(
+  experience: PickExperience,
+  context: ExperienceContext | undefined,
+  sizePresetId: ExportSizePresetId,
+) {
+  return getExperienceImageFileName(
+    experience,
+    context,
+    DEFAULT_EXPORT_TEMPLATE_ID,
+    sizePresetId,
+  ).replace(/\.png$/i, "_INSIGHTS.png");
 }
 
 function isWritableStorageStatus(status: StorageLoadStatus) {

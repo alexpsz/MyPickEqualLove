@@ -1,8 +1,10 @@
 import {
   getExportSizePreset,
+  isExportSizePresetAvailableForContent,
   isExportSizePresetId,
   isExportTemplateId,
 } from "../config/exportPresets";
+import { EXPORT_CONTENT_KINDS } from "../schema/export";
 import type {
   ExportContentKind,
   ExportSizePresetId,
@@ -86,7 +88,7 @@ export function isExportRenderRequest(
     value.version === EXPORT_CAPTURE_PROTOCOL_VERSION &&
     typeof value.requestId === "string" &&
     value.requestId.length > 0 &&
-    (value.kind === "picks" || value.kind === "archetype") &&
+    isExportContentKind(value.kind) &&
     typeof value.experienceId === "string" &&
     value.experienceId.length > 0 &&
     (value.contextId === undefined || typeof value.contextId === "string") &&
@@ -100,6 +102,28 @@ export function isExportRenderRequest(
     isExportQrTarget(value.pageUrl) &&
     (expectedPageUrl === undefined || value.pageUrl === expectedPageUrl)
   );
+}
+
+export function getExportContentConstraintError({
+  kind,
+  sizePresetId,
+  transparentBg,
+}: Pick<ExportRenderPayload, "kind" | "sizePresetId" | "transparentBg">):
+  | string
+  | null {
+  if (kind === "comparison") {
+    return "Comparison export content is not available";
+  }
+
+  if (!isExportSizePresetAvailableForContent(kind, sizePresetId)) {
+    return `${kind} export does not support the ${sizePresetId} size preset`;
+  }
+
+  if (kind === "insights" && transparentBg) {
+    return "Insights export requires an opaque background";
+  }
+
+  return null;
 }
 
 export function isExportRenderResult(
@@ -119,6 +143,11 @@ export function captureExportImageInFrame(
   payload: ExportRenderPayload,
   { signal }: ExportCaptureOptions = {},
 ): Promise<string> {
+  const contentConstraintError = getExportContentConstraintError(payload);
+  if (contentConstraintError) {
+    return Promise.reject(new Error(contentConstraintError));
+  }
+
   const request: ExportRenderRequest = {
     ...payload,
     type: EXPORT_REALM_RENDER_TYPE,
@@ -236,6 +265,13 @@ export function captureExportImageInFrame(
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function isExportContentKind(value: unknown): value is ExportContentKind {
+  return (
+    typeof value === "string" &&
+    EXPORT_CONTENT_KINDS.some((candidate) => candidate === value)
+  );
 }
 
 function isStoredPicks(value: unknown): value is StoredPicks {

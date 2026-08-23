@@ -6,6 +6,8 @@ import {
 } from "../config/project";
 import {
   EXPORT_BACKGROUND,
+  getExportSizePreset,
+  isExportSizePresetAvailableForContent,
   resolveExportComposition,
   type ExportComposition,
 } from "../config/exportPresets";
@@ -19,7 +21,9 @@ import { MEMBERS, MEMBERS_BY_ID } from "../data/songs";
 import type { ExperienceContext } from "../data/pickExperiences";
 import equalLoveArchetypeAffinitiesData from "../projects/equal-love/archetype-21/song-affinities.json";
 import type { AppLocale } from "../i18n/locales";
+import { translate } from "../i18n/translate";
 import type {
+  ExportContentKind,
   ExportHeaderPresentation,
   ExportSizePresetId,
   ExportTemplateId,
@@ -27,15 +31,26 @@ import type {
 import type { PickExperience } from "../schema/pick-experience";
 import type { PickSlot, Picks } from "../schema/music";
 import { getArchetypeAccentContrast } from "../utils/archetypeAccent";
+import type {
+  BoardInsightCoverage,
+  BoardInsightCreditEntry,
+  BoardInsightDimension,
+  BoardInsights,
+} from "../utils/boardInsights";
 import {
   getCoverToneAvailability,
   resolveAvailableExportTemplateId,
 } from "../data/coverTonePilot";
 import { getColorBackground, getMemberColors } from "../utils/memberColors";
+import {
+  RELEASE_TYPE_MESSAGE_KEYS,
+  TRACK_TYPE_MESSAGE_KEYS,
+} from "../utils/songMetadata";
 import ArchetypeRadarChart from "./ArchetypeRadarChart";
 import ExportQrCode from "./ExportQrCode";
 
 interface ExportBoardProps {
+  contentKind: ExportContentKind;
   experience: PickExperience;
   context?: ExperienceContext;
   exportCanvasId: string;
@@ -49,6 +64,7 @@ interface ExportBoardProps {
   selectedBy?: string;
   pageUrl: string;
   headerPresentation?: ExportHeaderPresentation;
+  insights?: BoardInsights;
 }
 
 const EXPORT_FONT_FAMILY =
@@ -75,6 +91,7 @@ const MEMBER_COLOR_STRIP_GAP = MEMBER_COLOR_STRIP.length > 10 ? 6 : 8;
 const MEMBER_COLOR_STRIP_WIDTH = MEMBER_COLOR_STRIP.length > 10 ? 18 : 22;
 
 export default function ExportBoard({
+  contentKind,
   experience,
   context,
   exportCanvasId,
@@ -88,20 +105,46 @@ export default function ExportBoard({
   selectedBy = "",
   pageUrl,
   headerPresentation,
+  insights,
 }: ExportBoardProps) {
   const sortedSlots = slots.slice().sort((a, b) => a.sortOrder - b.sortOrder);
-  const archetypeDossier = renderArchetypeDossierIfRequested({
-    exportCanvasId,
-    headerPresentation,
-    slots: sortedSlots,
-    picks,
-    showTitles,
-    transparentBg,
-    showQrCode,
-    selectedBy,
-    pageUrl,
-  });
-  if (archetypeDossier) return archetypeDossier;
+
+  if (contentKind === "archetype") {
+    const archetypeDossier = renderArchetypeDossierIfRequested({
+      exportCanvasId,
+      headerPresentation,
+      slots: sortedSlots,
+      picks,
+      showTitles,
+      transparentBg,
+      showQrCode,
+      selectedBy,
+      pageUrl,
+    });
+    if (!archetypeDossier) {
+      throw new Error("Archetype export presentation is unavailable");
+    }
+    return archetypeDossier;
+  }
+
+  if (contentKind === "insights") {
+    if (!insights) throw new Error("Insights export data is unavailable");
+    return (
+      <InsightsExportBoard
+        exportCanvasId={exportCanvasId}
+        insights={insights}
+        sizePresetId={sizePresetId}
+        selectedBy={selectedBy}
+        showQrCode={showQrCode}
+        pageUrl={pageUrl}
+      />
+    );
+  }
+
+  if (contentKind === "comparison") {
+    throw new Error("Comparison export content is not implemented");
+  }
+
   const coverToneAvailability = getCoverToneAvailability({
     projectId: PROJECT_ID,
     slots: sortedSlots,
@@ -174,7 +217,7 @@ export default function ExportBoard({
 
       <header
         data-export-header="hasunosora-style"
-        data-export-content-kind={headerPresentation ? "archetype" : "picks"}
+        data-export-content-kind="picks"
         data-export-boundary="header"
         style={{
           position: "relative",
@@ -364,6 +407,739 @@ export default function ExportBoard({
       </footer>
     </div>
   );
+}
+
+interface InsightsExportBoardProps {
+  exportCanvasId: string;
+  insights: BoardInsights;
+  sizePresetId: ExportSizePresetId;
+  selectedBy?: string;
+  showQrCode?: boolean;
+  pageUrl: string;
+  locale?: AppLocale;
+}
+
+interface InsightsExportSummaryItem {
+  key: string;
+  label: string;
+  value: string;
+}
+
+interface InsightsExportDistributionRow {
+  key: string;
+  label: string;
+  count: number;
+}
+
+const INSIGHTS_EXPORT_LAYOUT = {
+  portrait: {
+    padding: "40px 48px 30px",
+    gap: 16,
+    titleSize: 40,
+    descriptionSize: 17,
+    summaryValueSize: 21,
+    sectionTitleSize: 18,
+    rowFontSize: 16,
+    distributionLimit: 5,
+    creditLimit: 3,
+  },
+  square: {
+    padding: "28px 36px 22px",
+    gap: 12,
+    titleSize: 34,
+    descriptionSize: 15,
+    summaryValueSize: 18,
+    sectionTitleSize: 16,
+    rowFontSize: 14,
+    distributionLimit: 4,
+    creditLimit: 2,
+  },
+} as const;
+
+/**
+ * A factual card over the existing BoardInsights value. It owns no storage or
+ * derivation and intentionally ignores poster template and transparency state.
+ */
+export function InsightsExportBoard({
+  exportCanvasId,
+  insights,
+  sizePresetId,
+  selectedBy = "",
+  showQrCode = false,
+  pageUrl,
+  locale = resolveArchetypeExportLocale(),
+}: InsightsExportBoardProps) {
+  if (
+    !isExportSizePresetAvailableForContent("insights", sizePresetId) ||
+    sizePresetId === "story"
+  ) {
+    throw new Error(`Insights export does not support ${sizePresetId}`);
+  }
+
+  const size = getExportSizePreset(sizePresetId);
+  const layout = INSIGHTS_EXPORT_LAYOUT[sizePresetId];
+  const selectedByLabel = selectedBy.trim();
+  const summaryItems = getInsightsExportSummaryItems(insights, locale);
+  const releaseYearRows = insights.releaseYears.entries.map((entry) => ({
+    key: entry.key,
+    label: entry.year,
+    count: entry.count,
+  }));
+  const releaseTypeRows = insights.releaseTypes.entries.map((entry) => ({
+    key: entry.key,
+    label: translate(locale, RELEASE_TYPE_MESSAGE_KEYS[entry.value]),
+    count: entry.count,
+  }));
+  const trackTypeRows = insights.trackTypes.entries.map((entry) => ({
+    key: entry.key,
+    label: translate(locale, TRACK_TYPE_MESSAGE_KEYS[entry.value]),
+    count: entry.count,
+  }));
+  const pageLabel = formatPageLabel(pageUrl);
+
+  return (
+    <div
+      id={exportCanvasId}
+      lang={locale}
+      data-export-content-kind="insights"
+      data-insights-export-size={sizePresetId}
+      className="relative overflow-hidden"
+      style={{
+        width: `${size.width}px`,
+        height: `${size.height}px`,
+        boxSizing: "border-box",
+        padding: layout.padding,
+        display: "grid",
+        gridTemplateRows: "auto auto minmax(0, 1fr) auto",
+        gap: `${layout.gap}px`,
+        overflow: "hidden",
+        border: `2px solid ${PROJECT_THEME_COLOR}`,
+        backgroundColor: EXPORT_BACKGROUND,
+        color: "#07182a",
+        fontFamily: EXPORT_FONT_FAMILY,
+      }}
+    >
+      <div
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          inset: 0,
+          background:
+            "radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--project-primary, #986ad6) 13%, transparent), transparent 35%), repeating-linear-gradient(135deg, rgba(0,0,0,0.018) 0, rgba(0,0,0,0.018) 1px, transparent 1px, transparent 12px)",
+          pointerEvents: "none",
+        }}
+      />
+
+      <header
+        data-export-boundary="insights-header"
+        style={{
+          position: "relative",
+          zIndex: 1,
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          gap: "24px",
+          borderBottom: `3px solid ${PROJECT_THEME_COLOR}`,
+          paddingBottom: sizePresetId === "square" ? "14px" : "18px",
+        }}
+      >
+        <div style={{ minWidth: 0 }}>
+          <p
+            style={{
+              margin: 0,
+              color: PROJECT_THEME_COLOR,
+              fontSize: sizePresetId === "square" ? "13px" : "15px",
+              fontWeight: 900,
+              letterSpacing: "0.18em",
+              lineHeight: 1.2,
+              textTransform: "uppercase",
+            }}
+          >
+            {PROJECT_CONFIG.groupName}
+          </p>
+          <h1
+            style={{
+              margin: "6px 0 0",
+              fontSize: `${layout.titleSize}px`,
+              fontWeight: 900,
+              letterSpacing: "-0.035em",
+              lineHeight: 1.05,
+            }}
+          >
+            {translate(locale, "insights.title")}
+          </h1>
+          <p
+            style={{
+              margin: "7px 0 0",
+              color: "#5c6f84",
+              fontSize: `${layout.descriptionSize}px`,
+              fontWeight: 700,
+              lineHeight: 1.35,
+            }}
+          >
+            {translate(locale, "insights.description")}
+          </p>
+        </div>
+        {selectedByLabel ? (
+          <p
+            data-export-selected-by="true"
+            style={{
+              maxWidth: sizePresetId === "square" ? "330px" : "400px",
+              margin: "2px 0 0",
+              color: "#354b63",
+              fontSize: sizePresetId === "square" ? "14px" : "16px",
+              fontWeight: 900,
+              lineHeight: 1.3,
+              overflowWrap: "anywhere",
+              textAlign: "right",
+            }}
+          >
+            {translate(locale, "insights.export.selectedBy", {
+              name: selectedByLabel,
+            })}
+          </p>
+        ) : null}
+      </header>
+
+      <section
+        data-export-boundary="insights-summary"
+        style={{
+          position: "relative",
+          zIndex: 1,
+          display: "grid",
+          gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+          gap: sizePresetId === "square" ? "8px" : "10px",
+        }}
+      >
+        {summaryItems.map((item) => (
+          <div
+            key={item.key}
+            style={{
+              minWidth: 0,
+              border: "1px solid #cbd5df",
+              borderRadius: "14px",
+              background: "rgba(255,255,255,0.92)",
+              padding: sizePresetId === "square" ? "10px 13px" : "12px 15px",
+            }}
+          >
+            <p
+              style={{
+                margin: 0,
+                color: "#62758a",
+                fontSize: sizePresetId === "square" ? "12px" : "13px",
+                fontWeight: 900,
+                lineHeight: 1.2,
+              }}
+            >
+              {item.label}
+            </p>
+            <p
+              style={{
+                margin: "5px 0 0",
+                color: "#07182a",
+                fontSize: `${layout.summaryValueSize}px`,
+                fontWeight: 900,
+                lineHeight: 1.18,
+                overflowWrap: "anywhere",
+              }}
+            >
+              {item.value}
+            </p>
+          </div>
+        ))}
+      </section>
+
+      <main
+        data-export-boundary="insights-content"
+        style={{
+          position: "relative",
+          zIndex: 1,
+          minHeight: 0,
+          display: "grid",
+          gridTemplateRows:
+            sizePresetId === "square"
+              ? "minmax(0, 0.92fr) minmax(0, 1.08fr)"
+              : "minmax(0, 0.86fr) minmax(0, 1.14fr)",
+          gap: `${layout.gap}px`,
+        }}
+      >
+        <div
+          data-export-boundary="insights-distributions"
+          style={{
+            minHeight: 0,
+            display: "grid",
+            gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+            gap: sizePresetId === "square" ? "8px" : "10px",
+          }}
+        >
+          <InsightsDistributionCard
+            title={translate(locale, "insights.releaseYears")}
+            coverage={insights.releaseYears.coverage}
+            rows={releaseYearRows}
+            limit={layout.distributionLimit}
+            locale={locale}
+            fontSize={layout.rowFontSize}
+            showBars
+          />
+          <InsightsDistributionCard
+            title={translate(locale, "insights.releaseTypes")}
+            coverage={insights.releaseTypes.coverage}
+            rows={releaseTypeRows}
+            limit={layout.distributionLimit}
+            locale={locale}
+            fontSize={layout.rowFontSize}
+          />
+          <InsightsDistributionCard
+            title={translate(locale, "insights.trackTypes")}
+            coverage={insights.trackTypes.coverage}
+            rows={trackTypeRows}
+            limit={layout.distributionLimit}
+            locale={locale}
+            fontSize={layout.rowFontSize}
+          />
+        </div>
+
+        <section
+          data-export-boundary="insights-credits"
+          style={{
+            minHeight: 0,
+            display: "grid",
+            gridTemplateRows: "auto minmax(0, 1fr)",
+            border: "1px solid #cbd5df",
+            borderRadius: "16px",
+            background: "rgba(255,255,255,0.94)",
+            padding: sizePresetId === "square" ? "12px 14px" : "14px 16px",
+          }}
+        >
+          <h2
+            style={{
+              margin: "0 0 9px",
+              color: "#07182a",
+              fontSize: `${layout.sectionTitleSize}px`,
+              fontWeight: 900,
+              lineHeight: 1.2,
+            }}
+          >
+            {translate(locale, "insights.credits")}
+          </h2>
+          <div
+            style={{
+              minHeight: 0,
+              display: "grid",
+              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+              gap: sizePresetId === "square" ? "10px" : "12px",
+            }}
+          >
+            <InsightsCreditColumn
+              title={translate(locale, "insights.lyricist")}
+              dimension={insights.credits.lyricist}
+              limit={layout.creditLimit}
+              locale={locale}
+              fontSize={layout.rowFontSize}
+            />
+            <InsightsCreditColumn
+              title={translate(locale, "insights.composer")}
+              dimension={insights.credits.composer}
+              limit={layout.creditLimit}
+              locale={locale}
+              fontSize={layout.rowFontSize}
+            />
+            <InsightsCreditColumn
+              title={translate(locale, "insights.arranger")}
+              dimension={insights.credits.arranger}
+              limit={layout.creditLimit}
+              locale={locale}
+              fontSize={layout.rowFontSize}
+            />
+          </div>
+        </section>
+      </main>
+
+      <footer
+        data-export-boundary="insights-footer"
+        style={{
+          position: "relative",
+          zIndex: 1,
+          minHeight: showQrCode ? "104px" : undefined,
+          display: "flex",
+          alignItems: "flex-end",
+          justifyContent: "space-between",
+          gap: "20px",
+          borderTop: "1px solid #9fb0c1",
+          paddingTop: sizePresetId === "square" ? "10px" : "12px",
+          color: "#354b63",
+          fontSize: sizePresetId === "square" ? "12px" : "14px",
+          fontWeight: 900,
+          letterSpacing: "0.1em",
+          lineHeight: 1.3,
+          textTransform: "uppercase",
+        }}
+      >
+        <div
+          style={{
+            minWidth: 0,
+            display: "flex",
+            flexDirection: "column",
+            gap: "7px",
+          }}
+        >
+          <span>{PROJECT_CONFIG.appName}</span>
+          <span style={{ overflowWrap: "anywhere" }}>{pageLabel}</span>
+        </div>
+        {showQrCode ? <ExportQrCode pageUrl={pageUrl} /> : null}
+      </footer>
+    </div>
+  );
+}
+
+function InsightsDistributionCard({
+  title,
+  coverage,
+  rows,
+  limit,
+  locale,
+  fontSize,
+  showBars = false,
+}: {
+  title: string;
+  coverage: BoardInsightCoverage;
+  rows: readonly InsightsExportDistributionRow[];
+  limit: number;
+  locale: AppLocale;
+  fontSize: number;
+  showBars?: boolean;
+}) {
+  const visibleRows = rows.slice(0, limit);
+  const omittedCount = Math.max(0, rows.length - visibleRows.length);
+  const maximum = Math.max(1, ...visibleRows.map((row) => row.count));
+
+  return (
+    <section
+      data-export-boundary={`insights-${title}`}
+      style={{
+        minWidth: 0,
+        minHeight: 0,
+        overflow: "hidden",
+        border: "1px solid #cbd5df",
+        borderRadius: "16px",
+        background: "rgba(255,255,255,0.94)",
+        padding: "12px 13px",
+      }}
+    >
+      <div style={{ minWidth: 0 }}>
+        <h2
+          style={{
+            margin: 0,
+            color: "#07182a",
+            fontSize: `${fontSize + 2}px`,
+            fontWeight: 900,
+            lineHeight: 1.2,
+          }}
+        >
+          {title}
+        </h2>
+        <InsightsCoverageLabel coverage={coverage} locale={locale} />
+      </div>
+      {visibleRows.length > 0 ? (
+        <ul
+          style={{
+            margin: "10px 0 0",
+            padding: 0,
+            display: "grid",
+            gap: "7px",
+            listStyle: "none",
+          }}
+        >
+          {visibleRows.map((row) => (
+            <li key={row.key} style={{ minWidth: 0 }}>
+              <div
+                style={{
+                  minWidth: 0,
+                  display: "flex",
+                  alignItems: "baseline",
+                  justifyContent: "space-between",
+                  gap: "8px",
+                  fontSize: `${fontSize}px`,
+                  fontWeight: 800,
+                  lineHeight: 1.2,
+                }}
+              >
+                <span style={{ minWidth: 0, overflowWrap: "anywhere" }}>
+                  {row.label}
+                </span>
+                <span
+                  style={{
+                    flex: "0 0 auto",
+                    color: PROJECT_THEME_COLOR,
+                    fontWeight: 900,
+                  }}
+                >
+                  {row.count}
+                </span>
+              </div>
+              {showBars ? (
+                <div
+                  aria-hidden="true"
+                  style={{
+                    height: "4px",
+                    marginTop: "4px",
+                    overflow: "hidden",
+                    borderRadius: "999px",
+                    background: "#e1e7ed",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: `${(row.count / maximum) * 100}%`,
+                      height: "100%",
+                      borderRadius: "999px",
+                      background: PROJECT_THEME_COLOR,
+                    }}
+                  />
+                </div>
+              ) : null}
+            </li>
+          ))}
+          {omittedCount > 0 ? (
+            <li
+              style={{
+                color: "#62758a",
+                fontSize: `${Math.max(12, fontSize - 2)}px`,
+                fontWeight: 800,
+              }}
+            >
+              {translate(locale, "insights.export.more", {
+                count: omittedCount,
+              })}
+            </li>
+          ) : null}
+        </ul>
+      ) : (
+        <p
+          style={{
+            margin: "10px 0 0",
+            color: "#62758a",
+            fontSize: `${Math.max(12, fontSize - 1)}px`,
+            fontWeight: 700,
+            lineHeight: 1.35,
+          }}
+        >
+          {translate(locale, "insights.noData")}
+        </p>
+      )}
+    </section>
+  );
+}
+
+function InsightsCreditColumn({
+  title,
+  dimension,
+  limit,
+  locale,
+  fontSize,
+}: {
+  title: string;
+  dimension: BoardInsightDimension<BoardInsightCreditEntry>;
+  limit: number;
+  locale: AppLocale;
+  fontSize: number;
+}) {
+  const visibleEntries = dimension.entries.slice(0, limit);
+  const omittedCount = Math.max(
+    0,
+    dimension.entries.length - visibleEntries.length,
+  );
+
+  return (
+    <section
+      data-export-boundary={`insights-credit-${title}`}
+      style={{
+        minWidth: 0,
+        minHeight: 0,
+        overflow: "hidden",
+        borderRadius: "12px",
+        background: "#f4f7fa",
+        padding: "10px 11px",
+      }}
+    >
+      <h3
+        style={{
+          margin: 0,
+          color: PROJECT_THEME_COLOR,
+          fontSize: `${fontSize}px`,
+          fontWeight: 900,
+          lineHeight: 1.2,
+        }}
+      >
+        {title}
+      </h3>
+      <InsightsCoverageLabel coverage={dimension.coverage} locale={locale} />
+      {visibleEntries.length > 0 ? (
+        <ul
+          style={{
+            margin: "8px 0 0",
+            padding: 0,
+            display: "grid",
+            gap: "7px",
+            listStyle: "none",
+          }}
+        >
+          {visibleEntries.map((entry) => (
+            <li
+              key={entry.key}
+              style={{
+                minWidth: 0,
+                display: "grid",
+                gridTemplateColumns: "minmax(0, 1fr) auto",
+                gap: "7px",
+                alignItems: "start",
+              }}
+            >
+              <span style={{ minWidth: 0 }}>
+                <span
+                  lang="ja"
+                  style={{
+                    display: "block",
+                    color: "#07182a",
+                    fontFamily: EXPORT_TITLE_FONT_FAMILY,
+                    fontSize: `${fontSize}px`,
+                    fontWeight: 900,
+                    lineHeight: 1.15,
+                    overflowWrap: "anywhere",
+                  }}
+                >
+                  {entry.value.ja}
+                </span>
+                <span
+                  style={{
+                    display: "block",
+                    marginTop: "2px",
+                    color: "#62758a",
+                    fontSize: `${Math.max(11, fontSize - 3)}px`,
+                    fontWeight: 700,
+                    lineHeight: 1.15,
+                    overflowWrap: "anywhere",
+                  }}
+                >
+                  {entry.value.romaji}
+                </span>
+              </span>
+              <span
+                style={{
+                  color: PROJECT_THEME_COLOR,
+                  fontSize: `${fontSize}px`,
+                  fontWeight: 900,
+                  lineHeight: 1.15,
+                }}
+              >
+                {entry.count}
+              </span>
+            </li>
+          ))}
+          {omittedCount > 0 ? (
+            <li
+              style={{
+                color: "#62758a",
+                fontSize: `${Math.max(11, fontSize - 2)}px`,
+                fontWeight: 800,
+              }}
+            >
+              {translate(locale, "insights.export.more", {
+                count: omittedCount,
+              })}
+            </li>
+          ) : null}
+        </ul>
+      ) : (
+        <p
+          style={{
+            margin: "8px 0 0",
+            color: "#62758a",
+            fontSize: `${Math.max(11, fontSize - 2)}px`,
+            fontWeight: 700,
+            lineHeight: 1.3,
+          }}
+        >
+          {translate(locale, "insights.noData")}
+        </p>
+      )}
+    </section>
+  );
+}
+
+function InsightsCoverageLabel({
+  coverage,
+  locale,
+}: {
+  coverage: BoardInsightCoverage;
+  locale: AppLocale;
+}) {
+  if (coverage.covered >= coverage.total) return null;
+
+  return (
+    <p
+      style={{
+        margin: "4px 0 0",
+        color: "#62758a",
+        fontSize: "11px",
+        fontWeight: 800,
+        lineHeight: 1.2,
+      }}
+    >
+      {translate(locale, "insights.coverage", {
+        covered: coverage.covered,
+        total: coverage.total,
+        percent: coverage.percent,
+      })}
+    </p>
+  );
+}
+
+function getInsightsExportSummaryItems(
+  insights: BoardInsights,
+  locale: AppLocale,
+): InsightsExportSummaryItem[] {
+  const separator = translate(locale, "insights.summary.separator");
+  const countLabel = (count: number) =>
+    translate(locale, "insights.songCount", { count });
+  const items: InsightsExportSummaryItem[] = [];
+
+  if (insights.summary.topYears.length > 0) {
+    items.push({
+      key: "top-years",
+      label: translate(locale, "insights.summary.topYears"),
+      value: `${insights.summary.topYears
+        .map((entry) => entry.year)
+        .join(separator)} · ${countLabel(insights.summary.topYears[0].count)}`,
+    });
+  }
+  if (insights.summary.titleTracks) {
+    items.push({
+      key: "title-tracks",
+      label: translate(locale, "insights.summary.titleTracks"),
+      value: `${insights.summary.titleTracks.count}/${insights.summary.titleTracks.total}`,
+    });
+  }
+  if (insights.summary.yearSpan) {
+    items.push({
+      key: "year-span",
+      label: translate(locale, "insights.summary.yearSpan"),
+      value: `${insights.summary.yearSpan.from}–${insights.summary.yearSpan.to}`,
+    });
+  }
+  if (insights.summary.topLyricists.length > 0) {
+    items.push({
+      key: "top-lyricists",
+      label: translate(locale, "insights.summary.topLyricists"),
+      value: `${insights.summary.topLyricists
+        .map((entry) => entry.value.ja)
+        .join(separator)} · ${countLabel(
+        insights.summary.topLyricists[0].count,
+      )}`,
+    });
+  }
+
+  return items;
 }
 
 function renderArchetypeDossierIfRequested({

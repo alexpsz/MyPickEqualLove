@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   DEFAULT_EXPORT_OPTIONS,
+  EXPORT_CONTENT_SIZE_PRESET_IDS,
   EXPORT_OPTIONS_VERSION,
   EXPORT_SCALE,
   EXPORT_SIZE_PRESET_ORDER,
@@ -9,14 +10,20 @@ import {
   EXPORT_TEMPLATE_ORDER,
   getExportSizePreset,
   isExportSizePresetId,
+  isExportSizePresetAvailableForContent,
   isExportTemplateId,
+  isTransparentBackgroundAvailableForContent,
   resolveExportComposition,
 } from "../src/config/exportPresets";
 import { COVER_TONE_PILOT_ENTRIES } from "../src/data/coverTonePilot";
+import { EXPORT_CONTENT_KINDS } from "../src/schema/export";
 import { buildExportImageFileName } from "../src/utils/exportFileName";
 import {
   EXPORT_CAPTURE_PROTOCOL_VERSION,
+  EXPORT_REALM_HASH,
   EXPORT_REALM_RENDER_TYPE,
+  captureExportImageInFrame,
+  getExportContentConstraintError,
   isExportRenderRequest,
 } from "../src/utils/exportCapture";
 import {
@@ -76,6 +83,125 @@ test("default contract remains Classic portrait at scale 2", () => {
   assert.equal(composition.visual.rootBorder, "2px solid #000");
   assert.equal(composition.visual.cardBorder, "2px solid #000");
   assert.equal(composition.visual.headerTextAlign, "center");
+});
+
+test("content-kind protocol is exact while insights owns only portrait and square", () => {
+  assert.deepEqual(EXPORT_CONTENT_KINDS, [
+    "picks",
+    "archetype",
+    "insights",
+    "comparison",
+  ]);
+  assert.equal(EXPORT_CAPTURE_PROTOCOL_VERSION, 4);
+  assert.equal(EXPORT_REALM_HASH, "#__mypick_export_realm_v4");
+  assert.deepEqual(EXPORT_CONTENT_SIZE_PRESET_IDS.insights, [
+    "portrait",
+    "square",
+  ]);
+  assert.deepEqual(EXPORT_CONTENT_SIZE_PRESET_IDS.comparison, [
+    "portrait",
+    "square",
+  ]);
+  assert.deepEqual(EXPORT_CONTENT_SIZE_PRESET_IDS.picks, [
+    "portrait",
+    "square",
+    "story",
+  ]);
+  assert.deepEqual(EXPORT_CONTENT_SIZE_PRESET_IDS.archetype, [
+    "portrait",
+    "square",
+    "story",
+  ]);
+
+  assert.equal(
+    isExportSizePresetAvailableForContent("insights", "portrait"),
+    true,
+  );
+  assert.equal(
+    isExportSizePresetAvailableForContent("insights", "square"),
+    true,
+  );
+  assert.equal(
+    isExportSizePresetAvailableForContent("insights", "story"),
+    false,
+  );
+  assert.equal(
+    isTransparentBackgroundAvailableForContent("insights", "classic"),
+    false,
+  );
+  assert.equal(
+    isTransparentBackgroundAvailableForContent("comparison", "classic"),
+    false,
+  );
+  assert.equal(
+    isTransparentBackgroundAvailableForContent("picks", "classic"),
+    true,
+  );
+  assert.equal(
+    isTransparentBackgroundAvailableForContent("picks", "midnight"),
+    false,
+  );
+  assert.equal(
+    isTransparentBackgroundAvailableForContent("archetype", "midnight"),
+    true,
+  );
+
+  assert.equal(
+    getExportContentConstraintError({
+      kind: "insights",
+      sizePresetId: "portrait",
+      transparentBg: false,
+    }),
+    null,
+  );
+  assert.match(
+    getExportContentConstraintError({
+      kind: "insights",
+      sizePresetId: "story",
+      transparentBg: false,
+    }) ?? "",
+    /does not support the story size preset/,
+  );
+  assert.match(
+    getExportContentConstraintError({
+      kind: "insights",
+      sizePresetId: "square",
+      transparentBg: true,
+    }) ?? "",
+    /requires an opaque background/,
+  );
+  assert.match(
+    getExportContentConstraintError({
+      kind: "comparison",
+      sizePresetId: "portrait",
+      transparentBg: false,
+    }) ?? "",
+    /not available/,
+  );
+});
+
+test("capture rejects invalid insights options before mounting a frame", async () => {
+  const basePayload = {
+    kind: "insights" as const,
+    experienceId: "standard",
+    picks: { "pick-1": "song-1" },
+    showTitles: true,
+    transparentBg: false,
+    showQrCode: true,
+    templateId: "classic" as const,
+    sizePresetId: "portrait" as const,
+    selectedBy: "Fan",
+    pageUrl: "https://mypick.kozueginko.com/",
+  };
+
+  await assert.rejects(
+    captureExportImageInFrame({ ...basePayload, transparentBg: true }),
+    /requires an opaque background/,
+  );
+  await assert.rejects(
+    captureExportImageInFrame({ ...basePayload, sizePresetId: "story" }),
+    /does not support the story size preset/,
+  );
 });
 
 test("Classic and Spotlight retain their locked visual values", () => {
@@ -523,7 +649,7 @@ test("default filename is unchanged and non-default presets are explicit", () =>
   );
 });
 
-test("poster export request strictly validates its ephemeral payload", () => {
+test("capture export request strictly validates its ephemeral payload", () => {
   assert.equal(EXPORT_CAPTURE_PROTOCOL_VERSION, 4);
   const pageUrl = "https://mypick.kozueginko.com/";
   const request = {
@@ -543,6 +669,9 @@ test("poster export request strictly validates its ephemeral payload", () => {
   };
 
   assert.equal(isExportRenderRequest(request, pageUrl), true);
+  for (const kind of EXPORT_CONTENT_KINDS) {
+    assert.equal(isExportRenderRequest({ ...request, kind }, pageUrl), true);
+  }
   assert.equal(
     isExportRenderRequest({ ...request, showQrCode: "yes" }, pageUrl),
     false,
