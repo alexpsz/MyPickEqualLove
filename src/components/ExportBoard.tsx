@@ -46,6 +46,10 @@ import {
   RELEASE_TYPE_MESSAGE_KEYS,
   TRACK_TYPE_MESSAGE_KEYS,
 } from "../utils/songMetadata";
+import {
+  resolveOshimenMember,
+  resolveOshimenPosterAccent,
+} from "../utils/oshimenPreference";
 import ArchetypeRadarChart from "./ArchetypeRadarChart";
 import ExportQrCode from "./ExportQrCode";
 
@@ -65,6 +69,7 @@ interface ExportBoardProps {
   pageUrl: string;
   headerPresentation?: ExportHeaderPresentation;
   insights?: BoardInsights;
+  oshimenMemberId?: string;
 }
 
 const EXPORT_FONT_FAMILY =
@@ -106,6 +111,7 @@ export default function ExportBoard({
   pageUrl,
   headerPresentation,
   insights,
+  oshimenMemberId,
 }: ExportBoardProps) {
   const sortedSlots = slots.slice().sort((a, b) => a.sortOrder - b.sortOrder);
 
@@ -154,6 +160,13 @@ export default function ExportBoard({
     templateId,
     coverToneAvailability,
   );
+  const oshimenPosterAccent =
+    experience.kind === "standard" &&
+    (resolvedTemplateId === "classic" || resolvedTemplateId === "spotlight")
+      ? resolveOshimenPosterAccent(
+          resolveOshimenMember(MEMBERS, oshimenMemberId),
+        )
+      : null;
   const effectiveTransparentBg =
     transparentBg &&
     resolvedTemplateId !== "midnight" &&
@@ -171,6 +184,7 @@ export default function ExportBoard({
     experience.export.layout,
     PROJECT_THEME_COLOR,
     coverToneAvailability.palette,
+    oshimenPosterAccent ?? undefined,
   );
   const composition =
     showQrCode &&
@@ -190,6 +204,8 @@ export default function ExportBoard({
     <div
       id={exportCanvasId}
       lang="ja"
+      data-oshimen-accent-color={oshimenPosterAccent?.color}
+      data-oshimen-accent-outline={oshimenPosterAccent?.outlineColor}
       className="relative overflow-hidden font-sans"
       style={{
         backgroundColor: effectiveTransparentBg

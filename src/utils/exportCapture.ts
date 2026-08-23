@@ -43,6 +43,7 @@ export interface ExportRenderRequest {
   selectedBy: string;
   pageUrl: string;
   comparison?: ExportComparisonPayload;
+  oshimenMemberId?: string;
 }
 
 export interface ExportComparisonPayload {
@@ -111,6 +112,10 @@ export function isExportRenderRequest(
     isExportTemplateId(value.templateId) &&
     isExportSizePresetId(value.sizePresetId) &&
     typeof value.selectedBy === "string" &&
+    (value.oshimenMemberId === undefined ||
+      (value.kind === "picks" &&
+        typeof value.oshimenMemberId === "string" &&
+        value.oshimenMemberId.length > 0)) &&
     isExportQrTarget(value.pageUrl) &&
     (value.kind === "comparison"
       ? isExportComparisonPayload(value.comparison)
@@ -126,16 +131,12 @@ export function getExportContentConstraintError({
 }: Pick<ExportRenderPayload, "kind" | "sizePresetId" | "transparentBg">):
   | string
   | null {
-  if (kind === "comparison") {
-    return "Comparison export content is not available";
-  }
-
   if (!isExportSizePresetAvailableForContent(kind, sizePresetId)) {
     return `${kind} export does not support the ${sizePresetId} size preset`;
   }
 
-  if (kind === "insights" && transparentBg) {
-    return "Insights export requires an opaque background";
+  if ((kind === "insights" || kind === "comparison") && transparentBg) {
+    return `${kind} export requires an opaque background`;
   }
 
   return null;

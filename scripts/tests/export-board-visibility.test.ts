@@ -18,6 +18,7 @@ import {
   type EqualLoveArchetypeResult,
 } from "../../src/data/equalLoveArchetype";
 import { MEMBERS_BY_ID, SONGS, SONGS_BY_ID } from "../../src/data/songs";
+import LocaleProvider from "../../src/i18n/LocaleProvider";
 import equalLoveArchetypeAffinitiesData from "../../src/projects/equal-love/archetype-21/song-affinities.json";
 import {
   EXPORT_SIZE_PRESET_ORDER,
@@ -43,6 +44,7 @@ import {
 } from "../../src/utils/exportImageReadiness";
 import { ARCHETYPE_ACCENT_OUTLINE } from "../../src/utils/archetypeAccent";
 import ArchetypeRadarChart from "../../src/components/ArchetypeRadarChart";
+import OshimenPreferenceControl from "../../src/components/OshimenPreferenceControl";
 
 type ImageEventType = "load" | "error";
 type ImageListener = () => void;
@@ -142,6 +144,7 @@ function renderPoster(
   sizePresetId: (typeof EXPORT_SIZE_PRESET_ORDER)[number],
   headerPresentation?: ExportHeaderPresentation,
   transparentBg = false,
+  oshimenMemberId?: string,
 ) {
   return renderToStaticMarkup(
     createElement(ExportBoard, {
@@ -156,6 +159,7 @@ function renderPoster(
       sizePresetId,
       pageUrl: "https://mypick.kozueginko.com/",
       headerPresentation,
+      oshimenMemberId,
     }),
   );
 }
@@ -278,6 +282,7 @@ function renderDossierPoster(
 function renderDossierThroughExportBoard(
   templateId: (typeof EXPORT_TEMPLATE_ORDER)[number],
   transparentBg = false,
+  oshimenMemberId?: string,
 ) {
   const result = realArchetypeResults[0];
   if (!result) throw new Error("Expected a real production archetype result.");
@@ -309,6 +314,7 @@ function renderDossierThroughExportBoard(
         highlights: ["TEMPLATE CONTRACT"],
         footerLabel: "MY PICK ARCHETYPE",
       },
+      oshimenMemberId,
     }),
   );
 }
@@ -598,6 +604,152 @@ test("comparison capture keeps protocol v4 and all four frozen content kinds", (
     isExportRenderRequest({ ...baseRequest, kind: "picks", comparison }),
     false,
   );
+});
+
+test("ordinary light posters use a known oshimen color and fail closed for unknown members", () => {
+  const nonWhiteMember = Object.values(MEMBERS_BY_ID).find(
+    (member) =>
+      member.color &&
+      /^#[0-9a-f]{6}$/i.test(member.color) &&
+      member.color.toLowerCase() !== "#ffffff",
+  );
+  assert.ok(nonWhiteMember?.color);
+
+  for (const templateId of ["classic", "spotlight"] as const) {
+    const baseline = renderPoster(
+      STANDARD_PICK_EXPERIENCE,
+      true,
+      templateId,
+      "portrait",
+    );
+    const unknown = renderPoster(
+      STANDARD_PICK_EXPERIENCE,
+      true,
+      templateId,
+      "portrait",
+      undefined,
+      false,
+      "missing-member",
+    );
+    const accented = renderPoster(
+      STANDARD_PICK_EXPERIENCE,
+      true,
+      templateId,
+      "portrait",
+      undefined,
+      false,
+      nonWhiteMember.id,
+    );
+
+    assert.equal(unknown, baseline);
+    assert.notEqual(accented, baseline);
+    assert.match(
+      accented,
+      new RegExp(`data-oshimen-accent-color="${nonWhiteMember.color}"`),
+    );
+    assert.ok(accented.includes(nonWhiteMember.color));
+    assert.doesNotMatch(accented, /data-oshimen-accent-outline=/);
+  }
+});
+
+test("white oshimen poster accents expose a neutral outline fallback", () => {
+  const whiteMember = Object.values(MEMBERS_BY_ID).find(
+    (member) => member.color?.toLowerCase() === "#ffffff",
+  );
+  assert.ok(whiteMember?.color);
+  const markup = renderPoster(
+    STANDARD_PICK_EXPERIENCE,
+    true,
+    "classic",
+    "portrait",
+    undefined,
+    false,
+    whiteMember.id,
+  );
+
+  assert.match(markup, /data-oshimen-accent-color="#FFFFFF"/i);
+  assert.match(markup, /data-oshimen-accent-outline="#64748b"/);
+  assert.match(markup, /border:2px solid #64748b/);
+});
+
+test("oshimen cannot alter Live, fixed-color, or Archetype export contracts", () => {
+  const memberId = Object.values(MEMBERS_BY_ID).find(
+    (member) => member.color?.toLowerCase() !== "#ffffff",
+  )?.id;
+  assert.ok(memberId);
+
+  for (const templateId of ["classic", "spotlight"] as const) {
+    assert.equal(
+      renderPoster(liveExperience, true, templateId, "portrait", undefined),
+      renderPoster(
+        liveExperience,
+        true,
+        templateId,
+        "portrait",
+        undefined,
+        false,
+        memberId,
+      ),
+    );
+  }
+  for (const templateId of ["midnight", "cover-tone"] as const) {
+    assert.equal(
+      renderPoster(STANDARD_PICK_EXPERIENCE, true, templateId, "portrait"),
+      renderPoster(
+        STANDARD_PICK_EXPERIENCE,
+        true,
+        templateId,
+        "portrait",
+        undefined,
+        false,
+        memberId,
+      ),
+    );
+  }
+  for (const templateId of EXPORT_TEMPLATE_ORDER) {
+    assert.equal(
+      renderDossierThroughExportBoard(templateId),
+      renderDossierThroughExportBoard(templateId, false, memberId),
+    );
+  }
+});
+
+test("oshimen control exposes selection, explicit clearing, and only the solo count", () => {
+  const members = Object.values(MEMBERS_BY_ID).slice(0, 3);
+  const selectedMember = members[0];
+  assert.ok(selectedMember);
+  const selected = renderToStaticMarkup(
+    createElement(LocaleProvider, {
+      children: createElement(OshimenPreferenceControl, {
+        members,
+        memberId: selectedMember.id,
+        soloSongCount: 2,
+        onChange: () => {},
+      }),
+    }),
+  );
+  const unset = renderToStaticMarkup(
+    createElement(LocaleProvider, {
+      children: createElement(OshimenPreferenceControl, {
+        members,
+        memberId: null,
+        soloSongCount: null,
+        onChange: () => {},
+      }),
+    }),
+  );
+
+  assert.match(selected, /data-oshimen-preference="true"/);
+  assert.match(selected, /data-oshimen-solo-count="2"/);
+  assert.match(selected, /Her solo songs in this Top 10: 2/);
+  assert.match(selected, /Clear oshimen/);
+  assert.match(
+    selected,
+    new RegExp(`option value="${selectedMember.id}"[^>]*selected=""`),
+  );
+  assert.doesNotMatch(unset, /data-oshimen-solo-count=/);
+  assert.doesNotMatch(unset, /Clear oshimen/);
+  assert.match(unset, /option value="" selected=""/);
 });
 
 test("dark ordinary templates stay opaque while light and archetype exports preserve transparency", () => {

@@ -281,6 +281,10 @@ const en = {
   "insights.export.sizeSquare": "Square 1:1",
   "insights.export.selectedBy": "Selected by {name}",
   "insights.export.more": "+{count} more",
+  "oshimen.label": "Oshimen",
+  "oshimen.none": "Not set",
+  "oshimen.clear": "Clear oshimen",
+  "oshimen.soloCount": "Her solo songs in this Top 10: {count}",
 
   "search.closeAria": "Close song search",
   "search.title": "Select a song",
@@ -842,6 +846,10 @@ const ja: MessageCatalog = {
   "insights.export.sizeSquare": "正方形 1:1",
   "insights.export.selectedBy": "選曲: {name}",
   "insights.export.more": "ほか{count}件",
+  "oshimen.label": "推し",
+  "oshimen.none": "設定しない",
+  "oshimen.clear": "推しを解除",
+  "oshimen.soloCount": "このTop 10にある推しのソロ曲：{count}曲",
 
   "search.closeAria": "楽曲検索を閉じる",
   "search.title": "楽曲を選ぶ",
@@ -1376,6 +1384,10 @@ const zhCN: MessageCatalog = {
   "insights.export.sizeSquare": "方形 1:1",
   "insights.export.selectedBy": "选曲人：{name}",
   "insights.export.more": "另有 {count} 项",
+  "oshimen.label": "推し",
+  "oshimen.none": "未设置",
+  "oshimen.clear": "清除推し",
+  "oshimen.soloCount": "这份 Top 10 中她的 solo 曲：{count} 首",
 
   "search.closeAria": "关闭歌曲搜索",
   "search.title": "选择歌曲",
@@ -1919,6 +1931,10 @@ const ko: MessageCatalog = {
   "insights.export.sizeSquare": "정사각형 1:1",
   "insights.export.selectedBy": "선곡: {name}",
   "insights.export.more": "+{count}개 더",
+  "oshimen.label": "오시",
+  "oshimen.none": "설정 안 함",
+  "oshimen.clear": "오시 해제",
+  "oshimen.soloCount": "이 Top 10의 오시 솔로곡: {count}곡",
 
   "search.closeAria": "곡 검색 닫기",
   "search.title": "곡 선택",

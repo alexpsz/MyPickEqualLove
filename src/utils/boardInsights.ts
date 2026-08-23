@@ -58,6 +58,11 @@ export interface BoardInsightTitleTrackShare {
   total: number;
 }
 
+export interface BoardInsightOshimenSoloSongs {
+  memberId: string;
+  count: number;
+}
+
 export interface BoardInsightSummary {
   topYears: readonly BoardInsightYearEntry[];
   yearSpan: BoardInsightYearSpan | null;
@@ -67,6 +72,7 @@ export interface BoardInsightSummary {
 
 export interface BoardInsights {
   summary: BoardInsightSummary;
+  oshimenSoloSongs: BoardInsightOshimenSoloSongs | null;
   releaseYears: BoardInsightDimension<BoardInsightYearEntry>;
   releaseTypes: BoardInsightDimension<BoardInsightReleaseTypeEntry>;
   trackTypes: BoardInsightDimension<BoardInsightTrackTypeEntry>;
@@ -75,6 +81,11 @@ export interface BoardInsights {
     composer: BoardInsightDimension<BoardInsightCreditEntry>;
     arranger: BoardInsightDimension<BoardInsightCreditEntry>;
   };
+}
+
+export interface BoardInsightOptions {
+  /** A member ID already resolved against the current project's members. */
+  oshimenMemberId?: string | null;
 }
 
 const ISO_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
@@ -267,7 +278,10 @@ function deriveTitleTrackShare(
  * Derives factual, rank-order-independent summaries for an already validated
  * board. Callers decide whether a board is complete and eligible to display.
  */
-export function deriveBoardInsights(songs: readonly Song[]): BoardInsights {
+export function deriveBoardInsights(
+  songs: readonly Song[],
+  { oshimenMemberId = null }: BoardInsightOptions = {},
+): BoardInsights {
   const releaseYears = deriveYearInsights(songs);
   const releaseTypes = deriveEnumInsights(
     songs,
@@ -292,6 +306,17 @@ export function deriveBoardInsights(songs: readonly Song[]): BoardInsights {
       titleTracks: deriveTitleTrackShare(trackTypes),
       topLyricists: leadersOf(credits.lyricist.entries),
     },
+    oshimenSoloSongs: oshimenMemberId
+      ? {
+          memberId: oshimenMemberId,
+          count: songs.filter(
+            (song) =>
+              song.trackType === "solo" &&
+              song.memberIds?.length === 1 &&
+              song.memberIds[0] === oshimenMemberId,
+          ).length,
+        }
+      : null,
     releaseYears,
     releaseTypes,
     trackTypes,

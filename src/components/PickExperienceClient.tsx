@@ -169,6 +169,11 @@ import {
 } from "../utils/exportImageReadiness";
 import { getMemberColorGradient } from "../utils/memberColors";
 import {
+  parseOshimenPreference,
+  planOshimenPreferenceStorageMutation,
+  resolveOshimenMember,
+} from "../utils/oshimenPreference";
+import {
   createPickAssistantSession,
   getMaximumPickComparisons,
   deriveTournament,
@@ -247,6 +252,7 @@ import JapaneseContent, {
 import MotionPresence from "./MotionPresence";
 import NewSongsBanner from "./NewSongsBanner";
 import OnboardingEmptyState from "./OnboardingEmptyState";
+import OshimenPreferenceControl from "./OshimenPreferenceControl";
 import PickBoard from "./PickBoard";
 import PreviewModal from "./PreviewModal";
 import ReplacementModal from "./ReplacementModal";
@@ -313,6 +319,7 @@ const getPreviewOptionsKey = (
   kind: ExportContentKind = "picks",
   sizePresetId: ExportSizePresetId = DEFAULT_EXPORT_SIZE_PRESET_ID,
   contentInputKey = "",
+  oshimenMemberId = "",
 ) =>
   [
     showTitles ? "titles" : "no-titles",
@@ -322,6 +329,7 @@ const getPreviewOptionsKey = (
     sizePresetId,
     kind,
     contentInputKey,
+    kind === "picks" ? oshimenMemberId : "",
   ].join(":");
 
 const isTransparentBackgroundAvailable = (
@@ -826,6 +834,8 @@ export default function PickExperienceClient({
   const [optionsStorageWritable, setOptionsStorageWritable] = useState(false);
   const [onboardingVisibility, setOnboardingVisibility] =
     useState<OnboardingVisibility>("pending");
+  const [oshimenMemberId, setOshimenMemberId] = useState<string | null>(null);
+  const [oshimenStorageWritable, setOshimenStorageWritable] = useState(false);
   const [boardLinkCopied, setBoardLinkCopied] = useState(false);
   const [boardShareDialog, setBoardShareDialog] =
     useState<BoardShareDialogState | null>(null);
@@ -964,6 +974,10 @@ export default function PickExperienceClient({
     onboardingVisibility,
     selectedPickCount,
   ]);
+  const oshimenMember = useMemo(
+    () => resolveOshimenMember(MEMBERS, oshimenMemberId),
+    [oshimenMemberId],
+  );
   const coverToneAvailability = useMemo(
     () =>
       getCoverToneAvailability({
@@ -1042,12 +1056,15 @@ export default function PickExperienceClient({
       songIds.add(song.id);
     }
 
-    return deriveBoardInsights(topTen);
+    return deriveBoardInsights(topTen, {
+      oshimenMemberId: oshimenMember?.id,
+    });
   }, [
     frameCaptureRequest?.kind,
     hydrated,
     isExportRealm,
     isStandard,
+    oshimenMember?.id,
     picks,
     slots,
   ]);
@@ -1620,6 +1637,81 @@ export default function PickExperienceClient({
       }
     },
   };
+
+  useEffect(() => {
+    if (!hydrated || isExportRealm || !isStandard) return;
+
+    let storage: Storage;
+    try {
+      storage = window.localStorage;
+    } catch {
+      setOshimenMemberId(null);
+      setOshimenStorageWritable(false);
+      setBoardStatusMessage(t("boardLibrary.error.storage"));
+      return;
+    }
+
+    const syncOshimenPreference = () => {
+      try {
+        const result = parseOshimenPreference(
+          storage.getItem(STORAGE_KEYS.oshimen),
+          PROJECT_ID,
+          MEMBERS,
+        );
+        setOshimenMemberId(result.memberId);
+        setOshimenStorageWritable(true);
+      } catch {
+        setOshimenMemberId(null);
+        setOshimenStorageWritable(false);
+        setBoardStatusMessage(t("boardLibrary.error.storage"));
+      }
+    };
+    const handleStorage = (event: StorageEvent) => {
+      if (
+        shouldResyncStorage(event, {
+          storage,
+          watchedKey: STORAGE_KEYS.oshimen,
+        })
+      ) {
+        syncOshimenPreference();
+      }
+    };
+
+    syncOshimenPreference();
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, [hydrated, isExportRealm, isStandard, t]);
+
+  const handleOshimenChange = useCallback(
+    (memberId: string | null) => {
+      if (!oshimenStorageWritable || isExportRealm || !isStandard) return;
+
+      const mutation = planOshimenPreferenceStorageMutation(
+        memberId,
+        PROJECT_ID,
+        MEMBERS,
+      );
+      if (mutation.action === "reject") {
+        setBoardStatusMessage(t("boardLibrary.error.storage"));
+        return;
+      }
+
+      try {
+        if (mutation.action === "remove") {
+          localStorage.removeItem(STORAGE_KEYS.oshimen);
+          setOshimenMemberId(null);
+          return;
+        }
+
+        localStorage.setItem(STORAGE_KEYS.oshimen, mutation.value);
+        setOshimenMemberId(mutation.memberId);
+      } catch {
+        setOshimenStorageWritable(false);
+        setBoardStatusMessage(t("boardLibrary.error.storage"));
+      }
+    },
+    [isExportRealm, isStandard, oshimenStorageWritable, t],
+  );
 
   useEffect(() => {
     if (!hydrated || isExportRealm) return;
@@ -3133,6 +3225,7 @@ export default function PickExperienceClient({
         kind,
         effectiveSizePresetId,
         archetypeForExport?.inputKey,
+        kind === "picks" && isStandard ? oshimenMember?.id : undefined,
       );
       const captureController = new AbortController();
       activePreviewCaptureAbortRef.current = captureController;
@@ -3160,6 +3253,8 @@ export default function PickExperienceClient({
             sizePresetId: effectiveSizePresetId,
             selectedBy: exportNickname,
             pageUrl,
+            oshimenMemberId:
+              kind === "picks" && isStandard ? oshimenMember?.id : undefined,
           },
           { signal: captureController.signal },
         );
@@ -3240,6 +3335,8 @@ export default function PickExperienceClient({
       experience,
       exportNickname,
       insightsSizePresetId,
+      isStandard,
+      oshimenMember?.id,
       optionsStorageWritable,
       pageUrl,
       posterImageFileName,
@@ -3416,6 +3513,7 @@ export default function PickExperienceClient({
       : preview?.kind === "comparison"
         ? preview.comparisonInputKey
         : undefined,
+    previewKind === "picks" && isStandard ? oshimenMember?.id : undefined,
   );
 
   useEffect(() => {
@@ -3843,7 +3941,15 @@ export default function PickExperienceClient({
           pickAssistantButtonRef={pickAssistantTriggerRef}
           boardLinkCopied={boardLinkCopied}
         >
-          {contextOptions.length > 0 ? (
+          {isStandard ? (
+            <OshimenPreferenceControl
+              members={MEMBERS}
+              memberId={oshimenMember?.id ?? null}
+              soloSongCount={boardInsights?.oshimenSoloSongs?.count ?? null}
+              disabled={!hydrated || !oshimenStorageWritable || generating}
+              onChange={handleOshimenChange}
+            />
+          ) : contextOptions.length > 0 ? (
             <ContextSelector
               contexts={uiContextOptions}
               activeContextId={activeContext?.id}
@@ -4322,6 +4428,11 @@ export default function PickExperienceClient({
               insights={
                 frameCaptureRequest?.kind === "insights"
                   ? (boardInsights ?? undefined)
+                  : undefined
+              }
+              oshimenMemberId={
+                frameCaptureRequest?.kind === "picks"
+                  ? frameCaptureRequest.oshimenMemberId
                   : undefined
               }
             />

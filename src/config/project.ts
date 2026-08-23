@@ -10,6 +10,7 @@ import {
   EXPORT_SCALE,
   EXPORT_SIZE_PRESETS,
 } from "./exportPresets";
+import { getOshimenPreferenceStorageKey } from "../utils/oshimenPreference";
 
 export const PROJECT_CONFIG = CURRENT_PROJECT.config;
 export const PROJECT_ID = CURRENT_PROJECT_ID;
@@ -24,6 +25,7 @@ export const STORAGE_KEYS = {
   songDiscovery: `${PROJECT_CONFIG.storagePrefix}_song_discovery_v1`,
   songDiscoveryV2: `${PROJECT_CONFIG.storagePrefix}_song_discovery_v2`,
   onboarding: `${PROJECT_CONFIG.storagePrefix}_onboarding_v1`,
+  oshimen: getOshimenPreferenceStorageKey(PROJECT_CONFIG.storagePrefix),
   assistant: `${PROJECT_CONFIG.storagePrefix}_standard_pick_assistant_v2`,
   assistantLegacy: `${PROJECT_CONFIG.storagePrefix}_standard_pick_assistant_v1`,
   installHint: `${PROJECT_CONFIG.storagePrefix}_install_hint_v1`,

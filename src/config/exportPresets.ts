@@ -8,6 +8,7 @@ import type {
   ExportTemplateId,
   ExportTemplatePreset,
 } from "../schema/export";
+import type { OshimenPosterAccent } from "../utils/oshimenPreference";
 
 export const EXPORT_OPTIONS_VERSION = 2 as const;
 export const DEFAULT_EXPORT_TEMPLATE_ID: ExportTemplateId = "classic";
@@ -319,11 +320,17 @@ export function resolveExportComposition(
   layout: ExportExperienceLayout,
   themeColor: string,
   coverTonePalette?: ExportCoverTonePalette,
+  posterAccent?: OshimenPosterAccent,
 ): ExportComposition {
   return {
     templateId,
     size: EXPORT_SIZE_PRESETS[sizePresetId],
-    visual: getVisualTokens(templateId, themeColor, coverTonePalette),
+    visual: getVisualTokens(
+      templateId,
+      themeColor,
+      coverTonePalette,
+      posterAccent,
+    ),
     canvas: CANVAS_METRICS[sizePresetId],
     content: CONTENT_METRICS[layout][sizePresetId],
   };
@@ -333,6 +340,7 @@ function getVisualTokens(
   templateId: ExportTemplateId,
   themeColor: string,
   coverTonePalette?: ExportCoverTonePalette,
+  posterAccent?: OshimenPosterAccent,
 ): ExportVisualTokens {
   if (templateId === "cover-tone") {
     if (!coverTonePalette) {
@@ -396,58 +404,60 @@ function getVisualTokens(
   }
 
   if (templateId === "spotlight") {
+    const accentColor = posterAccent?.visibleColor ?? themeColor;
     return {
       canvasBackground: "#ffffff",
-      rootBorder: `6px solid ${themeColor}`,
+      rootBorder: `6px solid ${accentColor}`,
       textureBackground:
         "repeating-linear-gradient(135deg, rgba(0,0,0,0.018) 0, rgba(0,0,0,0.018) 2px, transparent 2px, transparent 14px)",
       headerBackground: "#ffffff",
-      headerBorder: `2px solid ${themeColor}`,
+      headerBorder: `2px solid ${accentColor}`,
       headerRadius: "22px",
       headerTextAlign: "left",
-      headerTitleColor: themeColor,
+      headerTitleColor: accentColor,
       memberStripJustify: "flex-start",
-      cardBorder: `2px solid ${themeColor}`,
+      cardBorder: `2px solid ${accentColor}`,
       cardRadius: "18px",
       emptyBackground: "#ffffff",
       cardBackground: "#ffffff",
-      cardDivider: `2px solid ${themeColor}`,
-      footerBorder: `2px solid ${themeColor}`,
-      footerColor: themeColor,
+      cardDivider: `2px solid ${accentColor}`,
+      footerBorder: `2px solid ${accentColor}`,
+      footerColor: accentColor,
       mutedTextColor: "#6f8199",
       songTitleColor: "#000",
       emptyTextColor: "#777",
-      slotLabelColor: themeColor,
-      yearTagBorder: `1px solid ${themeColor}`,
+      slotLabelColor: accentColor,
+      yearTagBorder: `1px solid ${accentColor}`,
       yearTagBackground: "#fff",
-      yearTagColor: themeColor,
+      yearTagColor: accentColor,
     };
   }
 
+  const accentColor = posterAccent?.visibleColor;
   return {
     canvasBackground: "#ffffff",
-    rootBorder: "2px solid #000",
+    rootBorder: accentColor ? `2px solid ${accentColor}` : "2px solid #000",
     textureBackground:
       "repeating-linear-gradient(135deg, rgba(0,0,0,0.035) 0, rgba(0,0,0,0.035) 1px, transparent 1px, transparent 9px)",
     headerBackground: "#ffffff",
     headerBorder: "none",
     headerRadius: "0",
     headerTextAlign: "center",
-    headerTitleColor: "#07182a",
+    headerTitleColor: accentColor ?? "#07182a",
     memberStripJustify: "center",
-    cardBorder: "2px solid #000",
+    cardBorder: accentColor ? `2px solid ${accentColor}` : "2px solid #000",
     cardRadius: "0",
     emptyBackground: "#f8f8f8",
     cardBackground: "#ffffff",
-    cardDivider: "2px solid #000",
-    footerBorder: "2px solid #000",
-    footerColor: "#000000",
+    cardDivider: accentColor ? `2px solid ${accentColor}` : "2px solid #000",
+    footerBorder: accentColor ? `2px solid ${accentColor}` : "2px solid #000",
+    footerColor: accentColor ?? "#000000",
     mutedTextColor: "#6f8199",
     songTitleColor: "#000",
     emptyTextColor: "#777",
-    slotLabelColor: themeColor,
-    yearTagBorder: `1px solid ${themeColor}`,
+    slotLabelColor: accentColor ?? themeColor,
+    yearTagBorder: `1px solid ${accentColor ?? themeColor}`,
     yearTagBackground: "#fff",
-    yearTagColor: themeColor,
+    yearTagColor: accentColor ?? themeColor,
   };
 }

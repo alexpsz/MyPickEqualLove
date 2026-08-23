@@ -85,7 +85,7 @@ test("default contract remains Classic portrait at scale 2", () => {
   assert.equal(composition.visual.headerTextAlign, "center");
 });
 
-test("content-kind protocol is exact while insights owns only portrait and square", () => {
+test("content-kind protocol is exact while insights and comparison own only portrait and square", () => {
   assert.deepEqual(EXPORT_CONTENT_KINDS, [
     "picks",
     "archetype",
@@ -170,13 +170,29 @@ test("content-kind protocol is exact while insights owns only portrait and squar
     }) ?? "",
     /requires an opaque background/,
   );
-  assert.match(
+  assert.equal(
     getExportContentConstraintError({
       kind: "comparison",
       sizePresetId: "portrait",
       transparentBg: false,
+    }),
+    null,
+  );
+  assert.match(
+    getExportContentConstraintError({
+      kind: "comparison",
+      sizePresetId: "story",
+      transparentBg: false,
     }) ?? "",
-    /not available/,
+    /does not support the story size preset/,
+  );
+  assert.match(
+    getExportContentConstraintError({
+      kind: "comparison",
+      sizePresetId: "square",
+      transparentBg: true,
+    }) ?? "",
+    /requires an opaque background/,
   );
 });
 
@@ -670,8 +686,27 @@ test("capture export request strictly validates its ephemeral payload", () => {
 
   assert.equal(isExportRenderRequest(request, pageUrl), true);
   for (const kind of EXPORT_CONTENT_KINDS) {
-    assert.equal(isExportRenderRequest({ ...request, kind }, pageUrl), true);
+    const candidate =
+      kind === "comparison"
+        ? {
+            ...request,
+            kind,
+            comparison: {
+              locale: "en",
+              shared: {
+                projectId: "equal-love",
+                experienceId: "standard",
+                picks: { "pick-1": "song-1" },
+              },
+            },
+          }
+        : { ...request, kind };
+    assert.equal(isExportRenderRequest(candidate, pageUrl), true);
   }
+  assert.equal(
+    isExportRenderRequest({ ...request, kind: "comparison" }, pageUrl),
+    false,
+  );
   assert.equal(
     isExportRenderRequest({ ...request, showQrCode: "yes" }, pageUrl),
     false,

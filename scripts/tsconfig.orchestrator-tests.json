@@ -34,6 +34,8 @@
     "./color-conversion.test.ts",
     "../src/utils/themePreference.ts",
     "./tests/theme-preference.test.ts",
+    "../src/utils/oshimenPreference.ts",
+    "./tests/oshimen-preference.test.ts",
     "../src/utils/keyboardShortcuts.ts",
     "./tests/keyboard-shortcuts.test.ts"
   ]
