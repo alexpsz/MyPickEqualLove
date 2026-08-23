@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import test from "node:test";
 import {
   DEFAULT_PICK_SLOTS,
@@ -1068,6 +1070,26 @@ test("new durable states plan add, overwrite, remove, and skip byte-exactly", ()
       );
     }
   }
+});
+
+test("restore review returns focus after cancel and failed confirmation", () => {
+  const panelSource = readFileSync(
+    resolve(process.cwd(), "src/components/LocalBackupPanel.tsx"),
+    "utf8",
+  );
+  assert.match(
+    panelSource,
+    /const chooseFileButtonRef = useRef<HTMLButtonElement>\(null\)/,
+  );
+  assert.match(
+    panelSource,
+    /const clearRestorePlanAndFocusFileButton = \(\) => \{[\s\S]*?setRestorePlan\(null\);[\s\S]*?requestAnimationFrame\(\(\) => chooseFileButtonRef\.current\?\.focus\(\)\)/,
+  );
+  assert.match(panelSource, /ref=\{chooseFileButtonRef\}/);
+  assert.equal(
+    (panelSource.match(/clearRestorePlanAndFocusFileButton/g) ?? []).length,
+    3,
+  );
 });
 
 test("create and plan fail closed on unknown keys and storage failures", () => {

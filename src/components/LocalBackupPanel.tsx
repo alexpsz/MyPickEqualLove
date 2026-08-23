@@ -37,6 +37,7 @@ export default function LocalBackupPanel({
 }: LocalBackupPanelProps) {
   const { t } = useLocale();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const chooseFileButtonRef = useRef<HTMLButtonElement>(null);
   const [restorePlan, setRestorePlan] = useState<RestorePlanSuccess | null>(
     null,
   );
@@ -99,7 +100,7 @@ export default function LocalBackupPanel({
       window.location.reload();
       return;
     }
-    setRestorePlan(null);
+    clearRestorePlanAndFocusFileButton();
     if (result.status === "conflict") {
       setMessage({ key: "backup.error.conflict" });
     } else if (result.status === "write-failed") {
@@ -111,6 +112,11 @@ export default function LocalBackupPanel({
     } else {
       setMessage({ key: "backup.error.storage" });
     }
+  };
+
+  const clearRestorePlanAndFocusFileButton = () => {
+    setRestorePlan(null);
+    window.requestAnimationFrame(() => chooseFileButtonRef.current?.focus());
   };
 
   return (
@@ -145,6 +151,7 @@ export default function LocalBackupPanel({
 
           <div className="mt-4 flex flex-col gap-2 sm:flex-row">
             <button
+              ref={chooseFileButtonRef}
               type="button"
               className="official-button official-button-primary min-h-11"
               disabled={disabled || reading}
@@ -236,7 +243,7 @@ export default function LocalBackupPanel({
                 <button
                   type="button"
                   className="official-button min-h-11"
-                  onClick={() => setRestorePlan(null)}
+                  onClick={clearRestorePlanAndFocusFileButton}
                 >
                   {t("backup.cancel")}
                 </button>

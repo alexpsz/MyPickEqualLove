@@ -768,7 +768,7 @@ test("mark-seen write failures and freshness conflicts leave the caller state un
 test("new song UI remains a standard-mode search affordance with one explicit acknowledgement", () => {
   assert.match(
     projectSource,
-    /songDiscoveryV2:\s+`\$\{PROJECT_CONFIG\.storagePrefix\}_song_discovery_v2`/,
+    /songDiscoveryV2:\s+`\$\{storagePrefix\}_song_discovery_v2`/,
   );
   assert.match(pickExperienceClientSource, /<NewSongsBanner/);
   assert.match(
