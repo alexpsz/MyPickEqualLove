@@ -1186,6 +1186,14 @@ test("backup disclosure keeps stable spacing and restores focus to the file choo
   assert.ok(downloadButton.includes('t("backup.download")'));
   assert.ok(chooseFileButton.includes('t("backup.chooseFile")'));
 
+  const fileInput = panelSource.match(
+    /<input[\s\S]*?type="file"[\s\S]*?\/>/,
+  )?.[0];
+  assert.ok(fileInput, "hidden file input must remain rendered");
+  assert.match(fileInput, /className="sr-only"/);
+  assert.match(fileInput, /tabIndex=\{-1\}/);
+  assert.match(fileInput, /aria-label=\{t\("backup\.chooseFile"\)\}/);
+
   assert.equal(
     (panelSource.match(/clearRestorePlanAndFocusFileButton/g) ?? []).length,
     3,

@@ -181,6 +181,7 @@ export default function LocalBackupPanel({
                   ref={fileInputRef}
                   type="file"
                   className="sr-only"
+                  tabIndex={-1}
                   accept=".json,application/json"
                   disabled={disabled || reading}
                   onChange={handleFileChange}
