@@ -4,6 +4,10 @@ import { SongCatalogDetail } from "../../../components/SongCatalogPages";
 import { PROJECT_CONFIG } from "../../../config/project";
 import { SONGS, SONGS_BY_ID } from "../../../data/songs";
 import { getSongPagePath } from "../../../utils/songRoutes";
+import {
+  createMusicRecordingStructuredData,
+  serializeStructuredData,
+} from "../../../utils/structuredData";
 
 export const dynamic = "force-static";
 export const dynamicParams = false;
@@ -45,5 +49,22 @@ export default async function SongPage({ params }: SongPageProps) {
     notFound();
   }
 
-  return <SongCatalogDetail song={song} />;
+  const structuredData = createMusicRecordingStructuredData({
+    song,
+    groupName: PROJECT_CONFIG.groupName,
+  });
+
+  return (
+    <>
+      {structuredData ? (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: serializeStructuredData(structuredData),
+          }}
+        />
+      ) : null}
+      <SongCatalogDetail song={song} />
+    </>
+  );
 }

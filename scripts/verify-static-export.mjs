@@ -3,20 +3,24 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { verifyGeneratedServiceWorker } from "./generate-service-worker.mjs";
+import { verifyStructuredDataExport } from "./verify-structured-data.mjs";
 
 export const PROJECT_CONTRACTS = Object.freeze({
   "equal-love": Object.freeze({
     displayName: "MY PICK =LOVE",
+    groupName: "=LOVE",
     siteUrl: "https://mypick.kozueginko.com",
     title: "MY PICK =LOVE | Choose your favorite ＝LOVE songs!",
   }),
   "nearly-equal-joy": Object.freeze({
     displayName: "MY PICK ≒JOY",
+    groupName: "≒JOY",
     siteUrl: "https://mypick-nearly-equal-joy.kozueginko.com",
     title: "MY PICK ≒JOY | Choose your favorite ≒JOY songs!",
   }),
   "not-equal-me": Object.freeze({
     displayName: "MY PICK ≠ME",
+    groupName: "≠ME",
     siteUrl: "https://mypick-not-equal-me.kozueginko.com",
     title: "MY PICK ≠ME | Choose your favorite ≠ME songs!",
   }),
@@ -164,6 +168,14 @@ export async function verifyStaticExport({
 
   await verifySitemap(out, contract, expectedExperiences, songIds, violations);
   await verifyReferencedAssets(out, contract.siteUrl, violations);
+  violations.push(
+    ...verifyStructuredDataExport({
+      contract,
+      outputDirectory: out,
+      projectId,
+      repositoryRoot: root,
+    }),
+  );
 
   if (violations.length > 0) {
     throw new Error(

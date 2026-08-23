@@ -10,11 +10,22 @@ import LocaleProvider from "../i18n/LocaleProvider";
 import { SITE_URL } from "../utils/constants";
 import { EXPORT_REALM_HASH } from "../utils/exportCapture";
 import {
+  createWebSiteStructuredData,
+  serializeStructuredData,
+} from "../utils/structuredData";
+import {
   THEME_COLORS,
   createThemeBootstrapScript,
 } from "../utils/themePreference";
 
 const metadataCopy = localizeProjectCopy(PROJECT_CONFIG.id, "en");
+const websiteStructuredData = createWebSiteStructuredData({
+  name: PROJECT_CONFIG.displayName,
+  siteUrl: SITE_URL,
+});
+const websiteStructuredDataJson = websiteStructuredData
+  ? serializeStructuredData(websiteStructuredData)
+  : null;
 const homeOgImage = {
   url: `/og/${PROJECT_CONFIG.id}/home.png`,
   width: 1200,
@@ -94,6 +105,12 @@ export default function RootLayout({
     >
       <head>
         <meta name="theme-color" content={THEME_COLORS.light} />
+        {websiteStructuredDataJson ? (
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: websiteStructuredDataJson }}
+          />
+        ) : null}
         <script dangerouslySetInnerHTML={{ __html: themeBootstrapScript }} />
       </head>
       <body
