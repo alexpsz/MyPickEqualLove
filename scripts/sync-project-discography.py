@@ -408,9 +408,8 @@ class CreditRegistry:
 
     A credit line is looked up whole before it is split, so a single creator
     whose name contains the separator stays intact. A name the registry has
-    never seen is registered with a machine transliteration and reported, so it
-    reaches a human as a registry diff instead of blocking the sync or quietly
-    becoming a second spelling of somebody already listed.
+    never seen is saved with a machine transliteration for review, but that
+    draft identity blocks catalog writes until a human confirms it.
     """
 
     def __init__(self, path: Path) -> None:
@@ -457,7 +456,11 @@ class CreditRegistry:
                 f"{self.creators[creator_id]['ja']!r} and cannot take {ja!r}",
             )
 
-        self.creators[creator_id] = {"ja": ja, "romaji": romaji}
+        self.creators[creator_id] = {
+            "ja": ja,
+            "romaji": romaji,
+            "needsReview": True,
+        }
         self._by_ja[ja] = creator_id
         self.registered_ids.append(creator_id)
         return creator_id
@@ -3269,6 +3272,33 @@ def save_registered_creators() -> None:
     )
 
 
+def assert_credit_registry_publishable() -> None:
+    invalid_review_ids: list[str] = []
+    pending_review_ids: list[str] = []
+    for creator_id, entry in CREDIT_REGISTRY.creators.items():
+        if "needsReview" not in entry:
+            continue
+        review_state = entry["needsReview"]
+        if not isinstance(review_state, bool):
+            invalid_review_ids.append(creator_id)
+        elif review_state:
+            pending_review_ids.append(creator_id)
+
+    if invalid_review_ids:
+        raise RuntimeError(
+            "Credit registry needsReview must be boolean for: "
+            + ", ".join(sorted(invalid_review_ids)),
+        )
+    if pending_review_ids:
+        raise RuntimeError(
+            "Credit registry creators need human review before catalog files "
+            "can be written: "
+            + ", ".join(sorted(pending_review_ids))
+            + ". Confirm the canonical romaji, preserve the machine suggestion "
+            "as an alias, remove needsReview, and rerun the sync.",
+        )
+
+
 def normalize_project_credits(config: ProjectConfig) -> None:
     """Rewrite a checked-in catalog so every credit matches the registry.
 
@@ -3280,6 +3310,7 @@ def normalize_project_credits(config: ProjectConfig) -> None:
     before = deepcopy(songs)
     canonicalize_song_credits(songs)
     save_registered_creators()
+    assert_credit_registry_publishable()
 
     changed = [
         song["id"]
@@ -3308,11 +3339,12 @@ def sync_project(
             raise RuntimeError(f"No existing members found for {config.project_id}")
         songs, stats = build_song_data(config, members)
         canonicalize_song_credits(songs)
+        save_registered_creators()
+        assert_credit_registry_publishable()
 
         if not songs_only:
             write_json_atomically(config.members_path, members)
         write_json_atomically(config.songs_path, songs)
-        save_registered_creators()
 
         added_ids = list(stats.get("publishableAddedIds", []))
         updated_ids = list(stats.get("allowedUpdatedIds", []))

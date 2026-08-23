@@ -11,6 +11,7 @@ interface CreditRegistryEntry {
   romaji: string;
   aliasesJa?: string[];
   aliasesRomaji?: string[];
+  needsReview?: boolean;
 }
 
 interface CreditRegistryManifest {

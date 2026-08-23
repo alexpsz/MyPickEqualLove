@@ -33,7 +33,44 @@ const creditRegistry = JSON.parse(
 const creditCreatorIdsByWrittenJa = new Map();
 const creditRegistryErrors = [];
 for (const [creatorId, entry] of Object.entries(creditRegistry.creators)) {
-  for (const writtenJa of [entry.ja, ...(entry.aliasesJa ?? [])]) {
+  if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+    creditRegistryErrors.push(
+      `credit registry: ${creatorId} must be an object`,
+    );
+    continue;
+  }
+
+  const hasValidJa = typeof entry.ja === "string" && entry.ja.trim();
+  const hasValidRomaji =
+    typeof entry.romaji === "string" && entry.romaji.trim();
+  if (!hasValidJa) {
+    creditRegistryErrors.push(
+      `credit registry: ${creatorId} needs a non-empty ja`,
+    );
+  }
+  if (!hasValidRomaji) {
+    creditRegistryErrors.push(
+      `credit registry: ${creatorId} needs a non-empty romaji`,
+    );
+  }
+  if (
+    Object.hasOwn(entry, "needsReview") &&
+    typeof entry.needsReview !== "boolean"
+  ) {
+    creditRegistryErrors.push(
+      `credit registry: ${creatorId} needsReview must be boolean`,
+    );
+  } else if (entry.needsReview === true) {
+    creditRegistryErrors.push(
+      `credit registry: ${creatorId} still needs human review`,
+    );
+  }
+
+  const writtenNames = [
+    ...(hasValidJa ? [entry.ja] : []),
+    ...(Array.isArray(entry.aliasesJa) ? entry.aliasesJa : []),
+  ];
+  for (const writtenJa of writtenNames) {
     const owner = creditCreatorIdsByWrittenJa.get(writtenJa);
     if (owner) {
       creditRegistryErrors.push(

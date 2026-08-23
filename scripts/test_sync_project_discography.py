@@ -1291,6 +1291,27 @@ class CreditRegistryTests(unittest.TestCase):
             },
         ]
 
+    def make_unregistered_song(self) -> dict:
+        return {
+            "id": "song",
+            "credits": {
+                "composer": {
+                    "ja": "中村歩・新人作曲家",
+                    "romaji": "ignored",
+                },
+            },
+        }
+
+    def make_test_config(self) -> SYNC.ProjectConfig:
+        return SYNC.ProjectConfig(
+            project_id="test-project",
+            official_base="https://example.com",
+            group_artist="Test Project",
+            utanet_artist_id="1",
+            utanet_artist_path="/artist/1/",
+            sister_group_markers=(),
+        )
+
     def test_stored_credits_are_rewritten_to_the_registry_form(self) -> None:
         songs = self.make_songs()
         SYNC.canonicalize_song_credits(songs)
@@ -1319,26 +1340,98 @@ class CreditRegistryTests(unittest.TestCase):
 
         self.assertEqual(json.dumps(songs, ensure_ascii=False, sort_keys=True), once)
 
-    def test_an_unregistered_name_is_registered_and_reported(self) -> None:
-        songs = [
-            {
-                "id": "song",
-                "credits": {
-                    "composer": {
-                        "ja": "中村歩・新人作曲家",
-                        "romaji": "ignored",
-                    },
-                },
-            },
-        ]
+    def test_an_unregistered_name_is_saved_as_a_review_candidate(self) -> None:
+        songs = [self.make_unregistered_song()]
         SYNC.canonicalize_song_credits(songs)
 
         self.assertEqual(len(self.registry.registered_ids), 1)
         registered = self.registry.creators[self.registry.registered_ids[0]]
         self.assertEqual(registered["ja"], "新人作曲家")
+        self.assertTrue(registered["romaji"])
+        self.assertIs(registered["needsReview"], True)
         self.assertTrue(
             songs[0]["credits"]["composer"]["romaji"].startswith("Nakamura Ayumu ・ "),
         )
+
+    def test_sync_saves_review_candidate_and_never_writes_catalogs(self) -> None:
+        root = self.path.parent
+        project_dir = root / "src/projects/test-project"
+        project_dir.mkdir(parents=True)
+        members_path = project_dir / "members.json"
+        songs_path = project_dir / "songs.json"
+        members_path.write_text('[{"id":"existing-member"}]\n', encoding="utf-8")
+        songs_path.write_text('[{"id":"existing-song"}]\n', encoding="utf-8")
+        members_before = members_path.read_bytes()
+        songs_before = songs_path.read_bytes()
+        config = self.make_test_config()
+
+        report_directory = TemporaryDirectory()
+        self.addCleanup(report_directory.cleanup)
+        report_path = Path(report_directory.name) / "sync-report.json"
+
+        def build_song_data(*_args: object) -> tuple[list[dict], dict]:
+            return [self.make_unregistered_song()], {}
+
+        with (
+            patch.object(SYNC, "ROOT", root),
+            patch.object(SYNC, "current_head_sha", return_value="baseline-sha"),
+            patch.object(SYNC, "parse_members", return_value=[{"id": "new-member"}]),
+            patch.object(SYNC, "build_song_data", side_effect=build_song_data),
+        ):
+            with self.assertRaisesRegex(RuntimeError, "need human review"):
+                SYNC.sync_project(config, report_path=report_path)
+
+        self.assertEqual(members_path.read_bytes(), members_before)
+        self.assertEqual(songs_path.read_bytes(), songs_before)
+        reloaded = SYNC.CreditRegistry(self.path)
+        review_entry = reloaded.creators[reloaded.resolve("新人作曲家")[0]]
+        self.assertIs(review_entry["needsReview"], True)
+        self.assertEqual(reloaded.registered_ids, [])
+        report = json.loads(report_path.read_text(encoding="utf-8"))
+        self.assertEqual(report["publishDecision"], "block")
+        self.assertEqual(report["outcome"], "error")
+
+        with (
+            patch.object(SYNC, "CREDIT_REGISTRY", reloaded),
+            patch.object(SYNC, "ROOT", root),
+            patch.object(SYNC, "current_head_sha", return_value="baseline-sha"),
+            patch.object(SYNC, "parse_members", return_value=[{"id": "new-member"}]),
+            patch.object(SYNC, "build_song_data", side_effect=build_song_data),
+        ):
+            with self.assertRaisesRegex(RuntimeError, "need human review"):
+                SYNC.sync_project(config, report_path=report_path)
+
+        self.assertEqual(members_path.read_bytes(), members_before)
+        self.assertEqual(songs_path.read_bytes(), songs_before)
+
+    def test_normalization_saves_review_candidate_before_writing_songs(self) -> None:
+        root = self.path.parent
+        project_dir = root / "src/projects/test-project"
+        project_dir.mkdir(parents=True)
+        songs_path = project_dir / "songs.json"
+        songs_path.write_text(
+            json.dumps([self.make_unregistered_song()], ensure_ascii=False),
+            encoding="utf-8",
+        )
+        songs_before = songs_path.read_bytes()
+        config = self.make_test_config()
+
+        with patch.object(SYNC, "ROOT", root):
+            with self.assertRaisesRegex(RuntimeError, "need human review"):
+                SYNC.normalize_project_credits(config)
+
+        self.assertEqual(songs_path.read_bytes(), songs_before)
+        reloaded = SYNC.CreditRegistry(self.path)
+        review_entry = reloaded.creators[reloaded.resolve("新人作曲家")[0]]
+        self.assertIs(review_entry["needsReview"], True)
+
+    def test_review_state_must_be_boolean_when_present(self) -> None:
+        self.registry.creators["sashihara-rino"]["needsReview"] = "true"
+        with self.assertRaisesRegex(RuntimeError, "must be boolean"):
+            SYNC.assert_credit_registry_publishable()
+
+        self.registry.creators["sashihara-rino"]["needsReview"] = False
+        SYNC.assert_credit_registry_publishable()
 
     def test_a_placeholder_is_never_registered(self) -> None:
         with self.assertRaisesRegex(ValueError, "placeholder"):
