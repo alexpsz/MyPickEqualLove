@@ -6,6 +6,9 @@ import test from "node:test";
 import { resolveExportComposition } from "../../src/config/exportPresets";
 import { messages } from "../../src/i18n/messages";
 import { PROJECTS } from "../../src/projects/registry";
+import { CURRENT_PROJECT_RUNTIME as EQUAL_LOVE_RUNTIME } from "../../src/projects/equal-love/runtime";
+import { CURRENT_PROJECT_RUNTIME as NEARLY_EQUAL_JOY_RUNTIME } from "../../src/projects/nearly-equal-joy/runtime";
+import { CURRENT_PROJECT_RUNTIME as NOT_EQUAL_ME_RUNTIME } from "../../src/projects/not-equal-me/runtime";
 import type { ExportCoverTonePalette } from "../../src/schema/export";
 import type { Member, Song } from "../../src/schema/music";
 import { PROJECT_IDS } from "../../src/schema/project";
@@ -52,6 +55,24 @@ const MEMBERS: readonly Member[] = [
 const PROJECT_CASES = PROJECT_IDS.map(
   (projectId) => [projectId, PROJECTS[projectId].config.storagePrefix] as const,
 );
+
+const PROJECT_RUNTIME_CASES = [
+  {
+    projectId: "equal-love",
+    runtime: EQUAL_LOVE_RUNTIME,
+    graduatedMemberIds: ["satake-nonno", "saito-nagisa"],
+  },
+  {
+    projectId: "nearly-equal-joy",
+    runtime: NEARLY_EQUAL_JOY_RUNTIME,
+    graduatedMemberIds: ["fukuyama-moeka"],
+  },
+  {
+    projectId: "not-equal-me",
+    runtime: NOT_EQUAL_ME_RUNTIME,
+    graduatedMemberIds: ["suganami-mirei"],
+  },
+] as const;
 
 const COVER_TONE_PALETTE: ExportCoverTonePalette = {
   background: "#101010",
@@ -400,6 +421,65 @@ test("oshimen copy makes only the explicit solo claim", () => {
     ].join(" ");
     assert.doesNotMatch(copy, forbiddenClaim);
     assert.match(catalog["oshimen.soloCount"], /\{count\}/);
+  }
+});
+
+test("all three oshimen menus keep graduated members from complete project runtimes", () => {
+  const repositoryRoot = process.cwd();
+  const membersSource = readFileSync(
+    resolve(repositoryRoot, "src/data/songs.ts"),
+    "utf8",
+  );
+  const clientSource = readFileSync(
+    resolve(repositoryRoot, "src/components/PickExperienceClient.tsx"),
+    "utf8",
+  );
+  const controlSource = readFileSync(
+    resolve(repositoryRoot, "src/components/OshimenPreferenceControl.tsx"),
+    "utf8",
+  );
+
+  assert.match(
+    membersSource,
+    /export const MEMBERS: Member\[\] = CURRENT_PROJECT_RUNTIME\.members;/,
+  );
+  assert.match(clientSource, /<OshimenPreferenceControl\s+members=\{MEMBERS\}/);
+  assert.match(
+    controlSource,
+    /const sortedMembers = members\s*\.slice\(\)\s*\.sort\(/,
+  );
+  assert.match(
+    controlSource,
+    /\.\.\.sortedMembers\.map\(\(member\) => \(\{\s*value: member\.id,\s*label: member\.name\.ja,\s*lang: "ja",/,
+  );
+
+  for (const {
+    projectId,
+    runtime,
+    graduatedMemberIds,
+  } of PROJECT_RUNTIME_CASES) {
+    assert.equal(runtime.projectId, projectId);
+    const sortedMenuMemberIds = runtime.members
+      .slice()
+      .sort((left, right) => left.sortOrder - right.sortOrder)
+      .map((member) => member.id);
+
+    for (const memberId of graduatedMemberIds) {
+      const member = runtime.members.find(
+        (candidate) => candidate.id === memberId,
+      );
+      assert.ok(member, `${projectId}:${memberId}`);
+      assert.equal(member.active, false, `${projectId}:${memberId}:active`);
+      assert.equal(
+        member.graduated,
+        true,
+        `${projectId}:${memberId}:graduated`,
+      );
+      assert.ok(
+        sortedMenuMemberIds.includes(memberId),
+        `${projectId}:${memberId}:menu-option`,
+      );
+    }
   }
 });
 
