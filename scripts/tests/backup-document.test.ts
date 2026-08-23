@@ -1081,6 +1081,10 @@ test("backup disclosure keeps stable spacing and restores focus to the file choo
     resolve(process.cwd(), "src/components/PickExperienceClient.tsx"),
     "utf8",
   );
+  const insightsSource = readFileSync(
+    resolve(process.cwd(), "src/components/BoardInsightsPanel.tsx"),
+    "utf8",
+  );
   const globalStyles = readFileSync(
     resolve(process.cwd(), "src/app/globals.css"),
     "utf8",
@@ -1091,8 +1095,50 @@ test("backup disclosure keeps stable spacing and restores focus to the file choo
       'className="app-content-shell relative z-10 mt-8 px-4 pb-6 sm:mt-10 sm:px-6 md:px-8"',
     ),
   );
-  assert.ok(clientSource.includes('className="-mt-3 flex justify-end"'));
-  assert.ok(!clientSource.includes('className="-mt-3 mb-6 flex justify-end"'));
+  assert.doesNotMatch(
+    clientSource,
+    /className="[^"]*-mt-3[^"]*flex justify-end[^"]*"/,
+  );
+  assert.doesNotMatch(clientSource, /data-board-insights-export-action/);
+
+  const insightsMarkerIndex = insightsSource.indexOf("data-board-insights");
+  assert.notEqual(
+    insightsMarkerIndex,
+    -1,
+    "insights panel must retain its DOM marker",
+  );
+  const insightsSectionStart = insightsSource.lastIndexOf(
+    "<section",
+    insightsMarkerIndex,
+  );
+  const insightsOpeningTagEnd = insightsSource.indexOf(
+    ">",
+    insightsMarkerIndex,
+  );
+  const insightsSectionEnd = insightsSource.indexOf(
+    "</section>",
+    insightsMarkerIndex,
+  );
+  assert.ok(
+    insightsSectionStart >= 0 &&
+      insightsOpeningTagEnd > insightsSectionStart &&
+      insightsSectionEnd > insightsOpeningTagEnd,
+    "insights panel section must remain structurally complete",
+  );
+  const insightsOpeningTag = insightsSource.slice(
+    insightsSectionStart,
+    insightsOpeningTagEnd + 1,
+  );
+  const insightsPanelSource = insightsSource.slice(
+    insightsSectionStart,
+    insightsSectionEnd + "</section>".length,
+  );
+  assert.match(insightsOpeningTag, /\bmb-6\b/);
+  assert.match(
+    insightsPanelSource,
+    /data-board-insights-export-action[\s\S]*?className="mt-4 flex justify-end"/,
+  );
+  assert.match(insightsPanelSource, /t\("insights\.export\.cta"\)/);
   assert.ok(panelSource.includes('className="flex justify-end"'));
   assert.ok(
     panelSource.includes(
