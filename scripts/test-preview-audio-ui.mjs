@@ -46,6 +46,13 @@ const appIconModule = {
   __esModule: true,
   default: ({ name }) => React.createElement("svg", { "data-icon": name }),
 };
+const coverPreviewState = {
+  playingSongId: null,
+  status: "idle",
+  progress: 0.42,
+  failedSongIds: new Set(),
+  toggle: () => {},
+};
 const componentModule = loadTranspiledModule(
   "src/components/OfficialMediaLinks.tsx",
   {
@@ -55,13 +62,23 @@ const componentModule = loadTranspiledModule(
       getOfficialMediaLinks: () => [],
       OFFICIAL_MEDIA_MESSAGE_KEYS: {},
     },
-    "../utils/previewMedia": { getPreviewMedia: () => undefined },
+    "../utils/previewMedia": {
+      getPreviewMedia: () => ({
+        previewUrl: "https://audio-ssl.itunes.apple.com/test.m4a",
+        trackViewUrl: "https://music.apple.com/test",
+      }),
+    },
     "./AppIcon": appIconModule,
-    "./PreviewAudioProvider": { usePreviewAudio: () => ({}) },
+    "./PreviewAudioProvider": {
+      usePreviewAudio: () => coverPreviewState,
+    },
   },
 );
-const { PreviewMediaControlView, resolvePreviewMediaControlMode } =
-  componentModule;
+const {
+  OfficialMediaCoverLink,
+  PreviewMediaControlView,
+  resolvePreviewMediaControlMode,
+} = componentModule;
 
 const sharedViewProps = {
   className: "control",
@@ -92,6 +109,19 @@ assert.match(previewMarkup, /aria-label="Stop previewing Test Song"/);
 assert.match(previewMarkup, /data-icon="pause"/);
 assert.match(previewMarkup, /style="width:42%"/);
 assert.doesNotMatch(previewMarkup, /role="status"/);
+
+const idlePreviewMarkup = renderToStaticMarkup(
+  React.createElement(PreviewMediaControlView, {
+    ...sharedViewProps,
+    mode: previewMode,
+    isActive: false,
+    progress: 0.42,
+  }),
+);
+assert.match(idlePreviewMarkup, /^<button\b/);
+assert.match(idlePreviewMarkup, /aria-pressed="false"/);
+assert.match(idlePreviewMarkup, /data-icon="play"/);
+assert.doesNotMatch(idlePreviewMarkup, /style="width:/);
 
 for (const scenario of [
   { hasPreview: false, failed: false, hasOfficialLink: true },
@@ -125,6 +155,28 @@ assert.equal(
   ),
   "",
 );
+
+const renderCoverControl = () =>
+  renderToStaticMarkup(
+    React.createElement(
+      OfficialMediaCoverLink,
+      { songId: "test-song", title: "Test Song", className: "cover" },
+      React.createElement("span", null, "Cover"),
+    ),
+  );
+
+const idleCoverMarkup = renderCoverControl();
+assert.match(idleCoverMarkup, /^<button\b/);
+assert.match(idleCoverMarkup, /aria-pressed="false"/);
+assert.match(idleCoverMarkup, /data-icon="play"/);
+assert.doesNotMatch(idleCoverMarkup, /style="width:/);
+
+coverPreviewState.playingSongId = "test-song";
+coverPreviewState.status = "playing";
+const activeCoverMarkup = renderCoverControl();
+assert.match(activeCoverMarkup, /aria-pressed="true"/);
+assert.match(activeCoverMarkup, /data-icon="pause"/);
+assert.match(activeCoverMarkup, /style="width:42%"/);
 
 const { messages } = loadTranspiledModule("src/i18n/messages.ts");
 const previewKeys = [

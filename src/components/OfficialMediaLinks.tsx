@@ -235,7 +235,7 @@ export function PreviewMediaControlView({
         className={`${className} relative overflow-hidden`}
       >
         <AppIcon name={isActive ? "pause" : "play"} size={16} />
-        <ProgressBar progress={progress} />
+        {isActive ? <ProgressBar progress={progress} /> : null}
       </button>
     );
   }
@@ -277,7 +277,7 @@ function PreviewGlyph({
       <span className="m-auto flex items-center justify-center">
         <AppIcon name={isActive ? "pause" : "play"} size={size} />
       </span>
-      <ProgressBar progress={progress} onDark />
+      {isActive ? <ProgressBar progress={progress} onDark /> : null}
     </span>
   );
 }
