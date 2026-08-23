@@ -38,6 +38,29 @@ const en = {
   "controls.generatingPreview": "Generating image preview",
   "controls.pickAssistant": "Pick Assistant",
   "controls.pickAssistantShort": "Assistant",
+  "onboarding.searchTitle": "Search songs",
+  "onboarding.assistantTitle": "Let the Assistant help",
+  "onboarding.importTitle": "Import a shared link",
+  "onboarding.standard.title": "Start your first Top 10",
+  "onboarding.standard.description":
+    "Choose the easiest way to begin. You can still search, replace, or reorder songs at any time.",
+  "onboarding.standard.searchDescription":
+    "Browse this group's catalog and place a song into an empty slot.",
+  "onboarding.standard.assistantDescription":
+    "Compare candidate songs, then apply the ranked result to your board.",
+  "onboarding.standard.importDescription":
+    "Paste a MyPick link someone shared and review the changes before importing.",
+  "onboarding.live.title": "Start this Live Pick",
+  "onboarding.live.description":
+    "Each path respects the songs available for this experience and performance.",
+  "onboarding.live.searchDescription":
+    "Browse the songs allowed for the current experience and performance.",
+  "onboarding.live.assistantDescription":
+    "Compare and rank only the songs eligible for this Live Pick.",
+  "onboarding.live.importDescription":
+    "Paste a link for this experience, then confirm its performance and changes.",
+  "onboarding.dismiss": "Hide guide",
+  "onboarding.importPrompt": "Paste a MyPick board link:",
   "commands.entry": "Commands",
   "commands.entryShort": "Commands",
   "commands.entryAria": "Open commands and keyboard shortcuts",
@@ -533,6 +556,29 @@ const ja: MessageCatalog = {
   "controls.generatingPreview": "画像プレビューを生成中",
   "controls.pickAssistant": "Pick Assistant",
   "controls.pickAssistantShort": "アシスト",
+  "onboarding.searchTitle": "曲を検索",
+  "onboarding.assistantTitle": "アシスタントに並べてもらう",
+  "onboarding.importTitle": "共有リンクから読み込む",
+  "onboarding.standard.title": "最初の Top 10 を始めよう",
+  "onboarding.standard.description":
+    "始めやすい方法を選んでください。あとからいつでも検索・入れ替え・並べ替えができます。",
+  "onboarding.standard.searchDescription":
+    "このグループの曲を見ながら、空いている枠に直接追加します。",
+  "onboarding.standard.assistantDescription":
+    "候補曲を比較し、並べた結果をボードに反映します。",
+  "onboarding.standard.importDescription":
+    "受け取った MyPick リンクを貼り付け、変更内容を確認してから読み込みます。",
+  "onboarding.live.title": "この Live Pick を始めよう",
+  "onboarding.live.description":
+    "どの方法でも、現在のイベントと公演で選べる曲の範囲を守ります。",
+  "onboarding.live.searchDescription":
+    "現在のイベントと公演で選べる曲を見ながら追加します。",
+  "onboarding.live.assistantDescription":
+    "この Live Pick で選べる曲だけを比較して並べます。",
+  "onboarding.live.importDescription":
+    "同じイベントの共有リンクを貼り付け、公演と変更内容を確認して読み込みます。",
+  "onboarding.dismiss": "この案内を閉じる",
+  "onboarding.importPrompt": "MyPick の共有リンクを貼り付けてください：",
   "commands.entry": "コマンド",
   "commands.entryShort": "コマンド",
   "commands.entryAria": "コマンドとキーボードショートカットを開く",
@@ -1027,6 +1073,28 @@ const zhCN: MessageCatalog = {
   "controls.generatingPreview": "正在生成图片预览",
   "controls.pickAssistant": "选曲助手",
   "controls.pickAssistantShort": "选曲助手",
+  "onboarding.searchTitle": "搜索选歌",
+  "onboarding.assistantTitle": "让助手帮我排",
+  "onboarding.importTitle": "从分享链接导入",
+  "onboarding.standard.title": "开始你的第一份 Top 10",
+  "onboarding.standard.description":
+    "选择最顺手的方式开始，之后仍可随时搜索、换歌或调整顺序。",
+  "onboarding.standard.searchDescription":
+    "浏览当前团体曲库，并把歌曲直接放入空槽位。",
+  "onboarding.standard.assistantDescription":
+    "先比较候选歌曲，再把排序结果应用到榜单。",
+  "onboarding.standard.importDescription":
+    "粘贴别人分享的 MyPick 链接，预览差异后再导入。",
+  "onboarding.live.title": "开始这份 Live Pick",
+  "onboarding.live.description":
+    "以下入口都会遵守当前活动与场次的可选歌曲范围。",
+  "onboarding.live.searchDescription": "浏览当前活动与场次允许选择的歌曲。",
+  "onboarding.live.assistantDescription":
+    "只用当前 Live Pick 的合法候选进行比较与排序。",
+  "onboarding.live.importDescription":
+    "粘贴同一活动的分享链接，确认场次与差异后再导入。",
+  "onboarding.dismiss": "收起引导",
+  "onboarding.importPrompt": "粘贴 MyPick 分享链接：",
   "commands.entry": "命令",
   "commands.entryShort": "命令",
   "commands.entryAria": "打开命令和快捷键",
@@ -1485,6 +1553,29 @@ const ko: MessageCatalog = {
   "controls.generatingPreview": "이미지 미리보기 생성 중",
   "controls.pickAssistant": "선곡 도우미",
   "controls.pickAssistantShort": "도우미",
+  "onboarding.searchTitle": "곡 검색",
+  "onboarding.assistantTitle": "도우미에게 순위 맡기기",
+  "onboarding.importTitle": "공유 링크에서 가져오기",
+  "onboarding.standard.title": "첫 Top 10 시작하기",
+  "onboarding.standard.description":
+    "가장 편한 방법으로 시작하세요. 이후에도 언제든 검색하고 교체하거나 순서를 바꿀 수 있습니다.",
+  "onboarding.standard.searchDescription":
+    "이 그룹의 곡 목록을 둘러보고 빈 슬롯에 바로 추가합니다.",
+  "onboarding.standard.assistantDescription":
+    "후보 곡을 비교한 뒤 정렬 결과를 보드에 적용합니다.",
+  "onboarding.standard.importDescription":
+    "공유받은 MyPick 링크를 붙여넣고 변경 내용을 확인한 뒤 가져옵니다.",
+  "onboarding.live.title": "이 Live Pick 시작하기",
+  "onboarding.live.description":
+    "모든 시작 방법은 현재 이벤트와 공연에서 선택 가능한 곡 범위를 따릅니다.",
+  "onboarding.live.searchDescription":
+    "현재 이벤트와 공연에서 선택할 수 있는 곡을 둘러봅니다.",
+  "onboarding.live.assistantDescription":
+    "이 Live Pick에서 선택 가능한 곡만 비교하고 정렬합니다.",
+  "onboarding.live.importDescription":
+    "같은 이벤트의 공유 링크를 붙여넣고 공연과 변경 내용을 확인한 뒤 가져옵니다.",
+  "onboarding.dismiss": "안내 숨기기",
+  "onboarding.importPrompt": "MyPick 공유 링크를 붙여넣으세요:",
   "commands.entry": "명령",
   "commands.entryShort": "명령",
   "commands.entryAria": "명령과 키보드 단축키 열기",

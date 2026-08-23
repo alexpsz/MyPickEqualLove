@@ -108,6 +108,20 @@ const SUITES = {
     emittedTestFiles: ["scripts/tests/image-actions.test.js"],
     successMessage: "Image action tests passed.",
   },
+  onboarding: {
+    tempPrefix: "mypick-onboarding-tests-",
+    compilerArgs: [...NODE16_ARGS, "--jsx", "react-jsx", "--lib", "ES2022,DOM"],
+    sourceFiles: [
+      "scripts/tests/onboarding-empty-state.test.ts",
+      "src/components/OnboardingEmptyState.tsx",
+      "src/components/AppIcon.tsx",
+      "src/i18n/messages.ts",
+      "src/utils/onboardingState.ts",
+    ],
+    emittedTestFiles: ["scripts/tests/onboarding-empty-state.test.js"],
+    includeRepositoryNodePath: true,
+    successMessage: "Onboarding empty-state tests passed.",
+  },
   "export-board": {
     tempPrefix: "mypick-export-board-tests-",
     compilerArgs: [

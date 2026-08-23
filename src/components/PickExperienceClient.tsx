@@ -198,6 +198,10 @@ import {
   isShortcutEditableTarget,
   resolveKeyboardShortcut,
 } from "../utils/keyboardShortcuts";
+import {
+  completeOnboarding,
+  loadOnboardingState,
+} from "../utils/onboardingState";
 import AppTopBar from "./AppTopBar";
 import AppleMotion from "./AppleMotion";
 import BoardLibraryModal, {
@@ -222,6 +226,7 @@ import JapaneseContent, {
 } from "./JapaneseContent";
 import MotionPresence from "./MotionPresence";
 import NewSongsBanner from "./NewSongsBanner";
+import OnboardingEmptyState from "./OnboardingEmptyState";
 import PickBoard from "./PickBoard";
 import PreviewModal from "./PreviewModal";
 import ReplacementModal from "./ReplacementModal";
@@ -249,6 +254,8 @@ interface PickExperienceClientProps {
 const MAX_NICKNAME_LENGTH = 32;
 const CATALOG_SONG_IDS = SONGS.map((song) => song.id);
 const BOARD_LINK_COPIED_DURATION_MS = 2_000;
+type OnboardingVisibility = "pending" | "visible" | "hidden";
+
 interface PendingBoardShareImport {
   payload: BoardSharePayload;
   picks: StoredPicks;
@@ -780,6 +787,8 @@ export default function PickExperienceClient({
   const [boardLibraryLoaded, setBoardLibraryLoaded] = useState(false);
   const [boardStatusMessage, setBoardStatusMessage] = useState("");
   const [optionsStorageWritable, setOptionsStorageWritable] = useState(false);
+  const [onboardingVisibility, setOnboardingVisibility] =
+    useState<OnboardingVisibility>("pending");
   const [boardLinkCopied, setBoardLinkCopied] = useState(false);
   const [boardShareDialog, setBoardShareDialog] =
     useState<BoardShareDialogState | null>(null);
@@ -883,6 +892,37 @@ export default function PickExperienceClient({
 
     return Object.fromEntries(entries);
   }, [storedPicks]);
+  const selectedPickCount = Object.keys(picks).length;
+  const finishOnboarding = useCallback(() => {
+    completeOnboarding(localStorage, STORAGE_KEYS.onboarding);
+    setOnboardingVisibility("hidden");
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated || isExportRealm) return;
+
+    const result = loadOnboardingState(localStorage, STORAGE_KEYS.onboarding);
+    setOnboardingVisibility(result.status === "missing" ? "visible" : "hidden");
+  }, [hydrated, isExportRealm]);
+
+  useEffect(() => {
+    if (
+      !hydrated ||
+      isExportRealm ||
+      selectedPickCount === 0 ||
+      onboardingVisibility === "hidden"
+    ) {
+      return;
+    }
+
+    finishOnboarding();
+  }, [
+    finishOnboarding,
+    hydrated,
+    isExportRealm,
+    onboardingVisibility,
+    selectedPickCount,
+  ]);
   const coverToneAvailability = useMemo(
     () =>
       getCoverToneAvailability({
@@ -1569,9 +1609,15 @@ export default function PickExperienceClient({
         window.alert(t("boardLibrary.error.storage"));
         return false;
       }
+      if (
+        onboardingVisibility !== "hidden" &&
+        Object.keys(newPicks).length > 0
+      ) {
+        finishOnboarding();
+      }
       return true;
     },
-    [commitBoardSessionMutation, t],
+    [commitBoardSessionMutation, finishOnboarding, onboardingVisibility, t],
   );
 
   const applyHistoryAction = useCallback(
@@ -1589,29 +1635,26 @@ export default function PickExperienceClient({
     [applyBoardSessionHistoryAction, t],
   );
 
-  useEffect(() => {
-    if (
-      !hydrated ||
-      isExportRealm ||
-      boardShareConsumedRef.current ||
-      !isBoardShareHash(window.location.hash)
-    ) {
-      return;
-    }
-
-    boardShareConsumedRef.current = true;
-    const originalUrl = window.location.href;
-    const originalHash = window.location.hash;
-    window.history.replaceState(
-      window.history.state,
-      "",
-      `${window.location.pathname}${window.location.search}`,
-    );
-    let cancelled = false;
-
-    const prepareImport = async () => {
+  const prepareBoardShareImport = useCallback(
+    async ({
+      originalUrl,
+      originalHash,
+      isCancelled,
+    }: {
+      originalUrl: string;
+      originalHash: string;
+      isCancelled?: () => boolean;
+    }) => {
       const parsed = await parseBoardShareUrl(originalUrl);
-      if (cancelled || parsed.status === "not-share") return;
+      if (isCancelled?.()) return;
+
+      if (parsed.status === "not-share") {
+        presentBoardShareDialog({
+          kind: "invalid",
+          unsupportedVersion: false,
+        });
+        return;
+      }
 
       if (parsed.status === "invalid") {
         presentBoardShareDialog({
@@ -1682,9 +1725,35 @@ export default function PickExperienceClient({
           baselinePicks: currentTargetPicks,
         },
       );
-    };
+    },
+    [presentBoardShareDialog],
+  );
 
-    void prepareImport();
+  useEffect(() => {
+    if (
+      !hydrated ||
+      isExportRealm ||
+      boardShareConsumedRef.current ||
+      !isBoardShareHash(window.location.hash)
+    ) {
+      return;
+    }
+
+    boardShareConsumedRef.current = true;
+    const originalUrl = window.location.href;
+    const originalHash = window.location.hash;
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${window.location.pathname}${window.location.search}`,
+    );
+    let cancelled = false;
+
+    void prepareBoardShareImport({
+      originalUrl,
+      originalHash,
+      isCancelled: () => cancelled,
+    });
     return () => {
       cancelled = true;
     };
@@ -1693,7 +1762,7 @@ export default function PickExperienceClient({
     experience.projectId,
     hydrated,
     isExportRealm,
-    presentBoardShareDialog,
+    prepareBoardShareImport,
   ]);
 
   const handleContextChange = (nextContextId: string) => {
@@ -1726,6 +1795,23 @@ export default function PickExperienceClient({
     setDetailSongId(null);
     setPendingReplacementSong(null);
     setShowPickAssistant(true);
+  };
+
+  const handleImportBoardShareLink = () => {
+    if (!hydrated || isExportRealm) return;
+
+    const enteredUrl = window.prompt(t("onboarding.importPrompt"));
+    const originalUrl = enteredUrl?.trim();
+    if (!originalUrl) return;
+
+    let originalHash = "";
+    try {
+      originalHash = new URL(originalUrl).hash;
+    } catch {
+      // The existing share parser will present the localized invalid-link UI.
+    }
+
+    void prepareBoardShareImport({ originalUrl, originalHash });
   };
 
   const handleOpenBoardLibrary = () => {
@@ -2549,6 +2635,7 @@ export default function PickExperienceClient({
       window.alert(t("boardShare.importFailed"));
       return;
     }
+    finishOnboarding();
 
     setActiveSlotId(null);
     setShowModal(false);
@@ -3090,7 +3177,25 @@ export default function PickExperienceClient({
     return { ok: true, name: snapshot.name };
   };
 
-  const selectedPickCount = Object.keys(picks).length;
+  const onboardingVariant = isStandard ? "standard" : "live";
+  const onboardingCopy = {
+    title: t(`onboarding.${onboardingVariant}.title`),
+    description: t(`onboarding.${onboardingVariant}.description`),
+    searchTitle: t("onboarding.searchTitle"),
+    searchDescription: t(`onboarding.${onboardingVariant}.searchDescription`),
+    assistantTitle: t("onboarding.assistantTitle"),
+    assistantDescription: t(
+      `onboarding.${onboardingVariant}.assistantDescription`,
+    ),
+    importTitle: t("onboarding.importTitle"),
+    importDescription: t(`onboarding.${onboardingVariant}.importDescription`),
+    dismiss: t("onboarding.dismiss"),
+  };
+  const showOnboarding =
+    hydrated &&
+    !isExportRealm &&
+    selectedPickCount === 0 &&
+    onboardingVisibility === "visible";
   const canGenerateImage = !generating && selectedPickCount > 0;
   const commandPaletteCommands = useMemo<CommandPaletteCommand[]>(() => {
     const commands: CommandPaletteCommand[] = [
@@ -3406,6 +3511,16 @@ export default function PickExperienceClient({
         ) : null}
 
         <main className="app-content-shell flex flex-1 flex-col px-4 sm:px-6 md:px-8">
+          {showOnboarding ? (
+            <OnboardingEmptyState
+              variant={onboardingVariant}
+              copy={onboardingCopy}
+              onSearch={handleGlobalSearchClick}
+              onOpenAssistant={handleOpenPickAssistant}
+              onImportShareLink={handleImportBoardShareLink}
+              onDismiss={finishOnboarding}
+            />
+          ) : null}
           <PickBoard
             slots={uiSlots}
             picks={picks}

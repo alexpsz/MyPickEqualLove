@@ -23,6 +23,7 @@ export const STORAGE_KEYS = {
   boardLibrary: `${PROJECT_CONFIG.storagePrefix}_board_library_v1`,
   songDiscovery: `${PROJECT_CONFIG.storagePrefix}_song_discovery_v1`,
   songDiscoveryV2: `${PROJECT_CONFIG.storagePrefix}_song_discovery_v2`,
+  onboarding: `${PROJECT_CONFIG.storagePrefix}_onboarding_v1`,
   assistant: `${PROJECT_CONFIG.storagePrefix}_standard_pick_assistant_v2`,
   assistantLegacy: `${PROJECT_CONFIG.storagePrefix}_standard_pick_assistant_v1`,
   installHint: `${PROJECT_CONFIG.storagePrefix}_install_hint_v1`,
