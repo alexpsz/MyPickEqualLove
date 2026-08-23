@@ -181,6 +181,11 @@ import {
   savePickAssistantSnapshotSafely,
 } from "../utils/pickAssistantStorage";
 import {
+  planRandomSample,
+  RANDOM_SAMPLE_MAX_SIZE,
+  RANDOM_SAMPLE_MIN_SIZE,
+} from "../utils/randomSample";
+import {
   createEmptySongDiscoveryState,
   getNewSongIds,
   loadSongDiscoveryState,
@@ -719,6 +724,14 @@ export default function PickExperienceClient({
     () => new Set(assistantEligibleSongs.map((song) => song.id)),
     [assistantEligibleSongs],
   );
+  const assistantRandomSampleSize = Math.min(
+    RANDOM_SAMPLE_MAX_SIZE,
+    Math.max(RANDOM_SAMPLE_MIN_SIZE, slots.length),
+  );
+  const assistantRandomSampleCount = Math.min(
+    assistantRandomSampleSize,
+    assistantEligibleSongs.length,
+  );
   const pickAssistantStorageOptions = useMemo(
     () => ({
       ...PICK_ASSISTANT_CONFIG,
@@ -778,6 +791,8 @@ export default function PickExperienceClient({
   const [assistantNeedsReview, setAssistantNeedsReview] = useState(false);
   const [assistantReviewNotice, setAssistantReviewNotice] = useState(false);
   const [assistantMutationPending, setAssistantMutationPending] =
+    useState(false);
+  const [assistantRandomSampleActive, setAssistantRandomSampleActive] =
     useState(false);
   const [boardLibrary, setBoardLibrary] = useState<BoardLibraryDocument>(() =>
     createEmptyBoardLibrary(),
@@ -1291,6 +1306,7 @@ export default function PickExperienceClient({
     assistantApplyBaselineRef.current = null;
     setAssistantNeedsReview(false);
     setAssistantReviewNotice(false);
+    setAssistantRandomSampleActive(false);
     const result = loadPickAssistantSnapshot(
       localStorage,
       storageKeys.assistant,
@@ -1375,6 +1391,7 @@ export default function PickExperienceClient({
       });
       if (plan.action === "none") return;
 
+      setAssistantRandomSampleActive(false);
       setCurrentPickAssistantSnapshot(
         plan.action === "adopt"
           ? plan.snapshot
@@ -1449,6 +1466,7 @@ export default function PickExperienceClient({
       setShowPickAssistant(false);
       setAssistantNeedsReview(false);
       setAssistantReviewNotice(false);
+      setAssistantRandomSampleActive(false);
       assistantApplyBaselineRef.current = null;
       setDetailSongId(null);
       setDetailLayerActive(false);
@@ -1970,6 +1988,28 @@ export default function PickExperienceClient({
     ],
   );
 
+  const handleCreateRandomSample = useCallback(async () => {
+    if (
+      pickAssistantStorageIssue ||
+      assistantEligibleSongs.length < RANDOM_SAMPLE_MIN_SIZE
+    ) {
+      return;
+    }
+
+    const randomSampleIds = planRandomSample(
+      assistantEligibleSongs,
+      assistantRandomSampleSize,
+      Math.random,
+    ).map((song) => song.id);
+    const saved = await commitPickAssistantUpdate(randomSampleIds, null);
+    if (saved) setAssistantRandomSampleActive(true);
+  }, [
+    assistantEligibleSongs,
+    assistantRandomSampleSize,
+    commitPickAssistantUpdate,
+    pickAssistantStorageIssue,
+  ]);
+
   const handleRemoveCandidate = (songId: string) => {
     void commitPickAssistantUpdate(
       assistantShortlistIds.filter((candidateId) => candidateId !== songId),
@@ -1978,7 +2018,9 @@ export default function PickExperienceClient({
   };
 
   const handleClearPickAssistant = () => {
-    void commitPickAssistantUpdate([], null);
+    void commitPickAssistantUpdate([], null).then((saved) => {
+      if (saved) setAssistantRandomSampleActive(false);
+    });
   };
 
   const handleBrowseAssistantCandidates = () => {
@@ -2008,7 +2050,11 @@ export default function PickExperienceClient({
     ) {
       return;
     }
-    void commitPickAssistantUpdate(currentBoardCandidateIds, null);
+    void commitPickAssistantUpdate(currentBoardCandidateIds, null).then(
+      (saved) => {
+        if (saved) setAssistantRandomSampleActive(false);
+      },
+    );
   };
 
   const handleStartPickAssistant = () => {
@@ -2074,6 +2120,7 @@ export default function PickExperienceClient({
       setCurrentPickAssistantSnapshot(
         createEmptyPickAssistantSnapshot(PICK_ASSISTANT_CONFIG.schemaVersion),
       );
+      setAssistantRandomSampleActive(false);
       setPickAssistantStorageIssue(null);
       setAssistantNeedsReview(false);
       setAssistantReviewNotice(false);
@@ -3720,6 +3767,8 @@ export default function PickExperienceClient({
               currentBoardCandidateCount={currentBoardCandidateIds.length}
               minimumCandidates={PICK_ASSISTANT_CONFIG.minimumCandidates}
               maximumCandidates={assistantEligibleSongIds.size}
+              randomSampleActive={assistantRandomSampleActive}
+              randomSampleCount={assistantRandomSampleCount}
               longSessionCandidates={
                 PICK_ASSISTANT_CONFIG.longSessionCandidates
               }
@@ -3734,6 +3783,9 @@ export default function PickExperienceClient({
               returnFocusKey={DIALOG_RETURN_KEYS.pickAssistant}
               onClose={() => setShowPickAssistant(false)}
               onBrowseCandidates={handleBrowseAssistantCandidates}
+              onCreateRandomSample={() => {
+                void handleCreateRandomSample();
+              }}
               onUseCurrentBoard={handleUseCurrentBoardForAssistant}
               onRemoveCandidate={handleRemoveCandidate}
               onClear={handleClearPickAssistant}

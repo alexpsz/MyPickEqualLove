@@ -93,6 +93,12 @@ const en = {
     "Choose at least {count} songs to compare. This will not place them on your board.",
   "assistant.browseCandidates": "Choose songs to compare",
   "assistant.useCurrentBoard": "Use current board ({count})",
+  "assistant.randomSampleLabel": "Random sample",
+  "assistant.randomSampleHint":
+    "Draw {count} eligible songs at random. Review, add, or remove songs before comparing; your board will not change.",
+  "assistant.randomSampleAction": "Create random sample ({count})",
+  "assistant.randomSampleReady":
+    "{count} songs were drawn. Review, add, or remove them before comparing.",
   "assistant.searchTitle": "Choose songs for Pick Assistant",
   "assistant.searchHint":
     "Tap a song row to add or remove it from Pick Assistant. Your board will not change.",
@@ -611,6 +617,12 @@ const ja: MessageCatalog = {
     "比較する曲を{count}曲以上選んでください。ランキング枠には入りません。",
   "assistant.browseCandidates": "比較する曲を選ぶ",
   "assistant.useCurrentBoard": "現在のランキングを使う（{count}曲）",
+  "assistant.randomSampleLabel": "ランダムサンプル",
+  "assistant.randomSampleHint":
+    "対象曲から{count}曲をランダムに抽出します。比較前に追加・削除でき、ランキングは変わりません。",
+  "assistant.randomSampleAction": "ランダムサンプルを作る（{count}曲）",
+  "assistant.randomSampleReady":
+    "{count}曲を抽出しました。比較前に追加・削除できます。",
   "assistant.searchTitle": "Pick Assistantの曲を選ぶ",
   "assistant.searchHint":
     "曲の行をタップしてPick Assistantに追加・削除します。現在のランキングは変わりません。",
@@ -1125,6 +1137,11 @@ const zhCN: MessageCatalog = {
   "assistant.emptyHint": "请选择至少 {count} 首歌进行比较，不会占用榜单槽位。",
   "assistant.browseCandidates": "选择要比较的歌曲",
   "assistant.useCurrentBoard": "使用当前榜单（{count} 首）",
+  "assistant.randomSampleLabel": "随机样本",
+  "assistant.randomSampleHint":
+    "从当前合法候选中随机抽取 {count} 首。比较前可继续增删，当前榜单不会改变。",
+  "assistant.randomSampleAction": "生成随机样本（{count} 首）",
+  "assistant.randomSampleReady": "已抽取 {count} 首，可在比较前继续增删。",
   "assistant.searchTitle": "选择选曲助手歌曲",
   "assistant.searchHint":
     "点击整条歌曲即可加入或移出选曲助手，当前榜单不会改变。",
@@ -1608,6 +1625,12 @@ const ko: MessageCatalog = {
     "비교할 곡을 {count}곡 이상 선택하세요. 보드 슬롯에는 들어가지 않습니다.",
   "assistant.browseCandidates": "비교할 곡 선택",
   "assistant.useCurrentBoard": "현재 보드 사용 ({count}곡)",
+  "assistant.randomSampleLabel": "무작위 샘플",
+  "assistant.randomSampleHint":
+    "현재 선택 가능한 곡에서 {count}곡을 무작위로 뽑습니다. 비교 전에 추가하거나 제거할 수 있으며 현재 보드는 바뀌지 않습니다.",
+  "assistant.randomSampleAction": "무작위 샘플 만들기 ({count}곡)",
+  "assistant.randomSampleReady":
+    "{count}곡을 뽑았습니다. 비교 전에 추가하거나 제거할 수 있습니다.",
   "assistant.searchTitle": "선곡 도우미 곡 선택",
   "assistant.searchHint":
     "곡 행을 탭하여 선곡 도우미에 추가하거나 제거하세요. 현재 보드는 변경되지 않습니다.",

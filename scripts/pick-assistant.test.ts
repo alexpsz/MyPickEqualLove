@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import test from "node:test";
 import { getExperienceStorageKeys } from "../src/config/project";
 import { getExperienceContexts } from "../src/data/pickExperiences";
+import { messages } from "../src/i18n/messages";
 import type { PickExperience } from "../src/schema/pick-experience";
 import {
   createPickAssistantSession,
@@ -36,6 +37,11 @@ import {
   getAssistantEligibleSongIds,
   getAssistantTargetCount,
 } from "../src/utils/experienceEligibility";
+import {
+  planRandomSample,
+  RANDOM_SAMPLE_MAX_SIZE,
+  RANDOM_SAMPLE_MIN_SIZE,
+} from "../src/utils/randomSample";
 
 const validSongIds = new Set(
   Array.from({ length: 30 }, (_, index) => `song-${index + 1}`),
@@ -48,6 +54,66 @@ const parseOptions = {
   now: 10_000,
   validSongIds,
 };
+
+function candidateSongs(count: number) {
+  return Array.from({ length: count }, (_, index) => ({
+    id: `song-${index + 1}`,
+  }));
+}
+
+test("random samples are deterministic with an injected RNG and do not mutate candidates", () => {
+  const songs = candidateSongs(4);
+  const originalIds = songs.map((song) => song.id);
+  const randomValues = [0.5, 0, 0.999];
+  let randomIndex = 0;
+
+  const sample = planRandomSample(songs, 3, () => randomValues[randomIndex++]);
+
+  assert.deepEqual(
+    sample.map((song) => song.id),
+    ["song-3", "song-2", "song-4"],
+  );
+  assert.deepEqual(
+    songs.map((song) => song.id),
+    originalIds,
+  );
+  assert.equal(randomIndex, 3);
+});
+
+test("random sample size is bounded from 3 through 24", () => {
+  const songs = candidateSongs(30);
+  assert.equal(
+    planRandomSample(songs, RANDOM_SAMPLE_MIN_SIZE, () => 0).length,
+    3,
+  );
+  assert.equal(
+    planRandomSample(songs, RANDOM_SAMPLE_MAX_SIZE, () => 0).length,
+    24,
+  );
+
+  for (const size of [2, 25, 3.5, Number.NaN]) {
+    assert.throws(() => planRandomSample(songs, size, () => 0), RangeError);
+  }
+});
+
+test("random samples deduplicate candidates and return all when the pool is smaller", () => {
+  const songs = [
+    { id: "song-1", marker: "first" },
+    { id: "song-2", marker: "second" },
+    { id: "song-1", marker: "duplicate" },
+    { id: "song-3", marker: "third" },
+    { id: "song-4", marker: "fourth" },
+    { id: "song-2", marker: "duplicate" },
+  ];
+
+  const sample = planRandomSample(songs, 24, () => 0);
+  assert.deepEqual(
+    sample.map((song) => song.id),
+    ["song-1", "song-2", "song-3", "song-4"],
+  );
+  assert.equal(new Set(sample.map((song) => song.id)).size, sample.length);
+  assert.equal(sample[0]?.marker, "first");
+});
 
 function finishTournament(
   candidateIds: string[],
@@ -921,6 +987,35 @@ test("context-bound Assistant eligibility fails closed for empty or unknown cont
   }
 });
 
+test("Live random samples stay inside the current context eligibility", () => {
+  const catalogSongIds = loadProjectSongIds("equal-love");
+  const kokuritsu = loadProjectExperiences("equal-love").find(
+    (experience) => experience.id === "kokuritsu_2026",
+  );
+  assert.ok(kokuritsu);
+
+  for (const contextId of ["day1", "day2", "both"] as const) {
+    const eligibleIds = getAssistantEligibleSongIds({
+      experience: kokuritsu,
+      catalogSongIds,
+      contextId,
+    });
+    const eligibleIdSet = new Set(eligibleIds);
+    const sample = planRandomSample(
+      eligibleIds.map((id) => ({ id })),
+      6,
+      () => 0.5,
+    );
+
+    assert.equal(sample.length, 6);
+    assert.equal(new Set(sample.map((song) => song.id)).size, sample.length);
+    assert.ok(
+      sample.every((song) => eligibleIdSet.has(song.id)),
+      `${contextId} random sample escaped its eligible set`,
+    );
+  }
+});
+
 test("Assistant Search and the visible available count share one derived collection", () => {
   const source = readFileSync(
     resolve(process.cwd(), "src/components/PickExperienceClient.tsx"),
@@ -947,6 +1042,62 @@ test("Assistant Search and the visible available count share one derived collect
   assert.match(
     searchSource,
     /shouldShowGraduatedMemberFeaturesByDefault\(selectionMode\)/,
+  );
+});
+
+test("random sample wiring only commits the current Assistant shortlist", () => {
+  const source = readFileSync(
+    resolve(process.cwd(), "src/components/PickExperienceClient.tsx"),
+    "utf8",
+  );
+  const handlerStart = source.indexOf("const handleCreateRandomSample");
+  const handlerEnd = source.indexOf(
+    "\n  const handleRemoveCandidate",
+    handlerStart,
+  );
+  assert.ok(handlerStart >= 0 && handlerEnd > handlerStart);
+  const handler = source.slice(handlerStart, handlerEnd);
+
+  assert.match(
+    handler,
+    /planRandomSample\(\s*assistantEligibleSongs,\s*assistantRandomSampleSize,\s*Math\.random,/,
+  );
+  assert.match(handler, /commitPickAssistantUpdate\(randomSampleIds, null\)/);
+  assert.doesNotMatch(
+    handler,
+    /commitUserMutation|commitBoardTransaction|setStoredPicks|nextPicks/,
+    "creating a random sample must never write the board directly",
+  );
+  assert.match(source, /randomSampleCount=\{assistantRandomSampleCount\}/);
+});
+
+test("random sample UI stays explicit in all four locales", () => {
+  assert.deepEqual(
+    {
+      en: messages.en["assistant.randomSampleLabel"],
+      ja: messages.ja["assistant.randomSampleLabel"],
+      "zh-CN": messages["zh-CN"]["assistant.randomSampleLabel"],
+      ko: messages.ko["assistant.randomSampleLabel"],
+    },
+    {
+      en: "Random sample",
+      ja: "ランダムサンプル",
+      "zh-CN": "随机样本",
+      ko: "무작위 샘플",
+    },
+  );
+
+  const modalSource = readFileSync(
+    resolve(process.cwd(), "src/components/PickAssistantModal.tsx"),
+    "utf8",
+  );
+  assert.ok(
+    modalSource.match(/assistant\.randomSampleLabel/g)?.length === 2,
+    "the random entry and its resulting shortlist must both carry the label",
+  );
+  assert.match(
+    modalSource,
+    /const canCreateRandomSample = randomSampleCount >= minimumCandidates/,
   );
 });
 

@@ -32,6 +32,8 @@ interface PickAssistantModalProps {
   currentBoardCandidateCount: number;
   minimumCandidates: number;
   maximumCandidates: number;
+  randomSampleActive: boolean;
+  randomSampleCount: number;
   longSessionCandidates: number;
   shortlistMaximumComparisons: number;
   storageIssue: PickAssistantStorageIssue | null;
@@ -41,6 +43,7 @@ interface PickAssistantModalProps {
   returnFocusKey: string;
   onClose: () => void;
   onBrowseCandidates: () => void;
+  onCreateRandomSample: () => void;
   onUseCurrentBoard: () => void;
   onRemoveCandidate: (songId: string) => void;
   onClear: () => void;
@@ -62,6 +65,8 @@ export default function PickAssistantModal({
   currentBoardCandidateCount,
   minimumCandidates,
   maximumCandidates,
+  randomSampleActive,
+  randomSampleCount,
   longSessionCandidates,
   shortlistMaximumComparisons,
   storageIssue,
@@ -71,6 +76,7 @@ export default function PickAssistantModal({
   returnFocusKey,
   onClose,
   onBrowseCandidates,
+  onCreateRandomSample,
   onUseCurrentBoard,
   onRemoveCandidate,
   onClear,
@@ -249,11 +255,14 @@ export default function PickAssistantModal({
               shortlist={shortlist}
               minimumCandidates={minimumCandidates}
               maximumCandidates={maximumCandidates}
+              randomSampleActive={randomSampleActive}
+              randomSampleCount={randomSampleCount}
               longSessionCandidates={longSessionCandidates}
               shortlistMaximumComparisons={shortlistMaximumComparisons}
               currentBoardCandidateCount={currentBoardCandidateCount}
               browseCandidatesRef={browseCandidatesRef}
               onBrowseCandidates={onBrowseCandidates}
+              onCreateRandomSample={onCreateRandomSample}
               onUseCurrentBoard={onUseCurrentBoard}
               onRemoveCandidate={onRemoveCandidate}
               onClear={handleClear}
@@ -271,11 +280,14 @@ function ShortlistView({
   shortlist,
   minimumCandidates,
   maximumCandidates,
+  randomSampleActive,
+  randomSampleCount,
   longSessionCandidates,
   shortlistMaximumComparisons,
   currentBoardCandidateCount,
   browseCandidatesRef,
   onBrowseCandidates,
+  onCreateRandomSample,
   onUseCurrentBoard,
   onRemoveCandidate,
   onClear,
@@ -285,11 +297,14 @@ function ShortlistView({
   shortlist: Song[];
   minimumCandidates: number;
   maximumCandidates: number;
+  randomSampleActive: boolean;
+  randomSampleCount: number;
   longSessionCandidates: number;
   shortlistMaximumComparisons: number;
   currentBoardCandidateCount: number;
   browseCandidatesRef: React.RefObject<HTMLButtonElement | null>;
   onBrowseCandidates: () => void;
+  onCreateRandomSample: () => void;
   onUseCurrentBoard: () => void;
   onRemoveCandidate: (songId: string) => void;
   onClear: () => void;
@@ -300,47 +315,83 @@ function ShortlistView({
   const canImportCurrentBoard =
     currentBoardCandidateCount >= minimumCandidates &&
     currentBoardCandidateCount <= maximumCandidates;
+  const canCreateRandomSample = randomSampleCount >= minimumCandidates;
   if (shortlist.length === 0) {
     return (
-      <div className="rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--paper)] px-6 py-14 text-center">
-        <h3 className="text-lg font-semibold text-[var(--foreground)]">
-          {t("assistant.emptyTitle")}
-        </h3>
-        <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-[var(--muted)]">
-          {t("assistant.emptyHint", { count: minimumCandidates })}
-        </p>
-        <div
-          className={`mx-auto mt-6 grid max-w-sm gap-2 ${canImportCurrentBoard ? "sm:grid-cols-2" : ""}`}
-        >
-          <button
-            ref={browseCandidatesRef}
-            type="button"
-            onClick={onBrowseCandidates}
-            disabled={mutationsBlocked}
-            className="official-button official-button-primary w-full"
+      <div className="grid gap-4">
+        <div className="rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--paper)] px-6 py-14 text-center">
+          <h3 className="text-lg font-semibold text-[var(--foreground)]">
+            {t("assistant.emptyTitle")}
+          </h3>
+          <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-[var(--muted)]">
+            {t("assistant.emptyHint", { count: minimumCandidates })}
+          </p>
+          <div
+            className={`mx-auto mt-6 grid max-w-sm gap-2 ${canImportCurrentBoard ? "sm:grid-cols-2" : ""}`}
           >
-            <AppIcon name="search" size={16} />
-            {t("assistant.browseCandidates")}
-          </button>
-          {canImportCurrentBoard ? (
+            <button
+              ref={browseCandidatesRef}
+              type="button"
+              onClick={onBrowseCandidates}
+              disabled={mutationsBlocked}
+              className="official-button official-button-primary w-full"
+            >
+              <AppIcon name="search" size={16} />
+              {t("assistant.browseCandidates")}
+            </button>
+            {canImportCurrentBoard ? (
+              <button
+                type="button"
+                onClick={onUseCurrentBoard}
+                disabled={mutationsBlocked}
+                className="official-button w-full"
+              >
+                {t("assistant.useCurrentBoard", {
+                  count: currentBoardCandidateCount,
+                })}
+              </button>
+            ) : null}
+          </div>
+        </div>
+
+        {canCreateRandomSample ? (
+          <div className="rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--project-primary-wash)] px-5 py-4">
+            <p className="text-xs font-semibold tracking-[0.08em] text-[var(--project-primary)] uppercase">
+              {t("assistant.randomSampleLabel")}
+            </p>
+            <p className="mt-1 text-sm leading-relaxed text-[var(--muted)]">
+              {t("assistant.randomSampleHint", { count: randomSampleCount })}
+            </p>
             <button
               type="button"
-              onClick={onUseCurrentBoard}
+              onClick={onCreateRandomSample}
               disabled={mutationsBlocked}
-              className="official-button w-full"
+              className="official-button mt-3 w-full sm:w-auto"
             >
-              {t("assistant.useCurrentBoard", {
-                count: currentBoardCandidateCount,
+              <AppIcon name="sparkles" size={16} />
+              {t("assistant.randomSampleAction", {
+                count: randomSampleCount,
               })}
             </button>
-          ) : null}
-        </div>
+          </div>
+        ) : null}
       </div>
     );
   }
 
   return (
     <div className="grid gap-4">
+      {randomSampleActive ? (
+        <p
+          role="status"
+          className="rounded-[var(--radius-sm)] border border-[var(--line)] bg-[var(--project-primary-wash)] px-3 py-2 text-sm leading-relaxed text-[var(--foreground)]"
+        >
+          <span className="font-semibold">
+            {t("assistant.randomSampleLabel")}
+          </span>{" "}
+          {t("assistant.randomSampleReady", { count: shortlist.length })}
+        </p>
+      ) : null}
       <div className="flex items-center justify-between gap-3">
         <h3 className="text-sm font-semibold text-[var(--foreground)]">
           {t("assistant.shortlistTitle")}
