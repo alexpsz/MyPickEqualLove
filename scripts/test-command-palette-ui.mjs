@@ -92,6 +92,15 @@ assert.doesNotMatch(controlsSource, /data-command-palette-entry="mobile"/);
 assert.match(controlsSource, /data-command-palette-entry="desktop"/);
 assert.match(mobileAssistantAction, /t\("controls\.pickAssistant"\)/);
 assert.doesNotMatch(mobileAssistantAction, /pickAssistantShort|truncate/);
+for (const retiredMobileCopyKey of [
+  "commands.entryShort",
+  "controls.pickAssistantShort",
+]) {
+  assert.doesNotMatch(
+    messagesSource,
+    new RegExp(`"${retiredMobileCopyKey.replace(".", "\\.")}":`),
+  );
+}
 assert.match(paletteSource, /role="dialog"/);
 assert.match(paletteSource, /aria-modal="true"/);
 assert.match(paletteSource, /useDialogA11y\(/);

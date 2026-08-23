@@ -175,6 +175,12 @@ test("all four catalogs expose an isomorphic onboarding copy surface", () => {
       assert.equal(typeof catalog[key], "string");
       assert.notEqual(catalog[key].trim(), "");
     }
+    for (const retiredMobileCopyKey of [
+      "commands.entryShort",
+      "controls.pickAssistantShort",
+    ]) {
+      assert.equal(retiredMobileCopyKey in catalog, false);
+    }
   }
 });
 
