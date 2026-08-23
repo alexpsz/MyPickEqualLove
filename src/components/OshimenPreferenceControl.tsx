@@ -1,8 +1,8 @@
 "use client";
 
-import { useId } from "react";
 import { useLocale } from "../i18n/LocaleProvider";
 import type { Member } from "../schema/music";
+import AnchoredOptionMenu, { type AnchoredOption } from "./AnchoredOptionMenu";
 
 interface OshimenPreferenceControlProps {
   members: readonly Member[];
@@ -20,10 +20,17 @@ export default function OshimenPreferenceControl({
   onChange,
 }: OshimenPreferenceControlProps) {
   const { t } = useLocale();
-  const selectId = useId();
   const sortedMembers = members
     .slice()
     .sort((left, right) => left.sortOrder - right.sortOrder);
+  const options: readonly AnchoredOption<string>[] = [
+    { value: "", label: t("oshimen.none") },
+    ...sortedMembers.map((member) => ({
+      value: member.id,
+      label: member.name.ja,
+      lang: "ja",
+    })),
+  ];
 
   return (
     <div
@@ -31,25 +38,16 @@ export default function OshimenPreferenceControl({
       className="grid gap-2 rounded-[var(--radius-sm)] border border-[var(--line)] bg-[var(--background)] p-3"
     >
       <div className="flex flex-wrap items-end gap-2">
-        <label htmlFor={selectId} className="grid min-w-0 flex-1 gap-1.5">
-          <span className="text-[11px] font-semibold tracking-[0.08em] text-[var(--muted)] uppercase">
-            {t("oshimen.label")}
-          </span>
-          <select
-            id={selectId}
+        <div className="min-w-0 flex-1 basis-56">
+          <AnchoredOptionMenu
+            label={t("oshimen.label")}
             value={memberId ?? ""}
+            options={options}
             disabled={disabled}
-            onChange={(event) => onChange(event.target.value || null)}
-            className="min-h-11 w-full rounded-[var(--radius-sm)] border border-[var(--line)] bg-[var(--surface)] px-3 text-sm font-semibold text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <option value="">{t("oshimen.none")}</option>
-            {sortedMembers.map((member) => (
-              <option key={member.id} value={member.id} lang="ja">
-                {member.name.ja}
-              </option>
-            ))}
-          </select>
-        </label>
+            fullWidth
+            onValueChange={(nextMemberId) => onChange(nextMemberId || null)}
+          />
+        </div>
 
         {memberId ? (
           <button

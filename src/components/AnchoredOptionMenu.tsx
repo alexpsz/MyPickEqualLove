@@ -16,6 +16,7 @@ import MotionPresence from "./MotionPresence";
 export interface AnchoredOption<T extends string> {
   value: T;
   label: string;
+  lang?: string;
 }
 
 interface AnchoredOptionMenuProps<T extends string> {
@@ -25,6 +26,7 @@ interface AnchoredOptionMenuProps<T extends string> {
   options: readonly AnchoredOption<T>[];
   disabled: boolean;
   compact?: boolean;
+  fullWidth?: boolean;
 }
 
 export default function AnchoredOptionMenu<T extends string>({
@@ -34,6 +36,7 @@ export default function AnchoredOptionMenu<T extends string>({
   options,
   disabled,
   compact = false,
+  fullWidth = false,
 }: AnchoredOptionMenuProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
   const menuId = useId();
@@ -49,6 +52,12 @@ export default function AnchoredOptionMenu<T extends string>({
     options.findIndex((option) => option.value === value),
   );
   const selectedOption = options[selectedIndex];
+
+  const focusOption = useCallback((index: number) => {
+    const option = optionRefs.current[index];
+    option?.focus({ preventScroll: true });
+    option?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, []);
 
   const closeMenu = useCallback((restoreFocus = false) => {
     setIsOpen(false);
@@ -71,7 +80,7 @@ export default function AnchoredOptionMenu<T extends string>({
 
     const focusTimer = window.setTimeout(() => {
       if (focusOptionOnOpenRef.current) {
-        optionRefs.current[openFocusIndexRef.current]?.focus();
+        focusOption(openFocusIndexRef.current);
       }
     }, 0);
 
@@ -96,15 +105,11 @@ export default function AnchoredOptionMenu<T extends string>({
       document.removeEventListener("pointerdown", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [closeMenu, isOpen]);
+  }, [closeMenu, focusOption, isOpen]);
 
   useEffect(() => {
     if (disabled) setIsOpen(false);
   }, [disabled]);
-
-  const focusOption = (index: number) => {
-    optionRefs.current[index]?.focus({ preventScroll: true });
-  };
 
   const handleTriggerKeyDown = (
     event: ReactKeyboardEvent<HTMLButtonElement>,
@@ -165,7 +170,7 @@ export default function AnchoredOptionMenu<T extends string>({
     <div
       ref={rootRef}
       className={`relative grid min-w-0 gap-1 ${
-        compact ? "w-36" : "w-full sm:w-[190px]"
+        compact ? "w-36" : fullWidth ? "w-full" : "w-full sm:w-[190px]"
       }`}
       onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
@@ -199,7 +204,11 @@ export default function AnchoredOptionMenu<T extends string>({
           isOpen ? "bg-[var(--project-primary-wash)]" : ""
         }`}
       >
-        <span id={valueId} className="min-w-0 flex-1 truncate">
+        <span
+          id={valueId}
+          lang={selectedOption?.lang}
+          className="min-w-0 flex-1 truncate"
+        >
           {selectedOption?.label}
         </span>
         <AppIcon
@@ -221,7 +230,7 @@ export default function AnchoredOptionMenu<T extends string>({
             aria-hidden={presenceState === "exiting"}
             inert={presenceState === "exiting"}
             onKeyDown={handleMenuKeyDown}
-            className={`apple-material absolute left-0 top-[calc(100%+6px)] z-50 w-full max-w-[calc(100vw-2rem)] origin-top-left rounded-[14px] border-[var(--line)] bg-[var(--menu-surface)] p-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.14),0_2px_8px_rgba(0,0,0,0.06)] outline-none ${
+            className={`apple-material absolute left-0 top-[calc(100%+6px)] z-50 max-h-[min(22rem,calc(100dvh-2rem))] w-full max-w-[calc(100vw-2rem)] origin-top-left overflow-y-auto overscroll-contain rounded-[14px] border-[var(--line)] bg-[var(--menu-surface)] p-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.14),0_2px_8px_rgba(0,0,0,0.06)] outline-none ${
               compact ? "min-w-36" : "min-w-[190px]"
             }`}
             initial={{ opacity: 0, scale: 0.985, y: -4 }}
@@ -249,7 +258,10 @@ export default function AnchoredOptionMenu<T extends string>({
                       : "text-[var(--foreground)] hover:bg-[var(--background)] focus-visible:bg-[var(--background)]"
                   }`}
                 >
-                  <span className="min-w-0 flex-1 truncate text-[14px] font-medium tracking-[-0.01em]">
+                  <span
+                    lang={option.lang}
+                    className="min-w-0 flex-1 truncate text-[14px] font-medium tracking-[-0.01em]"
+                  >
                     {option.label}
                   </span>
                   <span className="flex h-5 w-5 shrink-0 items-center justify-center">

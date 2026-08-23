@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import test from "node:test";
 
 import { resolveExportComposition } from "../../src/config/exportPresets";
@@ -399,4 +401,63 @@ test("oshimen copy makes only the explicit solo claim", () => {
     assert.doesNotMatch(copy, forbiddenClaim);
     assert.match(catalog["oshimen.soloCount"], /\{count\}/);
   }
+});
+
+test("oshimen control uses the anchored menu without changing its nullable preference contract", () => {
+  const controlSource = readFileSync(
+    resolve(process.cwd(), "src/components/OshimenPreferenceControl.tsx"),
+    "utf8",
+  );
+
+  assert.match(controlSource, /import AnchoredOptionMenu/);
+  assert.doesNotMatch(controlSource, /<select\b|<option\b/);
+  assert.match(
+    controlSource,
+    /\.sort\(\(left, right\) => left\.sortOrder - right\.sortOrder\)/,
+  );
+  assert.match(controlSource, /\{ value: "", label: t\("oshimen\.none"\) \}/);
+  assert.match(controlSource, /lang: "ja"/);
+  assert.match(controlSource, /value=\{memberId \?\? ""\}/);
+  assert.match(
+    controlSource,
+    /onValueChange=\{\(nextMemberId\) => onChange\(nextMemberId \|\| null\)\}/,
+  );
+  assert.match(controlSource, /onClick=\{\(\) => onChange\(null\)\}/);
+  assert.match(controlSource, /data-oshimen-solo-count=\{soloSongCount\}/);
+});
+
+test("anchored oshimen menu keeps bounded scrolling, touch targets, and keyboard focus behavior", () => {
+  const menuSource = readFileSync(
+    resolve(process.cwd(), "src/components/AnchoredOptionMenu.tsx"),
+    "utf8",
+  );
+
+  assert.match(menuSource, /role="menu"/);
+  assert.match(menuSource, /role="menuitemradio"/);
+  assert.match(menuSource, /aria-checked=\{selected\}/);
+  assert.match(menuSource, /max-h-\[min\(22rem,calc\(100dvh-2rem\)\)\]/);
+  assert.match(menuSource, /overflow-y-auto/);
+  assert.match(menuSource, /overscroll-contain/);
+  assert.match(
+    menuSource,
+    /scrollIntoView\(\{ block: "nearest", inline: "nearest" \}\)/,
+  );
+  assert.ok((menuSource.match(/min-h-11/g)?.length ?? 0) >= 2);
+  assert.match(menuSource, /lang=\{selectedOption\?\.lang\}/);
+  assert.match(menuSource, /lang=\{option\.lang\}/);
+
+  for (const key of ["ArrowDown", "ArrowUp", "Home", "End", "Escape", "Tab"]) {
+    assert.match(
+      menuSource,
+      new RegExp(`event\\.key (?:===|!==) "${key}"`),
+      key,
+    );
+  }
+
+  assert.match(menuSource, /document\.addEventListener\("pointerdown"/);
+  assert.match(menuSource, /closeMenu\(true\)/);
+  assert.match(
+    menuSource,
+    /triggerRef\.current\?\.focus\(\{ preventScroll: true \}\)/,
+  );
 });
