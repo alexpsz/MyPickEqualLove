@@ -1,0 +1,1521 @@
+{
+  "schemaVersion": 1,
+  "projectId": "not-equal-me",
+  "storefront": "JP",
+  "artistId": 1477023494,
+  "snapshotRunId": "itunes-jp-2026-08-24",
+  "coverageNote": "The frozen artist lookup produced 59/62 exact-title matches, equal to the historical 59/62 observation. Human review added the shared トリプルデート candidate, so matchedSongCount is 60; Apple catalog coverage is informational and not an acceptance constant.",
+  "catalogSongCount": 62,
+  "matchedSongCount": 60,
+  "approvedSongCount": 60,
+  "needsReviewCount": 2,
+  "candidateCountDistribution": {
+    "0": 2,
+    "1": 45,
+    "2": 13,
+    "3": 2
+  },
+  "unmatchedSongIds": [
+    "tsugini-ae-ta-toki-naniwo-hanaso-ukana",
+    "kun-hamou-ichido-tane-ninaru"
+  ],
+  "songs": [
+    {
+      "songId": "tsugini-ae-ta-toki-naniwo-hanaso-ukana",
+      "title": "次に会えた時 何を話そうかな",
+      "normalizedTitle": "次に会えた時何を話そうかな",
+      "candidateCount": 0,
+      "candidates": [],
+      "rankedTrackIds": [],
+      "suggestedTrackId": null,
+      "selectedTrackId": null,
+      "needsReview": true,
+      "reviewNote": "Human-reviewed: no studio-title candidate exists in the frozen artist catalogs; only differently titled live recordings were found, so preview publication remains blocked."
+    },
+    {
+      "songId": "kun-no-oto-dattanda",
+      "title": "君の音だったんだ",
+      "normalizedTitle": "君の音だったんだ",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 1838637528,
+          "trackName": "「君の音だったんだ」",
+          "collectionId": 1838637526,
+          "collectionName": "超特急 ≠ME行き Special Edition",
+          "releaseDate": "2019-10-30T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/24/6f/b8/246fb892-f651-6cf6-b175-f55169347425/mzaf_7201692218405236746.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E5%90%9B%E3%81%AE%E9%9F%B3%E3%81%A0%E3%81%A3%E3%81%9F%E3%82%93%E3%81%A0/1838637526?i=1838637528&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1838637528],
+      "suggestedTrackId": 1838637528,
+      "selectedTrackId": 1838637528,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "kun-to-boku-no-uta",
+      "title": "君と僕の歌",
+      "normalizedTitle": "君と僕の歌",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 1838637529,
+          "trackName": "「君と僕の歌」",
+          "collectionId": 1838637526,
+          "collectionName": "超特急 ≠ME行き Special Edition",
+          "releaseDate": "2021-04-07T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/82/6f/7a/826f7a05-29e2-d0e0-b4d2-c5b0fb0cd220/mzaf_5572947919878497127.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E5%90%9B%E3%81%A8%E5%83%95%E3%81%AE%E6%AD%8C/1838637526?i=1838637529&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1838637529],
+      "suggestedTrackId": 1838637529,
+      "selectedTrackId": 1838637529,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "kurukuru-kaki-koori",
+      "title": "クルクルかき氷",
+      "normalizedTitle": "クルクルかき氷",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 1838637530,
+          "trackName": "クルクルかき氷",
+          "collectionId": 1838637526,
+          "collectionName": "超特急 ≠ME行き Special Edition",
+          "releaseDate": "2021-04-07T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/53/56/7f/53567f6a-8467-03fa-1b48-f58be9a6cade/mzaf_2749289810572977794.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E3%82%AF%E3%83%AB%E3%82%AF%E3%83%AB%E3%81%8B%E3%81%8D%E6%B0%B7/1838637526?i=1838637530&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1838637530],
+      "suggestedTrackId": 1838637530,
+      "selectedTrackId": 1838637530,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "kuuhaku-no-hana",
+      "title": "空白の花",
+      "normalizedTitle": "空白の花",
+      "candidateCount": 2,
+      "candidates": [
+        {
+          "trackId": 1537916676,
+          "trackName": "空白の花",
+          "collectionId": 1537916615,
+          "collectionName": "空白の花 - Single",
+          "releaseDate": "2020-07-08T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/91/d3/4a/91d34ab2-1f3e-b71f-1f3c-34d7fae9690d/mzaf_7271411701255625014.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E7%A9%BA%E7%99%BD%E3%81%AE%E8%8A%B1/1537916615?i=1537916676&uo=4"
+        },
+        {
+          "trackId": 1838637531,
+          "trackName": "空白の花",
+          "collectionId": 1838637526,
+          "collectionName": "超特急 ≠ME行き Special Edition",
+          "releaseDate": "2021-04-07T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/2b/9d/9e/2b9d9e99-6742-728f-9c97-e8c93165cedd/mzaf_17973531956389015995.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E7%A9%BA%E7%99%BD%E3%81%AE%E8%8A%B1/1838637526?i=1838637531&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1537916676, 1838637531],
+      "suggestedTrackId": 1537916676,
+      "selectedTrackId": 1537916676,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed all 2 exact-title candidates; track 1537916676 best matches the local release context."
+    },
+    {
+      "songId": "p-i-c",
+      "title": "P.I.C.",
+      "normalizedTitle": "pic",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 1838637532,
+          "trackName": "P.I.C.",
+          "collectionId": 1838637526,
+          "collectionName": "超特急 ≠ME行き Special Edition",
+          "releaseDate": "2020-11-25T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/3c/93/3f/3c933f1f-56ab-4e58-13fa-62c5fa8ff357/mzaf_8943361024955936695.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/p-i-c/1838637526?i=1838637532&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1838637532],
+      "suggestedTrackId": 1838637532,
+      "selectedTrackId": 1838637532,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "teyuuka-mirutentte-nani",
+      "title": "てゆーか、みるてんって何?",
+      "normalizedTitle": "てゆーかみるてんって何",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 1838637535,
+          "trackName": "てゆーか、みるてんって何?",
+          "collectionId": 1838637526,
+          "collectionName": "超特急 ≠ME行き Special Edition",
+          "releaseDate": "2021-04-07T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/45/fe/6c/45fe6c1a-4e5b-504a-f6d9-48d01da83963/mzaf_13328416588076502924.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E3%81%A6%E3%82%86%E3%83%BC%E3%81%8B-%E3%81%BF%E3%82%8B%E3%81%A6%E3%82%93%E3%81%A3%E3%81%A6%E4%BD%95/1838637526?i=1838637535&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1838637535],
+      "suggestedTrackId": 1838637535,
+      "selectedTrackId": 1838637535,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "poniiteeru-kyurun",
+      "title": "ポニーテール キュルン",
+      "normalizedTitle": "ポニーテールキュルン",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 1838637534,
+          "trackName": "ポニーテール キュルン",
+          "collectionId": 1838637526,
+          "collectionName": "超特急 ≠ME行き Special Edition",
+          "releaseDate": "2021-04-07T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/83/11/44/83114492-190f-efe9-27da-450248561b04/mzaf_4300486876024556499.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E3%83%9D%E3%83%8B%E3%83%BC%E3%83%86%E3%83%BC%E3%83%AB-%E3%82%AD%E3%83%A5%E3%83%AB%E3%83%B3/1838637526?i=1838637534&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1838637534],
+      "suggestedTrackId": 1838637534,
+      "selectedTrackId": 1838637534,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "jibun-sanka",
+      "title": "自分賛歌",
+      "normalizedTitle": "自分賛歌",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 1838637533,
+          "trackName": "自分賛歌",
+          "collectionId": 1838637526,
+          "collectionName": "超特急 ≠ME行き Special Edition",
+          "releaseDate": "2021-04-07T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/db/08/5e/db085e36-8dea-3e1e-7526-441562c112b3/mzaf_9250465590799394721.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E8%87%AA%E5%88%86%E8%B3%9B%E6%AD%8C/1838637526?i=1838637533&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1838637533],
+      "suggestedTrackId": 1838637533,
+      "selectedTrackId": 1838637533,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "himitsu-inshidento",
+      "title": "秘密インシデント",
+      "normalizedTitle": "秘密インシデント",
+      "candidateCount": 2,
+      "candidates": [
+        {
+          "trackId": 1734604508,
+          "trackName": "秘密インシデント",
+          "collectionId": 1734604506,
+          "collectionName": "Springtime In You",
+          "releaseDate": "2021-04-07T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview112/v4/e0/ac/19/e0ac19d9-4539-7cdd-6523-ca337019938d/mzaf_12706663229700287448.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E7%A7%98%E5%AF%86%E3%82%A4%E3%83%B3%E3%82%B7%E3%83%87%E3%83%B3%E3%83%88/1734604506?i=1734604508&uo=4"
+        },
+        {
+          "trackId": 1838637536,
+          "trackName": "秘密インシデント",
+          "collectionId": 1838637526,
+          "collectionName": "超特急 ≠ME行き Special Edition",
+          "releaseDate": "2021-04-07T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/f6/d0/56/f6d056e9-f55b-31c3-d873-8c3f1460a690/mzaf_16854589835391989170.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E7%A7%98%E5%AF%86%E3%82%A4%E3%83%B3%E3%82%B7%E3%83%87%E3%83%B3%E3%83%88/1838637526?i=1838637536&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1734604508, 1838637536],
+      "suggestedTrackId": 1734604508,
+      "selectedTrackId": 1838637536,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed all 2 exact-title candidates; track 1838637536 best matches the local release context."
+    },
+    {
+      "songId": "not-equal-me",
+      "title": "≠ME",
+      "normalizedTitle": "me",
+      "candidateCount": 2,
+      "candidates": [
+        {
+          "trackId": 1537909065,
+          "trackName": "≠ME",
+          "collectionId": 1537909064,
+          "collectionName": "≠ME - Single",
+          "releaseDate": "2019-08-04T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/ec/58/c8/ec58c841-0f66-853b-156e-fdd753eacb9a/mzaf_15795596593270456163.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/me/1537909064?i=1537909065&uo=4"
+        },
+        {
+          "trackId": 1838637538,
+          "trackName": "≠ME",
+          "collectionId": 1838637526,
+          "collectionName": "超特急 ≠ME行き Special Edition",
+          "releaseDate": "2019-08-04T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/17/3f/68/173f6817-dbe6-cb35-e1e9-91a6f87e3a0b/mzaf_18413135495214392673.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/me/1838637526?i=1838637538&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1537909065, 1838637538],
+      "suggestedTrackId": 1537909065,
+      "selectedTrackId": 1537909065,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed all 2 exact-title candidates; track 1537909065 best matches the local release context."
+    },
+    {
+      "songId": "kun-hakono-natsu-koi-wosuru",
+      "title": "君はこの夏、恋をする",
+      "normalizedTitle": "君はこの夏恋をする",
+      "candidateCount": 2,
+      "candidates": [
+        {
+          "trackId": 1575504874,
+          "trackName": "君はこの夏、恋をする",
+          "collectionId": 1575504872,
+          "collectionName": "君はこの夏、恋をする Special Edition (Special Edition)",
+          "releaseDate": "2021-07-14T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/95/16/a7/9516a72c-e6ba-10d0-a4cf-3d251ca923cd/mzaf_9490287867781161527.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E5%90%9B%E3%81%AF%E3%81%93%E3%81%AE%E5%A4%8F-%E6%81%8B%E3%82%92%E3%81%99%E3%82%8B/1575504872?i=1575504874&uo=4"
+        },
+        {
+          "trackId": 1734604787,
+          "trackName": "君はこの夏、恋をする",
+          "collectionId": 1734604506,
+          "collectionName": "Springtime In You",
+          "releaseDate": "2024-03-20T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview122/v4/18/ad/95/18ad95ec-a5fc-19e3-b431-e3e2ee038255/mzaf_13127335942712750775.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E5%90%9B%E3%81%AF%E3%81%93%E3%81%AE%E5%A4%8F-%E6%81%8B%E3%82%92%E3%81%99%E3%82%8B/1734604506?i=1734604787&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1575504874, 1734604787],
+      "suggestedTrackId": 1575504874,
+      "selectedTrackId": 1575504874,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed all 2 exact-title candidates; track 1575504874 best matches the local release context."
+    },
+    {
+      "songId": "mirakuru",
+      "title": "ミラクル!",
+      "normalizedTitle": "ミラクル",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 1575505206,
+          "trackName": "ミラクル!",
+          "collectionId": 1575504872,
+          "collectionName": "君はこの夏、恋をする Special Edition (Special Edition)",
+          "releaseDate": "2021-07-14T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/ff/94/de/ff94de4b-7b10-7c3f-e1a2-d470322d8d96/mzaf_1090892673146252004.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E3%83%9F%E3%83%A9%E3%82%AF%E3%83%AB/1575504872?i=1575505206&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1575505206],
+      "suggestedTrackId": 1575505206,
+      "selectedTrackId": 1575505206,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "hakumei-kousen",
+      "title": "薄明光線",
+      "normalizedTitle": "薄明光線",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 1575505208,
+          "trackName": "薄明光線",
+          "collectionId": 1575504872,
+          "collectionName": "君はこの夏、恋をする Special Edition (Special Edition)",
+          "releaseDate": "2021-07-14T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/7a/69/05/7a69059d-d135-bccf-f66b-b2b938815007/mzaf_13334152346765470407.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E8%96%84%E6%98%8E%E5%85%89%E7%B7%9A/1575504872?i=1575505208&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1575505208],
+      "suggestedTrackId": 1575505208,
+      "selectedTrackId": 1575505208,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "chouzetsu-hiroin",
+      "title": "超絶ヒロイン",
+      "normalizedTitle": "超絶ヒロイン",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 1575505209,
+          "trackName": "超絶ヒロイン",
+          "collectionId": 1575504872,
+          "collectionName": "君はこの夏、恋をする Special Edition (Special Edition)",
+          "releaseDate": "2021-07-14T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/08/76/4f/08764fd2-5c73-91d4-35c0-64ffa5ba43fc/mzaf_5255342856747933057.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E8%B6%85%E7%B5%B6%E3%83%92%E3%83%AD%E3%82%A4%E3%83%B3/1575504872?i=1575505209&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1575505209],
+      "suggestedTrackId": 1575505209,
+      "selectedTrackId": 1575505209,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "mahoroba-asutarisuku",
+      "title": "まほろばアスタリスク",
+      "normalizedTitle": "まほろばアスタリスク",
+      "candidateCount": 2,
+      "candidates": [
+        {
+          "trackId": 1592502376,
+          "trackName": "まほろばアスタリスク",
+          "collectionId": 1592502372,
+          "collectionName": "まほろばアスタリスク Special Edition - EP",
+          "releaseDate": "2021-11-10T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview116/v4/5c/ea/32/5cea32e9-0cfd-4873-5d8e-69f5039fb4be/mzaf_5859799305713030989.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E3%81%BE%E3%81%BB%E3%82%8D%E3%81%B0%E3%82%A2%E3%82%B9%E3%82%BF%E3%83%AA%E3%82%B9%E3%82%AF/1592502372?i=1592502376&uo=4"
+        },
+        {
+          "trackId": 1734604788,
+          "trackName": "まほろばアスタリスク",
+          "collectionId": 1734604506,
+          "collectionName": "Springtime In You",
+          "releaseDate": "2021-11-10T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview112/v4/94/88/43/94884380-feeb-4551-f4b2-e5c0efc0b684/mzaf_2616307678075507016.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E3%81%BE%E3%81%BB%E3%82%8D%E3%81%B0%E3%82%A2%E3%82%B9%E3%82%BF%E3%83%AA%E3%82%B9%E3%82%AF/1734604506?i=1734604788&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1592502376, 1734604788],
+      "suggestedTrackId": 1592502376,
+      "selectedTrackId": 1592502376,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed all 2 exact-title candidates; track 1592502376 best matches the local release context."
+    },
+    {
+      "songId": "watashiakusento",
+      "title": "ワタシアクセント",
+      "normalizedTitle": "ワタシアクセント",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 1592502383,
+          "trackName": "ワタシアクセント",
+          "collectionId": 1592502372,
+          "collectionName": "まほろばアスタリスク Special Edition - EP",
+          "releaseDate": "2021-11-10T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview126/v4/da/be/8c/dabe8cf7-6d12-7ca2-84d0-8d3e0f78fa99/mzaf_5867780556433931469.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E3%83%AF%E3%82%BF%E3%82%B7%E3%82%A2%E3%82%AF%E3%82%BB%E3%83%B3%E3%83%88/1592502372?i=1592502383&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1592502383],
+      "suggestedTrackId": 1592502383,
+      "selectedTrackId": 1592502383,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "suki-da",
+      "title": "好きだ!!!",
+      "normalizedTitle": "好きだ",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 1592502382,
+          "trackName": "好きだ!!!",
+          "collectionId": 1592502372,
+          "collectionName": "まほろばアスタリスク Special Edition - EP",
+          "releaseDate": "2021-11-10T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview126/v4/43/63/29/43632960-3565-8a87-724b-06fc64f5eaaf/mzaf_13334626005081900457.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E5%A5%BD%E3%81%8D%E3%81%A0/1592502372?i=1592502382&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1592502382],
+      "suggestedTrackId": 1592502382,
+      "selectedTrackId": 1592502382,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "daremo-inai-mori-no-oku-de-ippon-no-ki-ga-taore-tara-oto-hasuruka",
+      "title": "誰もいない森の奥で一本の木が倒れたら音はするか?",
+      "normalizedTitle": "誰もいない森の奥で一本の木が倒れたら音はするか",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 1592502384,
+          "trackName": "誰もいない森の奥で一本の木が倒れたら音はするか?",
+          "collectionId": 1592502372,
+          "collectionName": "まほろばアスタリスク Special Edition - EP",
+          "releaseDate": "2021-11-10T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview126/v4/d9/74/02/d9740266-e3e3-3fbb-b4d3-bfcc48b4e96a/mzaf_5904619016999186206.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E8%AA%B0%E3%82%82%E3%81%84%E3%81%AA%E3%81%84%E6%A3%AE%E3%81%AE%E5%A5%A5%E3%81%A7%E4%B8%80%E6%9C%AC%E3%81%AE%E6%9C%A8%E3%81%8C%E5%80%92%E3%82%8C%E3%81%9F%E3%82%89%E9%9F%B3%E3%81%AF%E3%81%99%E3%82%8B%E3%81%8B/1592502372?i=1592502384&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1592502384],
+      "suggestedTrackId": 1592502384,
+      "selectedTrackId": 1592502384,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "chokoreetomerankorii",
+      "title": "チョコレートメランコリー",
+      "normalizedTitle": "チョコレートメランコリー",
+      "candidateCount": 2,
+      "candidates": [
+        {
+          "trackId": 1608111421,
+          "trackName": "チョコレートメランコリー",
+          "collectionId": 1608111420,
+          "collectionName": "チョコレートメランコリー<Special Edition> - EP",
+          "releaseDate": "2022-02-16T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview116/v4/4b/77/db/4b77db59-3ed9-7df6-6164-e3c8675aff8c/mzaf_4468009554943687190.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E3%83%81%E3%83%A7%E3%82%B3%E3%83%AC%E3%83%BC%E3%83%88%E3%83%A1%E3%83%A9%E3%83%B3%E3%82%B3%E3%83%AA%E3%83%BC/1608111420?i=1608111421&uo=4"
+        },
+        {
+          "trackId": 1734604513,
+          "trackName": "チョコレートメランコリー",
+          "collectionId": 1734604506,
+          "collectionName": "Springtime In You",
+          "releaseDate": "2022-02-16T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview112/v4/e3/e7/15/e3e71518-1298-429e-5efc-191cbe2e8d23/mzaf_5144235972697908022.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E3%83%81%E3%83%A7%E3%82%B3%E3%83%AC%E3%83%BC%E3%83%88%E3%83%A1%E3%83%A9%E3%83%B3%E3%82%B3%E3%83%AA%E3%83%BC/1734604506?i=1734604513&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1608111421, 1734604513],
+      "suggestedTrackId": 1608111421,
+      "selectedTrackId": 1608111421,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed all 2 exact-title candidates; track 1608111421 best matches the local release context."
+    },
+    {
+      "songId": "ofushorunitto",
+      "title": "#おふしょるにっと",
+      "normalizedTitle": "おふしょるにっと",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 1608111424,
+          "trackName": "#おふしょるにっと",
+          "collectionId": 1608111420,
+          "collectionName": "チョコレートメランコリー<Special Edition> - EP",
+          "releaseDate": "2022-02-16T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview126/v4/2b/41/38/2b4138c8-2777-9062-19c6-072f1f22d477/mzaf_677238329266437036.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E3%81%8A%E3%81%B5%E3%81%97%E3%82%87%E3%82%8B%E3%81%AB%E3%81%A3%E3%81%A8/1608111420?i=1608111424&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1608111424],
+      "suggestedTrackId": 1608111424,
+      "selectedTrackId": 1608111424,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "kun-ha-supaakuru",
+      "title": "君はスパークル",
+      "normalizedTitle": "君はスパークル",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 1608111422,
+          "trackName": "君はスパークル",
+          "collectionId": 1608111420,
+          "collectionName": "チョコレートメランコリー<Special Edition> - EP",
+          "releaseDate": "2022-02-16T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview116/v4/e8/7e/6c/e87e6c34-8afa-f0f8-72de-ac10ca8b10c4/mzaf_6544786397492265691.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E5%90%9B%E3%81%AF%E3%82%B9%E3%83%91%E3%83%BC%E3%82%AF%E3%83%AB/1608111420?i=1608111422&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1608111422],
+      "suggestedTrackId": 1608111422,
+      "selectedTrackId": 1608111422,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "niji-ga-kaka-ru-shunkan",
+      "title": "虹が架かる瞬間",
+      "normalizedTitle": "虹が架かる瞬間",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 1608111423,
+          "trackName": "虹が架かる瞬間",
+          "collectionId": 1608111420,
+          "collectionName": "チョコレートメランコリー<Special Edition> - EP",
+          "releaseDate": "2022-02-16T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview126/v4/26/32/ed/2632edd0-2b05-ae28-4c8d-f298dd4d3e32/mzaf_17633134302654759380.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E8%99%B9%E3%81%8C%E6%9E%B6%E3%81%8B%E3%82%8B%E7%9E%AC%E9%96%93/1608111420?i=1608111423&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1608111423],
+      "suggestedTrackId": 1608111423,
+      "selectedTrackId": 1608111423,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "toripurudeeto",
+      "title": "トリプルデート",
+      "normalizedTitle": "トリプルデート",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 1633045398,
+          "trackName": "トリプルデート",
+          "collectionId": 1633045243,
+          "collectionName": "トリプルデート - Single",
+          "releaseDate": "2022-07-20T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview122/v4/7f/e6/d8/7fe6d897-e086-141a-1f94-e5d8285c4dfb/mzaf_8519328209063374242.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E3%83%88%E3%83%AA%E3%83%97%E3%83%AB%E3%83%87%E3%83%BC%E3%83%88/1633045243?i=1633045398&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1633045398],
+      "suggestedTrackId": 1633045398,
+      "selectedTrackId": 1633045398,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed manual match: exact title, イコノイジョイ artist, and 2022-07-20 digital-single metadata agree."
+    },
+    {
+      "songId": "su-suki-janai",
+      "title": "す、好きじゃない!",
+      "normalizedTitle": "す好きじゃない",
+      "candidateCount": 2,
+      "candidates": [
+        {
+          "trackId": 1635524979,
+          "trackName": "す、好きじゃない!",
+          "collectionId": 1635524971,
+          "collectionName": "す、好きじゃない! <Special Edition> - EP",
+          "releaseDate": "2022-07-03T07:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview112/v4/9c/fa/9f/9cfa9f8d-bdbe-9754-eb3d-a239a29bdd28/mzaf_6354878493675751124.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E3%81%99-%E5%A5%BD%E3%81%8D%E3%81%98%E3%82%83%E3%81%AA%E3%81%84/1635524971?i=1635524979&uo=4"
+        },
+        {
+          "trackId": 1734604509,
+          "trackName": "す、好きじゃない!",
+          "collectionId": 1734604506,
+          "collectionName": "Springtime In You",
+          "releaseDate": "2022-07-03T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview112/v4/76/73/56/76735664-b5cf-dfe8-cee5-523cc1431b01/mzaf_17124616355542861172.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E3%81%99-%E5%A5%BD%E3%81%8D%E3%81%98%E3%82%83%E3%81%AA%E3%81%84/1734604506?i=1734604509&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1635524979, 1734604509],
+      "suggestedTrackId": 1635524979,
+      "selectedTrackId": 1635524979,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed all 2 exact-title candidates; track 1635524979 best matches the local release context."
+    },
+    {
+      "songId": "kochira-happii-tankentai",
+      "title": "こちらハッピー探検隊",
+      "normalizedTitle": "こちらハッピー探検隊",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 1635525141,
+          "trackName": "こちらハッピー探検隊",
+          "collectionId": 1635524971,
+          "collectionName": "す、好きじゃない! <Special Edition> - EP",
+          "releaseDate": "2022-08-03T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview112/v4/4c/8d/1d/4c8d1d17-f098-d191-81e2-1b2c7f8f3f80/mzaf_3873280522706117852.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E3%81%93%E3%81%A1%E3%82%89%E3%83%8F%E3%83%83%E3%83%94%E3%83%BC%E6%8E%A2%E6%A4%9C%E9%9A%8A/1635524971?i=1635525141&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1635525141],
+      "suggestedTrackId": 1635525141,
+      "selectedTrackId": 1635525141,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "samaachokoreeto",
+      "title": "サマーチョコレート",
+      "normalizedTitle": "サマーチョコレート",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 1635525139,
+          "trackName": "サマーチョコレート",
+          "collectionId": 1635524971,
+          "collectionName": "す、好きじゃない! <Special Edition> - EP",
+          "releaseDate": "2022-08-03T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview122/v4/9b/05/3f/9b053f4c-99d2-79fe-14d5-d1c8f5e1d5dd/mzaf_16529078532207977609.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E3%82%B5%E3%83%9E%E3%83%BC%E3%83%81%E3%83%A7%E3%82%B3%E3%83%AC%E3%83%BC%E3%83%88/1635524971?i=1635525139&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1635525139],
+      "suggestedTrackId": 1635525139,
+      "selectedTrackId": 1635525139,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "boku-tachino-imaaju",
+      "title": "僕たちのイマージュ",
+      "normalizedTitle": "僕たちのイマージュ",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 1635525138,
+          "trackName": "僕たちのイマージュ",
+          "collectionId": 1635524971,
+          "collectionName": "す、好きじゃない! <Special Edition> - EP",
+          "releaseDate": "2022-08-03T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview122/v4/a9/36/28/a9362851-9ecd-7104-81c6-b90ee558c58e/mzaf_3744466655395936450.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E5%83%95%E3%81%9F%E3%81%A1%E3%81%AE%E3%82%A4%E3%83%9E%E3%83%BC%E3%82%B8%E3%83%A5/1635524971?i=1635525138&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1635525138],
+      "suggestedTrackId": 1635525138,
+      "selectedTrackId": 1635525138,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "hanikami-shooto",
+      "title": "はにかみショート",
+      "normalizedTitle": "はにかみショート",
+      "candidateCount": 2,
+      "candidates": [
+        {
+          "trackId": 1653747292,
+          "trackName": "はにかみショート",
+          "collectionId": 1653747289,
+          "collectionName": "はにかみショート <Special Edition> - EP",
+          "releaseDate": "2022-11-23T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview122/v4/cf/79/ff/cf79ff3e-9de4-f673-b34a-02358d1b3bb0/mzaf_15183604976551206892.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E3%81%AF%E3%81%AB%E3%81%8B%E3%81%BF%E3%82%B7%E3%83%A7%E3%83%BC%E3%83%88/1653747289?i=1653747292&uo=4"
+        },
+        {
+          "trackId": 1734604789,
+          "trackName": "はにかみショート",
+          "collectionId": 1734604506,
+          "collectionName": "Springtime In You",
+          "releaseDate": "2022-11-23T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview112/v4/b4/5d/85/b45d8506-ec45-1d93-effa-98cb371ae67b/mzaf_7743475375738120747.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E3%81%AF%E3%81%AB%E3%81%8B%E3%81%BF%E3%82%B7%E3%83%A7%E3%83%BC%E3%83%88/1734604506?i=1734604789&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1653747292, 1734604789],
+      "suggestedTrackId": 1653747292,
+      "selectedTrackId": 1653747292,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed all 2 exact-title candidates; track 1653747292 best matches the local release context."
+    },
+    {
+      "songId": "urutorareakissu",
+      "title": "ウルトラレアキッス",
+      "normalizedTitle": "ウルトラレアキッス",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 1653747298,
+          "trackName": "ウルトラレアキッス",
+          "collectionId": 1653747289,
+          "collectionName": "はにかみショート <Special Edition> - EP",
+          "releaseDate": "2022-11-23T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview122/v4/8c/d7/91/8cd79112-b141-c85d-915b-c8f5f8f470f9/mzaf_6381992219418792483.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E3%82%A6%E3%83%AB%E3%83%88%E3%83%A9%E3%83%AC%E3%82%A2%E3%82%AD%E3%83%83%E3%82%B9/1653747289?i=1653747298&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1653747298],
+      "suggestedTrackId": 1653747298,
+      "selectedTrackId": 1653747298,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "pioniizu",
+      "title": "ピオニーズ",
+      "normalizedTitle": "ピオニーズ",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 1653747296,
+          "trackName": "ピオニーズ",
+          "collectionId": 1653747289,
+          "collectionName": "はにかみショート <Special Edition> - EP",
+          "releaseDate": "2022-11-23T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview122/v4/1d/06/e2/1d06e255-cd15-540a-322f-8fedc2d972b7/mzaf_5322464395405078460.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E3%83%94%E3%82%AA%E3%83%8B%E3%83%BC%E3%82%BA/1653747289?i=1653747296&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1653747296],
+      "suggestedTrackId": 1653747296,
+      "selectedTrackId": 1653747296,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "momoiro-deibureiku",
+      "title": "桃色デイブレイク",
+      "normalizedTitle": "桃色デイブレイク",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 1653747295,
+          "trackName": "桃色デイブレイク",
+          "collectionId": 1653747289,
+          "collectionName": "はにかみショート <Special Edition> - EP",
+          "releaseDate": "2022-11-23T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview122/v4/11/06/8e/11068eb2-8e75-0887-269f-e3fbbc0da7b4/mzaf_7544666044578247879.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E6%A1%83%E8%89%B2%E3%83%87%E3%82%A4%E3%83%96%E3%83%AC%E3%82%A4%E3%82%AF/1653747289?i=1653747295&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1653747295],
+      "suggestedTrackId": 1653747295,
+      "selectedTrackId": 1653747295,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "2-jihan-rokenroo",
+      "title": "2時半ろけんろー",
+      "normalizedTitle": "2時半ろけんろー",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 1679711800,
+          "trackName": "2時半ろけんろー",
+          "collectionId": 1679711792,
+          "collectionName": "天使は何処へ <Special Edition> - EP",
+          "releaseDate": "2023-04-12T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview126/v4/66/b4/f5/66b4f592-2514-17fc-de94-5d84bf1ecee0/mzaf_6804108148230364088.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/2%E6%99%82%E5%8D%8A%E3%82%8D%E3%81%91%E3%82%93%E3%82%8D%E3%83%BC/1679711792?i=1679711800&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1679711800],
+      "suggestedTrackId": 1679711800,
+      "selectedTrackId": 1679711800,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "tenshi-ha-doko-he",
+      "title": "天使は何処へ",
+      "normalizedTitle": "天使は何処へ",
+      "candidateCount": 2,
+      "candidates": [
+        {
+          "trackId": 1679711796,
+          "trackName": "天使は何処へ",
+          "collectionId": 1679711792,
+          "collectionName": "天使は何処へ <Special Edition> - EP",
+          "releaseDate": "2023-04-12T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview116/v4/ec/5b/43/ec5b43e4-0c64-2bd4-0fa3-b7d8a21cf85c/mzaf_3032556501991341335.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E5%A4%A9%E4%BD%BF%E3%81%AF%E4%BD%95%E5%87%A6%E3%81%B8/1679711792?i=1679711796&uo=4"
+        },
+        {
+          "trackId": 1734604510,
+          "trackName": "天使は何処へ",
+          "collectionId": 1734604506,
+          "collectionName": "Springtime In You",
+          "releaseDate": "2024-03-20T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview112/v4/01/3c/6c/013c6cfc-af31-c053-7bee-28fde2132b26/mzaf_8593520869937761855.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E5%A4%A9%E4%BD%BF%E3%81%AF%E4%BD%95%E5%87%A6%E3%81%B8/1734604506?i=1734604510&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1679711796, 1734604510],
+      "suggestedTrackId": 1679711796,
+      "selectedTrackId": 1679711796,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed all 2 exact-title candidates; track 1679711796 best matches the local release context."
+    },
+    {
+      "songId": "konomamade-moomentari",
+      "title": "このままでモーメンタリ",
+      "normalizedTitle": "このままでモーメンタリ",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 1679711797,
+          "trackName": "このままでモーメンタリ",
+          "collectionId": 1679711792,
+          "collectionName": "天使は何処へ <Special Edition> - EP",
+          "releaseDate": "2023-04-12T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview126/v4/27/7e/53/277e532f-de35-cbbe-e1cb-1365e6442422/mzaf_14959136953436196943.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E3%81%93%E3%81%AE%E3%81%BE%E3%81%BE%E3%81%A7%E3%83%A2%E3%83%BC%E3%83%A1%E3%83%B3%E3%82%BF%E3%83%AA/1679711792?i=1679711797&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1679711797],
+      "suggestedTrackId": 1679711797,
+      "selectedTrackId": 1679711797,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "mashumarofurooto",
+      "title": "マシュマロフロート",
+      "normalizedTitle": "マシュマロフロート",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 1679711798,
+          "trackName": "マシュマロフロート",
+          "collectionId": 1679711792,
+          "collectionName": "天使は何処へ <Special Edition> - EP",
+          "releaseDate": "2023-04-12T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview116/v4/6c/de/2c/6cde2cd9-4fb4-81e6-633b-dc5589dc06da/mzaf_3831709807559174495.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E3%83%9E%E3%82%B7%E3%83%A5%E3%83%9E%E3%83%AD%E3%83%95%E3%83%AD%E3%83%BC%E3%83%88/1679711792?i=1679711798&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1679711798],
+      "suggestedTrackId": 1679711798,
+      "selectedTrackId": 1679711798,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "deeto-no-nochi-22-toki",
+      "title": "デートの後、22時",
+      "normalizedTitle": "デートの後22時",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 1703957249,
+          "trackName": "デートの後、22時",
+          "collectionId": 1703957244,
+          "collectionName": "想わせぶりっこ <Special Edition> - EP",
+          "releaseDate": "2023-09-06T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview126/v4/f1/02/95/f102957f-b424-b205-00cd-3373ff8a3cfc/mzaf_16059480177254765526.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E3%83%87%E3%83%BC%E3%83%88%E3%81%AE%E5%BE%8C-22%E6%99%82/1703957244?i=1703957249&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1703957249],
+      "suggestedTrackId": 1703957249,
+      "selectedTrackId": 1703957249,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "sou-waseburikko",
+      "title": "想わせぶりっこ",
+      "normalizedTitle": "想わせぶりっこ",
+      "candidateCount": 3,
+      "candidates": [
+        {
+          "trackId": 1703957245,
+          "trackName": "想わせぶりっこ",
+          "collectionId": 1703957244,
+          "collectionName": "想わせぶりっこ <Special Edition> - EP",
+          "releaseDate": "2023-07-30T07:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview126/v4/92/47/83/92478356-66e0-87b3-b453-567bb2679531/mzaf_15362319235368764286.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E6%83%B3%E3%82%8F%E3%81%9B%E3%81%B6%E3%82%8A%E3%81%A3%E3%81%93/1703957244?i=1703957245&uo=4"
+        },
+        {
+          "trackId": 1696960139,
+          "trackName": "想わせぶりっこ",
+          "collectionId": 1696960138,
+          "collectionName": "想わせぶりっこ - Single",
+          "releaseDate": "2023-07-30T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview126/v4/f7/ac/3f/f7ac3f59-689f-ebed-1ef4-944b9818c1c9/mzaf_17511584232596045125.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E6%83%B3%E3%82%8F%E3%81%9B%E3%81%B6%E3%82%8A%E3%81%A3%E3%81%93/1696960138?i=1696960139&uo=4"
+        },
+        {
+          "trackId": 1734604515,
+          "trackName": "想わせぶりっこ",
+          "collectionId": 1734604506,
+          "collectionName": "Springtime In You",
+          "releaseDate": "2023-07-30T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview122/v4/16/6d/7d/166d7df7-3ebe-480a-cf00-c93213c76dd0/mzaf_5015026470662216835.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E6%83%B3%E3%82%8F%E3%81%9B%E3%81%B6%E3%82%8A%E3%81%A3%E3%81%93/1734604506?i=1734604515&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1703957245, 1696960139, 1734604515],
+      "suggestedTrackId": 1703957245,
+      "selectedTrackId": 1703957245,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed all 3 exact-title candidates; track 1703957245 best matches the local release context."
+    },
+    {
+      "songId": "furoakiraa",
+      "title": "フロアキラー",
+      "normalizedTitle": "フロアキラー",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 1703957246,
+          "trackName": "フロアキラー",
+          "collectionId": 1703957244,
+          "collectionName": "想わせぶりっこ <Special Edition> - EP",
+          "releaseDate": "2023-09-06T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview116/v4/b5/40/56/b5405654-0128-f2db-3d76-140c38042d0c/mzaf_6502697294725816136.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E3%83%95%E3%83%AD%E3%82%A2%E3%82%AD%E3%83%A9%E3%83%BC/1703957244?i=1703957246&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1703957246],
+      "suggestedTrackId": 1703957246,
+      "selectedTrackId": 1703957246,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "gekka-bijin",
+      "title": "月下美人",
+      "normalizedTitle": "月下美人",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 1703957247,
+          "trackName": "月下美人",
+          "collectionId": 1703957244,
+          "collectionName": "想わせぶりっこ <Special Edition> - EP",
+          "releaseDate": "2023-09-06T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview126/v4/90/37/6a/90376ab0-aa2a-2879-ae35-2b09cd8c8076/mzaf_16896681334035984201.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E6%9C%88%E4%B8%8B%E7%BE%8E%E4%BA%BA/1703957244?i=1703957247&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1703957247],
+      "suggestedTrackId": 1703957247,
+      "selectedTrackId": 1703957247,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "anchikonfichuuru",
+      "title": "アンチコンフィチュール",
+      "normalizedTitle": "アンチコンフィチュール",
+      "candidateCount": 3,
+      "candidates": [
+        {
+          "trackId": 1716644233,
+          "trackName": "アンチコンフィチュール",
+          "collectionId": 1716644231,
+          "collectionName": "アンチコンフィチュール - Single",
+          "releaseDate": "2023-11-30T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview126/v4/83/b4/7b/83b47bd1-82d5-a916-0758-1dccc0422a0c/mzaf_16360716422375935507.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E3%82%A2%E3%83%B3%E3%83%81%E3%82%B3%E3%83%B3%E3%83%95%E3%82%A3%E3%83%81%E3%83%A5%E3%83%BC%E3%83%AB/1716644231?i=1716644233&uo=4"
+        },
+        {
+          "trackId": 1719925632,
+          "trackName": "アンチコンフィチュール",
+          "collectionId": 1719925631,
+          "collectionName": "アンチコンフィチュール - Single",
+          "releaseDate": "2023-11-30T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview126/v4/1d/c8/4d/1dc84daf-bbc7-03c3-7689-62a416dfd1d7/mzaf_332249127115482526.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E3%82%A2%E3%83%B3%E3%83%81%E3%82%B3%E3%83%B3%E3%83%95%E3%82%A3%E3%83%81%E3%83%A5%E3%83%BC%E3%83%AB/1719925631?i=1719925632&uo=4"
+        },
+        {
+          "trackId": 1734604511,
+          "trackName": "アンチコンフィチュール",
+          "collectionId": 1734604506,
+          "collectionName": "Springtime In You",
+          "releaseDate": "2023-11-30T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview112/v4/c7/97/1c/c7971c81-3c61-50df-3f8b-ac4e7b8fc81d/mzaf_1383314191331176151.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E3%82%A2%E3%83%B3%E3%83%81%E3%82%B3%E3%83%B3%E3%83%95%E3%82%A3%E3%83%81%E3%83%A5%E3%83%BC%E3%83%AB/1734604506?i=1734604511&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1716644233, 1719925632, 1734604511],
+      "suggestedTrackId": 1716644233,
+      "selectedTrackId": 1719925632,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed all 3 exact-title candidates; track 1719925632 best matches the local release context."
+    },
+    {
+      "songId": "hatsukoi-kamubakku",
+      "title": "初恋カムバック",
+      "normalizedTitle": "初恋カムバック",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 1719925633,
+          "trackName": "初恋カムバック",
+          "collectionId": 1719925631,
+          "collectionName": "アンチコンフィチュール - Single",
+          "releaseDate": "2023-12-20T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview116/v4/f4/dc/a8/f4dca8ca-8f6d-b240-6725-8cad1b3e678a/mzaf_16767694324380535932.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E5%88%9D%E6%81%8B%E3%82%AB%E3%83%A0%E3%83%90%E3%83%83%E3%82%AF/1719925631?i=1719925633&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1719925633],
+      "suggestedTrackId": 1719925633,
+      "selectedTrackId": 1719925633,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "hiroin-to-ookami",
+      "title": "ヒロインとオオカミ",
+      "normalizedTitle": "ヒロインとオオカミ",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 1719925634,
+          "trackName": "ヒロインとオオカミ",
+          "collectionId": 1719925631,
+          "collectionName": "アンチコンフィチュール - Single",
+          "releaseDate": "2023-12-20T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview126/v4/a8/8c/1f/a88c1fb6-b8b2-2974-e2e9-6e439bb39537/mzaf_3935420290139538843.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E3%83%92%E3%83%AD%E3%82%A4%E3%83%B3%E3%81%A8%E3%82%AA%E3%82%AA%E3%82%AB%E3%83%9F/1719925631?i=1719925634&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1719925634],
+      "suggestedTrackId": 1719925634,
+      "selectedTrackId": 1719925634,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "marcato",
+      "title": "Marcato",
+      "normalizedTitle": "marcato",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 1734604512,
+          "trackName": "Marcato",
+          "collectionId": 1734604506,
+          "collectionName": "Springtime In You",
+          "releaseDate": "2024-03-20T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview122/v4/1f/e2/04/1fe20456-357e-f9a2-975d-46fa33687f99/mzaf_17437119052358852229.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/marcato/1734604506?i=1734604512&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1734604512],
+      "suggestedTrackId": 1734604512,
+      "selectedTrackId": 1734604512,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "deeto-zenya-rekuiemu",
+      "title": "デート前夜レクイエム",
+      "normalizedTitle": "デート前夜レクイエム",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 1734604514,
+          "trackName": "デート前夜レクイエム",
+          "collectionId": 1734604506,
+          "collectionName": "Springtime In You",
+          "releaseDate": "2024-03-20T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview122/v4/ae/62/af/ae62afb6-8c97-425f-625c-e0f5ce94b4e0/mzaf_15715793323450354577.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E3%83%87%E3%83%BC%E3%83%88%E5%89%8D%E5%A4%9C%E3%83%AC%E3%82%AF%E3%82%A4%E3%82%A8%E3%83%A0/1734604506?i=1734604514&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1734604514],
+      "suggestedTrackId": 1734604514,
+      "selectedTrackId": 1734604514,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "rasutochansu-rasutodansu",
+      "title": "ラストチャンス、ラストダンス",
+      "normalizedTitle": "ラストチャンスラストダンス",
+      "candidateCount": 2,
+      "candidates": [
+        {
+          "trackId": 1730920840,
+          "trackName": "ラストチャンス、ラストダンス",
+          "collectionId": 1730920838,
+          "collectionName": "ラストチャンス、ラストダンス - Single",
+          "releaseDate": "2024-02-29T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview126/v4/00/38/78/0038789e-84a7-0740-ee84-3f6d1dec217a/mzaf_8447478316972663671.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E3%83%A9%E3%82%B9%E3%83%88%E3%83%81%E3%83%A3%E3%83%B3%E3%82%B9-%E3%83%A9%E3%82%B9%E3%83%88%E3%83%80%E3%83%B3%E3%82%B9/1730920838?i=1730920840&uo=4"
+        },
+        {
+          "trackId": 1734604790,
+          "trackName": "ラストチャンス、ラストダンス",
+          "collectionId": 1734604506,
+          "collectionName": "Springtime In You",
+          "releaseDate": "2024-02-29T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview112/v4/34/2e/4c/342e4c06-0213-dbb7-d332-f6329fe13ae1/mzaf_4750777901932661529.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E3%83%A9%E3%82%B9%E3%83%88%E3%83%81%E3%83%A3%E3%83%B3%E3%82%B9-%E3%83%A9%E3%82%B9%E3%83%88%E3%83%80%E3%83%B3%E3%82%B9/1734604506?i=1734604790&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1730920840, 1734604790],
+      "suggestedTrackId": 1730920840,
+      "selectedTrackId": 1734604790,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed all 2 exact-title candidates; track 1734604790 best matches the local release context."
+    },
+    {
+      "songId": "guuzen-shinfonii",
+      "title": "偶然シンフォニー",
+      "normalizedTitle": "偶然シンフォニー",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 1734604507,
+          "trackName": "偶然シンフォニー",
+          "collectionId": 1734604506,
+          "collectionName": "Springtime In You",
+          "releaseDate": "2024-03-20T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview122/v4/a7/2a/56/a72a5647-d499-913f-3edc-ff481910f612/mzaf_6629342756996284331.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E5%81%B6%E7%84%B6%E3%82%B7%E3%83%B3%E3%83%95%E3%82%A9%E3%83%8B%E3%83%BC/1734604506?i=1734604507&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1734604507],
+      "suggestedTrackId": 1734604507,
+      "selectedTrackId": 1734604507,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "haru-no-koibito",
+      "title": "春の恋人",
+      "normalizedTitle": "春の恋人",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 1734604516,
+          "trackName": "春の恋人",
+          "collectionId": 1734604506,
+          "collectionName": "Springtime In You",
+          "releaseDate": "2024-03-20T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview122/v4/c8/54/0b/c8540b54-9bb8-6038-f46b-bb70124595eb/mzaf_9904341196144556282.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E6%98%A5%E3%81%AE%E6%81%8B%E4%BA%BA/1734604506?i=1734604516&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1734604516],
+      "suggestedTrackId": 1734604516,
+      "selectedTrackId": 1734604516,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "natsu-ga-kita-kara",
+      "title": "夏が来たから",
+      "normalizedTitle": "夏が来たから",
+      "candidateCount": 2,
+      "candidates": [
+        {
+          "trackId": 1754124668,
+          "trackName": "夏が来たから",
+          "collectionId": 1754124667,
+          "collectionName": "夏が来たから - Single",
+          "releaseDate": "2024-07-16T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/3e/48/69/3e486900-1b42-236a-9d99-0e539c86b539/mzaf_1425950068373071974.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E5%A4%8F%E3%81%8C%E6%9D%A5%E3%81%9F%E3%81%8B%E3%82%89/1754124667?i=1754124668&uo=4"
+        },
+        {
+          "trackId": 1761485728,
+          "trackName": "夏が来たから",
+          "collectionId": 1761485727,
+          "collectionName": "夏が来たから - Single",
+          "releaseDate": "2024-07-16T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/3a/32/dc/3a32dc1c-2a84-f888-9c39-42d8bf7cf032/mzaf_11687153130675244124.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E5%A4%8F%E3%81%8C%E6%9D%A5%E3%81%9F%E3%81%8B%E3%82%89/1761485727?i=1761485728&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1754124668, 1761485728],
+      "suggestedTrackId": 1754124668,
+      "selectedTrackId": 1761485728,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed all 2 exact-title candidates; track 1761485728 best matches the local release context."
+    },
+    {
+      "songId": "gomen-maji-de",
+      "title": "ごめん、マジで",
+      "normalizedTitle": "ごめんマジで",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 1761485732,
+          "trackName": "ごめん、マジで",
+          "collectionId": 1761485727,
+          "collectionName": "夏が来たから - Single",
+          "releaseDate": "2024-08-28T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/85/e1/bf/85e1bfdb-7e4e-882c-bcf1-7a7120b8b41d/mzaf_2820785841373684466.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E3%81%94%E3%82%81%E3%82%93-%E3%83%9E%E3%82%B8%E3%81%A7/1761485727?i=1761485732&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1761485732],
+      "suggestedTrackId": 1761485732,
+      "selectedTrackId": 1761485732,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "saikyou-no-rabusongu",
+      "title": "最強のラブソング",
+      "normalizedTitle": "最強のラブソング",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 1761485734,
+          "trackName": "最強のラブソング",
+          "collectionId": 1761485727,
+          "collectionName": "夏が来たから - Single",
+          "releaseDate": "2024-08-28T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/14/78/19/1478198d-328b-c9e9-157f-47cd589f9a95/mzaf_17917579944871529275.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E6%9C%80%E5%BC%B7%E3%81%AE%E3%83%A9%E3%83%96%E3%82%BD%E3%83%B3%E3%82%B0/1761485727?i=1761485734&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1761485734],
+      "suggestedTrackId": 1761485734,
+      "selectedTrackId": 1761485734,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "mobunoderera",
+      "title": "モブノデレラ",
+      "normalizedTitle": "モブノデレラ",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 1808903734,
+          "trackName": "モブノデレラ",
+          "collectionId": 1808903733,
+          "collectionName": "モブノデレラ/神様の言うとーり! - Single",
+          "releaseDate": "2025-04-30T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/d2/71/80/d2718074-e09f-e042-84c0-7bff2f72f13e/mzaf_14144532718393854967.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E3%83%A2%E3%83%96%E3%83%8E%E3%83%87%E3%83%AC%E3%83%A9/1808903733?i=1808903734&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1808903734],
+      "suggestedTrackId": 1808903734,
+      "selectedTrackId": 1808903734,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "kamisama-no-iu-toori",
+      "title": "神様の言うとーり!",
+      "normalizedTitle": "神様の言うとーり",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 1808903736,
+          "trackName": "神様の言うとーり!",
+          "collectionId": 1808903733,
+          "collectionName": "モブノデレラ/神様の言うとーり! - Single",
+          "releaseDate": "2025-04-30T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/3a/5b/f7/3a5bf789-bff5-4a56-e096-db3868ad2172/mzaf_3048029091026262013.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E7%A5%9E%E6%A7%98%E3%81%AE%E8%A8%80%E3%81%86%E3%81%A8%E3%83%BC%E3%82%8A/1808903733?i=1808903736&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1808903736],
+      "suggestedTrackId": 1808903736,
+      "selectedTrackId": 1808903736,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "kafe-rakuen",
+      "title": "カフェ樂園",
+      "normalizedTitle": "カフェ樂園",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 1808903737,
+          "trackName": "カフェ樂園",
+          "collectionId": 1808903733,
+          "collectionName": "モブノデレラ/神様の言うとーり! - Single",
+          "releaseDate": "2025-04-30T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/5a/9f/11/5a9f11fa-3ee6-814d-b5df-909aa2d87c3d/mzaf_3976954345877127843.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E3%82%AB%E3%83%95%E3%82%A7%E6%A8%82%E5%9C%92/1808903733?i=1808903737&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1808903737],
+      "suggestedTrackId": 1808903737,
+      "selectedTrackId": 1808903737,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "kun-wo-mikake-ta",
+      "title": "君を見かけた",
+      "normalizedTitle": "君を見かけた",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 1831714353,
+          "trackName": "君を見かけた",
+          "collectionId": 1831714352,
+          "collectionName": "君を見かけた - Single",
+          "releaseDate": "2025-08-27T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/e0/fc/3a/e0fc3a37-55c7-fe82-4505-28dd8f93ba51/mzaf_4873354774677815362.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E5%90%9B%E3%82%92%E8%A6%8B%E3%81%8B%E3%81%91%E3%81%9F/1831714352?i=1831714353&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1831714353],
+      "suggestedTrackId": 1831714353,
+      "selectedTrackId": 1831714353,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "haitateki-faitaa",
+      "title": "排他的ファイター",
+      "normalizedTitle": "排他的ファイター",
+      "candidateCount": 2,
+      "candidates": [
+        {
+          "trackId": 1850923498,
+          "trackName": "排他的ファイター",
+          "collectionId": 1850923497,
+          "collectionName": "排他的ファイター - Single",
+          "releaseDate": "2025-11-19T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/5f/63/8e/5f638e64-520a-2cd4-d731-0ba47c36d0de/mzaf_336711408414800734.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E6%8E%92%E4%BB%96%E7%9A%84%E3%83%95%E3%82%A1%E3%82%A4%E3%82%BF%E3%83%BC/1850923497?i=1850923498&uo=4"
+        },
+        {
+          "trackId": 1856436026,
+          "trackName": "排他的ファイター",
+          "collectionId": 1856436025,
+          "collectionName": "排他的ファイター - Single",
+          "releaseDate": "2025-11-19T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/e7/e7/b9/e7e7b98d-dbd7-8dd7-5ce6-7bc91003365f/mzaf_224429455753926238.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E6%8E%92%E4%BB%96%E7%9A%84%E3%83%95%E3%82%A1%E3%82%A4%E3%82%BF%E3%83%BC/1856436025?i=1856436026&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1850923498, 1856436026],
+      "suggestedTrackId": 1850923498,
+      "selectedTrackId": 1856436026,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed all 2 exact-title candidates; track 1856436026 best matches the local release context."
+    },
+    {
+      "songId": "kyunkawa-jinsei",
+      "title": "きゅんかわ人生",
+      "normalizedTitle": "きゅんかわ人生",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 1856436027,
+          "trackName": "きゅんかわ人生",
+          "collectionId": 1856436025,
+          "collectionName": "排他的ファイター - Single",
+          "releaseDate": "2025-12-10T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/ff/90/9d/ff909d2f-f613-9d17-25db-489406f685ec/mzaf_2751255825253124925.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E3%81%8D%E3%82%85%E3%82%93%E3%81%8B%E3%82%8F%E4%BA%BA%E7%94%9F/1856436025?i=1856436027&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1856436027],
+      "suggestedTrackId": 1856436027,
+      "selectedTrackId": 1856436027,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "hanbunko-kurisumasu",
+      "title": "はんぶんこクリスマス",
+      "normalizedTitle": "はんぶんこクリスマス",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 1856436028,
+          "trackName": "はんぶんこクリスマス",
+          "collectionId": 1856436025,
+          "collectionName": "排他的ファイター - Single",
+          "releaseDate": "2025-12-10T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/30/f8/a9/30f8a996-0007-b997-3295-4e323f0215e2/mzaf_17938254317992950945.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E3%81%AF%E3%82%93%E3%81%B6%E3%82%93%E3%81%93%E3%82%AF%E3%83%AA%E3%82%B9%E3%83%9E%E3%82%B9/1856436025?i=1856436028&uo=4"
+        }
+      ],
+      "rankedTrackIds": [1856436028],
+      "suggestedTrackId": 1856436028,
+      "selectedTrackId": 1856436028,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "kun-hamou-ichido-tane-ninaru",
+      "title": "君はもう一度タネになる",
+      "normalizedTitle": "君はもう一度タネになる",
+      "candidateCount": 0,
+      "candidates": [],
+      "rankedTrackIds": [],
+      "suggestedTrackId": null,
+      "selectedTrackId": null,
+      "needsReview": true,
+      "reviewNote": "Human-reviewed: this graduation solo has no exact Apple catalog track, so preview publication remains blocked."
+    },
+    {
+      "songId": "ai-kudasaimase",
+      "title": "愛くださいませ",
+      "normalizedTitle": "愛くださいませ",
+      "candidateCount": 2,
+      "candidates": [
+        {
+          "trackId": 6779158416,
+          "trackName": "愛くださいませ",
+          "collectionId": 6779158415,
+          "collectionName": "愛くださいませ/ここでファーストキッス - EP",
+          "releaseDate": "2026-06-09T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/23/86/76/2386765d-9c3c-219d-aa62-5b1a2870b1ea/mzaf_9676428659408558451.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E6%84%9B%E3%81%8F%E3%81%A0%E3%81%95%E3%81%84%E3%81%BE%E3%81%9B/6779158415?i=6779158416&uo=4"
+        },
+        {
+          "trackId": 6795746804,
+          "trackName": "愛くださいませ",
+          "collectionId": 6795746803,
+          "collectionName": "愛くださいませ - Single",
+          "releaseDate": "2026-06-09T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/0e/8e/75/0e8e750f-9c1a-2b8a-2aed-62a4fa6584d6/mzaf_18174499894248916895.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E6%84%9B%E3%81%8F%E3%81%A0%E3%81%95%E3%81%84%E3%81%BE%E3%81%9B/6795746803?i=6795746804&uo=4"
+        }
+      ],
+      "rankedTrackIds": [6779158416, 6795746804],
+      "suggestedTrackId": 6779158416,
+      "selectedTrackId": 6779158416,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed all 2 exact-title candidates; track 6779158416 best matches the local release context."
+    },
+    {
+      "songId": "kokode-faasutokissu",
+      "title": "ここでファーストキッス",
+      "normalizedTitle": "ここでファーストキッス",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 6779158417,
+          "trackName": "ここでファーストキッス",
+          "collectionId": 6779158415,
+          "collectionName": "愛くださいませ/ここでファーストキッス - EP",
+          "releaseDate": "2026-06-24T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/02/7d/4b/027d4b46-1ec7-e015-237a-6bb983aa0e67/mzaf_14332113002984451412.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E3%81%93%E3%81%93%E3%81%A7%E3%83%95%E3%82%A1%E3%83%BC%E3%82%B9%E3%83%88%E3%82%AD%E3%83%83%E3%82%B9/6779158415?i=6779158417&uo=4"
+        }
+      ],
+      "rankedTrackIds": [6779158417],
+      "suggestedTrackId": 6779158417,
+      "selectedTrackId": 6779158417,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "summer-haze",
+      "title": "Summer haze",
+      "normalizedTitle": "summerhaze",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 6779158418,
+          "trackName": "Summer haze",
+          "collectionId": 6779158415,
+          "collectionName": "愛くださいませ/ここでファーストキッス - EP",
+          "releaseDate": "2026-06-24T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/a2/68/19/a2681979-e969-7ffe-6a3f-add91a3e0366/mzaf_6086326127191914820.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/summer-haze/6779158415?i=6779158418&uo=4"
+        }
+      ],
+      "rankedTrackIds": [6779158418],
+      "suggestedTrackId": 6779158418,
+      "selectedTrackId": 6779158418,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    }
+  ]
+}

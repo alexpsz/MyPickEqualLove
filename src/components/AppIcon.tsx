@@ -18,6 +18,7 @@ export type AppIconName =
   | "monitor"
   | "moon"
   | "music"
+  | "pause"
   | "play"
   | "plus"
   | "reset"
@@ -161,6 +162,13 @@ function getIconPaths(name: AppIconName) {
           <path d="M9.5 17.25V6.5l8-1.75v10.5" />
           <ellipse cx="6.75" cy="17.5" rx="2.75" ry="2.1" />
           <ellipse cx="14.75" cy="15.5" rx="2.75" ry="2.1" />
+        </>
+      );
+    case "pause":
+      return (
+        <>
+          <path d="M7 4h3.5v16H7z" fill="currentColor" stroke="none" />
+          <path d="M13.5 4H17v16h-3.5z" fill="currentColor" stroke="none" />
         </>
       );
     case "play":

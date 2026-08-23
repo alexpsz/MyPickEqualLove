@@ -145,6 +145,20 @@ const SUITES = {
     emittedTestFiles: ["scripts/tests/export-readiness.test.js"],
     successMessage: "Export readiness tests passed.",
   },
+  "preview-media": {
+    tempPrefix: "mypick-preview-media-tests-",
+    compilerArgs: [...NODE16_ARGS, "--resolveJsonModule"],
+    sourceFiles: [
+      "src/projects/current-runtime.d.ts",
+      "src/projects/equal-love/runtime.ts",
+      "src/utils/previewMedia.ts",
+      "scripts/tests/preview-media.test.ts",
+    ],
+    emittedTestFiles: ["scripts/tests/preview-media.test.js"],
+    moduleAliases: {
+      "@current-project/runtime": "src/projects/equal-love/runtime.js",
+    },
+  },
   "export-board": {
     tempPrefix: "mypick-export-board-tests-",
     compilerArgs: [

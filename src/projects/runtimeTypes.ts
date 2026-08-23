@@ -18,10 +18,17 @@ export interface OfficialMediaRuntimeEntry {
   readonly sourceUrl: string;
 }
 
+export interface PreviewMediaRuntimeEntry {
+  readonly songId: string;
+  readonly previewUrl: string;
+  readonly trackViewUrl: string;
+}
+
 export interface CurrentProjectRuntime {
   readonly projectId: ProjectId;
   readonly members: Member[];
   readonly songs: Song[];
   readonly liveExperiences: PickExperience[];
   readonly officialMedia: OfficialMediaRuntimeEntry[];
+  readonly previewMedia: PreviewMediaRuntimeEntry[];
 }

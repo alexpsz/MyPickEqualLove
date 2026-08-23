@@ -4,6 +4,7 @@ import "./globals.css";
 import InstallPrompt from "../components/InstallPrompt";
 import ServiceWorkerRegistration from "../components/ServiceWorkerRegistration";
 import ThemeProvider from "../components/ThemeProvider";
+import PreviewAudioProvider from "../components/PreviewAudioProvider";
 import { PROJECT_CONFIG, STORAGE_KEYS } from "../config/project";
 import { localizeProjectCopy } from "../i18n/content";
 import LocaleProvider from "../i18n/LocaleProvider";
@@ -118,13 +119,15 @@ export default function RootLayout({
         style={projectThemeStyle}
         suppressHydrationWarning
       >
-        <ThemeProvider>
-          <LocaleProvider>
-            {children}
-            <InstallPrompt />
-            <ServiceWorkerRegistration />
-          </LocaleProvider>
-        </ThemeProvider>
+        <PreviewAudioProvider>
+          <ThemeProvider>
+            <LocaleProvider>
+              {children}
+              <InstallPrompt />
+              <ServiceWorkerRegistration />
+            </LocaleProvider>
+          </ThemeProvider>
+        </PreviewAudioProvider>
       </body>
     </html>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
 import * as m from "motion/react-m";
 import Image from "next/image";
 import { useLocale } from "../i18n/LocaleProvider";
@@ -21,6 +21,7 @@ import OfficialMediaLinks, {
 } from "./OfficialMediaLinks";
 import type { PresenceState } from "./MotionPresence";
 import type { SearchSelectionMode } from "./SearchModal";
+import { usePreviewAudio } from "./PreviewAudioProvider";
 
 interface SongDetailModalProps {
   song: Song;
@@ -48,6 +49,7 @@ export default function SongDetailModal({
   onToggleCandidate,
 }: SongDetailModalProps) {
   const { t } = useLocale();
+  const { stop } = usePreviewAudio();
   const panelRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const membersById = useMemo(
@@ -60,13 +62,27 @@ export default function SongDetailModal({
   const titleId = `song-detail-${song.id}-title`;
   const isExiting = presenceState === "exiting";
   const isAssistantShortlistMode = selectionMode === "assistant-shortlist";
+  const closeAndStop = useCallback(() => {
+    stop();
+    onClose();
+  }, [onClose, stop]);
+  const selectAndStop = useCallback(() => {
+    stop();
+    onSelect(song);
+  }, [onSelect, song, stop]);
 
   useDialogA11y({
     dialogRef: panelRef,
-    onClose,
+    onClose: closeAndStop,
     active: !isExiting,
     initialFocusRef: closeButtonRef,
   });
+
+  useEffect(() => {
+    if (isExiting) stop();
+  }, [isExiting, stop]);
+
+  useEffect(() => () => stop(), [stop]);
 
   return (
     <div
@@ -75,7 +91,7 @@ export default function SongDetailModal({
     >
       <m.button
         type="button"
-        onClick={onClose}
+        onClick={closeAndStop}
         disabled={isExiting}
         tabIndex={-1}
         aria-hidden={isExiting}
@@ -120,7 +136,7 @@ export default function SongDetailModal({
           <button
             ref={closeButtonRef}
             type="button"
-            onClick={onClose}
+            onClick={closeAndStop}
             className="icon-button icon-button-compact shrink-0"
             aria-label={t("songDetail.closeAria")}
           >
@@ -305,7 +321,7 @@ export default function SongDetailModal({
           {!isAssistantShortlistMode ? (
             <button
               type="button"
-              onClick={() => onSelect(song)}
+              onClick={selectAndStop}
               className="official-button official-button-primary"
             >
               <AppIcon name="plus" size={16} />

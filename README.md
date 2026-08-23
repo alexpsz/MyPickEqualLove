@@ -10,12 +10,20 @@ Fan-made static web apps for creating shareable Top 10 song boards for =LOVE, â‰
 
 - Pick a Top 10 with search, filters, permanent song pages, and reviewed official
   media links.
+- Listen to reviewed 30-second Apple Music previews directly from search and
+  song details.
 - Save, reorder, restore, share, and compare boards locally in the browser.
 - Use Pick Assistant, factual Top 10 overviews, new-song notices, and quick
   commands.
 - Follow the system theme or choose light or dark mode, and install each site.
 - Export four PNG styles with optional QR codes for download or sharing.
 - Build three sister sites from one shared codebase.
+
+## Privacy and previews
+
+MyPick does not run its own server or collect information. When you press play,
+your browser requests a 30-second audio file from Apple's content delivery
+network. No preview request is made before you press play.
 
 ## Live Specials
 

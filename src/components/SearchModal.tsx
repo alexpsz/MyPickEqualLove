@@ -1,6 +1,7 @@
 "use client";
 
 import React, {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -11,10 +12,6 @@ import * as m from "motion/react-m";
 import { useLocale } from "../i18n/LocaleProvider";
 import type { MessageKey, MessageValues } from "../i18n/messages";
 import type { Member, ReleaseType, Song, TrackType } from "../schema/music";
-import {
-  getPrimaryOfficialMediaLink,
-  OFFICIAL_MEDIA_MESSAGE_KEYS,
-} from "../utils/officialMedia";
 import { getConfirmedSongCredits } from "../utils/songCredits";
 import {
   RELEASE_TYPE_MESSAGE_KEYS,
@@ -36,6 +33,8 @@ import JapaneseContent, {
   LocalizedTextWithJapaneseValue,
 } from "./JapaneseContent";
 import type { PresenceState } from "./MotionPresence";
+import { PreviewMediaIconControl } from "./OfficialMediaLinks";
+import { usePreviewAudio } from "./PreviewAudioProvider";
 
 type ReleaseFilter = "all" | ReleaseType;
 type TrackFilter = "all" | TrackType;
@@ -184,6 +183,7 @@ export default function SearchModal({
   onOpenDetail,
 }: SearchModalProps) {
   const { t } = useLocale();
+  const { stop } = usePreviewAudio();
   const [searchQuery, setSearchQuery] = useState("");
   const [releaseTypeFilter, setReleaseTypeFilter] =
     useState<ReleaseFilter>("all");
@@ -206,15 +206,32 @@ export default function SearchModal({
     [recentSongIds],
   );
   const isAssistantShortlistMode = selectionMode === "assistant-shortlist";
+  const closeAndStop = useCallback(() => {
+    stop();
+    onClose();
+  }, [onClose, stop]);
+  const selectAndStop = useCallback(
+    (song: Song) => {
+      stop();
+      onSelect(song);
+    },
+    [onSelect, stop],
+  );
 
   useDialogA11y({
     dialogRef: panelRef,
-    onClose,
+    onClose: closeAndStop,
     active: presenceState !== "exiting" && !suspended,
     autoFocus: false,
     initialFocusRef: resumeFocusRef,
     returnFocusKey,
   });
+
+  useEffect(() => {
+    if (presenceState === "exiting") stop();
+  }, [presenceState, stop]);
+
+  useEffect(() => () => stop(), [stop]);
 
   const membersById = useMemo(
     () => Object.fromEntries(members.map((member) => [member.id, member])),
@@ -365,7 +382,7 @@ export default function SearchModal({
       onToggleCandidate?.(firstResult);
       return;
     }
-    onSelect(firstResult);
+    selectAndStop(firstResult);
   };
 
   const panelMotion = {
@@ -383,7 +400,7 @@ export default function SearchModal({
     >
       <m.button
         type="button"
-        onClick={onClose}
+        onClick={closeAndStop}
         disabled={presenceState === "exiting"}
         tabIndex={-1}
         aria-hidden={presenceState === "exiting"}
@@ -441,7 +458,7 @@ export default function SearchModal({
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={closeAndStop}
             className="icon-button icon-button-compact shrink-0"
             aria-label={t("search.closeAria")}
           >
@@ -601,9 +618,6 @@ export default function SearchModal({
                   const isRecentlyViewed = recentSongIdSet.has(song.id);
                   const isNewSong = newSongIds.has(song.id);
                   const isCandidate = candidateSongIds.has(song.id);
-                  const officialMediaLink = getPrimaryOfficialMediaLink(
-                    song.id,
-                  );
                   const candidateDisabled =
                     candidateChangesBlocked ||
                     candidateMutationPending ||
@@ -625,7 +639,7 @@ export default function SearchModal({
                         onClick={() =>
                           isAssistantShortlistMode
                             ? onToggleCandidate?.(song)
-                            : onSelect(song)
+                            : selectAndStop(song)
                         }
                         disabled={isAssistantShortlistMode && candidateDisabled}
                         aria-pressed={
@@ -732,29 +746,12 @@ export default function SearchModal({
                       </button>
 
                       <div className="flex shrink-0 items-center border-l border-[var(--line)] px-1">
-                        {!isAssistantShortlistMode && officialMediaLink ? (
-                          <a
-                            href={officialMediaLink.sourceUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            aria-label={t("songDetail.openOfficialMediaAria", {
-                              media: t(
-                                OFFICIAL_MEDIA_MESSAGE_KEYS[
-                                  officialMediaLink.sourceMode
-                                ],
-                              ),
-                              title: song.title.ja,
-                            })}
-                            title={t(
-                              OFFICIAL_MEDIA_MESSAGE_KEYS[
-                                officialMediaLink.sourceMode
-                              ],
-                            )}
-                            className="flex h-11 w-11 items-center justify-center rounded-full text-[var(--muted)] transition-colors hover:bg-[var(--paper)] hover:text-[var(--foreground)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
-                          >
-                            <AppIcon name="play" size={16} />
-                          </a>
-                        ) : null}
+                        <PreviewMediaIconControl
+                          songId={song.id}
+                          title={song.title.ja}
+                          showFirstUseNotice={!suspended}
+                          className="flex h-11 w-11 items-center justify-center rounded-full text-[var(--muted)] transition-colors hover:bg-[var(--paper)] hover:text-[var(--foreground)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
+                        />
                         <button
                           type="button"
                           aria-haspopup="dialog"
@@ -802,7 +799,10 @@ export default function SearchModal({
           {isAssistantShortlistMode ? (
             <button
               type="button"
-              onClick={onReturnToAssistant}
+              onClick={() => {
+                stop();
+                onReturnToAssistant?.();
+              }}
               disabled={candidateMutationPending}
               className="official-button official-button-primary shrink-0"
             >
