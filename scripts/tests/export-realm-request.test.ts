@@ -168,3 +168,26 @@ test("capture effect posts an uncancelled result before consuming its request id
     "the effect must have one settled-request consumption point",
   );
 });
+
+test("insights realm validates raw request picks before experience filtering", () => {
+  const source = readFileSync(
+    resolve(process.cwd(), "src/components/PickExperienceClient.tsx"),
+    "utf8",
+  );
+  const admissionIndex = source.indexOf("const rawInsightsSelection =");
+  const filterIndex = source.indexOf(
+    "const nextPicks = filterStoredPicksForExperience",
+    admissionIndex,
+  );
+  const admission = source.slice(admissionIndex, filterIndex);
+
+  assert.notEqual(admissionIndex, -1, "raw insights admission must exist");
+  assert.notEqual(filterIndex, -1, "experience filtering must still exist");
+  assert.match(admission, /resolveBoardInsightsSelection\(\{/);
+  assert.match(admission, /storedPicks: request\.picks/);
+  assert.match(admission, /!rawInsightsSelection\?\.canExport/);
+  assert.ok(
+    admissionIndex < filterIndex,
+    "raw insights admission must run before filtering can discard entries",
+  );
+});

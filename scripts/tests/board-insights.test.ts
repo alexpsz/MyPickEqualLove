@@ -137,6 +137,35 @@ test("duplicate, invalid, foreign-slot, non-Top-10, and Live states fail closed"
   );
 });
 
+test("insights export admission rejects raw extras before experience filtering", () => {
+  const songs = [...makeTopTen(), makeSong("song-11")];
+  const completePicks = Object.fromEntries(
+    TOP_TEN_SLOT_IDS.map((slotId, index) => [slotId, songs[index]!.id]),
+  );
+
+  assert.equal(
+    resolveSelection(songs, 10, completePicks)?.canExport,
+    true,
+    "a normal complete unique Top 10 remains exportable",
+  );
+  assert.equal(
+    resolveSelection(songs, 10, {
+      ...completePicks,
+      "foreign-slot": songs[10]!.id,
+    }),
+    null,
+    "a known song in a foreign extra slot must not be silently discarded",
+  );
+  assert.equal(
+    resolveSelection(songs, 10, {
+      ...completePicks,
+      "foreign-slot": "unknown-song",
+    }),
+    null,
+    "an unknown song in a foreign extra slot must not be silently discarded",
+  );
+});
+
 test("oshimen solo count follows the current one-to-ten selection", () => {
   const songs = makeTopTen(
     Array.from({ length: 10 }, () => ({

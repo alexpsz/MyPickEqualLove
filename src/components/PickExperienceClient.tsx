@@ -3088,6 +3088,25 @@ export default function PickExperienceClient({
       }
 
       const nextContextId = verdict.contextId;
+      const rawInsightsSelection =
+        request.kind === "insights"
+          ? resolveBoardInsightsSelection({
+              experienceKind: experience.kind,
+              slotIds: slots.map((slot) => slot.id),
+              storedPicks: request.picks,
+              songsById: SONGS_BY_ID,
+            })
+          : null;
+      if (request.kind === "insights" && !rawInsightsSelection?.canExport) {
+        postResult(
+          createExportRenderResult(
+            request.requestId,
+            undefined,
+            "Insights export requires a complete unique standard Top 10",
+          ),
+        );
+        return;
+      }
       const nextPicks = filterStoredPicksForExperience({
         experience,
         storedPicks: request.picks,
@@ -3100,22 +3119,6 @@ export default function PickExperienceClient({
             Boolean(entry[1]),
           ),
       );
-      if (
-        request.kind === "insights" &&
-        (!isStandard ||
-          slots.length !== 10 ||
-          Object.keys(nextPicks).length !== slots.length ||
-          new Set(Object.values(nextPicks)).size !== slots.length)
-      ) {
-        postResult(
-          createExportRenderResult(
-            request.requestId,
-            undefined,
-            "Insights export requires a complete unique standard Top 10",
-          ),
-        );
-        return;
-      }
       const requestCoverToneAvailability = getCoverToneAvailability({
         projectId: PROJECT_ID,
         slots,
