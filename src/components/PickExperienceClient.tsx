@@ -2011,10 +2011,14 @@ export default function PickExperienceClient({
   ]);
 
   const handleRemoveCandidate = (songId: string) => {
-    void commitPickAssistantUpdate(
-      assistantShortlistIds.filter((candidateId) => candidateId !== songId),
-      null,
+    const nextShortlistIds = assistantShortlistIds.filter(
+      (candidateId) => candidateId !== songId,
     );
+    void commitPickAssistantUpdate(nextShortlistIds, null).then((saved) => {
+      if (saved && nextShortlistIds.length === 0) {
+        setAssistantRandomSampleActive(false);
+      }
+    });
   };
 
   const handleClearPickAssistant = () => {

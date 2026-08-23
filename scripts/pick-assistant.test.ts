@@ -1071,6 +1071,71 @@ test("random sample wiring only commits the current Assistant shortlist", () => 
   assert.match(source, /randomSampleCount=\{assistantRandomSampleCount\}/);
 });
 
+test("random sample provenance stays visible through every Assistant runtime phase", () => {
+  const source = readFileSync(
+    resolve(process.cwd(), "src/components/PickAssistantModal.tsx"),
+    "utf8",
+  );
+  const modalStart = source.indexOf(
+    "export default function PickAssistantModal",
+  );
+  const modalEnd = source.indexOf("\nfunction ShortlistView", modalStart);
+  assert.ok(modalStart >= 0 && modalEnd > modalStart);
+  const modal = source.slice(modalStart, modalEnd);
+  const provenanceNotice = modal.indexOf("{randomSampleActive ? (");
+  const runtimeState = modal.indexOf("{storageIssue ? (");
+
+  assert.ok(
+    provenanceNotice >= 0 && provenanceNotice < runtimeState,
+    "the provenance notice must wrap shortlist, comparing, and complete states",
+  );
+  assert.match(
+    modal.slice(provenanceNotice, runtimeState),
+    /assistant\.randomSampleLabel/,
+  );
+  assert.match(modal, /tournament\?\.status === "comparing"/);
+  assert.match(modal, /tournament\?\.status === "complete"/);
+  assert.match(modal, /<ShortlistView/);
+});
+
+test("removing the last random candidate clears provenance only after a successful CAS", () => {
+  const source = readFileSync(
+    resolve(process.cwd(), "src/components/PickExperienceClient.tsx"),
+    "utf8",
+  );
+  const handlerStart = source.indexOf("const handleRemoveCandidate");
+  const handlerEnd = source.indexOf(
+    "\n  const handleClearPickAssistant",
+    handlerStart,
+  );
+  assert.ok(handlerStart >= 0 && handlerEnd > handlerStart);
+  const handler = source.slice(handlerStart, handlerEnd);
+  const commit = handler.indexOf(
+    "commitPickAssistantUpdate(nextShortlistIds, null)",
+  );
+  const successfulEmptyGuard = handler.indexOf(
+    "saved && nextShortlistIds.length === 0",
+  );
+  const clearProvenance = handler.indexOf(
+    "setAssistantRandomSampleActive(false)",
+  );
+
+  assert.match(
+    handler,
+    /const nextShortlistIds = assistantShortlistIds\.filter/,
+  );
+  assert.match(
+    handler,
+    /commitPickAssistantUpdate\(nextShortlistIds, null\)\.then\(\(saved\) =>/,
+  );
+  assert.ok(
+    commit >= 0 &&
+      commit < successfulEmptyGuard &&
+      successfulEmptyGuard < clearProvenance,
+    "failed CAS or a non-empty shortlist must retain random provenance",
+  );
+});
+
 test("random sample UI stays explicit in all four locales", () => {
   assert.deepEqual(
     {
@@ -1093,7 +1158,7 @@ test("random sample UI stays explicit in all four locales", () => {
   );
   assert.ok(
     modalSource.match(/assistant\.randomSampleLabel/g)?.length === 2,
-    "the random entry and its resulting shortlist must both carry the label",
+    "the random entry and modal-wide provenance notice must both carry the label",
   );
   assert.match(
     modalSource,

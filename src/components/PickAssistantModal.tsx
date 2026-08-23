@@ -221,6 +221,17 @@ export default function PickAssistantModal({
               {t("assistant.previewRefreshed")}
             </p>
           ) : null}
+          {randomSampleActive ? (
+            <p
+              role="status"
+              className="rounded-[var(--radius-sm)] border border-[var(--line)] bg-[var(--project-primary-wash)] px-3 py-2 text-sm leading-relaxed text-[var(--foreground)]"
+            >
+              <span className="font-semibold">
+                {t("assistant.randomSampleLabel")}
+              </span>{" "}
+              {t("assistant.randomSampleReady", { count: shortlist.length })}
+            </p>
+          ) : null}
           {storageIssue ? (
             <StorageIssue issue={storageIssue} onReset={handleResetStorage} />
           ) : tournament?.status === "comparing" ? (
@@ -255,7 +266,6 @@ export default function PickAssistantModal({
               shortlist={shortlist}
               minimumCandidates={minimumCandidates}
               maximumCandidates={maximumCandidates}
-              randomSampleActive={randomSampleActive}
               randomSampleCount={randomSampleCount}
               longSessionCandidates={longSessionCandidates}
               shortlistMaximumComparisons={shortlistMaximumComparisons}
@@ -280,7 +290,6 @@ function ShortlistView({
   shortlist,
   minimumCandidates,
   maximumCandidates,
-  randomSampleActive,
   randomSampleCount,
   longSessionCandidates,
   shortlistMaximumComparisons,
@@ -297,7 +306,6 @@ function ShortlistView({
   shortlist: Song[];
   minimumCandidates: number;
   maximumCandidates: number;
-  randomSampleActive: boolean;
   randomSampleCount: number;
   longSessionCandidates: number;
   shortlistMaximumComparisons: number;
@@ -381,17 +389,6 @@ function ShortlistView({
 
   return (
     <div className="grid gap-4">
-      {randomSampleActive ? (
-        <p
-          role="status"
-          className="rounded-[var(--radius-sm)] border border-[var(--line)] bg-[var(--project-primary-wash)] px-3 py-2 text-sm leading-relaxed text-[var(--foreground)]"
-        >
-          <span className="font-semibold">
-            {t("assistant.randomSampleLabel")}
-          </span>{" "}
-          {t("assistant.randomSampleReady", { count: shortlist.length })}
-        </p>
-      ) : null}
       <div className="flex items-center justify-between gap-3">
         <h3 className="text-sm font-semibold text-[var(--foreground)]">
           {t("assistant.shortlistTitle")}
