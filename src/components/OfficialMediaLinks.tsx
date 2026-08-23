@@ -68,14 +68,8 @@ export function OfficialMediaCoverLink({
   const { t } = useLocale();
   const link = getPrimaryOfficialMediaLink(songId);
   const previewMedia = getPreviewMedia(songId);
-  const {
-    playingSongId,
-    status,
-    progress,
-    failedSongIds,
-    firstUseNoticeSongId,
-    toggle,
-  } = usePreviewAudio();
+  const { playingSongId, status, progress, failedSongIds, toggle } =
+    usePreviewAudio();
   const mode = resolvePreviewMediaControlMode({
     hasPreview: Boolean(previewMedia),
     failed: failedSongIds.has(songId),
@@ -86,32 +80,26 @@ export function OfficialMediaCoverLink({
 
   if (mode === "preview") {
     return (
-      <>
-        <button
-          type="button"
-          onClick={() => toggle(songId)}
-          aria-pressed={isActive}
-          aria-label={t(
-            isActive
-              ? "songDetail.preview.stopAria"
-              : "songDetail.preview.playAria",
-            { title },
-          )}
-          title={t(
-            isActive ? "songDetail.preview.stop" : "songDetail.preview.play",
-          )}
-          className={`${className} group p-0 text-left focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]`}
-        >
-          {children}
-          <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/5 transition-colors duration-150 group-hover:bg-black/20 group-focus-visible:bg-black/20">
-            <PreviewGlyph isActive={isActive} progress={progress} size={32} />
-          </span>
-        </button>
-        <PreviewFirstUseNotice
-          show={firstUseNoticeSongId === songId}
-          message={t("songDetail.preview.firstUseNote")}
-        />
-      </>
+      <button
+        type="button"
+        onClick={() => toggle(songId)}
+        aria-pressed={isActive}
+        aria-label={t(
+          isActive
+            ? "songDetail.preview.stopAria"
+            : "songDetail.preview.playAria",
+          { title },
+        )}
+        title={t(
+          isActive ? "songDetail.preview.stop" : "songDetail.preview.play",
+        )}
+        className={`${className} group p-0 text-left focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]`}
+      >
+        {children}
+        <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/5 transition-colors duration-150 group-hover:bg-black/20 group-focus-visible:bg-black/20">
+          <PreviewGlyph isActive={isActive} progress={progress} size={32} />
+        </span>
+      </button>
     );
   }
 
@@ -146,24 +134,16 @@ export function PreviewMediaIconControl({
   songId,
   title,
   className,
-  showFirstUseNotice = true,
 }: {
   songId: string;
   title: string;
   className: string;
-  showFirstUseNotice?: boolean;
 }) {
   const { t } = useLocale();
   const link = getPrimaryOfficialMediaLink(songId);
   const previewMedia = getPreviewMedia(songId);
-  const {
-    playingSongId,
-    status,
-    progress,
-    failedSongIds,
-    firstUseNoticeSongId,
-    toggle,
-  } = usePreviewAudio();
+  const { playingSongId, status, progress, failedSongIds, toggle } =
+    usePreviewAudio();
   const mode = resolvePreviewMediaControlMode({
     hasPreview: Boolean(previewMedia),
     failed: failedSongIds.has(songId),
@@ -200,11 +180,6 @@ export function PreviewMediaIconControl({
             })
           : undefined
       }
-      firstUseNotice={
-        showFirstUseNotice && firstUseNoticeSongId === songId
-          ? t("songDetail.preview.firstUseNote")
-          : undefined
-      }
       onToggle={() => toggle(songId)}
     />
   );
@@ -236,7 +211,6 @@ export function PreviewMediaControlView({
   officialHref,
   officialTitle,
   officialAriaLabel,
-  firstUseNotice,
   onToggle,
 }: {
   mode: PreviewMediaControlMode;
@@ -248,28 +222,21 @@ export function PreviewMediaControlView({
   officialHref?: string;
   officialTitle?: string;
   officialAriaLabel?: string;
-  firstUseNotice?: string;
   onToggle: () => void;
 }) {
   if (mode === "preview") {
     return (
-      <>
-        <button
-          type="button"
-          onClick={onToggle}
-          aria-pressed={isActive}
-          aria-label={previewAriaLabel}
-          title={previewTitle}
-          className={`${className} relative overflow-hidden`}
-        >
-          <AppIcon name={isActive ? "pause" : "play"} size={16} />
-          <ProgressBar progress={progress} />
-        </button>
-        <PreviewFirstUseNotice
-          show={Boolean(firstUseNotice)}
-          message={firstUseNotice ?? ""}
-        />
-      </>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-pressed={isActive}
+        aria-label={previewAriaLabel}
+        title={previewTitle}
+        className={`${className} relative overflow-hidden`}
+      >
+        <AppIcon name={isActive ? "pause" : "play"} size={16} />
+        <ProgressBar progress={progress} />
+      </button>
     );
   }
 
@@ -336,24 +303,6 @@ function ProgressBar({
         }`}
         style={{ width: `${boundedProgress * 100}%` }}
       />
-    </span>
-  );
-}
-
-function PreviewFirstUseNotice({
-  show,
-  message,
-}: {
-  show: boolean;
-  message: string;
-}) {
-  if (!show) return null;
-  return (
-    <span
-      role="status"
-      className="pointer-events-none fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-[100] mx-auto block max-w-lg rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--paper)] px-4 py-3 text-left text-xs font-medium leading-relaxed text-[var(--foreground)] shadow-[var(--shadow-panel)]"
-    >
-      {message}
     </span>
   );
 }

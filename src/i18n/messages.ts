@@ -376,8 +376,6 @@ const en = {
   "songDetail.preview.stopAria": "Stop previewing {title}",
   "songDetail.preview.attribution": "30-second preview provided by Apple Music",
   "songDetail.appleMusic": "Open in Apple Music",
-  "songDetail.preview.firstUseNote":
-    "We do not run a server or collect information. Playing this preview asks Apple's content delivery network for a 30-second audio file; nothing is requested until you press play.",
   "songDetail.lyricist": "Lyrics",
   "songDetail.composer": "Music",
   "songDetail.arranger": "Arrangement",
@@ -997,8 +995,6 @@ const ja: MessageCatalog = {
   "songDetail.preview.attribution":
     "30秒プレビューはApple Musicから提供されています",
   "songDetail.appleMusic": "Apple Musicで開く",
-  "songDetail.preview.firstUseNote":
-    "このサイトにはサーバーがなく、情報を収集しません。再生すると、Appleのコンテンツ配信ネットワークから30秒の音声ファイルを取得します。再生ボタンを押すまでは何もリクエストされません。",
   "songDetail.lyricist": "作詞",
   "songDetail.composer": "作曲",
   "songDetail.arranger": "編曲",
@@ -1589,8 +1585,6 @@ const zhCN: MessageCatalog = {
   "songDetail.preview.stopAria": "停止试听{title}",
   "songDetail.preview.attribution": "30 秒试听由 Apple Music 提供",
   "songDetail.appleMusic": "在 Apple Music 中打开",
-  "songDetail.preview.firstUseNote":
-    "我们自己没有服务器，也不收集任何信息。播放试听时，浏览器会向 Apple 的内容分发网络请求一个 30 秒音频文件；在你点击播放之前不会发生任何请求。",
   "songDetail.lyricist": "作词",
   "songDetail.composer": "作曲",
   "songDetail.arranger": "编曲",
@@ -2183,8 +2177,6 @@ const ko: MessageCatalog = {
   "songDetail.preview.attribution":
     "30초 미리듣기는 Apple Music에서 제공합니다",
   "songDetail.appleMusic": "Apple Music에서 열기",
-  "songDetail.preview.firstUseNote":
-    "이 사이트는 자체 서버를 운영하거나 정보를 수집하지 않습니다. 미리듣기를 재생하면 브라우저가 Apple 콘텐츠 전송 네트워크에 30초 오디오 파일을 요청하며, 재생 버튼을 누르기 전에는 아무 요청도 보내지 않습니다.",
   "songDetail.lyricist": "작사",
   "songDetail.composer": "작곡",
   "songDetail.arranger": "편곡",

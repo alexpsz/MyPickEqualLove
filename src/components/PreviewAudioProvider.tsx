@@ -20,7 +20,6 @@ interface PreviewAudioContextValue {
   status: PreviewAudioStatus;
   progress: number;
   failedSongIds: ReadonlySet<string>;
-  firstUseNoticeSongId: string | null;
   toggle: (songId: string) => void;
   stop: () => void;
 }
@@ -44,7 +43,6 @@ export default function PreviewAudioProvider({
   const activePreviewRef = useRef<ActivePreview | null>(null);
   const removeListenersRef = useRef<(() => void) | null>(null);
   const generationRef = useRef(0);
-  const firstUseNoticeShownRef = useRef(false);
   const failedSongIdsRef = useRef<ReadonlySet<string>>(new Set());
   const [playingSongId, setPlayingSongId] = useState<string | null>(null);
   const [status, setStatus] = useState<PreviewAudioStatus>("idle");
@@ -52,9 +50,6 @@ export default function PreviewAudioProvider({
   const [failedSongIds, setFailedSongIds] = useState<ReadonlySet<string>>(
     new Set(),
   );
-  const [firstUseNoticeSongId, setFirstUseNoticeSongId] = useState<
-    string | null
-  >(null);
 
   const stop = useCallback(() => {
     generationRef.current += 1;
@@ -70,7 +65,6 @@ export default function PreviewAudioProvider({
     }
 
     setPlayingSongId(null);
-    setFirstUseNoticeSongId(null);
     setStatus("idle");
     setProgress(0);
   }, []);
@@ -117,7 +111,6 @@ export default function PreviewAudioProvider({
         audio.load();
         activePreviewRef.current = null;
         setPlayingSongId(null);
-        setFirstUseNoticeSongId(null);
         setProgress(0);
       };
       const markFailed = () => {
@@ -159,12 +152,6 @@ export default function PreviewAudioProvider({
       setPlayingSongId(songId);
       setStatus("loading");
       setProgress(0);
-      if (!firstUseNoticeShownRef.current) {
-        firstUseNoticeShownRef.current = true;
-        setFirstUseNoticeSongId(songId);
-      } else {
-        setFirstUseNoticeSongId(null);
-      }
 
       try {
         const playResult = audio.play();
@@ -187,19 +174,10 @@ export default function PreviewAudioProvider({
       status,
       progress,
       failedSongIds,
-      firstUseNoticeSongId,
       toggle,
       stop,
     }),
-    [
-      failedSongIds,
-      firstUseNoticeSongId,
-      playingSongId,
-      progress,
-      status,
-      stop,
-      toggle,
-    ],
+    [failedSongIds, playingSongId, progress, status, stop, toggle],
   );
 
   return (

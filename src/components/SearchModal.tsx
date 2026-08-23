@@ -752,7 +752,6 @@ export default function SearchModal({
                         <PreviewMediaIconControl
                           songId={song.id}
                           title={song.title.ja}
-                          showFirstUseNotice={!suspended}
                           className="flex h-11 w-11 items-center justify-center rounded-full text-[var(--muted)] transition-colors hover:bg-[var(--paper)] hover:text-[var(--foreground)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)]"
                         />
                         <button

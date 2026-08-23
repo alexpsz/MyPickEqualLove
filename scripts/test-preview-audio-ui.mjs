@@ -84,7 +84,6 @@ const previewMarkup = renderToStaticMarkup(
     mode: previewMode,
     isActive: true,
     progress: 0.42,
-    firstUseNotice: "Privacy notice",
   }),
 );
 assert.match(previewMarkup, /^<button\b/);
@@ -92,7 +91,7 @@ assert.match(previewMarkup, /aria-pressed="true"/);
 assert.match(previewMarkup, /aria-label="Stop previewing Test Song"/);
 assert.match(previewMarkup, /data-icon="pause"/);
 assert.match(previewMarkup, /style="width:42%"/);
-assert.match(previewMarkup, /role="status"/);
+assert.doesNotMatch(previewMarkup, /role="status"/);
 
 for (const scenario of [
   { hasPreview: false, failed: false, hasOfficialLink: true },
@@ -127,27 +126,6 @@ assert.equal(
   "",
 );
 
-const oneNoticeMarkup = renderToStaticMarkup(
-  React.createElement(
-    React.Fragment,
-    null,
-    React.createElement(PreviewMediaControlView, {
-      ...sharedViewProps,
-      mode: "preview",
-      isActive: false,
-      progress: 0,
-      firstUseNotice: "Privacy notice",
-    }),
-    React.createElement(PreviewMediaControlView, {
-      ...sharedViewProps,
-      mode: "preview",
-      isActive: false,
-      progress: 0,
-    }),
-  ),
-);
-assert.equal(oneNoticeMarkup.match(/role="status"/g)?.length, 1);
-
 const { messages } = loadTranspiledModule("src/i18n/messages.ts");
 const previewKeys = [
   "songDetail.preview.play",
@@ -156,7 +134,6 @@ const previewKeys = [
   "songDetail.preview.stopAria",
   "songDetail.preview.attribution",
   "songDetail.appleMusic",
-  "songDetail.preview.firstUseNote",
 ];
 for (const locale of ["en", "ja", "zh-CN", "ko"]) {
   for (const key of previewKeys) {
