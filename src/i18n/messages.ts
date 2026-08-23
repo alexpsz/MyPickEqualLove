@@ -253,6 +253,7 @@ const en = {
 
   "insights.title": "Top 10 insights",
   "insights.description": "A factual summary of the songs on this board.",
+  "insights.selectionProgress": "{selected}/{total} songs selected",
   "insights.releaseYears": "Release years",
   "insights.releaseTypes": "Release types",
   "insights.trackTypes": "Track types",
@@ -871,6 +872,7 @@ const ja: MessageCatalog = {
 
   "insights.title": "Top 10の内訳",
   "insights.description": "このTop 10の楽曲データを集計しています。",
+  "insights.selectionProgress": "{selected}/{total}曲を選択中",
   "insights.releaseYears": "リリース年",
   "insights.releaseTypes": "リリース種別",
   "insights.trackTypes": "楽曲タイプ",
@@ -1465,6 +1467,7 @@ const zhCN: MessageCatalog = {
 
   "insights.title": "Top 10 选曲概览",
   "insights.description": "基于当前榜单歌曲事实的汇总。",
+  "insights.selectionProgress": "已选择 {selected}/{total} 首",
   "insights.releaseYears": "发行年份",
   "insights.releaseTypes": "发行类型",
   "insights.trackTypes": "曲目类型",
@@ -2053,6 +2056,7 @@ const ko: MessageCatalog = {
 
   "insights.title": "Top 10 요약",
   "insights.description": "현재 보드의 곡 사실을 정리한 결과입니다.",
+  "insights.selectionProgress": "{selected}/{total}곡 선택됨",
   "insights.releaseYears": "발매 연도",
   "insights.releaseTypes": "발매 형태",
   "insights.trackTypes": "트랙 유형",

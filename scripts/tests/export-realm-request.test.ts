@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import test from "node:test";
 
 import {
@@ -122,4 +124,47 @@ test("the busy check runs before identity checks", () => {
     status: "reject",
     reason: EXPORT_REALM_REJECTIONS.busy,
   });
+});
+
+test("capture effect posts an uncancelled result before consuming its request id", () => {
+  const source = readFileSync(
+    resolve(process.cwd(), "src/components/PickExperienceClient.tsx"),
+    "utf8",
+  );
+  const captureCallbackIndex = source.indexOf("const captureExportCanvas");
+  const effectStart = source.indexOf(
+    "  useEffect(() => {",
+    captureCallbackIndex,
+  );
+  const effectEnd = source.indexOf(
+    "  }, [captureExportCanvas, frameCaptureRequest, hydrated, isExportRealm]);",
+    effectStart,
+  );
+
+  assert.notEqual(captureCallbackIndex, -1, "capture callback must exist");
+  assert.notEqual(effectStart, -1, "capture effect must exist");
+  assert.notEqual(effectEnd, -1, "capture effect boundary must stay explicit");
+
+  const effect = source.slice(effectStart, effectEnd);
+  const failureIndex = effect.indexOf("} catch (error) {");
+  const cancellationIndex = effect.indexOf("if (cancelled) return;");
+  const postIndex = effect.indexOf("window.parent.postMessage(result");
+  const consumeStatement = "capturedFrameRequestIdRef.current = requestId;";
+  const consumeIndex = effect.indexOf(consumeStatement);
+
+  assert.notEqual(failureIndex, -1);
+  assert.notEqual(cancellationIndex, -1);
+  assert.notEqual(postIndex, -1);
+  assert.notEqual(consumeIndex, -1);
+  assert.ok(failureIndex < postIndex, "explicit failures must post a result");
+  assert.ok(cancellationIndex < postIndex, "cancelled work must not post");
+  assert.ok(
+    postIndex < consumeIndex,
+    "posting must precede request consumption",
+  );
+  assert.equal(
+    effect.split(consumeStatement).length - 1,
+    1,
+    "the effect must have one settled-request consumption point",
+  );
 });

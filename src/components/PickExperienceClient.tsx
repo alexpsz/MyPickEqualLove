@@ -135,7 +135,10 @@ import {
   type RestorePlanSuccess,
 } from "../utils/backupDocument";
 import { centerExportYearInk } from "../utils/centerExportYearInk";
-import { deriveBoardInsights } from "../utils/boardInsights";
+import {
+  deriveBoardInsights,
+  resolveBoardInsightsSelection,
+} from "../utils/boardInsights";
 import {
   installExportStyleAdapter,
   type ExportStyleWindowLike,
@@ -1103,39 +1106,39 @@ export default function PickExperienceClient({
   const activeTemplateId = hydrated
     ? resolveAvailableExportTemplateId(templateId, coverToneAvailability)
     : templateId;
-  const boardInsights = useMemo(() => {
+  const boardInsightSelection = useMemo(() => {
+    if (!hydrated) return null;
+
+    const selection = resolveBoardInsightsSelection({
+      experienceKind: experience.kind,
+      slotIds: slots.map((slot) => slot.id),
+      storedPicks,
+      songsById: SONGS_BY_ID,
+    });
     if (
-      !hydrated ||
-      !isStandard ||
-      slots.length !== 10 ||
-      (isExportRealm && frameCaptureRequest?.kind !== "insights")
+      !selection ||
+      (isExportRealm &&
+        (frameCaptureRequest?.kind !== "insights" || !selection.canExport))
     ) {
       return null;
     }
 
-    const topTen: Song[] = [];
-    const songIds = new Set<string>();
-
-    for (const slot of slots) {
-      const song = picks[slot.id];
-      if (!song || songIds.has(song.id)) return null;
-
-      topTen.push(song);
-      songIds.add(song.id);
-    }
-
-    return deriveBoardInsights(topTen, {
-      oshimenMemberId: oshimenMember?.id,
-    });
+    return selection;
   }, [
+    experience.kind,
     frameCaptureRequest?.kind,
     hydrated,
     isExportRealm,
-    isStandard,
-    oshimenMember?.id,
-    picks,
     slots,
+    storedPicks,
   ]);
+  const boardInsights = useMemo(() => {
+    if (!boardInsightSelection) return null;
+
+    return deriveBoardInsights(boardInsightSelection.songs, {
+      oshimenMemberId: oshimenMember?.id,
+    });
+  }, [boardInsightSelection, oshimenMember?.id]);
   const showArchetypeEntry =
     hydrated &&
     !isExportRealm &&
@@ -3251,28 +3254,26 @@ export default function PickExperienceClient({
       return;
     }
 
-    capturedFrameRequestIdRef.current = frameCaptureRequest.requestId;
+    const requestId = frameCaptureRequest.requestId;
     let cancelled = false;
 
     const capture = async () => {
       let result: ExportRenderResult;
       try {
         const dataUrl = await captureExportCanvas();
-        result = createExportRenderResult(
-          frameCaptureRequest.requestId,
-          dataUrl,
-        );
+        result = createExportRenderResult(requestId, dataUrl);
       } catch (error) {
         result = createExportRenderResult(
-          frameCaptureRequest.requestId,
+          requestId,
           undefined,
           error instanceof Error ? error.message : "Image generation failed",
         );
       }
 
-      if (!cancelled) {
-        window.parent.postMessage(result, window.location.origin);
-      }
+      if (cancelled) return;
+
+      window.parent.postMessage(result, window.location.origin);
+      capturedFrameRequestIdRef.current = requestId;
     };
 
     void capture();
@@ -3291,7 +3292,10 @@ export default function PickExperienceClient({
 
       const archetypeForExport = kind === "archetype" ? archetypeResult : null;
       if (kind === "archetype" && !archetypeForExport) return;
-      const insightsForExport = kind === "insights" ? boardInsights : null;
+      const insightsForExport =
+        kind === "insights" && boardInsightSelection?.canExport
+          ? boardInsights
+          : null;
       if (kind === "insights" && !insightsForExport) return;
       if (kind === "comparison") return;
 
@@ -3434,6 +3438,7 @@ export default function PickExperienceClient({
       archetypeResult,
       activeContext,
       activeTemplateId,
+      boardInsightSelection?.canExport,
       boardInsights,
       boardStorageWritable,
       completeBoardReveal,
@@ -4204,26 +4209,20 @@ export default function PickExperienceClient({
               void handleGenerateImage();
             }}
           />
-          {boardInsights ? (
-            <>
-              <BoardInsightsPanel insights={boardInsights} />
-              <div className="-mt-3 flex justify-end">
-                <button
-                  ref={insightsTriggerRef}
-                  type="button"
-                  data-dialog-return-key={INSIGHTS_DIALOG_RETURN_KEY}
-                  onClick={() => {
-                    void handleGenerateInsightsImage();
-                  }}
-                  disabled={generating}
-                  className="official-button official-button-primary min-h-11 w-full sm:w-auto"
-                >
-                  {generating && preview?.kind === "insights"
-                    ? t("controls.generating")
-                    : t("insights.export.cta")}
-                </button>
-              </div>
-            </>
+          {!isExportRealm && boardInsights && boardInsightSelection ? (
+            <BoardInsightsPanel
+              insights={boardInsights}
+              selectedCount={boardInsightSelection.selectedCount}
+              targetCount={boardInsightSelection.targetCount}
+              canExport={boardInsightSelection.canExport}
+              disabled={generating}
+              generating={generating && preview?.kind === "insights"}
+              exportButtonRef={insightsTriggerRef}
+              exportReturnKey={INSIGHTS_DIALOG_RETURN_KEY}
+              onGenerate={() => {
+                void handleGenerateInsightsImage();
+              }}
+            />
           ) : null}
         </main>
 

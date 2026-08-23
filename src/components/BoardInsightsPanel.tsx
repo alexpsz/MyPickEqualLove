@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState, type ReactNode } from "react";
+import { useId, useState, type ReactNode, type Ref } from "react";
 import { useLocale } from "../i18n/LocaleProvider";
 import type {
   BoardInsightCoverage,
@@ -265,11 +265,29 @@ function CreditDimension({
   );
 }
 
+interface BoardInsightsPanelProps {
+  insights: BoardInsights;
+  selectedCount: number;
+  targetCount: number;
+  canExport: boolean;
+  disabled: boolean;
+  generating: boolean;
+  exportButtonRef?: Ref<HTMLButtonElement>;
+  exportReturnKey: string;
+  onGenerate: () => void;
+}
+
 export default function BoardInsightsPanel({
   insights,
-}: {
-  insights: BoardInsights;
-}) {
+  selectedCount,
+  targetCount,
+  canExport,
+  disabled,
+  generating,
+  exportButtonRef,
+  exportReturnKey,
+  onGenerate,
+}: BoardInsightsPanelProps) {
   const { t } = useLocale();
   const countLabel = (count: number) => t("insights.songCount", { count });
   const emptyLabel = t("insights.noData");
@@ -279,17 +297,29 @@ export default function BoardInsightsPanel({
     <section
       aria-labelledby="board-insights-title"
       data-board-insights
+      data-board-insights-selected-count={selectedCount}
       className="mt-5 mb-6 rounded-2xl border border-[var(--line)] bg-[var(--material-strong)] p-4 shadow-sm sm:mt-6 sm:p-5"
     >
-      <div className="max-w-2xl">
-        <h2
-          id="board-insights-title"
-          className="text-base font-semibold tracking-[-0.01em] text-[var(--foreground)] sm:text-lg"
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="max-w-2xl">
+          <h2
+            id="board-insights-title"
+            className="text-base font-semibold tracking-[-0.01em] text-[var(--foreground)] sm:text-lg"
+          >
+            {t("insights.title")}
+          </h2>
+          <p className="mt-1 text-sm leading-relaxed text-[var(--muted)]">
+            {t("insights.description")}
+          </p>
+        </div>
+        <p
+          data-board-insights-progress
+          className="shrink-0 rounded-full bg-[var(--project-primary-wash)] px-3 py-1.5 text-xs font-semibold tabular-nums text-[var(--foreground)]"
         >
-          {t("insights.title")}
-        </h2>
-        <p className="mt-1 text-sm leading-relaxed text-[var(--muted)]">
-          {t("insights.description")}
+          {t("insights.selectionProgress", {
+            selected: selectedCount,
+            total: targetCount,
+          })}
         </p>
       </div>
 
@@ -397,6 +427,24 @@ export default function BoardInsightsPanel({
           </div>
         </InsightCard>
       </div>
+
+      {canExport ? (
+        <div
+          data-board-insights-export-action
+          className="mt-4 flex justify-end"
+        >
+          <button
+            ref={exportButtonRef}
+            type="button"
+            data-dialog-return-key={exportReturnKey}
+            onClick={onGenerate}
+            disabled={disabled}
+            className="official-button official-button-primary min-h-11 w-full sm:w-auto"
+          >
+            {generating ? t("controls.generating") : t("insights.export.cta")}
+          </button>
+        </div>
+      ) : null}
     </section>
   );
 }

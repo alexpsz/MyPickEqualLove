@@ -1,9 +1,12 @@
 import type {
   LocalizedString,
+  PickSlotId,
   ReleaseType,
   Song,
+  StoredPicks,
   TrackType,
 } from "../schema/music";
+import type { PickExperienceKind } from "../schema/pick-experience";
 import {
   getConfirmedSongCreditCreators,
   type SongCreditRole,
@@ -12,6 +15,77 @@ import {
   RELEASE_TYPE_MESSAGE_KEYS,
   TRACK_TYPE_MESSAGE_KEYS,
 } from "./songMetadata";
+
+export const BOARD_INSIGHTS_TARGET_COUNT = 10;
+
+export interface BoardInsightsSelection {
+  songs: readonly Song[];
+  selectedCount: number;
+  targetCount: number;
+  canExport: boolean;
+}
+
+/**
+ * Resolves the current normal-board selection without treating an invalid song,
+ * duplicate, foreign slot, or Live state as an empty slot. Empty standard slots
+ * are allowed for the on-page panel; only a complete Top 10 is exportable.
+ */
+export function resolveBoardInsightsSelection({
+  experienceKind,
+  slotIds,
+  storedPicks,
+  songsById,
+}: {
+  experienceKind: PickExperienceKind;
+  slotIds: readonly PickSlotId[];
+  storedPicks: StoredPicks;
+  songsById: Readonly<Record<string, Song>>;
+}): BoardInsightsSelection | null {
+  if (
+    experienceKind !== "standard" ||
+    slotIds.length !== BOARD_INSIGHTS_TARGET_COUNT
+  ) {
+    return null;
+  }
+
+  const validSlotIds = new Set(slotIds);
+  if (validSlotIds.size !== slotIds.length) return null;
+
+  for (const [slotId, songId] of Object.entries(storedPicks)) {
+    if (
+      !validSlotIds.has(slotId) ||
+      typeof songId !== "string" ||
+      songId.length === 0
+    ) {
+      return null;
+    }
+  }
+
+  const songs: Song[] = [];
+  const seenSongIds = new Set<string>();
+
+  for (const slotId of slotIds) {
+    if (!Object.prototype.hasOwnProperty.call(storedPicks, slotId)) continue;
+
+    const songId = storedPicks[slotId];
+    const song = Object.prototype.hasOwnProperty.call(songsById, songId)
+      ? songsById[songId]
+      : undefined;
+    if (!song || song.id !== songId || seenSongIds.has(songId)) return null;
+
+    songs.push(song);
+    seenSongIds.add(songId);
+  }
+
+  if (songs.length === 0) return null;
+
+  return {
+    songs,
+    selectedCount: songs.length,
+    targetCount: BOARD_INSIGHTS_TARGET_COUNT,
+    canExport: songs.length === BOARD_INSIGHTS_TARGET_COUNT,
+  };
+}
 
 export interface BoardInsightCoverage {
   covered: number;

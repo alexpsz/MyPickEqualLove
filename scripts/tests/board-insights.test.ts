@@ -1,8 +1,16 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import type { LocalizedString, Song } from "../../src/schema/music";
-import { deriveBoardInsights } from "../../src/utils/boardInsights";
+import type {
+  LocalizedString,
+  Song,
+  StoredPicks,
+} from "../../src/schema/music";
+import {
+  BOARD_INSIGHTS_TARGET_COUNT,
+  deriveBoardInsights,
+  resolveBoardInsightsSelection,
+} from "../../src/utils/boardInsights";
 import {
   getConfirmedSongCredit,
   getConfirmedSongCredits,
@@ -51,6 +59,133 @@ function makeTopTen(overrides: Partial<Song>[] = []): Song[] {
     makeSong(`song-${index + 1}`, overrides[index]),
   );
 }
+
+const TOP_TEN_SLOT_IDS = Array.from(
+  { length: BOARD_INSIGHTS_TARGET_COUNT },
+  (_, index) => `pick-${index + 1}`,
+);
+
+function resolveSelection(
+  songs: readonly Song[],
+  selectedCount: number,
+  storedPicks: StoredPicks = Object.fromEntries(
+    TOP_TEN_SLOT_IDS.slice(0, selectedCount).map((slotId, index) => [
+      slotId,
+      songs[index]?.id,
+    ]),
+  ),
+  experienceKind: "standard" | "live-afterglow" = "standard",
+) {
+  return resolveBoardInsightsSelection({
+    experienceKind,
+    slotIds: TOP_TEN_SLOT_IDS,
+    storedPicks,
+    songsById: Object.fromEntries(songs.map((song) => [song.id, song])),
+  });
+}
+
+test("normal insights separate 0/1/5/9/10 panel visibility from the complete-board export gate", () => {
+  const songs = makeTopTen();
+
+  for (const selectedCount of [0, 1, 5, 9, 10]) {
+    const selection = resolveSelection(songs, selectedCount);
+    if (selectedCount === 0) {
+      assert.equal(selection, null, "an empty board must not show a panel");
+      continue;
+    }
+
+    assert.ok(selection, `${selectedCount}/10 should show one insights panel`);
+    assert.equal(selection.selectedCount, selectedCount);
+    assert.equal(selection.targetCount, 10);
+    assert.equal(selection.canExport, selectedCount === 10);
+    assert.equal(
+      deriveBoardInsights(selection.songs).releaseYears.coverage.total,
+      selectedCount,
+      "statistics must use only the current non-empty selections",
+    );
+  }
+});
+
+test("duplicate, invalid, foreign-slot, non-Top-10, and Live states fail closed", () => {
+  const songs = makeTopTen();
+  const twoPicks = {
+    "pick-1": songs[0].id,
+    "pick-2": songs[1].id,
+  };
+
+  assert.equal(
+    resolveSelection(songs, 2, { ...twoPicks, "pick-2": songs[0].id }),
+    null,
+  );
+  assert.equal(resolveSelection(songs, 1, { "pick-1": "unknown-song" }), null);
+  assert.equal(
+    resolveSelection(songs, 1, {
+      "pick-1": songs[0].id,
+      "foreign-slot": songs[1].id,
+    }),
+    null,
+  );
+  assert.equal(resolveSelection(songs, 1, twoPicks, "live-afterglow"), null);
+  assert.equal(
+    resolveBoardInsightsSelection({
+      experienceKind: "standard",
+      slotIds: TOP_TEN_SLOT_IDS.slice(0, 9),
+      storedPicks: { "pick-1": songs[0].id },
+      songsById: Object.fromEntries(songs.map((song) => [song.id, song])),
+    }),
+    null,
+  );
+});
+
+test("oshimen solo count follows the current one-to-ten selection", () => {
+  const songs = makeTopTen(
+    Array.from({ length: 10 }, () => ({
+      trackType: "solo" as const,
+      memberIds: ["member-a"],
+    })),
+  );
+
+  for (const selectedCount of [1, 5, 9, 10]) {
+    const selection = resolveSelection(songs, selectedCount);
+    assert.ok(selection);
+    assert.equal(
+      deriveBoardInsights(selection.songs, {
+        oshimenMemberId: "member-a",
+      }).oshimenSoloSongs?.count,
+      selectedCount,
+    );
+  }
+});
+
+test("each add, delete, replace, undo, import, or sync snapshot is resolved from current picks", () => {
+  const songs = makeTopTen();
+  const snapshots: Array<[StoredPicks, readonly string[]]> = [
+    [{ "pick-1": songs[0].id }, [songs[0].id]],
+    [{ "pick-1": songs[1].id }, [songs[1].id]],
+    [
+      { "pick-1": songs[1].id, "pick-2": songs[2].id },
+      [songs[1].id, songs[2].id],
+    ],
+    [{ "pick-2": songs[2].id }, [songs[2].id]],
+    [
+      { "pick-1": songs[1].id, "pick-2": songs[2].id },
+      [songs[1].id, songs[2].id],
+    ],
+  ];
+
+  for (const [storedPicks, expectedSongIds] of snapshots) {
+    const selection = resolveSelection(
+      songs,
+      expectedSongIds.length,
+      storedPicks,
+    );
+    assert.ok(selection);
+    assert.deepEqual(
+      selection.songs.map((song) => song.id),
+      expectedSongIds,
+    );
+  }
+});
 
 test("derives the four factual distributions with ten-song coverage", () => {
   const songs = makeTopTen([

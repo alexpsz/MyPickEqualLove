@@ -7,6 +7,7 @@ import ExportBoard, {
   InsightsExportBoard,
 } from "../../src/components/ExportBoard";
 import BoardComparisonExport from "../../src/components/BoardComparisonExport";
+import BoardInsightsPanel from "../../src/components/BoardInsightsPanel";
 import {
   LIVE_EXPERIENCES,
   STANDARD_PICK_EXPERIENCE,
@@ -28,7 +29,10 @@ import type { PickExperience } from "../../src/schema/pick-experience";
 import type { ExportHeaderPresentation } from "../../src/schema/export";
 import type { Picks, StoredPicks } from "../../src/schema/music";
 import { translate } from "../../src/i18n/translate";
-import { deriveBoardInsights } from "../../src/utils/boardInsights";
+import {
+  deriveBoardInsights,
+  resolveBoardInsightsSelection,
+} from "../../src/utils/boardInsights";
 import { deriveBoardAffinity } from "../../src/utils/boardAffinity";
 import { compareBoardPicks } from "../../src/utils/boardComparison";
 import {
@@ -361,6 +365,37 @@ function renderInsightsThroughExportBoard(
   );
 }
 
+function renderInsightsPanel(selectedCount: number) {
+  const slots = getSortedExperienceSlots(STANDARD_PICK_EXPERIENCE);
+  const storedPicks = Object.fromEntries(
+    slots
+      .slice(0, selectedCount)
+      .map((slot, index) => [slot.id, SONGS[index].id]),
+  );
+  const selection = resolveBoardInsightsSelection({
+    experienceKind: STANDARD_PICK_EXPERIENCE.kind,
+    slotIds: slots.map((slot) => slot.id),
+    storedPicks,
+    songsById: SONGS_BY_ID,
+  });
+  if (!selection) return "";
+
+  return renderToStaticMarkup(
+    createElement(LocaleProvider, {
+      children: createElement(BoardInsightsPanel, {
+        insights: deriveBoardInsights(selection.songs),
+        selectedCount: selection.selectedCount,
+        targetCount: selection.targetCount,
+        canExport: selection.canExport,
+        disabled: false,
+        generating: false,
+        exportReturnKey: "insights-export",
+        onGenerate: () => {},
+      }),
+    }),
+  );
+}
+
 test("poster metadata is all-or-nothing across templates, sizes, and layouts", () => {
   for (const experience of [STANDARD_PICK_EXPERIENCE, liveExperience]) {
     const slotCount = getSortedExperienceSlots(experience).length;
@@ -460,6 +495,9 @@ test("insights is a dedicated opaque SSR board in portrait and square", () => {
     assert.doesNotMatch(markup, /background-color:transparent/);
     assert.doesNotMatch(markup, /data-export-song-metadata/);
     assert.doesNotMatch(markup, /data-archetype-radar/);
+    assert.doesNotMatch(markup, /color-mix\(|\bcolor\(/i);
+    assert.doesNotMatch(markup, /var\(--project-primary/);
+    assert.match(markup, /radial-gradient\([^;]*#[0-9a-f]{8}/i);
   }
 
   assert.match(
@@ -473,6 +511,55 @@ test("insights is a dedicated opaque SSR board in portrait and square", () => {
   assert.match(dispatched, /background-color:#ffffff/);
   assert.match(portrait, /data-export-qr-code="true"/);
   assert.doesNotMatch(square, /data-export-qr-code="true"/);
+});
+
+test("insights panel shows current N/10 while its CTA remains complete-board only", () => {
+  assert.equal(renderInsightsPanel(0), "");
+
+  for (const selectedCount of [1, 5, 9]) {
+    const markup = renderInsightsPanel(selectedCount);
+    assert.equal(
+      (markup.match(/data-board-insights-selected-count=/g) ?? []).length,
+      1,
+    );
+    assert.match(
+      markup,
+      new RegExp(`data-board-insights-selected-count="${selectedCount}"`),
+    );
+    assert.match(markup, new RegExp(`${selectedCount}/10 songs selected`));
+    assert.doesNotMatch(markup, /data-board-insights-export-action/);
+    assert.doesNotMatch(markup, />Generate insights card</);
+  }
+
+  const complete = renderInsightsPanel(10);
+  assert.equal(
+    (complete.match(/data-board-insights-selected-count=/g) ?? []).length,
+    1,
+  );
+  assert.match(complete, /10\/10 songs selected/);
+  assert.match(complete, /data-board-insights-export-action/);
+  assert.match(complete, /data-dialog-return-key="insights-export"/);
+  assert.match(complete, />Generate insights card</);
+
+  const localizedProgress = {
+    en: "5/10 songs selected",
+    "zh-CN": "已选择 5/10 首",
+    ja: "5/10曲を選択中",
+    ko: "5/10곡 선택됨",
+  } as const;
+  for (const [locale, expected] of Object.entries(localizedProgress)) {
+    assert.equal(
+      translate(
+        locale as keyof typeof localizedProgress,
+        "insights.selectionProgress",
+        {
+          selected: 5,
+          total: 10,
+        },
+      ),
+      expected,
+    );
+  }
 });
 
 test("insights SSR uses every reviewed locale catalog", () => {

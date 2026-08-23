@@ -76,6 +76,9 @@ const EXPORT_FONT_FAMILY =
   '-apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans JP", sans-serif';
 const EXPORT_TITLE_FONT_FAMILY =
   '"Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+// Project theme colors are six-digit hex values. The 0x21 suffix preserves the
+// former 13% accent wash while remaining parseable by html2canvas 1.4.1.
+const INSIGHTS_EXPORT_ACCENT_WASH = `${PROJECT_THEME_COLOR}21`;
 const ARCHETYPE_FOOTER_BRAND_TEXT_STYLE = {
   fontFamily: EXPORT_FONT_FAMILY,
   fontSize: "25px",
@@ -540,8 +543,7 @@ export function InsightsExportBoard({
         style={{
           position: "absolute",
           inset: 0,
-          background:
-            "radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--project-primary, #986ad6) 13%, transparent), transparent 35%), repeating-linear-gradient(135deg, rgba(0,0,0,0.018) 0, rgba(0,0,0,0.018) 1px, transparent 1px, transparent 12px)",
+          background: `radial-gradient(circle at 100% 0%, ${INSIGHTS_EXPORT_ACCENT_WASH} 0%, rgba(0, 0, 0, 0) 35%), repeating-linear-gradient(135deg, rgba(0, 0, 0, 0.018) 0, rgba(0, 0, 0, 0.018) 1px, rgba(0, 0, 0, 0) 1px, rgba(0, 0, 0, 0) 12px)`,
           pointerEvents: "none",
         }}
       />
