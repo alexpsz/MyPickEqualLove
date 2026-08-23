@@ -12,6 +12,7 @@ import {
 } from "react";
 import dynamic from "next/dynamic";
 import {
+  BACKUP_CONFIG,
   PICK_ASSISTANT_CONFIG,
   PROJECT_CONFIG,
   PROJECT_ID,
@@ -113,6 +114,7 @@ import {
   type StorageLoadStatus,
 } from "../utils/boardStorage";
 import {
+  applyBackupRestoreTransaction,
   applyBoardHistoryTransaction,
   commitBoardTransaction,
   createEphemeralBoardReset,
@@ -125,6 +127,13 @@ import {
   type BoardTransactionResult,
   type ImportedBoardInput,
 } from "../utils/boardTransaction";
+import {
+  createBackupDocument,
+  parseBackupDocument,
+  planBackupRestore,
+  type RestorePlan,
+  type RestorePlanSuccess,
+} from "../utils/backupDocument";
 import { centerExportYearInk } from "../utils/centerExportYearInk";
 import { deriveBoardInsights } from "../utils/boardInsights";
 import {
@@ -234,6 +243,7 @@ import BoardLibraryModal, {
 } from "./BoardLibraryModal";
 import BoardComparisonExport from "./BoardComparisonExport";
 import BoardInsightsPanel from "./BoardInsightsPanel";
+import LocalBackupPanel from "./LocalBackupPanel";
 import BoardShareImportModal, {
   type BoardShareDialogState,
 } from "./BoardShareImportModal";
@@ -3923,6 +3933,35 @@ export default function PickExperienceClient({
     uiCopy.venue,
   );
 
+  const createLocalBackup = useCallback(
+    () =>
+      createBackupDocument({
+        exportedAt: new Date().toISOString(),
+        keys: getLocalStorageKeys(localStorage),
+        getItem: (key) => localStorage.getItem(key),
+      }),
+    [],
+  );
+
+  const prepareLocalRestore = useCallback((text: string): RestorePlan => {
+    const parsed = parseBackupDocument(text);
+    if (!parsed.ok) return parsed;
+    try {
+      return planBackupRestore(parsed.document, {
+        keys: getLocalStorageKeys(localStorage),
+        getItem: (key) => localStorage.getItem(key),
+      });
+    } catch {
+      return { ok: false, error: { code: "storage-unavailable" } };
+    }
+  }, []);
+
+  const applyLocalRestore = useCallback(
+    (plan: RestorePlanSuccess) =>
+      applyBackupRestoreTransaction({ storage: localStorage, plan }),
+    [],
+  );
+
   return (
     <div
       className="site-shell relative flex flex-1 flex-col"
@@ -4125,6 +4164,17 @@ export default function PickExperienceClient({
             </>
           ) : null}
         </main>
+
+        {!isExportRealm ? (
+          <LocalBackupPanel
+            projectName={PROJECT_CONFIG.groupName}
+            fileName={BACKUP_CONFIG.fileName}
+            disabled={!hydrated}
+            createDocument={createLocalBackup}
+            prepareRestore={prepareLocalRestore}
+            applyRestore={applyLocalRestore}
+          />
+        ) : null}
 
         <Footer />
 
@@ -4520,6 +4570,14 @@ function buildHeaderMeta(
       {content}
     </Fragment>
   ));
+}
+
+function getLocalStorageKeys(storage: Pick<Storage, "key" | "length">) {
+  return Array.from({ length: storage.length }, (_, index) =>
+    storage.key(index),
+  )
+    .filter((key): key is string => key !== null)
+    .sort();
 }
 
 const ACTIVE_MEMBERS_BY_SORT_ORDER = MEMBERS.filter(

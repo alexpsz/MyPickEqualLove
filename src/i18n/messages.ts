@@ -526,6 +526,53 @@ const en = {
   "boardComparison.unavailable.sharedDuplicate":
     "The shared board contains the same song more than once.",
 
+  "backup.eyebrow": "Local data",
+  "backup.title": "Backup and restore",
+  "backup.summary":
+    "Keep a file you control for device moves or browser-storage loss.",
+  "backup.singleSite":
+    "This file contains only data stored by {project} on this site.",
+  "backup.separateSites":
+    "Export a separate backup from each of the three sister sites.",
+  "backup.download": "Download backup",
+  "backup.downloadReady": "Backup download started.",
+  "backup.chooseFile": "Choose backup file",
+  "backup.reading": "Reading file...",
+  "backup.reviewTitle": "Dry-run review",
+  "backup.reviewHint":
+    "Nothing has changed yet. Review every category before confirming.",
+  "backup.add": "New",
+  "backup.overwrite": "Replace",
+  "backup.remove": "Remove",
+  "backup.skip": "Unchanged",
+  "backup.boardSummary":
+    "Saved boards: {add} new, {overwrite} replaced, {skip} unchanged, {remove} removed.",
+  "backup.localeIncluded": "The file includes a validated language preference.",
+  "backup.localeAutomatic":
+    "The file has no language override; restore will use automatic language selection.",
+  "backup.overwriteWarning":
+    "Confirming applies all listed changes together. If any write fails, the previous local data is restored.",
+  "backup.confirm": "Restore this backup",
+  "backup.cancel": "Cancel",
+  "backup.restoreSuccess": "Backup restored. The page will reload now.",
+  "backup.error.invalid":
+    "This is not a valid MyPick backup. No local data was changed.",
+  "backup.error.version":
+    "This backup format or version is not supported. No local data was changed.",
+  "backup.error.project":
+    "This backup belongs to a different MyPick site. No local data was changed.",
+  "backup.error.limit":
+    "This backup exceeds the supported limits. No local data was changed.",
+  "backup.error.file": "The selected file could not be read.",
+  "backup.error.storage":
+    "Browser storage is unavailable. No local data was changed.",
+  "backup.error.conflict":
+    "Local data changed after the review. Choose the file again to create a fresh dry run.",
+  "backup.error.rolledBack":
+    "Restore failed, and every attempted change was rolled back.",
+  "backup.error.rollbackIncomplete":
+    "Restore failed and the browser could not fully roll back local data. Reload before continuing.",
+
   "menu.openTitle": "Open other MyPick sites",
   "menu.openAria": "Open other MyPick sites",
   "menu.dismissAria": "Dismiss other MyPick sites",
@@ -1103,6 +1150,54 @@ const ja: MessageCatalog = {
   "boardComparison.unavailable.sharedDuplicate":
     "共有ボードに同じ楽曲が複数回含まれています。",
 
+  "backup.eyebrow": "ローカルデータ",
+  "backup.title": "バックアップと復元",
+  "backup.summary":
+    "端末の移行やブラウザデータの消失に備えて、自分で保管できるファイルを作成します。",
+  "backup.singleSite":
+    "このファイルに入るのは、このサイトの{project}データだけです。",
+  "backup.separateSites":
+    "姉妹3サイトでは、サイトごとに別のバックアップを書き出してください。",
+  "backup.download": "バックアップをダウンロード",
+  "backup.downloadReady": "バックアップのダウンロードを開始しました。",
+  "backup.chooseFile": "バックアップファイルを選択",
+  "backup.reading": "ファイルを読み込み中...",
+  "backup.reviewTitle": "復元前の確認",
+  "backup.reviewHint":
+    "まだデータは変更されていません。確定前にすべての項目を確認してください。",
+  "backup.add": "新規",
+  "backup.overwrite": "上書き",
+  "backup.remove": "削除",
+  "backup.skip": "変更なし",
+  "backup.boardSummary":
+    "保存済みボード：新規{add}件、上書き{overwrite}件、変更なし{skip}件、削除{remove}件。",
+  "backup.localeIncluded": "検証済みの言語設定がファイルに含まれています。",
+  "backup.localeAutomatic":
+    "言語の上書き設定は含まれません。復元後は自動選択になります。",
+  "backup.overwriteWarning":
+    "確定すると表示中の変更をまとめて適用します。途中で失敗した場合は、以前のローカルデータへ戻します。",
+  "backup.confirm": "このバックアップを復元",
+  "backup.cancel": "キャンセル",
+  "backup.restoreSuccess":
+    "バックアップを復元しました。ページを再読み込みします。",
+  "backup.error.invalid":
+    "有効なMyPickバックアップではありません。ローカルデータは変更されていません。",
+  "backup.error.version":
+    "このバックアップ形式またはバージョンには対応していません。ローカルデータは変更されていません。",
+  "backup.error.project":
+    "別のMyPickサイトのバックアップです。ローカルデータは変更されていません。",
+  "backup.error.limit":
+    "このバックアップは対応上限を超えています。ローカルデータは変更されていません。",
+  "backup.error.file": "選択したファイルを読み込めませんでした。",
+  "backup.error.storage":
+    "ブラウザストレージを利用できません。ローカルデータは変更されていません。",
+  "backup.error.conflict":
+    "確認後にローカルデータが変わりました。ファイルを選び直して、もう一度確認してください。",
+  "backup.error.rolledBack":
+    "復元に失敗しました。試行した変更はすべて元に戻しました。",
+  "backup.error.rollbackIncomplete":
+    "復元に失敗し、ローカルデータを完全には元に戻せませんでした。続ける前に再読み込みしてください。",
+
   "menu.openTitle": "他のMyPickサイトを開く",
   "menu.openAria": "他のMyPickサイトを開く",
   "menu.dismissAria": "他のMyPickサイト一覧を閉じる",
@@ -1635,6 +1730,42 @@ const zhCN: MessageCatalog = {
     "当前榜单包含重复歌曲，无法对比。",
   "boardComparison.unavailable.sharedDuplicate":
     "分享榜单包含重复歌曲，无法对比。",
+
+  "backup.eyebrow": "本地数据",
+  "backup.title": "备份与恢复",
+  "backup.summary": "为更换设备或浏览器存储丢失准备一份由你保管的文件。",
+  "backup.singleSite": "此文件仅包含本网站中 {project} 的本地数据。",
+  "backup.separateSites": "三个姊妹站点需要分别导出各自的备份文件。",
+  "backup.download": "下载备份",
+  "backup.downloadReady": "已开始下载备份。",
+  "backup.chooseFile": "选择备份文件",
+  "backup.reading": "正在读取文件...",
+  "backup.reviewTitle": "恢复前预览",
+  "backup.reviewHint": "目前尚未修改任何数据。确认前请检查全部项目。",
+  "backup.add": "新增",
+  "backup.overwrite": "覆盖",
+  "backup.remove": "移除",
+  "backup.skip": "不变",
+  "backup.boardSummary":
+    "已保存榜单：新增 {add} 个、覆盖 {overwrite} 个、不变 {skip} 个、移除 {remove} 个。",
+  "backup.localeIncluded": "文件中包含经过验证的语言偏好。",
+  "backup.localeAutomatic": "文件中没有语言覆盖项；恢复后将自动选择语言。",
+  "backup.overwriteWarning":
+    "确认后会一次性应用列出的全部更改。若任一步写入失败，将恢复此前的本地数据。",
+  "backup.confirm": "恢复此备份",
+  "backup.cancel": "取消",
+  "backup.restoreSuccess": "备份已恢复，页面现在将重新加载。",
+  "backup.error.invalid": "这不是有效的 MyPick 备份。本地数据未被修改。",
+  "backup.error.version": "不支持此备份格式或版本。本地数据未被修改。",
+  "backup.error.project": "此备份属于另一个 MyPick 站点。本地数据未被修改。",
+  "backup.error.limit": "此备份超出支持上限。本地数据未被修改。",
+  "backup.error.file": "无法读取所选文件。",
+  "backup.error.storage": "浏览器存储不可用。本地数据未被修改。",
+  "backup.error.conflict":
+    "预览后本地数据发生了变化。请重新选择文件并生成新的恢复预览。",
+  "backup.error.rolledBack": "恢复失败，所有尝试的更改均已回滚。",
+  "backup.error.rollbackIncomplete":
+    "恢复失败，且浏览器未能完整回滚本地数据。继续前请重新加载页面。",
 
   "menu.openTitle": "打开其他 MyPick 站点",
   "menu.openAria": "打开其他 MyPick 站点",
@@ -2203,6 +2334,53 @@ const ko: MessageCatalog = {
     "현재 보드에 같은 곡이 두 번 이상 들어 있습니다.",
   "boardComparison.unavailable.sharedDuplicate":
     "공유 보드에 같은 곡이 두 번 이상 들어 있습니다.",
+
+  "backup.eyebrow": "로컬 데이터",
+  "backup.title": "백업 및 복원",
+  "backup.summary":
+    "기기 이동이나 브라우저 저장소 손실에 대비해 직접 보관할 파일을 만듭니다.",
+  "backup.singleSite":
+    "이 파일에는 이 사이트의 {project} 로컬 데이터만 포함됩니다.",
+  "backup.separateSites":
+    "세 자매 사이트에서는 사이트마다 별도의 백업을 내보내세요.",
+  "backup.download": "백업 다운로드",
+  "backup.downloadReady": "백업 다운로드를 시작했습니다.",
+  "backup.chooseFile": "백업 파일 선택",
+  "backup.reading": "파일 읽는 중...",
+  "backup.reviewTitle": "복원 전 미리보기",
+  "backup.reviewHint":
+    "아직 데이터가 변경되지 않았습니다. 확인하기 전에 모든 항목을 검토하세요.",
+  "backup.add": "새 항목",
+  "backup.overwrite": "덮어쓰기",
+  "backup.remove": "삭제",
+  "backup.skip": "변경 없음",
+  "backup.boardSummary":
+    "저장된 보드: 새 항목 {add}개, 덮어쓰기 {overwrite}개, 변경 없음 {skip}개, 삭제 {remove}개.",
+  "backup.localeIncluded": "검증된 언어 설정이 파일에 포함되어 있습니다.",
+  "backup.localeAutomatic":
+    "파일에 언어 재정의가 없어 복원 후 언어를 자동으로 선택합니다.",
+  "backup.overwriteWarning":
+    "확인하면 표시된 변경을 한 번에 적용합니다. 쓰기 중 하나라도 실패하면 이전 로컬 데이터로 되돌립니다.",
+  "backup.confirm": "이 백업 복원",
+  "backup.cancel": "취소",
+  "backup.restoreSuccess": "백업을 복원했습니다. 페이지를 다시 불러옵니다.",
+  "backup.error.invalid":
+    "유효한 MyPick 백업이 아닙니다. 로컬 데이터는 변경되지 않았습니다.",
+  "backup.error.version":
+    "지원하지 않는 백업 형식 또는 버전입니다. 로컬 데이터는 변경되지 않았습니다.",
+  "backup.error.project":
+    "다른 MyPick 사이트의 백업입니다. 로컬 데이터는 변경되지 않았습니다.",
+  "backup.error.limit":
+    "이 백업은 지원 한도를 초과합니다. 로컬 데이터는 변경되지 않았습니다.",
+  "backup.error.file": "선택한 파일을 읽을 수 없습니다.",
+  "backup.error.storage":
+    "브라우저 저장소를 사용할 수 없습니다. 로컬 데이터는 변경되지 않았습니다.",
+  "backup.error.conflict":
+    "검토 후 로컬 데이터가 바뀌었습니다. 파일을 다시 선택해 새 미리보기를 만드세요.",
+  "backup.error.rolledBack":
+    "복원에 실패했으며 시도한 모든 변경을 되돌렸습니다.",
+  "backup.error.rollbackIncomplete":
+    "복원에 실패했고 브라우저가 로컬 데이터를 완전히 되돌리지 못했습니다. 계속하기 전에 새로고침하세요.",
 
   "menu.openTitle": "다른 MyPick 사이트 열기",
   "menu.openAria": "다른 MyPick 사이트 열기",

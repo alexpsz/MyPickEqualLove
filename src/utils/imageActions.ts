@@ -1,5 +1,25 @@
 const PNG_MIME_TYPE = "image/png";
 
+export function downloadTextFile(
+  text: string,
+  fileName: string,
+  mimeType = "text/plain;charset=utf-8",
+) {
+  const blob = new Blob([text], { type: mimeType });
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = objectUrl;
+  link.download = fileName;
+  link.hidden = true;
+  document.body.appendChild(link);
+  try {
+    link.click();
+  } finally {
+    link.remove();
+    globalThis.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
+  }
+}
+
 export interface PreviewImageSource {
   dataUrl: string;
   fileName: string;

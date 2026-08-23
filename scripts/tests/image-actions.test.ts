@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  downloadTextFile,
   preparePreviewImageArtifact,
   sharePreviewImage,
   sharePreviewPage,
@@ -43,6 +44,89 @@ const pageShareSnapshot: PreviewPageShareSnapshot = {
   shareText: "Here are my picks.",
   shareHashtags: ["#MyPick", "#EqualLove"],
 };
+
+test("downloads text through a temporary object URL and revokes it", async () => {
+  const originalDocument = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "document",
+  );
+  const originalCreateObjectUrl = Object.getOwnPropertyDescriptor(
+    URL,
+    "createObjectURL",
+  );
+  const originalRevokeObjectUrl = Object.getOwnPropertyDescriptor(
+    URL,
+    "revokeObjectURL",
+  );
+  let createdBlob: Blob | undefined;
+  let appended = false;
+  let clicked = false;
+  let removed = false;
+  let revokedUrl: string | undefined;
+  const link = {
+    href: "",
+    download: "",
+    hidden: false,
+    click: () => {
+      clicked = true;
+    },
+    remove: () => {
+      removed = true;
+    },
+  } as HTMLAnchorElement;
+
+  try {
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      value: {
+        body: {
+          appendChild: (candidate: HTMLAnchorElement) => {
+            assert.equal(candidate, link);
+            appended = true;
+          },
+        },
+        createElement: (tagName: string) => {
+          assert.equal(tagName, "a");
+          return link;
+        },
+      },
+    });
+    Object.defineProperty(URL, "createObjectURL", {
+      configurable: true,
+      value: (blob: Blob) => {
+        createdBlob = blob;
+        return "blob:backup-test";
+      },
+    });
+    Object.defineProperty(URL, "revokeObjectURL", {
+      configurable: true,
+      value: (url: string) => {
+        revokedUrl = url;
+      },
+    });
+
+    downloadTextFile(
+      '{"hello":"世界"}',
+      "mypick-backup.json",
+      "application/json;charset=utf-8",
+    );
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    assert.equal(await createdBlob?.text(), '{"hello":"世界"}');
+    assert.equal(createdBlob?.type, "application/json;charset=utf-8");
+    assert.equal(link.href, "blob:backup-test");
+    assert.equal(link.download, "mypick-backup.json");
+    assert.equal(link.hidden, true);
+    assert.equal(appended, true);
+    assert.equal(clicked, true);
+    assert.equal(removed, true);
+    assert.equal(revokedUrl, "blob:backup-test");
+  } finally {
+    restoreProperty(globalThis, "document", originalDocument);
+    restoreProperty(URL, "createObjectURL", originalCreateObjectUrl);
+    restoreProperty(URL, "revokeObjectURL", originalRevokeObjectUrl);
+  }
+});
 
 test("prepares a non-empty PNG artifact from the generated data URL", async () => {
   const artifact = await preparePreviewImageArtifact({
@@ -230,3 +314,12 @@ test("reports page sharing unavailable when neither native share nor copy exists
 
   assert.equal(result.outcome, "unavailable");
 });
+
+function restoreProperty(
+  target: object,
+  key: PropertyKey,
+  descriptor: PropertyDescriptor | undefined,
+) {
+  if (descriptor) Object.defineProperty(target, key, descriptor);
+  else Reflect.deleteProperty(target, key);
+}

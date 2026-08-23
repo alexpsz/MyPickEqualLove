@@ -114,6 +114,13 @@ const SUITES = {
     emittedTestFiles: ["scripts/tests/image-actions.test.js"],
     successMessage: "Image action tests passed.",
   },
+  backup: {
+    tempPrefix: "mypick-backup-tests-",
+    compilerArgs: [...NODE16_ARGS],
+    sourceFiles: ["scripts/tests/backup-document.test.ts"],
+    emittedTestFiles: ["scripts/tests/backup-document.test.js"],
+    successMessage: "Backup document tests passed.",
+  },
   onboarding: {
     tempPrefix: "mypick-onboarding-tests-",
     compilerArgs: [...NODE16_ARGS, "--jsx", "react-jsx", "--lib", "ES2022,DOM"],

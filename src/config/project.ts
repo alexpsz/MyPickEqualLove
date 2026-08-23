@@ -15,6 +15,25 @@ import { getOshimenPreferenceStorageKey } from "../utils/oshimenPreference";
 export const PROJECT_CONFIG = CURRENT_PROJECT.config;
 export const PROJECT_ID = CURRENT_PROJECT_ID;
 
+export interface ProjectBackupConfig {
+  projectId: ProjectId;
+  storagePrefix: string;
+  fileName: string;
+}
+
+export function getProjectBackupConfig(
+  projectId: ProjectId,
+): ProjectBackupConfig {
+  const { storagePrefix } = PROJECTS[projectId].config;
+  return {
+    projectId,
+    storagePrefix,
+    fileName: `mypick-${projectId}-backup.json`,
+  };
+}
+
+export const BACKUP_CONFIG = getProjectBackupConfig(PROJECT_ID);
+
 export const STORAGE_KEYS = {
   picks: `${PROJECT_CONFIG.storagePrefix}_mypicks_v1`,
   options: `${PROJECT_CONFIG.storagePrefix}_options_v1`,
