@@ -52,6 +52,37 @@ const ASSET_EXTENSIONS = new Set([
   ".woff",
   ".woff2",
 ]);
+const ATLAS_ROUTE_SEGMENTS = new Set([
+  "events",
+  "journey",
+  "local-event",
+  "memory",
+  "performances",
+]);
+const ATLAS_RUNTIME_MARKERS = [
+  "@mypick/atlas",
+  "Atlas | My Journey",
+  "atlas.shell.preferences.v1",
+  "atlas:journey-document:v1",
+  "public-atlas-projection-v1",
+];
+const ATLAS_TEXT_PATTERNS = [
+  { label: "standalone Atlas token", pattern: /\batlas\b/i },
+  { label: "Atlas CSS custom property", pattern: /--atlas-/i },
+  {
+    label: "Atlas Journey or Memory CSS module",
+    pattern: /(?:journey-ui|memory-page)_/i,
+  },
+];
+const OUTPUT_TEXT_EXTENSIONS = new Set([
+  ".css",
+  ".html",
+  ".js",
+  ".json",
+  ".mjs",
+  ".txt",
+  ".xml",
+]);
 
 export async function verifyStaticExport({
   projectId,
@@ -165,6 +196,13 @@ export async function verifyStaticExport({
     "the internal empty Live route leaked into the export",
     violations,
   );
+  violations.push(
+    ...(await inspectMyPickOutputIsolation({
+      experienceSlugs: expectedExperiences.map(({ slug }) => slug),
+      outputDirectory: out,
+      songIds,
+    })),
+  );
 
   await verifySitemap(out, contract, expectedExperiences, songIds, violations);
   await verifyReferencedAssets(out, contract.siteUrl, violations);
@@ -189,6 +227,68 @@ export async function verifyStaticExport({
     projectId,
     routes: 2 + songIds.length + expectedExperiences.length,
   };
+}
+
+export async function inspectMyPickOutputIsolation({
+  experienceSlugs,
+  outputDirectory,
+  songIds,
+}) {
+  const out = path.resolve(outputDirectory);
+  const expectedHtml = new Set([
+    "404.html",
+    "404/index.html",
+    "_not-found/index.html",
+    "index.html",
+    "songs/index.html",
+    ...experienceSlugs.map((slug) => `live/${slug}/index.html`),
+    ...songIds.map(
+      (songId) => `songs/${encodeURIComponent(songId)}/index.html`,
+    ),
+  ]);
+  const violations = [];
+  let files;
+
+  try {
+    files = await walkFiles(out);
+  } catch (error) {
+    return [`unable to inventory MyPick output: ${error.message}`];
+  }
+
+  for (const filePath of files) {
+    const relativePath = toPosixPath(path.relative(out, filePath));
+    const segments = relativePath.split("/");
+
+    if (relativePath.endsWith(".html") && !expectedHtml.has(relativePath)) {
+      violations.push(`unexpected MyPick HTML route: ${relativePath}`);
+    }
+
+    if (segments.some((segment) => ATLAS_ROUTE_SEGMENTS.has(segment))) {
+      violations.push(
+        `Atlas route or asset segment leaked into MyPick: ${relativePath}`,
+      );
+    }
+
+    if (!OUTPUT_TEXT_EXTENSIONS.has(path.extname(relativePath).toLowerCase())) {
+      continue;
+    }
+
+    const content = await readFile(filePath, "utf8");
+    for (const marker of ATLAS_RUNTIME_MARKERS) {
+      if (content.includes(marker)) {
+        violations.push(
+          `Atlas runtime marker ${marker} leaked into ${relativePath}`,
+        );
+      }
+    }
+    for (const { label, pattern } of ATLAS_TEXT_PATTERNS) {
+      if (pattern.test(content)) {
+        violations.push(`${label} leaked into ${relativePath}`);
+      }
+    }
+  }
+
+  return violations.sort();
 }
 
 async function verifyRscArtifact(filePath, label, violations) {
