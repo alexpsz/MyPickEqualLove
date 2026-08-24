@@ -7,6 +7,8 @@ import { dirname, join, relative, resolve } from "node:path";
 import { after, test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { runInNewContext } from "node:vm";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 
 const require = createRequire(import.meta.url);
 const typescript = require("typescript");
@@ -155,10 +157,32 @@ test("the shell preference resolver keeps locale and theme input bounded", () =>
     }),
     { locale: "zh-CN", theme: "dark" },
   );
+  assert.equal(
+    preferences.resolveShellLocale(["en-US", "ja-JP"], undefined),
+    "en",
+  );
+  assert.equal(
+    preferences.resolveShellLocale(["en_US", "ja-JP"], undefined),
+    "ja",
+  );
+  assert.equal(
+    preferences.resolveShellLocale(["fr-FR", "ko-KR", "en-GB"], undefined),
+    "ko",
+  );
+  assert.equal(preferences.resolveShellLocale(["invalid-tag"], "ja-JP"), "ja");
 });
 
-test("the pre-paint bootstrap uses the same key and fails safe when storage fails", () => {
+test("the pre-paint bootstrap renders as a native parser-blocking script and fails safe", () => {
   const layout = readAtlasFile("src/app/layout.tsx");
+  const head = layout.match(/<head>([\s\S]*?)<\/head>/)?.[1];
+  const renderedScript = renderToStaticMarkup(
+    createElement("script", {
+      dangerouslySetInnerHTML: {
+        __html: preferences.SHELL_THEME_BOOTSTRAP_SCRIPT,
+      },
+      id: "atlas-theme-bootstrap",
+    }),
+  );
   const storedDark = executeThemeBootstrap({
     prefersDark: false,
     storedValue: '{"locale":"en","theme":"dark"}',
@@ -172,7 +196,18 @@ test("the pre-paint bootstrap uses the same key and fails safe when storage fail
     storedValue: "{bad-json",
   });
 
-  assert.match(layout, /strategy="beforeInteractive"/);
+  assert.ok(head);
+  assert.match(head, /<script/);
+  assert.match(
+    head,
+    /dangerouslySetInnerHTML=\{\{ __html: SHELL_THEME_BOOTSTRAP_SCRIPT \}\}/,
+  );
+  assert.doesNotMatch(layout, /next\/script/);
+  assert.doesNotMatch(layout, /<Script\b/);
+  assert.doesNotMatch(layout, /__next_s/);
+  assert.ok(renderedScript.includes("root.dataset.theme = theme;"));
+  assert.ok(renderedScript.includes("root.style.colorScheme = theme;"));
+  assert.doesNotMatch(renderedScript, /__next_s/);
   assert.ok(
     preferences.SHELL_THEME_BOOTSTRAP_SCRIPT.includes(
       preferences.SHELL_PREFERENCES_STORAGE_KEY,

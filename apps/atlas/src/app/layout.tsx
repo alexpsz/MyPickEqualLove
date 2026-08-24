@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 import type { ReactNode } from "react";
 
 import { AtlasShell } from "@/components/shell/atlas-shell";
@@ -19,9 +18,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <Script id="atlas-theme-bootstrap" strategy="beforeInteractive">
-          {SHELL_THEME_BOOTSTRAP_SCRIPT}
-        </Script>
+        <script
+          dangerouslySetInnerHTML={{ __html: SHELL_THEME_BOOTSTRAP_SCRIPT }}
+          id="atlas-theme-bootstrap"
+        />
       </head>
       <body>
         <AtlasShell familyNavigation={PRODUCT_FAMILY_NAVIGATION}>

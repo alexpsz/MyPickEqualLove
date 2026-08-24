@@ -21,6 +21,8 @@ export const DEFAULT_SHELL_PREFERENCES: ShellPreferences = {
   theme: "light",
 };
 
+const BCP47_LANGUAGE_TAG = /^([a-z]{2,3})(?:-[a-z0-9]{1,8})*$/i;
+
 export function isShellLocale(value: string | undefined): value is ShellLocale {
   return SHELL_LOCALES.includes(value as ShellLocale);
 }
@@ -58,28 +60,26 @@ export function resolveShellLocale(
   browserLocales: readonly string[] | undefined,
   browserLanguage: string | undefined,
 ): ShellLocale {
-  const candidates = browserLocales?.length
-    ? browserLocales
-    : browserLanguage
-      ? [browserLanguage]
-      : [];
+  const candidates = [...(browserLocales ?? [])];
+  if (browserLanguage && !candidates.includes(browserLanguage)) {
+    candidates.push(browserLanguage);
+  }
 
   for (const browserLocale of candidates) {
-    if (isShellLocale(browserLocale)) {
-      return browserLocale;
-    }
+    const languageTag = BCP47_LANGUAGE_TAG.exec(browserLocale);
+    const baseLanguage = languageTag?.[1]?.toLowerCase();
 
-    const normalizedLocale = browserLocale.toLowerCase();
-    if (normalizedLocale.startsWith("zh")) {
-      return "zh-CN";
-    }
-
-    if (normalizedLocale.startsWith("ja")) {
-      return "ja";
-    }
-
-    if (normalizedLocale.startsWith("ko")) {
-      return "ko";
+    switch (baseLanguage) {
+      case "zh":
+        return "zh-CN";
+      case "en":
+        return "en";
+      case "ja":
+        return "ja";
+      case "ko":
+        return "ko";
+      default:
+        break;
     }
   }
 
