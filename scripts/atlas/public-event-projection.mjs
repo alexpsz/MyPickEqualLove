@@ -81,6 +81,12 @@ const SHA256_PATTERN = /^[0-9a-f]{64}$/;
 const SOURCE_REVISION_ALGORITHM =
   "sha256 of canonical UTF-8 atlas-public-source-revision-v1 input";
 const VERIFICATION_STATUSES = new Set(["verified", "partial", "unverified"]);
+const REFRESH_CADENCES = new Set([
+  "on-source-change",
+  "daily",
+  "weekly",
+  "monthly",
+]);
 const LIFECYCLES = new Set([
   "scheduled",
   "postponed",
@@ -89,6 +95,7 @@ const LIFECYCLES = new Set([
   "unknown",
 ]);
 const c0ParserCache = new Map();
+const c0BaselineCache = new Map();
 
 function fail(path, message) {
   throw new Error(`${path}: ${message}`);
@@ -111,6 +118,15 @@ function string(value, path) {
     fail(path, "expected a non-empty string");
   }
   return value;
+}
+
+function governanceText(value, path, { max = 128 } = {}) {
+  if (typeof value !== "string") fail(path, "expected governance text");
+  const trimmed = value.trim();
+  if (trimmed.length === 0 || trimmed.length > max) {
+    fail(path, `expected nonblank governance text with length 1..${max}`);
+  }
+  return trimmed;
 }
 
 function integer(value, path, min = Number.MIN_SAFE_INTEGER) {
@@ -165,11 +181,23 @@ function isoDate(value, path) {
 }
 
 function utcTimestamp(value, path) {
-  const parsed = string(value, path);
-  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(parsed)) {
+  if (typeof value !== "string" || value.length === 0 || value.length > 24) {
+    fail(path, "expected a bounded canonical UTC timestamp");
+  }
+  const parsed = value;
+  const match = parsed.match(
+    /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(\.\d{3})?Z$/,
+  );
+  if (!match) {
     fail(path, "expected an ISO UTC timestamp");
   }
-  if (Number.isNaN(Date.parse(parsed))) fail(path, "expected a real timestamp");
+  const milliseconds = Date.parse(parsed);
+  if (Number.isNaN(milliseconds)) fail(path, "expected a real timestamp");
+  const canonical = new Date(milliseconds).toISOString();
+  const expectedCanonical = `${match[1]}${match[2] ?? ".000"}Z`;
+  if (canonical !== expectedCanonical) {
+    fail(path, "timestamp is not a real canonical UTC calendar instant");
+  }
   return parsed;
 }
 
@@ -570,6 +598,14 @@ function validatePublicAtlasEvidence(value, path, auditDate) {
     `${path}.refreshPolicy.staleAfterDays`,
     1,
   );
+  if (staleAfterDays > 365) {
+    fail(`${path}.refreshPolicy.staleAfterDays`, "must be <= 365");
+  }
+  const refreshCadence = enumValue(
+    value.refreshPolicy.refreshCadence,
+    `${path}.refreshPolicy.refreshCadence`,
+    REFRESH_CADENCES,
+  );
   if (value.refreshPolicy.onInvalidation !== "HOLD") {
     fail(`${path}.refreshPolicy.onInvalidation`, "must be HOLD");
   }
@@ -586,15 +622,12 @@ function validatePublicAtlasEvidence(value, path, auditDate) {
     timezone,
     lifecycle,
     refreshPolicy: {
-      refreshCadence: string(
-        value.refreshPolicy.refreshCadence,
-        `${path}.refreshPolicy.refreshCadence`,
-      ),
+      refreshCadence,
       staleAfterDays,
       onInvalidation: "HOLD",
       onWithdrawal: "HOLD",
     },
-    maintenanceOwner: string(
+    maintenanceOwner: governanceText(
       value.maintenanceOwner,
       `${path}.maintenanceOwner`,
     ),
@@ -898,11 +931,17 @@ function validateLiveSource(value, seed, songs, auditDate) {
   };
 }
 
-function validateApproval(value, fixed, auditDate, path) {
+function validateApproval(value, fixed, seed, auditDate, path) {
   exactKeys(value, path, [
     "schemaVersion",
     "siteId",
+    "scope",
+    "sourcePath",
+    "sourceSha256",
+    "songsPath",
+    "songsSha256",
     "atlasPublicSeedApproval",
+    "approvalAuthority",
     "approvedAt",
     "maintenanceOwner",
     "withdrawalState",
@@ -910,16 +949,48 @@ function validateApproval(value, fixed, auditDate, path) {
   if (value.schemaVersion !== 1) fail(`${path}.schemaVersion`, "expected 1");
   if (value.siteId !== fixed.siteId)
     fail(`${path}.siteId`, `expected ${fixed.siteId}`);
+  if (value.scope !== "atlas-public-seed-v1") {
+    fail(`${path}.scope`, "must be atlas-public-seed-v1");
+  }
+  if (
+    value.sourcePath !== fixed.sourcePath ||
+    value.sourcePath !== seed.sourcePath
+  ) {
+    fail(`${path}.sourcePath`, "must match the fixed seed sourcePath");
+  }
+  if (
+    value.sourceSha256 !== seed.sourceSha256 ||
+    !SHA256_PATTERN.test(value.sourceSha256)
+  ) {
+    fail(`${path}.sourceSha256`, "must match the seed source hash");
+  }
+  if (
+    value.songsPath !== fixed.songsPath ||
+    value.songsPath !== seed.songsPath
+  ) {
+    fail(`${path}.songsPath`, "must match the fixed seed songsPath");
+  }
+  if (
+    value.songsSha256 !== seed.songsSha256 ||
+    !SHA256_PATTERN.test(value.songsSha256)
+  ) {
+    fail(`${path}.songsSha256`, "must match the seed songs hash");
+  }
   if (value.atlasPublicSeedApproval !== "approved") {
     fail(`${path}.atlasPublicSeedApproval`, "must explicitly be approved");
   }
+  const approvalAuthority = governanceText(
+    value.approvalAuthority,
+    `${path}.approvalAuthority`,
+  );
   const approvedAt = utcTimestamp(value.approvedAt, `${path}.approvedAt`);
   if (approvedAt.slice(0, 10) > auditDate) {
     fail(`${path}.approvedAt`, `cannot be after auditDate ${auditDate}`);
   }
   return {
     ...value,
-    maintenanceOwner: string(
+    approvalAuthority,
+    maintenanceOwner: governanceText(
       value.maintenanceOwner,
       `${path}.maintenanceOwner`,
     ),
@@ -1014,6 +1085,27 @@ function sameOrderedStrings(left, right) {
   );
 }
 
+function claimEvidenceIssues(source) {
+  const issues = [];
+  source.events.forEach((event) => {
+    if (event.eventEvidence.verificationStatus === "unverified") {
+      issues.push(`${event.id}/eventEvidence is unverified`);
+    }
+    if (event.eventEvidence.sourceUrls.length === 0) {
+      issues.push(`${event.id}/eventEvidence has no HTTPS source URL`);
+    }
+    (event.performances ?? []).forEach((performance) => {
+      if (performance.verificationStatus === "unverified") {
+        issues.push(`${event.id}/${performance.id} is unverified`);
+      }
+      if (performance.sourceUrls.length === 0) {
+        issues.push(`${event.id}/${performance.id} has no HTTPS source URL`);
+      }
+    });
+  });
+  return issues;
+}
+
 function validateGateEvidence(seedResult, fixed, documents) {
   const { seed, source, approval } = seedResult;
   const errors = [];
@@ -1055,13 +1147,19 @@ function validateGateEvidence(seedResult, fixed, documents) {
       `CLAIM_COVERAGE:${seed.siteId}:${source.coverageIssues.join(" | ")}`,
     );
   }
+  if (seed.gates.claimLevelEvidence.status === "GO") {
+    const issues = claimEvidenceIssues(source);
+    if (issues.length > 0) {
+      errors.push(`CLAIM_EVIDENCE:${seed.siteId}:${issues.join(" | ")}`);
+    }
+  }
   if (seed.decision === "GO") {
     if (!approval) {
       errors.push(`APPROVAL_MISSING:${seed.siteId}:${fixed.approvalPath}`);
     } else {
       const owners = new Set(
-        source.events.map(
-          (event) => event.publicAtlasEvidence?.maintenanceOwner,
+        source.events.map((event) =>
+          event.publicAtlasEvidence?.maintenanceOwner?.trim(),
         ),
       );
       owners.delete(undefined);
@@ -1125,6 +1223,306 @@ function receiptFileBindings(receipt) {
   ];
 }
 
+function validateBaselineSourceReceipt(value, fixed, path) {
+  exactKeys(value, path, [
+    "siteId",
+    "sourcePath",
+    "byteLength",
+    "sha256",
+    "eventCount",
+    "eventLocalIds",
+    "performanceCount",
+    "performanceIds",
+    "setlistEntryCount",
+    "setlistOrderRanges",
+  ]);
+  if (value.siteId !== fixed.siteId)
+    fail(`${path}.siteId`, `expected ${fixed.siteId}`);
+  if (value.sourcePath !== fixed.sourcePath) {
+    fail(`${path}.sourcePath`, `expected ${fixed.sourcePath}`);
+  }
+  integer(value.byteLength, `${path}.byteLength`, 1);
+  if (!SHA256_PATTERN.test(value.sha256))
+    fail(`${path}.sha256`, "invalid SHA-256");
+  integer(value.eventCount, `${path}.eventCount`, 0);
+  const eventLocalIds = uniqueStrings(
+    value.eventLocalIds,
+    `${path}.eventLocalIds`,
+  );
+  if (eventLocalIds.length !== value.eventCount) {
+    fail(`${path}.eventLocalIds`, "length must match eventCount");
+  }
+  for (const [index, eventId] of eventLocalIds.entries()) {
+    if (!LOCAL_ID_PATTERN.test(eventId)) {
+      fail(`${path}.eventLocalIds[${index}]`, "invalid Event local id");
+    }
+  }
+  integer(value.performanceCount, `${path}.performanceCount`, 0);
+  const performanceIds = uniqueStrings(
+    value.performanceIds,
+    `${path}.performanceIds`,
+  );
+  if (performanceIds.length !== value.performanceCount) {
+    fail(`${path}.performanceIds`, "length must match performanceCount");
+  }
+  integer(value.setlistEntryCount, `${path}.setlistEntryCount`, 0);
+  const ranges = array(value.setlistOrderRanges, `${path}.setlistOrderRanges`);
+  if (ranges.length !== value.performanceCount) {
+    fail(`${path}.setlistOrderRanges`, "length must match performanceCount");
+  }
+  let observedEntries = 0;
+  ranges.forEach((range, index) => {
+    const rangePath = `${path}.setlistOrderRanges[${index}]`;
+    exactKeys(range, rangePath, [
+      "eventLocalId",
+      "performanceLocalId",
+      "setlistEntryCount",
+      "setlistOrderRange",
+    ]);
+    const eventLocalId = string(
+      range.eventLocalId,
+      `${rangePath}.eventLocalId`,
+    );
+    const performanceLocalId = string(
+      range.performanceLocalId,
+      `${rangePath}.performanceLocalId`,
+    );
+    if (!eventLocalIds.includes(eventLocalId)) {
+      fail(`${rangePath}.eventLocalId`, "not present in eventLocalIds");
+    }
+    if (!performanceIds.includes(`${eventLocalId}/${performanceLocalId}`)) {
+      fail(rangePath, "not present in performanceIds");
+    }
+    const count = integer(
+      range.setlistEntryCount,
+      `${rangePath}.setlistEntryCount`,
+      1,
+    );
+    exactKeys(range.setlistOrderRange, `${rangePath}.setlistOrderRange`, [
+      "first",
+      "last",
+    ]);
+    const first = integer(
+      range.setlistOrderRange.first,
+      `${rangePath}.setlistOrderRange.first`,
+      1,
+    );
+    const last = integer(
+      range.setlistOrderRange.last,
+      `${rangePath}.setlistOrderRange.last`,
+      first,
+    );
+    if (last - first + 1 !== count) {
+      fail(rangePath, "order range must close setlistEntryCount");
+    }
+    observedEntries += count;
+  });
+  if (observedEntries !== value.setlistEntryCount) {
+    fail(`${path}.setlistEntryCount`, "does not match performance ranges");
+  }
+  return value;
+}
+
+function validateC0BaselineReceipt(value) {
+  exactKeys(value, "$c0Baseline", ["sourceCommit", "totals", "sources"]);
+  if (!/^[0-9a-f]{40}$/.test(value.sourceCommit)) {
+    fail("$c0Baseline.sourceCommit", "expected a full lowercase Git SHA");
+  }
+  validateCounts(value.totals, "$c0Baseline.totals");
+  const sources = array(value.sources, "$c0Baseline.sources");
+  if (sources.length !== FIXED_SEEDS.length) {
+    fail("$c0Baseline.sources", "expected exactly three ordered sources");
+  }
+  const totals = { events: 0, performances: 0, setlistEntries: 0 };
+  sources.forEach((source, index) => {
+    validateBaselineSourceReceipt(
+      source,
+      FIXED_SEEDS[index],
+      `$c0Baseline.sources[${index}]`,
+    );
+    totals.events += source.eventCount;
+    totals.performances += source.performanceCount;
+    totals.setlistEntries += source.setlistEntryCount;
+  });
+  if (!sameCounts(totals, value.totals)) {
+    fail("$c0Baseline.totals", "does not match source totals");
+  }
+  return value;
+}
+
+function deriveHistoricalSourceReceipt(bytes, fixed) {
+  const events = array(
+    parseUtf8Json(bytes, fixed.sourcePath),
+    fixed.sourcePath,
+  );
+  const eventLocalIds = [];
+  const performanceIds = [];
+  const setlistOrderRanges = [];
+  let setlistEntryCount = 0;
+  for (const [eventIndex, event] of events.entries()) {
+    const eventId = string(event.id, `${fixed.sourcePath}[${eventIndex}].id`);
+    if (!LOCAL_ID_PATTERN.test(eventId) || eventLocalIds.includes(eventId)) {
+      fail(
+        `${fixed.sourcePath}[${eventIndex}].id`,
+        "invalid or duplicate Event id",
+      );
+    }
+    eventLocalIds.push(eventId);
+    for (const [performanceIndex, performance] of (
+      event.performances ?? []
+    ).entries()) {
+      const performancePath = `${fixed.sourcePath}[${eventIndex}].performances[${performanceIndex}]`;
+      const performanceId = string(performance.id, `${performancePath}.id`);
+      const namespacedLocalId = `${eventId}/${performanceId}`;
+      if (
+        !LOCAL_ID_PATTERN.test(performanceId) ||
+        performanceIds.includes(namespacedLocalId)
+      ) {
+        fail(`${performancePath}.id`, "invalid or duplicate Performance id");
+      }
+      performanceIds.push(namespacedLocalId);
+      const setlist = array(performance.setlist, `${performancePath}.setlist`);
+      if (setlist.length === 0)
+        fail(`${performancePath}.setlist`, "cannot be empty");
+      let previousOrder = 0;
+      const orders = setlist.map((entry, entryIndex) => {
+        const order = integer(
+          entry.order,
+          `${performancePath}.setlist[${entryIndex}].order`,
+          1,
+        );
+        if (order <= previousOrder) {
+          fail(
+            `${performancePath}.setlist[${entryIndex}].order`,
+            "must be strictly increasing",
+          );
+        }
+        previousOrder = order;
+        return order;
+      });
+      if (orders.at(-1) - orders[0] + 1 !== orders.length) {
+        fail(
+          `${performancePath}.setlist`,
+          "historical setlist order range is not closed",
+        );
+      }
+      setlistOrderRanges.push({
+        eventLocalId: eventId,
+        performanceLocalId: performanceId,
+        setlistEntryCount: setlist.length,
+        setlistOrderRange: { first: orders[0], last: orders.at(-1) },
+      });
+      setlistEntryCount += setlist.length;
+    }
+  }
+  return {
+    siteId: fixed.siteId,
+    sourcePath: fixed.sourcePath,
+    byteLength: bytes.length,
+    sha256: sha256(bytes),
+    eventCount: events.length,
+    eventLocalIds,
+    performanceCount: performanceIds.length,
+    performanceIds,
+    setlistEntryCount,
+    setlistOrderRanges,
+  };
+}
+
+function canonicalEqual(left, right) {
+  return canonicalUtf8(left).equals(canonicalUtf8(right));
+}
+
+async function isAncestor(repositoryRoot, ancestor, descendant) {
+  try {
+    await git(repositoryRoot, [
+      "merge-base",
+      "--is-ancestor",
+      ancestor,
+      descendant,
+    ]);
+    return true;
+  } catch (error) {
+    if (error?.code === 1) return false;
+    throw error;
+  }
+}
+
+async function auditHistoricalBaseline(repositoryRoot, receipt, headCommit) {
+  const errors = [];
+  let baseline;
+  try {
+    baseline = validateC0BaselineReceipt(
+      await loadC0BaselineReceipt(repositoryRoot),
+    );
+  } catch (error) {
+    return [`HISTORICAL_SCHEMA:${error.message}`];
+  }
+  if (receipt.historicalBaseline.sourceCommit !== baseline.sourceCommit) {
+    errors.push(
+      `HISTORICAL_RECEIPT:sourceCommit must equal C0 ${baseline.sourceCommit}`,
+    );
+  }
+  if (!canonicalEqual(receipt.historicalBaseline.totals, baseline.totals)) {
+    errors.push(
+      "HISTORICAL_RECEIPT:totals must equal the C0 baseline constant",
+    );
+  }
+  receipt.seeds.forEach((seed, index) => {
+    const expected = {
+      events: baseline.sources[index].eventCount,
+      performances: baseline.sources[index].performanceCount,
+      setlistEntries: baseline.sources[index].setlistEntryCount,
+    };
+    if (!canonicalEqual(seed.baselineCounts, expected)) {
+      errors.push(
+        `HISTORICAL_RECEIPT:${seed.siteId}:baselineCounts must equal ${JSON.stringify(expected)}`,
+      );
+    }
+  });
+  try {
+    await verifyGitCommit(repositoryRoot, baseline.sourceCommit);
+  } catch (error) {
+    errors.push(`HISTORICAL_COMMIT:${baseline.sourceCommit}:${error.message}`);
+    return errors;
+  }
+  for (const descendant of [receipt.sourceCommit, headCommit]) {
+    try {
+      if (
+        !(await isAncestor(repositoryRoot, baseline.sourceCommit, descendant))
+      ) {
+        errors.push(
+          `GIT_ANCESTRY:historical ${baseline.sourceCommit} is not an ancestor of ${descendant}`,
+        );
+      }
+    } catch (error) {
+      errors.push(
+        `GIT_ANCESTRY:${baseline.sourceCommit}:${descendant}:${error.message}`,
+      );
+    }
+  }
+  for (const [index, expected] of baseline.sources.entries()) {
+    try {
+      const bytes = await gitBlob(
+        repositoryRoot,
+        baseline.sourceCommit,
+        expected.sourcePath,
+      );
+      const observed = deriveHistoricalSourceReceipt(bytes, FIXED_SEEDS[index]);
+      if (!canonicalEqual(observed, expected)) {
+        errors.push(
+          `HISTORICAL_SOURCE:${expected.siteId}:constant does not match historical Git blob`,
+        );
+      }
+    } catch (error) {
+      errors.push(
+        `HISTORICAL_SOURCE:${expected.siteId}:${expected.sourcePath}:${error.message}`,
+      );
+    }
+  }
+  return errors;
+}
+
 export async function auditWorkspace({
   repositoryRoot = DEFAULT_REPOSITORY_ROOT,
   receiptPath = resolve(repositoryRoot, FIXED_RECEIPT_PATH),
@@ -1146,10 +1544,31 @@ export async function auditWorkspace({
   );
   const errors = [];
   const bytesByPath = new Map();
+  let headCommit;
+  try {
+    headCommit = (
+      await git(repositoryRoot, ["rev-parse", "HEAD"])
+    ).stdout.trim();
+  } catch (error) {
+    errors.push(`GIT_HEAD:${error.message}`);
+  }
   try {
     await verifyGitCommit(repositoryRoot, receipt.sourceCommit);
+    if (
+      headCommit &&
+      !(await isAncestor(repositoryRoot, receipt.sourceCommit, headCommit))
+    ) {
+      errors.push(
+        `GIT_ANCESTRY:sourceCommit ${receipt.sourceCommit} is not an ancestor of HEAD ${headCommit}`,
+      );
+    }
   } catch (error) {
     errors.push(`GIT_COMMIT:${receipt.sourceCommit}:${error.message}`);
+  }
+  if (headCommit) {
+    errors.push(
+      ...(await auditHistoricalBaseline(repositoryRoot, receipt, headCommit)),
+    );
   }
   for (const binding of receiptFileBindings(receipt)) {
     let current;
@@ -1209,11 +1628,14 @@ export async function auditWorkspace({
       const fixed = FIXED_SEEDS.find(
         (candidate) => candidate.approvalPath === evidenceFile.path,
       );
+      const seed = receipt.seeds.find(
+        (candidate) => candidate.siteId === fixed.siteId,
+      );
       const document = parseUtf8Json(bytes, evidenceFile.path);
       documents.set(evidenceFile.path, document);
       approvals.set(
         fixed.siteId,
-        validateApproval(document, fixed, auditDate, evidenceFile.path),
+        validateApproval(document, fixed, seed, auditDate, evidenceFile.path),
       );
     } catch (error) {
       errors.push(`APPROVAL_SCHEMA:${evidenceFile.path}:${error.message}`);
@@ -1350,6 +1772,20 @@ function replaceImport(source, relativeImport, dataUrl) {
     JSON.stringify(relativeImport),
     JSON.stringify(dataUrl),
   );
+}
+
+async function loadC0BaselineReceipt(repositoryRoot) {
+  const rootReal = await realpath(repositoryRoot);
+  const path = "apps/atlas/src/contracts/baseline-receipt.ts";
+  const source = new TextDecoder("utf-8", { fatal: true }).decode(
+    await readContainedFile(repositoryRoot, rootReal, path),
+  );
+  const cacheKey = sha256(Buffer.from(source, "utf8"));
+  if (c0BaselineCache.has(cacheKey)) return c0BaselineCache.get(cacheKey);
+  const c0Module = await import(dataModule(transpile(source, path)));
+  const baseline = c0Module.ATLAS_C0_BASELINE_RECEIPT;
+  c0BaselineCache.set(cacheKey, baseline);
+  return baseline;
 }
 
 async function loadC0ProjectionParser(repositoryRoot) {

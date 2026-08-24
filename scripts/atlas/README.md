@@ -19,10 +19,20 @@ node scripts/atlas/check-public-event-projection.mjs
 source bytes, pinned C0 contract bytes, strict source shape, counts, dates,
 timezone/lifecycle metadata, and song references all pass in memory. The
 receipt paths are fixed allowlists. Its `sourceCommit` must be a real Git commit,
+must be an ancestor of the audited `HEAD`,
 and every audited source, songs, C0 contract, and approval-evidence blob at that
 commit must be byte-identical to both the receipt hash and current file. Reads
 also verify realpath containment so a symlink or junction cannot escape the
 repository.
+
+The historical trust root is the actual exported
+`ATLAS_C0_BASELINE_RECEIPT`, not the E1 receipt's copy of its totals. E1 loads
+that TypeScript constant, requires its commit to be an ancestor of both the
+current source commit and `HEAD`, reads the three historical source blobs from
+Git, and re-derives their byte hashes, IDs, counts, and setlist order ranges.
+CI integration therefore needs complete Git history (`checkout` with
+`fetch-depth: 0`, or an explicit fetch of every receipt commit); this E1 package
+does not change the shared workflow.
 
 A HOLD, withdrawal, stale source, drift, or schema failure invalidates an
 existing artifact and exits nonzero. `check` performs the same audit without
@@ -56,6 +66,15 @@ the `lastVerifiedAt + staleAfterDays` expiry date and becomes HOLD the next day.
 That metadata covers the Event and its child Performances; each Performance date
 must be an exact member of the parent Event's evidence dates.
 
+Governance owners and approval authorities are trimmed, nonblank, and bounded
+to 128 characters. Refresh cadence is one of `on-source-change`, `daily`,
+`weekly`, or `monthly`; `staleAfterDays` is in `1..365`; invalidation and
+withdrawal actions are exactly `HOLD`. Approval timestamps are real canonical
+UTC instants with seconds and optional three-digit milliseconds, so calendar
+normalization cannot turn an invalid date into approval evidence. A claim gate
+can be GO only when every Event and Performance has at least one valid HTTPS
+source URL and is not `unverified`.
+
 Setlist coverage uses structured `excludedEntries` only. Numeric source-order
 gaps must be closed by unique `sourceOrder` exclusions; an unnumbered entry may
 use one unique `beforeSourceOrder` that targets an included order. Each exclusion
@@ -65,11 +84,13 @@ parsed as coverage evidence.
 A receipt GO must cite exact, resolving `repoPath#JSON-pointer` references for
 every gate. Source-use approval can only point to the seed's fixed independent
 approval record under `scripts/atlas/evidence/`; that versioned record binds the
-site, explicit Atlas public-seed approval, approval time, maintenance owner, and
-active/withdrawn status. It is included in the receipt evidence-file hashes and
-the source Git commit. Adding real approval or metadata requires a reviewed
-repository evidence change; the projector never infers permission from route
-publication or verification status.
+fixed site and `atlas-public-seed-v1` scope, exact source and songs paths and
+SHA-256 hashes, bounded approval authority, approval time, maintenance owner,
+and active/withdrawn status. It is included in the receipt evidence-file hashes
+and the source Git commit, so an old approval cannot authorize revised source
+bytes. Adding real approval or metadata requires a reviewed repository evidence
+change; the projector never infers permission from route publication or
+verification status.
 
 Projection shape validation is performed by the actual pinned C0
 `parsePublicAtlasProjection` implementation, loaded with the repository's

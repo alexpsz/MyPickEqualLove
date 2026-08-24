@@ -63,13 +63,19 @@ async function git(root, args) {
   });
 }
 
-function approvalFor(siteId) {
+function approvalFor(fixed, sourceSha256, songsSha256) {
   return {
     schemaVersion: 1,
-    siteId,
+    siteId: fixed.siteId,
+    scope: "atlas-public-seed-v1",
+    sourcePath: fixed.sourcePath,
+    sourceSha256,
+    songsPath: fixed.songsPath,
+    songsSha256,
     atlasPublicSeedApproval: "approved",
+    approvalAuthority: "fixture-atlas-governance",
     approvedAt: "2026-07-31T00:00:00.000Z",
-    maintenanceOwner: `fixture-${siteId}-owner`,
+    maintenanceOwner: `fixture-${fixed.siteId}-owner`,
     withdrawalState: "active",
   };
 }
@@ -103,6 +109,71 @@ function addEqualLoveExclusions(events) {
       ],
     };
   }
+}
+
+async function deriveBaselineSource(root, fixed) {
+  const bytes = await readFile(resolve(root, fixed.sourcePath));
+  const events = JSON.parse(bytes);
+  const eventLocalIds = events.map((event) => event.id);
+  const performanceIds = [];
+  const setlistOrderRanges = [];
+  let setlistEntryCount = 0;
+  for (const event of events) {
+    for (const performance of event.performances ?? []) {
+      performanceIds.push(`${event.id}/${performance.id}`);
+      const orders = performance.setlist.map((entry) => entry.order);
+      setlistOrderRanges.push({
+        eventLocalId: event.id,
+        performanceLocalId: performance.id,
+        setlistEntryCount: performance.setlist.length,
+        setlistOrderRange: { first: orders[0], last: orders.at(-1) },
+      });
+      setlistEntryCount += performance.setlist.length;
+    }
+  }
+  return {
+    siteId: fixed.siteId,
+    sourcePath: fixed.sourcePath,
+    byteLength: bytes.length,
+    sha256: sha256(bytes),
+    eventCount: events.length,
+    eventLocalIds,
+    performanceCount: performanceIds.length,
+    performanceIds,
+    setlistEntryCount,
+    setlistOrderRanges,
+  };
+}
+
+async function createFixtureBaseline(root, sourceCommit) {
+  const sources = [];
+  for (const fixed of FIXED_SEEDS) {
+    sources.push(await deriveBaselineSource(root, fixed));
+  }
+  return {
+    sourceCommit,
+    totals: sources.reduce(
+      (totals, source) => ({
+        events: totals.events + source.eventCount,
+        performances: totals.performances + source.performanceCount,
+        setlistEntries: totals.setlistEntries + source.setlistEntryCount,
+      }),
+      { events: 0, performances: 0, setlistEntries: 0 },
+    ),
+    sources,
+  };
+}
+
+async function writeFixtureBaseline(root, baseline) {
+  await writeFile(
+    resolve(root, "apps/atlas/src/contracts/baseline-receipt.ts"),
+    `export const ATLAS_C0_BASELINE_RECEIPT = ${JSON.stringify(
+      baseline,
+      null,
+      2,
+    )} as const;\n`,
+    "utf8",
+  );
 }
 
 function gateRefs(fixed, events, gateName) {
@@ -163,8 +234,35 @@ async function updateReceiptHashes(fixture) {
   await writeJson(fixture.receiptPath, fixture.receipt);
 }
 
-async function commitFixture(fixture, paths, message = "fixture update") {
-  await git(fixture.root, ["add", "--", ...paths]);
+async function syncApprovalBindings(fixture) {
+  for (const fixed of FIXED_SEEDS) {
+    const approvalPath = resolve(fixture.root, fixed.approvalPath);
+    const approval = await readJson(approvalPath);
+    approval.sourcePath = fixed.sourcePath;
+    approval.sourceSha256 = sha256(
+      await readFile(resolve(fixture.root, fixed.sourcePath)),
+    );
+    approval.songsPath = fixed.songsPath;
+    approval.songsSha256 = sha256(
+      await readFile(resolve(fixture.root, fixed.songsPath)),
+    );
+    approval.scope = "atlas-public-seed-v1";
+    await writeJson(approvalPath, approval);
+  }
+}
+
+async function commitFixture(
+  fixture,
+  paths,
+  message = "fixture update",
+  { syncApprovals = true } = {},
+) {
+  const stagedPaths = [...paths];
+  if (syncApprovals) {
+    await syncApprovalBindings(fixture);
+    stagedPaths.push(...FIXED_SEEDS.map(({ approvalPath }) => approvalPath));
+  }
+  await git(fixture.root, ["add", "--", ...new Set(stagedPaths)]);
   await git(fixture.root, ["commit", "-q", "-m", message]);
   await updateReceiptHashes(fixture);
 }
@@ -175,12 +273,7 @@ async function createGoFixture(t) {
   await git(root, ["config", "user.name", "Atlas Fixture"]);
   await git(root, ["config", "user.email", "atlas-fixture@example.invalid"]);
   const receipt = await readJson(DEFAULT_RECEIPT_PATH);
-  const committedPaths = [];
-
-  for (const contractPath of FIXED_CONTRACT_PATHS) {
-    await copyRepositoryFile(root, contractPath);
-    committedPaths.push(contractPath);
-  }
+  const sourcePaths = [];
   receipt.evidenceFiles = [];
   for (const [index, fixed] of FIXED_SEEDS.entries()) {
     await copyRepositoryFile(root, fixed.sourcePath);
@@ -192,13 +285,6 @@ async function createGoFixture(t) {
     }
     if (fixed.siteId === "equal-love") addEqualLoveExclusions(events);
     await writeJson(sourcePath, events);
-
-    const approval = approvalFor(fixed.siteId);
-    await writeJson(resolve(root, fixed.approvalPath), approval);
-    receipt.evidenceFiles.push({
-      path: fixed.approvalPath,
-      sha256: "0".repeat(64),
-    });
     const seed = receipt.seeds[index];
     seed.decision = "GO";
     seed.withdrawalState = "active";
@@ -209,11 +295,57 @@ async function createGoFixture(t) {
         gap: null,
       };
     }
-    committedPaths.push(fixed.sourcePath, fixed.songsPath, fixed.approvalPath);
+    sourcePaths.push(fixed.sourcePath, fixed.songsPath);
   }
 
-  await git(root, ["add", "--", ...committedPaths]);
-  await git(root, ["commit", "-q", "-m", "fixture evidence commit"]);
+  await git(root, ["add", "--", ...sourcePaths]);
+  await git(root, ["commit", "-q", "-m", "fixture historical sources"]);
+  const historicalCommit = (
+    await git(root, ["rev-parse", "HEAD"])
+  ).stdout.trim();
+  const baseline = await createFixtureBaseline(root, historicalCommit);
+
+  for (const contractPath of FIXED_CONTRACT_PATHS.slice(0, -1)) {
+    await copyRepositoryFile(root, contractPath);
+  }
+  await mkdir(dirname(resolve(root, FIXED_CONTRACT_PATHS.at(-1))), {
+    recursive: true,
+  });
+  await writeFixtureBaseline(root, baseline);
+  for (const fixed of FIXED_SEEDS) {
+    const sourceSha256 = sha256(
+      await readFile(resolve(root, fixed.sourcePath)),
+    );
+    const songsSha256 = sha256(await readFile(resolve(root, fixed.songsPath)));
+    await writeJson(
+      resolve(root, fixed.approvalPath),
+      approvalFor(fixed, sourceSha256, songsSha256),
+    );
+    receipt.evidenceFiles.push({
+      path: fixed.approvalPath,
+      sha256: "0".repeat(64),
+    });
+  }
+  await git(root, [
+    "add",
+    "--",
+    ...FIXED_CONTRACT_PATHS,
+    ...FIXED_SEEDS.map(({ approvalPath }) => approvalPath),
+  ]);
+  await git(root, ["commit", "-q", "-m", "fixture governance evidence"]);
+
+  receipt.historicalBaseline = {
+    contractPath: FIXED_CONTRACT_PATHS.at(-1),
+    sourceCommit: historicalCommit,
+    totals: baseline.totals,
+  };
+  for (const [index, source] of baseline.sources.entries()) {
+    receipt.seeds[index].baselineCounts = {
+      events: source.eventCount,
+      performances: source.performanceCount,
+      setlistEntries: source.setlistEntryCount,
+    };
+  }
   const receiptPath = resolve(root, FIXED_RECEIPT_PATH);
   const fixture = {
     root,
@@ -221,6 +353,7 @@ async function createGoFixture(t) {
     receiptPath,
     artifactPath: resolve(root, FIXED_ARTIFACT_PATH),
     auditDate: "2026-08-15",
+    baseline,
   };
   await updateReceiptHashes(fixture);
   return fixture;
@@ -468,6 +601,362 @@ test("approval site, withdrawal, and owner are committed evidence rather than re
     ownerAudit.errors.some((error) => error.startsWith("APPROVAL_SCHEMA:")),
     true,
   );
+});
+
+test("governance-closing text, cadence, TTL, and fail-closed actions are semantically bounded", async (t) => {
+  const cases = [
+    {
+      name: "blank source owner",
+      kind: "source",
+      mutate: (events) => {
+        events[0].publicAtlasEvidence.maintenanceOwner = "   ";
+      },
+      errorPrefix: "SOURCE_SCHEMA:",
+    },
+    {
+      name: "overlong source owner",
+      kind: "source",
+      mutate: (events) => {
+        events[0].publicAtlasEvidence.maintenanceOwner = "x".repeat(129);
+      },
+      errorPrefix: "SOURCE_SCHEMA:",
+    },
+    {
+      name: "blank approval owner",
+      kind: "approval",
+      mutate: (approval) => {
+        approval.maintenanceOwner = " \t ";
+      },
+      errorPrefix: "APPROVAL_SCHEMA:",
+    },
+    {
+      name: "overlong approval owner",
+      kind: "approval",
+      mutate: (approval) => {
+        approval.maintenanceOwner = "x".repeat(129);
+      },
+      errorPrefix: "APPROVAL_SCHEMA:",
+    },
+    {
+      name: "blank approval authority",
+      kind: "approval",
+      mutate: (approval) => {
+        approval.approvalAuthority = "   ";
+      },
+      errorPrefix: "APPROVAL_SCHEMA:",
+    },
+    {
+      name: "overlong approval authority",
+      kind: "approval",
+      mutate: (approval) => {
+        approval.approvalAuthority = "x".repeat(129);
+      },
+      errorPrefix: "APPROVAL_SCHEMA:",
+    },
+    ...["   ", "x".repeat(129), "never"].map((cadence) => ({
+      name: `invalid cadence ${JSON.stringify(cadence)}`,
+      kind: "source",
+      mutate: (events) => {
+        events[0].publicAtlasEvidence.refreshPolicy.refreshCadence = cadence;
+      },
+      errorPrefix: "SOURCE_SCHEMA:",
+    })),
+    {
+      name: "TTL exceeds one year",
+      kind: "source",
+      mutate: (events) => {
+        events[0].publicAtlasEvidence.refreshPolicy.staleAfterDays = 366;
+      },
+      errorPrefix: "SOURCE_SCHEMA:",
+    },
+    ...["onInvalidation", "onWithdrawal"].map((field) => ({
+      name: `${field} is not exact HOLD`,
+      kind: "source",
+      mutate: (events) => {
+        events[0].publicAtlasEvidence.refreshPolicy[field] = "hold";
+      },
+      errorPrefix: "SOURCE_SCHEMA:",
+    })),
+  ];
+
+  for (const testCase of cases) {
+    const fixture = await createGoFixture(t);
+    const fixed = FIXED_SEEDS[0];
+    const repositoryPath =
+      testCase.kind === "source" ? fixed.sourcePath : fixed.approvalPath;
+    const path = resolve(fixture.root, repositoryPath);
+    const document = await readJson(path);
+    testCase.mutate(document);
+    await writeJson(path, document);
+    await commitFixture(fixture, [repositoryPath], testCase.name);
+    const audit = await auditWorkspace(options(fixture));
+    assert.equal(
+      audit.errors.some((error) => error.startsWith(testCase.errorPrefix)),
+      true,
+      `${testCase.name}: ${audit.errors.join("\n")}`,
+    );
+  }
+});
+
+test("claim GO requires verified nonempty HTTPS evidence on every Event and Performance", async (t) => {
+  const cases = [
+    {
+      name: "empty Event URLs",
+      mutate: (events) => {
+        events[0].eventEvidence.sourceUrls = [];
+      },
+    },
+    {
+      name: "unverified Event",
+      mutate: (events) => {
+        events[0].eventEvidence.verificationStatus = "unverified";
+      },
+    },
+    {
+      name: "empty Performance URLs",
+      mutate: (events) => {
+        events[0].performances[0].sourceUrls = [];
+      },
+    },
+    {
+      name: "unverified Performance",
+      mutate: (events) => {
+        events[0].performances[0].verificationStatus = "unverified";
+      },
+    },
+  ];
+  for (const testCase of cases) {
+    const fixture = await createGoFixture(t);
+    const fixed = FIXED_SEEDS[1];
+    const path = resolve(fixture.root, fixed.sourcePath);
+    const events = await readJson(path);
+    testCase.mutate(events);
+    await writeJson(path, events);
+    await commitFixture(fixture, [fixed.sourcePath], testCase.name);
+    const audit = await auditWorkspace(options(fixture));
+    assert.equal(
+      audit.errors.some((error) =>
+        error.startsWith(`CLAIM_EVIDENCE:${fixed.siteId}:`),
+      ),
+      true,
+      `${testCase.name}: ${audit.errors.join("\n")}`,
+    );
+  }
+});
+
+test("approval scope and exact source/song identity cannot be replayed or mismatched", async (t) => {
+  const fixed = FIXED_SEEDS[0];
+  const cases = [
+    [
+      "source path",
+      (approval) => (approval.sourcePath = FIXED_SEEDS[1].sourcePath),
+    ],
+    ["source hash", (approval) => (approval.sourceSha256 = "f".repeat(64))],
+    [
+      "songs path",
+      (approval) => (approval.songsPath = FIXED_SEEDS[1].songsPath),
+    ],
+    ["songs hash", (approval) => (approval.songsSha256 = "e".repeat(64))],
+    ["scope", (approval) => (approval.scope = "atlas-public-seed-v2")],
+  ];
+  for (const [name, mutate] of cases) {
+    const fixture = await createGoFixture(t);
+    const path = resolve(fixture.root, fixed.approvalPath);
+    const approval = await readJson(path);
+    mutate(approval);
+    await writeJson(path, approval);
+    await commitFixture(fixture, [fixed.approvalPath], name, {
+      syncApprovals: false,
+    });
+    const audit = await auditWorkspace(options(fixture));
+    assert.equal(
+      audit.errors.some((error) => error.startsWith("APPROVAL_SCHEMA:")),
+      true,
+      `${name}: ${audit.errors.join("\n")}`,
+    );
+  }
+
+  const replay = await createGoFixture(t);
+  const sourcePath = resolve(replay.root, fixed.sourcePath);
+  const events = await readJson(sourcePath);
+  events[0].sourceNote = `${events[0].sourceNote} Fixture revision.`;
+  await writeJson(sourcePath, events);
+  await commitFixture(
+    replay,
+    [fixed.sourcePath],
+    "source without new approval",
+    {
+      syncApprovals: false,
+    },
+  );
+  const replayAudit = await auditWorkspace(options(replay));
+  assert.equal(
+    replayAudit.errors.some((error) => error.startsWith("APPROVAL_SCHEMA:")),
+    true,
+    replayAudit.errors.join("\n"),
+  );
+});
+
+test("the frozen C0 historical receipt is re-derived from immutable Git blobs", async (t) => {
+  const totals = await createGoFixture(t);
+  totals.receipt.historicalBaseline.totals.events += 1;
+  await writeJson(totals.receiptPath, totals.receipt);
+  assert.equal(
+    (await auditWorkspace(options(totals))).errors.some((error) =>
+      error.startsWith("HISTORICAL_RECEIPT:totals"),
+    ),
+    true,
+  );
+
+  const counts = await createGoFixture(t);
+  counts.receipt.seeds[0].baselineCounts.setlistEntries += 1;
+  await writeJson(counts.receiptPath, counts.receipt);
+  assert.equal(
+    (await auditWorkspace(options(counts))).errors.some((error) =>
+      error.startsWith("HISTORICAL_RECEIPT:equal-love:baselineCounts"),
+    ),
+    true,
+  );
+
+  const identity = await createGoFixture(t);
+  const identityBaseline = structuredClone(identity.baseline);
+  identityBaseline.sources[0].eventLocalIds[0] = "substituted_event";
+  identityBaseline.sources[0].performanceIds =
+    identityBaseline.sources[0].performanceIds.map((performanceId) =>
+      performanceId.replace("kokuritsu_2026/", "substituted_event/"),
+    );
+  for (const receipt of identityBaseline.sources[0].setlistOrderRanges) {
+    if (receipt.eventLocalId === "kokuritsu_2026") {
+      receipt.eventLocalId = "substituted_event";
+    }
+  }
+  await writeFixtureBaseline(identity.root, identityBaseline);
+  await commitFixture(
+    identity,
+    [FIXED_CONTRACT_PATHS.at(-1)],
+    "baseline identity tamper",
+  );
+  assert.equal(
+    (await auditWorkspace(options(identity))).errors.some((error) =>
+      error.startsWith("HISTORICAL_SOURCE:equal-love:"),
+    ),
+    true,
+  );
+
+  const order = await createGoFixture(t);
+  const orderBaseline = structuredClone(order.baseline);
+  const range =
+    orderBaseline.sources[1].setlistOrderRanges[0].setlistOrderRange;
+  range.first += 1;
+  range.last += 1;
+  await writeFixtureBaseline(order.root, orderBaseline);
+  await commitFixture(
+    order,
+    [FIXED_CONTRACT_PATHS.at(-1)],
+    "baseline order tamper",
+  );
+  assert.equal(
+    (await auditWorkspace(options(order))).errors.some((error) =>
+      error.startsWith("HISTORICAL_SOURCE:nearly-equal-joy:"),
+    ),
+    true,
+  );
+});
+
+test("current and historical receipt commits must belong to the audited HEAD ancestry", async (t) => {
+  const current = await createGoFixture(t);
+  const currentTree = (
+    await git(current.root, ["rev-parse", "HEAD^{tree}"])
+  ).stdout.trim();
+  const currentOrphan = (
+    await git(current.root, [
+      "commit-tree",
+      currentTree,
+      "-m",
+      "current orphan",
+    ])
+  ).stdout.trim();
+  current.receipt.sourceCommit = currentOrphan;
+  await writeJson(current.receiptPath, current.receipt);
+  assert.equal(
+    (await auditWorkspace(options(current))).errors.some((error) =>
+      error.startsWith("GIT_ANCESTRY:sourceCommit"),
+    ),
+    true,
+  );
+
+  const historical = await createGoFixture(t);
+  const historicalTree = (
+    await git(historical.root, [
+      "rev-parse",
+      `${historical.baseline.sourceCommit}^{tree}`,
+    ])
+  ).stdout.trim();
+  const historicalOrphan = (
+    await git(historical.root, [
+      "commit-tree",
+      historicalTree,
+      "-m",
+      "historical orphan",
+    ])
+  ).stdout.trim();
+  const orphanBaseline = structuredClone(historical.baseline);
+  orphanBaseline.sourceCommit = historicalOrphan;
+  historical.receipt.historicalBaseline.sourceCommit = historicalOrphan;
+  await writeFixtureBaseline(historical.root, orphanBaseline);
+  await commitFixture(
+    historical,
+    [FIXED_CONTRACT_PATHS.at(-1)],
+    "bind orphan historical commit",
+  );
+  const historicalAudit = await auditWorkspace(options(historical));
+  assert.equal(
+    historicalAudit.errors.some((error) =>
+      error.startsWith(`GIT_ANCESTRY:historical ${historicalOrphan}`),
+    ),
+    true,
+    historicalAudit.errors.join("\n"),
+  );
+});
+
+test("approval timestamps accept canonical UTC seconds but reject normalized calendar dates", async (t) => {
+  const fixed = FIXED_SEEDS[0];
+  const seconds = await createGoFixture(t);
+  const secondsPath = resolve(seconds.root, fixed.approvalPath);
+  const secondsApproval = await readJson(secondsPath);
+  secondsApproval.approvedAt = "2026-07-31T00:00:00Z";
+  await writeJson(secondsPath, secondsApproval);
+  await commitFixture(
+    seconds,
+    [fixed.approvalPath],
+    "canonical seconds timestamp",
+  );
+  assert.equal((await auditWorkspace(options(seconds))).ok, true);
+
+  for (const { approvedAt, expected } of [
+    { approvedAt: "2026-02-30T00:00:00Z", expected: "canonical UTC" },
+    { approvedAt: " 2026-07-31T00:00:00Z ", expected: "ISO UTC" },
+  ]) {
+    const invalid = await createGoFixture(t);
+    const invalidPath = resolve(invalid.root, fixed.approvalPath);
+    const invalidApproval = await readJson(invalidPath);
+    invalidApproval.approvedAt = approvedAt;
+    await writeJson(invalidPath, invalidApproval);
+    await commitFixture(
+      invalid,
+      [fixed.approvalPath],
+      "invalid canonical timestamp",
+    );
+    const invalidAudit = await auditWorkspace(options(invalid));
+    assert.equal(
+      invalidAudit.errors.some(
+        (error) =>
+          error.startsWith("APPROVAL_SCHEMA:") && error.includes(expected),
+      ),
+      true,
+      `${approvedAt}: ${invalidAudit.errors.join("\n")}`,
+    );
+  }
 });
 
 test("freshness is GO before/on expiry and HOLD after expiry or for future evidence", async (t) => {
