@@ -127,7 +127,7 @@ export default function Controls({
   return (
     <div
       data-page-reveal
-      className="app-content-shell relative z-10 mb-4 px-4 sm:mb-5 sm:px-6 md:px-8"
+      className="app-content-shell relative z-20 mb-4 px-4 sm:mb-5 sm:px-6 md:px-8"
     >
       <section
         ref={controlsRef}

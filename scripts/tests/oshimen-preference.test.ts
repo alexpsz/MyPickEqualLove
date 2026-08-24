@@ -594,3 +594,38 @@ test("anchored oshimen menu keeps bounded scrolling, touch targets, and keyboard
     /triggerRef\.current\?\.focus\(\{ preventScroll: true \}\)/,
   );
 });
+
+test("oshimen menu stacking context stays above the following archetype entry", () => {
+  const controlsSource = readFileSync(
+    resolve(process.cwd(), "src/components/Controls.tsx"),
+    "utf8",
+  );
+  const clientSource = readFileSync(
+    resolve(process.cwd(), "src/components/PickExperienceClient.tsx"),
+    "utf8",
+  );
+
+  assert.match(
+    controlsSource,
+    /className="app-content-shell relative z-20 mb-4 px-4/,
+  );
+  assert.match(
+    clientSource,
+    /className="app-content-shell relative z-10 mb-4 px-4 \[--reveal-delay:140ms\]/,
+  );
+});
+
+test("a dragged pick card outranks the controls panel for the duration of the gesture", () => {
+  const boardSource = readFileSync(
+    resolve(process.cwd(), "src/components/PickBoard.tsx"),
+    "utf8",
+  );
+
+  // Raising Controls above the board so its anchored menu clears the archetype
+  // entry would otherwise bury a card dragged over the controls panel.
+  assert.match(
+    boardSource,
+    /className=\{`relative \[--reveal-delay:160ms\] \$\{\s*dragSourceSlotId \? "z-30" : "z-10"\s*\}`\}/,
+  );
+  assert.match(boardSource, /session\.wrapper\.style\.zIndex = "40";/);
+});

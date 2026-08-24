@@ -832,7 +832,16 @@ export default function PickBoard({
     : -1;
 
   return (
-    <section data-page-reveal className="relative z-10 [--reveal-delay:160ms]">
+    <section
+      data-page-reveal
+      /* A dragged card lives inside this stacking context, so the board has to
+         outrank the controls panel above it for the duration of the gesture.
+         The anchored menus in that panel cannot be open at the same time: their
+         own outside-pointerdown handler closes them before a drag can begin. */
+      className={`relative [--reveal-delay:160ms] ${
+        dragSourceSlotId ? "z-30" : "z-10"
+      }`}
+    >
       <div className="mb-3 flex items-end justify-between gap-4">
         <h2 className="section-title">{t("pick.heading")}</h2>
       </div>
