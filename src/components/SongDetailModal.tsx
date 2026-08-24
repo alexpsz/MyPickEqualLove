@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, type ReactNode } from "react";
 import * as m from "motion/react-m";
 import Image from "next/image";
 import { useLocale } from "../i18n/LocaleProvider";
@@ -8,7 +8,6 @@ import type { Member, Song } from "../schema/music";
 import { getConfirmedSongCredits } from "../utils/songCredits";
 import {
   RELEASE_TYPE_MESSAGE_KEYS,
-  SOURCE_STATUS_MESSAGE_KEYS,
   TRACK_TYPE_MESSAGE_KEYS,
 } from "../utils/songMetadata";
 import { getSongPagePath } from "../utils/songRoutes";
@@ -21,6 +20,7 @@ import OfficialMediaLinks, {
 } from "./OfficialMediaLinks";
 import type { PresenceState } from "./MotionPresence";
 import type { SearchSelectionMode } from "./SearchModal";
+import { SongMembersSection, SongSourcesSection } from "./SongDetailSections";
 import { usePreviewAudio } from "./PreviewAudioProvider";
 
 interface SongDetailModalProps {
@@ -52,12 +52,6 @@ export default function SongDetailModal({
   const { stop } = usePreviewAudio();
   const panelRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
-  const membersById = useMemo(
-    () => Object.fromEntries(members.map((member) => [member.id, member])),
-    [members],
-  );
-  const participatingMembers = getMembers(song.memberIds, membersById);
-  const centerMembers = getMembers(song.centerMemberIds, membersById);
   const credits = getConfirmedSongCredits(song);
   const titleId = `song-detail-${song.id}-title`;
   const isExiting = presenceState === "exiting";
@@ -217,22 +211,11 @@ export default function SongDetailModal({
                 ) : null}
               </dl>
 
-              {participatingMembers.length > 0 || centerMembers.length > 0 ? (
-                <DetailSection title={t("songDetail.members")}>
-                  {centerMembers.length > 0 ? (
-                    <MemberList
-                      label={t("songDetail.center")}
-                      members={centerMembers}
-                    />
-                  ) : null}
-                  {participatingMembers.length > 0 ? (
-                    <MemberList
-                      label={t("songDetail.participatingMembers")}
-                      members={participatingMembers}
-                    />
-                  ) : null}
-                </DetailSection>
-              ) : null}
+              <SongMembersSection
+                song={song}
+                members={members}
+                surface="modal"
+              />
 
               <DetailSection title={t("songDetail.credits")}>
                 {credits ? (
@@ -260,27 +243,7 @@ export default function SongDetailModal({
                 )}
               </DetailSection>
 
-              {song.sourceStatus || song.officialUrl || song.creditSourceUrl ? (
-                <DetailSection title={t("songDetail.sources")}>
-                  {song.sourceStatus ? (
-                    <p className="text-sm text-[var(--foreground)]">
-                      {t(SOURCE_STATUS_MESSAGE_KEYS[song.sourceStatus])}
-                    </p>
-                  ) : null}
-                  <div className="flex flex-wrap gap-2">
-                    {song.officialUrl ? (
-                      <SourceLink href={song.officialUrl}>
-                        {t("songDetail.officialSource")}
-                      </SourceLink>
-                    ) : null}
-                    {song.creditSourceUrl ? (
-                      <SourceLink href={song.creditSourceUrl}>
-                        {t("songDetail.creditSource")}
-                      </SourceLink>
-                    ) : null}
-                  </div>
-                </DetailSection>
-              ) : null}
+              <SongSourcesSection song={song} surface="modal" />
 
               <OfficialMediaLinks songId={song.id} headingLevel="h3" />
             </div>
@@ -368,30 +331,6 @@ function DetailSection({
   );
 }
 
-function MemberList({ label, members }: { label: string; members: Member[] }) {
-  const { t } = useLocale();
-  return (
-    <div>
-      <p className="text-xs font-semibold text-[var(--muted)]">{label}</p>
-      <div className="mt-2 flex flex-wrap gap-2">
-        {members.map((member) => (
-          <span
-            key={member.id}
-            className="rounded-full border border-[var(--line)] bg-[var(--background)] px-2.5 py-1 text-xs text-[var(--foreground)]"
-          >
-            <JapaneseContent>{member.name.ja}</JapaneseContent>
-            {member.active === false ? (
-              <span className="ml-1 text-[var(--muted)]">
-                · {t("search.graduated")}
-              </span>
-            ) : null}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function CreditRow({
   label,
   ja,
@@ -409,20 +348,6 @@ function CreditRow({
         <span className="ml-2 text-xs text-[var(--muted)]">{romaji}</span>
       </dd>
     </div>
-  );
-}
-
-function SourceLink({ href, children }: { href: string; children: ReactNode }) {
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noreferrer"
-      className="official-button official-button-quiet w-fit"
-    >
-      {children}
-      <AppIcon name="external" size={14} />
-    </a>
   );
 }
 
@@ -444,13 +369,4 @@ function StatusBadge({
       {children}
     </span>
   );
-}
-
-function getMembers(
-  memberIds: string[] | undefined,
-  membersById: Record<string, Member>,
-) {
-  return Array.from(new Set(memberIds ?? []))
-    .map((memberId) => membersById[memberId])
-    .filter((member): member is Member => Boolean(member));
 }

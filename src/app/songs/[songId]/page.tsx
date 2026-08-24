@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { SongCatalogDetail } from "../../../components/SongCatalogPages";
 import { PROJECT_CONFIG } from "../../../config/project";
-import { SONGS, SONGS_BY_ID } from "../../../data/songs";
+import { MEMBERS, SONGS, SONGS_BY_ID } from "../../../data/songs";
 import { getSongPagePath } from "../../../utils/songRoutes";
 import {
   createMusicRecordingStructuredData,
@@ -64,7 +64,7 @@ export default async function SongPage({ params }: SongPageProps) {
           }}
         />
       ) : null}
-      <SongCatalogDetail song={song} />
+      <SongCatalogDetail song={song} members={MEMBERS} />
     </>
   );
 }

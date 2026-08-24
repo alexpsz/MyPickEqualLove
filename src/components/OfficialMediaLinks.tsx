@@ -14,9 +14,11 @@ import { usePreviewAudio } from "./PreviewAudioProvider";
 export default function OfficialMediaLinks({
   songId,
   headingLevel = "h2",
+  className = "",
 }: {
   songId: string;
   headingLevel?: "h2" | "h3";
+  className?: string;
 }) {
   const { t } = useLocale();
   const links = getOfficialMediaLinks(songId);
@@ -29,7 +31,9 @@ export default function OfficialMediaLinks({
   const Heading = headingLevel;
 
   return (
-    <section className="rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--paper)] p-4">
+    <section
+      className={`rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--paper)] p-4 ${className}`}
+    >
       <Heading className="text-xs font-semibold uppercase tracking-[0.1em] text-[var(--muted)]">
         {t("songDetail.officialMedia")}
       </Heading>
@@ -92,7 +96,7 @@ export function OfficialMediaCoverLink({
         title={t(
           isActive ? "songDetail.preview.stop" : "songDetail.preview.play",
         )}
-        className={`${className} group p-0 text-left focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]`}
+        className={`${className} group w-full p-0 text-left focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]`}
       >
         {children}
         <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/5 transition-colors duration-150 group-hover:bg-black/20 group-focus-visible:bg-black/20">

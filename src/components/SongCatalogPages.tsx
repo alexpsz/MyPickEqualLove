@@ -5,7 +5,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { PROJECT_CONFIG, PROJECT_THEME_COLOR } from "../config/project";
 import { useLocale } from "../i18n/LocaleProvider";
-import type { Song } from "../schema/music";
+import type { Member, Song } from "../schema/music";
 import {
   RELEASE_TYPE_MESSAGE_KEYS,
   TRACK_TYPE_MESSAGE_KEYS,
@@ -18,6 +18,7 @@ import JapaneseContent from "./JapaneseContent";
 import OfficialMediaLinks, {
   OfficialMediaCoverLink,
 } from "./OfficialMediaLinks";
+import { SongMembersSection, SongSourcesSection } from "./SongDetailSections";
 
 const SONG_CATALOG_BAR_BACKGROUND = `linear-gradient(90deg, ${PROJECT_THEME_COLOR}, var(--project-accent))`;
 
@@ -92,7 +93,13 @@ export function SongCatalogIndex({
   );
 }
 
-export function SongCatalogDetail({ song }: { song: Song }) {
+export function SongCatalogDetail({
+  song,
+  members,
+}: {
+  song: Song;
+  members: Member[];
+}) {
   const { t } = useLocale();
   const credits = getConfirmedSongCredits(song);
   const hasReleaseInformation = Boolean(
@@ -180,6 +187,12 @@ export function SongCatalogDetail({ song }: { song: Song }) {
                 </DetailSection>
               ) : null}
 
+              <SongMembersSection
+                song={song}
+                members={members}
+                surface="page"
+              />
+
               <DetailSection title={t("songDetail.credits")}>
                 {credits ? (
                   <dl className="grid gap-3">
@@ -206,7 +219,9 @@ export function SongCatalogDetail({ song }: { song: Song }) {
                 )}
               </DetailSection>
 
-              <OfficialMediaLinks songId={song.id} />
+              <SongSourcesSection song={song} surface="page" />
+
+              <OfficialMediaLinks songId={song.id} className="mt-6" />
             </div>
           </div>
         </article>
