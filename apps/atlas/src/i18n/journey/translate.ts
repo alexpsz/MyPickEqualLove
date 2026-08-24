@@ -1,19 +1,6 @@
-export const JOURNEY_LOCALES = ["zh-CN", "en", "ja", "ko"] as const;
+import type { ShellLocale } from "../shell/messages.js";
 
-export type JourneyLocale = (typeof JOURNEY_LOCALES)[number];
-
-export function resolveJourneyLocale(
-  languages: readonly string[],
-): JourneyLocale {
-  for (const language of languages) {
-    const normalized = language.toLowerCase();
-    if (normalized.startsWith("zh")) return "zh-CN";
-    if (normalized.startsWith("ja")) return "ja";
-    if (normalized.startsWith("ko")) return "ko";
-    if (normalized.startsWith("en")) return "en";
-  }
-  return "en";
-}
+export type JourneyLocale = ShellLocale;
 
 export function formatJourneyDateTime(
   locale: JourneyLocale,

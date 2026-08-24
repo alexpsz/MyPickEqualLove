@@ -274,12 +274,10 @@
 .buttonSecondary:focus-visible,
 .buttonDanger:focus-visible,
 .buttonQuiet:focus-visible,
-.navLink:focus-visible,
 .fileLabel:focus-within,
 .field input:focus-visible,
 .field select:focus-visible,
 .field textarea:focus-visible,
-.languageField select:focus-visible,
 .disclosure summary:focus-visible {
   outline: 3px solid rgb(81 101 241 / 42%);
   outline-offset: 2px;
@@ -491,14 +489,8 @@
     width: 100%;
   }
 
-  .navLink,
   .actionRow > * {
     flex: 1 1 9rem;
-  }
-
-  .languageField {
-    width: 100%;
-    justify-content: space-between;
   }
 
   .summaryGrid {

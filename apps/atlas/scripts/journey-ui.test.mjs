@@ -471,6 +471,25 @@ test("four Journey catalogs are exact, non-empty, and placeholder-compatible", (
   }
 });
 
+test("Journey locale and styles have no independent shell-era source", async () => {
+  const translate = await readFile(
+    join(sourceRoot, "i18n/journey/translate.ts"),
+    "utf8",
+  );
+  const css = await readFile(
+    join(sourceRoot, "components/journey/journey-ui.module.css"),
+    "utf8",
+  );
+
+  assert.match(translate, /import type \{ ShellLocale \}/);
+  assert.match(translate, /type JourneyLocale = ShellLocale/);
+  assert.doesNotMatch(
+    translate,
+    /JOURNEY_LOCALES|resolveJourneyLocale|navigator\.languages?/,
+  );
+  assert.doesNotMatch(css, /\.navLink\b|\.languageField\b/);
+});
+
 function countRenderedTag(markup, tagName) {
   return [...markup.matchAll(new RegExp(`<${tagName}\\b`, "g"))].length;
 }
