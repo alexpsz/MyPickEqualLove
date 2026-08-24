@@ -27,14 +27,14 @@ export type NamespacedEntityId<K extends PublicEntityKind = PublicEntityKind> =
 
 export interface ParsedSimpleEntityId<K extends "group" | "event" | "song"> {
   readonly id: NamespacedEntityId<K>;
-  readonly siteId: ProductFamilySiteId;
+  readonly siteId: PublicAtlasSiteId;
   readonly kind: K;
   readonly localId: string;
 }
 
 export interface ParsedPerformanceEntityId {
   readonly id: NamespacedEntityId<"performance">;
-  readonly siteId: ProductFamilySiteId;
+  readonly siteId: PublicAtlasSiteId;
   readonly kind: "performance";
   readonly eventLocalId: string;
   readonly localId: string;
@@ -61,37 +61,37 @@ function localId(value: unknown, path: string) {
   );
 }
 
-function siteId(value: unknown, path: string) {
-  return expectLiteral(value, path, PRODUCT_FAMILY_SITE_IDS);
+function publicSiteId(value: unknown, path: string) {
+  return expectLiteral(value, path, PUBLIC_ATLAS_SITE_IDS);
 }
 
 export function createGroupEntityId(
-  site: ProductFamilySiteId,
+  site: PublicAtlasSiteId,
   groupLocalId: string,
 ) {
-  return `${siteId(site, "siteId")}:group:${localId(groupLocalId, "groupLocalId")}` as NamespacedEntityId<"group">;
+  return `${publicSiteId(site, "siteId")}:group:${localId(groupLocalId, "groupLocalId")}` as NamespacedEntityId<"group">;
 }
 
 export function createEventEntityId(
-  site: ProductFamilySiteId,
+  site: PublicAtlasSiteId,
   eventLocalId: string,
 ) {
-  return `${siteId(site, "siteId")}:event:${localId(eventLocalId, "eventLocalId")}` as NamespacedEntityId<"event">;
+  return `${publicSiteId(site, "siteId")}:event:${localId(eventLocalId, "eventLocalId")}` as NamespacedEntityId<"event">;
 }
 
 export function createPerformanceEntityId(
-  site: ProductFamilySiteId,
+  site: PublicAtlasSiteId,
   eventLocalId: string,
   performanceLocalId: string,
 ) {
-  return `${siteId(site, "siteId")}:performance:${localId(eventLocalId, "eventLocalId")}:${localId(performanceLocalId, "performanceLocalId")}` as NamespacedEntityId<"performance">;
+  return `${publicSiteId(site, "siteId")}:performance:${localId(eventLocalId, "eventLocalId")}:${localId(performanceLocalId, "performanceLocalId")}` as NamespacedEntityId<"performance">;
 }
 
 export function createSongEntityId(
-  site: ProductFamilySiteId,
+  site: PublicAtlasSiteId,
   existingSongLocalId: string,
 ) {
-  return `${siteId(site, "siteId")}:song:${localId(existingSongLocalId, "songLocalId")}` as NamespacedEntityId<"song">;
+  return `${publicSiteId(site, "siteId")}:song:${localId(existingSongLocalId, "songLocalId")}` as NamespacedEntityId<"song">;
 }
 
 export function parseNamespacedEntityId(value: unknown): EntityIdParseResult {
@@ -100,7 +100,7 @@ export function parseNamespacedEntityId(value: unknown): EntityIdParseResult {
   }
   try {
     const segments = value.split(":");
-    const parsedSiteId = siteId(segments[0], "entityId.siteId");
+    const parsedSiteId = publicSiteId(segments[0], "entityId.siteId");
     const kind = expectLiteral(segments[1], "entityId.kind", [
       "group",
       "event",
@@ -167,7 +167,10 @@ export function requireNamespacedEntityId<K extends PublicEntityKind>(
 }
 
 export function isPublicAtlasSiteId(
-  value: ProductFamilySiteId,
+  value: unknown,
 ): value is PublicAtlasSiteId {
-  return (PUBLIC_ATLAS_SITE_IDS as readonly string[]).includes(value);
+  return (
+    typeof value === "string" &&
+    (PUBLIC_ATLAS_SITE_IDS as readonly string[]).includes(value)
+  );
 }

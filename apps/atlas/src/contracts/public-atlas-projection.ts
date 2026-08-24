@@ -283,6 +283,9 @@ function parsePerformance(
   siteId: PublicAtlasSiteId,
   eventLocalId: string,
   sourceRevision: string,
+  eventStart: string,
+  eventEnd: string,
+  eventTimezone: string,
 ): ProjectionPerformance {
   const record = expectRecord(value, path);
   expectExactKeys(record, path, [
@@ -310,14 +313,28 @@ function parsePerformance(
       "performance namespace must match its parent event",
     );
   }
+  const date = expectIsoDate(record.date, `${path}.date`);
+  if (date < eventStart || date > eventEnd) {
+    throw new ContractValidationError(
+      `${path}.date`,
+      "performance date must fall within its parent Event date range",
+    );
+  }
+  const timezone = expectIanaTimezone(record.timezone, `${path}.timezone`);
+  if (timezone !== eventTimezone) {
+    throw new ContractValidationError(
+      `${path}.timezone`,
+      "performance timezone must match its parent Event timezone",
+    );
+  }
   return {
     id: parsedId.id,
     displayName: expectString(record.displayName, `${path}.displayName`, {
       max: 256,
     }),
     venue: parseVenue(record.venue, `${path}.venue`),
-    date: expectIsoDate(record.date, `${path}.date`),
-    timezone: expectIanaTimezone(record.timezone, `${path}.timezone`),
+    date,
+    timezone,
     lifecycle: expectLiteral(record.lifecycle, `${path}.lifecycle`, LIFECYCLES),
     setlist: parseSetlist(
       record.setlist,
@@ -367,6 +384,7 @@ function parseEvent(
       "end cannot precede start",
     );
   }
+  const timezone = expectIanaTimezone(record.timezone, `${path}.timezone`);
   return {
     id: parsedId.id,
     displayName: expectString(record.displayName, `${path}.displayName`, {
@@ -374,7 +392,7 @@ function parseEvent(
     }),
     venue: parseVenue(record.venue, `${path}.venue`),
     dates: { start, end },
-    timezone: expectIanaTimezone(record.timezone, `${path}.timezone`),
+    timezone,
     lifecycle: expectLiteral(record.lifecycle, `${path}.lifecycle`, LIFECYCLES),
     performances: expectArray(record.performances, `${path}.performances`).map(
       (performance, index) =>
@@ -384,6 +402,9 @@ function parseEvent(
           siteId,
           parsedId.localId,
           sourceRevision,
+          start,
+          end,
+          timezone,
         ),
     ),
     ...parseCommonEvidence(record, path),

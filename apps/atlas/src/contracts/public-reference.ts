@@ -1,5 +1,6 @@
 import type { PublicEntityKind } from "./identity.js";
 import {
+  isPublicAtlasSiteId,
   requireNamespacedEntityId,
   type NamespacedEntityId,
 } from "./identity.js";
@@ -90,6 +91,12 @@ export function parsePublicReferenceValue<K extends PublicEntityKind>(
     throw new ContractValidationError(
       `${path}.entityId`,
       `expected namespaced ${allowedKinds.join(" or ")} id`,
+    );
+  }
+  if (!isPublicAtlasSiteId(parsedKind.siteId)) {
+    throw new ContractValidationError(
+      `${path}.entityId`,
+      "public references cannot use the Atlas private namespace",
     );
   }
 
