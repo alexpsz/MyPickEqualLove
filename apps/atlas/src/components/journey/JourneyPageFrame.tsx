@@ -1,8 +1,8 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useShell } from "../../i18n/shell/shell-context.js";
-import type { JourneyLocale } from "../../i18n/journey/translate.js";
+import { useShell } from "../../i18n/shell/shell-context";
+import type { JourneyLocale } from "../../i18n/journey/translate";
 import styles from "./journey-ui.module.css";
 
 interface JourneyPageFrameProps {

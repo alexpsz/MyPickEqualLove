@@ -4,8 +4,8 @@ import { useEffect, useRef } from "react";
 import {
   journeyMessage,
   type JourneyMessageKey,
-} from "../../i18n/journey/messages.js";
-import type { JourneyLocale } from "../../i18n/journey/translate.js";
+} from "../../i18n/journey/messages";
+import type { JourneyLocale } from "../../i18n/journey/translate";
 import styles from "./journey-ui.module.css";
 
 export function InlineConfirmation({

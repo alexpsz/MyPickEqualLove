@@ -8,7 +8,7 @@ import {
   useState,
   type RefObject,
 } from "react";
-import type { JourneyDocumentReadResult } from "../../contracts/journey-document.js";
+import type { JourneyDocumentReadResult } from "../../contracts/journey-document";
 import {
   bindJourneyInteraction,
   expectedJourneyRevision,
@@ -16,25 +16,22 @@ import {
   sortJourneysForTimeline,
   validateJourneyInteractionBinding,
   type JourneyInteractionBinding,
-} from "../../features/journey/journey-controller.js";
-import { journeyMessage } from "../../i18n/journey/messages.js";
-import { validateCompareAndWriteJourneyInput } from "../../ports/journey-repository.js";
+} from "../../features/journey/journey-controller";
+import { journeyMessage } from "../../i18n/journey/messages";
+import { validateCompareAndWriteJourneyInput } from "../../ports/journey-repository";
 import {
   createBrowserJourneyRepository,
   type LocalStorageJourneyRepository,
-} from "../../storage/journey-storage.js";
+} from "../../storage/journey-storage";
 import {
   JourneyFeedbackAlert,
   JourneyReadAlert,
   type JourneyOperationFeedback,
-} from "./JourneyAlerts.js";
-import { JourneyBackupPanel } from "./JourneyBackupPanel.js";
-import { JourneyPageFrame } from "./JourneyPageFrame.js";
-import {
-  JourneyRecordCard,
-  type JourneyMutation,
-} from "./JourneyRecordCard.js";
-import { InlineConfirmation } from "./InlineConfirmation.js";
+} from "./JourneyAlerts";
+import { JourneyBackupPanel } from "./JourneyBackupPanel";
+import { JourneyPageFrame } from "./JourneyPageFrame";
+import { JourneyRecordCard, type JourneyMutation } from "./JourneyRecordCard";
+import { InlineConfirmation } from "./InlineConfirmation";
 import styles from "./journey-ui.module.css";
 
 function currentDocument(read: JourneyDocumentReadResult) {

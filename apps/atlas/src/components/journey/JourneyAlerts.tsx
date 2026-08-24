@@ -1,15 +1,15 @@
-import type { JourneyDocumentReadResult } from "../../contracts/journey-document.js";
+import type { JourneyDocumentReadResult } from "../../contracts/journey-document";
 import type {
   JourneyDeleteMutationResult,
   JourneyMutationFailure,
   JourneyWriteMutationResult,
-} from "../../ports/journey-repository.js";
-import type { JourneyReplacePlanApplyResult } from "../../storage/journey-storage.js";
+} from "../../ports/journey-repository";
+import type { JourneyReplacePlanApplyResult } from "../../storage/journey-storage";
 import {
   journeyMessage,
   type JourneyMessageKey,
-} from "../../i18n/journey/messages.js";
-import type { JourneyLocale } from "../../i18n/journey/translate.js";
+} from "../../i18n/journey/messages";
+import type { JourneyLocale } from "../../i18n/journey/translate";
 import styles from "./journey-ui.module.css";
 
 export type JourneyOperationFeedback =

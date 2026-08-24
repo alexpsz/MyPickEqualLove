@@ -1,4 +1,4 @@
-import type { ShellLocale } from "../shell/messages.js";
+import type { ShellLocale } from "../shell/messages";
 
 export type JourneyLocale = ShellLocale;
 

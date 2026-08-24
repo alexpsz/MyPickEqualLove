@@ -12,25 +12,25 @@ import {
   dryRunAtlasBackupRestore,
   encodeAtlasBackup,
   type AtlasBackupDryRunResult,
-} from "../../backup/backup-codec.js";
+} from "../../backup/backup-codec";
 import type {
   JourneyDocumentReadResult,
   JourneyDocumentV1,
-} from "../../contracts/journey-document.js";
-import { expectedJourneyRevision } from "../../features/journey/journey-controller.js";
+} from "../../contracts/journey-document";
+import { expectedJourneyRevision } from "../../features/journey/journey-controller";
 import {
   journeyMessage,
   type JourneyMessageKey,
-} from "../../i18n/journey/messages.js";
-import type { JourneyLocale } from "../../i18n/journey/translate.js";
-import type { JourneyReplaceApplyPlan } from "../../ports/restore-plan.js";
+} from "../../i18n/journey/messages";
+import type { JourneyLocale } from "../../i18n/journey/translate";
+import type { JourneyReplaceApplyPlan } from "../../ports/restore-plan";
 import {
   createBrowserJourneyRepository,
   type JourneyReplaceEligibilityInput,
   type JourneyReplaceEligibilityResult,
   type JourneyReplacePlanApplyResult,
-} from "../../storage/journey-storage.js";
-import { JourneyFeedbackAlert, TextNotice } from "./JourneyAlerts.js";
+} from "../../storage/journey-storage";
+import { JourneyFeedbackAlert, TextNotice } from "./JourneyAlerts";
 import styles from "./journey-ui.module.css";
 
 type ReadyDryRun = Extract<

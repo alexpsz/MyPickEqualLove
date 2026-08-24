@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { JourneyWorkspace } from "../../components/journey/JourneyWorkspace.js";
+import { JourneyWorkspace } from "../../components/journey/JourneyWorkspace";
 
 export const metadata: Metadata = {
   title: "My Journey | Atlas",

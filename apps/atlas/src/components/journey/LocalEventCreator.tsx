@@ -10,7 +10,7 @@ import {
 import type {
   JourneyDocumentReadResult,
   JourneyIntent,
-} from "../../contracts/journey-document.js";
+} from "../../contracts/journey-document";
 import {
   bindJourneyInteraction,
   createLocalCustomJourney,
@@ -18,19 +18,19 @@ import {
   nextJourneyInteractionGeneration,
   validateJourneyInteractionBinding,
   type JourneyInteractionBinding,
-} from "../../features/journey/journey-controller.js";
-import { journeyMessage } from "../../i18n/journey/messages.js";
-import { validateCompareAndWriteJourneyInput } from "../../ports/journey-repository.js";
+} from "../../features/journey/journey-controller";
+import { journeyMessage } from "../../i18n/journey/messages";
+import { validateCompareAndWriteJourneyInput } from "../../ports/journey-repository";
 import {
   createBrowserJourneyRepository,
   type LocalStorageJourneyRepository,
-} from "../../storage/journey-storage.js";
+} from "../../storage/journey-storage";
 import {
   JourneyFeedbackAlert,
   JourneyReadAlert,
   type JourneyOperationFeedback,
-} from "./JourneyAlerts.js";
-import { JourneyPageFrame } from "./JourneyPageFrame.js";
+} from "./JourneyAlerts";
+import { JourneyPageFrame } from "./JourneyPageFrame";
 import styles from "./journey-ui.module.css";
 
 function createPrivateId(prefix: "journey" | "local-event") {

@@ -6,7 +6,7 @@ import type {
   JourneyDocumentV1,
   JourneyIntent,
   JourneyRecord,
-} from "../../contracts/journey-document.js";
+} from "../../contracts/journey-document";
 import {
   addJourneyExperienceEntry,
   bindJourneyInteraction,
@@ -16,14 +16,14 @@ import {
   updateJourneyIntent,
   updateLocalCustomSubject,
   type JourneyInteractionBinding,
-} from "../../features/journey/journey-controller.js";
-import { journeyMessage } from "../../i18n/journey/messages.js";
+} from "../../features/journey/journey-controller";
+import { journeyMessage } from "../../i18n/journey/messages";
 import {
   formatJourneyDate,
   formatJourneyDateTime,
   type JourneyLocale,
-} from "../../i18n/journey/translate.js";
-import { InlineConfirmation } from "./InlineConfirmation.js";
+} from "../../i18n/journey/translate";
+import { InlineConfirmation } from "./InlineConfirmation";
 import styles from "./journey-ui.module.css";
 
 export type JourneyMutation = (current: JourneyDocumentV1) => JourneyDocumentV1;

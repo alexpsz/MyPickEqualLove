@@ -1,4 +1,4 @@
-import type { JourneyLocale } from "./translate.js";
+import type { JourneyLocale } from "./translate";
 
 const en = {
   appName: "Atlas",

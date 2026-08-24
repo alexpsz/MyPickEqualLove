@@ -38,6 +38,16 @@ const pureSources = [
   "i18n/journey/messages.ts",
 ];
 
+function makeRelativeEsmImportsExecutable(source) {
+  return source.replace(
+    /(\bfrom\s+["']|\bimport\s*["'])(\.[^"']+)(["'])/g,
+    (statement, prefix, specifier, suffix) =>
+      /\.[^/]+$/.test(specifier)
+        ? statement
+        : `${prefix}${specifier}.js${suffix}`,
+  );
+}
+
 for (const relativePath of pureSources) {
   const sourcePath = join(sourceRoot, relativePath);
   const outputPath = join(compiledRoot, relativePath.replace(/\.ts$/, ".js"));
@@ -51,7 +61,11 @@ for (const relativePath of pureSources) {
     },
   });
   await mkdir(dirname(outputPath), { recursive: true });
-  await writeFile(outputPath, output.outputText, "utf8");
+  await writeFile(
+    outputPath,
+    makeRelativeEsmImportsExecutable(output.outputText),
+    "utf8",
+  );
 }
 
 async function compileRenderModule(relativePath, replacements = []) {
@@ -675,6 +689,23 @@ async function collectFiles(directory) {
   return files;
 }
 
+async function resolveRelativeTypeScriptSource(importer, specifier) {
+  const base = resolve(dirname(importer), specifier);
+  for (const candidate of [
+    `${base}.ts`,
+    `${base}.tsx`,
+    join(base, "index.ts"),
+    join(base, "index.tsx"),
+  ]) {
+    try {
+      return { path: candidate, source: await readFile(candidate, "utf8") };
+    } catch (error) {
+      if (error?.code !== "ENOENT") throw error;
+    }
+  }
+  throw new Error(`${specifier} from ${importer} did not resolve to TS/TSX`);
+}
+
 test("production U2 code delegates personal storage handling to P1", async () => {
   const roots = [
     join(sourceRoot, "app/journey"),
@@ -728,6 +759,87 @@ test("private records use only fixed static routes with no personal id segment",
       .length,
     0,
   );
+});
+
+test("private route entry imports resolve to real TSX sources without emitted-JS suffixes", async () => {
+  const cases = [
+    {
+      page: join(sourceRoot, "app/journey/page.tsx"),
+      target: "components/journey/JourneyWorkspace.tsx",
+    },
+    {
+      page: join(sourceRoot, "app/local-event/page.tsx"),
+      target: "components/journey/LocalEventCreator.tsx",
+    },
+  ];
+
+  for (const routeCase of cases) {
+    const source = await readFile(routeCase.page, "utf8");
+    const relativeImports = typescript
+      .preProcessFile(source)
+      .importedFiles.map(({ fileName }) => fileName)
+      .filter((specifier) => specifier.startsWith("."));
+    assert.equal(relativeImports.length, 1);
+    assert.doesNotMatch(relativeImports[0], /\.m?js$/);
+
+    const resolvedImport = await resolveRelativeTypeScriptSource(
+      routeCase.page,
+      relativeImports[0],
+    );
+    assert.equal(
+      relative(sourceRoot, resolvedImport.path).replaceAll("\\", "/"),
+      routeCase.target,
+    );
+    const compiled = typescript.transpileModule(resolvedImport.source, {
+      fileName: resolvedImport.path,
+      compilerOptions: {
+        target: typescript.ScriptTarget.ES2022,
+        module: typescript.ModuleKind.ES2022,
+        jsx: typescript.JsxEmit.ReactJSX,
+      },
+    });
+    assert.ok(compiled.outputText.length > 0);
+  }
+});
+
+test("the complete U2 module graph resolves TypeScript sources without emitted-JS suffixes", async () => {
+  const roots = [
+    join(sourceRoot, "app/journey"),
+    join(sourceRoot, "app/local-event"),
+    join(sourceRoot, "components/journey"),
+    join(sourceRoot, "features/journey"),
+    join(sourceRoot, "i18n/journey"),
+  ];
+  const files = (await Promise.all(roots.map(collectFiles)))
+    .flat()
+    .filter((path) => /\.tsx?$/.test(path));
+  let resolvedEdges = 0;
+
+  for (const importer of files) {
+    const source = await readFile(importer, "utf8");
+    const relativeImports = typescript
+      .preProcessFile(source)
+      .importedFiles.map(({ fileName }) => fileName)
+      .filter(
+        (specifier) => specifier.startsWith(".") && !specifier.endsWith(".css"),
+      );
+
+    for (const specifier of relativeImports) {
+      assert.doesNotMatch(
+        specifier,
+        /\.m?js$/,
+        `${relative(sourceRoot, importer)} imports emitted JavaScript`,
+      );
+      const resolvedImport = await resolveRelativeTypeScriptSource(
+        importer,
+        specifier,
+      );
+      assert.ok(resolvedImport.source.length > 0);
+      resolvedEdges += 1;
+    }
+  }
+
+  assert.ok(resolvedEdges > 20, "expected to exercise the U2 source graph");
 });
 
 test("restore workflow rejects cancelled, invalid, future, corrupt, and oversize inputs without apply", async () => {

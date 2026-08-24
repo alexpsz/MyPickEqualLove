@@ -4,8 +4,8 @@ import {
   type JourneyDocumentV1,
   type JourneyIntent,
   type JourneyRecord,
-} from "../../contracts/journey-document.js";
-import type { JourneyRevisionExpectation } from "../../ports/journey-repository.js";
+} from "../../contracts/journey-document";
+import type { JourneyRevisionExpectation } from "../../ports/journey-repository";
 
 export interface LocalCustomJourneyDraft {
   readonly journeyId: string;
