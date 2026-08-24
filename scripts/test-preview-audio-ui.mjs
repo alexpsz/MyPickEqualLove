@@ -49,7 +49,6 @@ const appIconModule = {
 const coverPreviewState = {
   playingSongId: null,
   status: "idle",
-  progress: 0.42,
   failedSongIds: new Set(),
   toggle: () => {},
 };
@@ -100,14 +99,14 @@ const previewMarkup = renderToStaticMarkup(
     ...sharedViewProps,
     mode: previewMode,
     isActive: true,
-    progress: 0.42,
   }),
 );
 assert.match(previewMarkup, /^<button\b/);
 assert.match(previewMarkup, /aria-pressed="true"/);
 assert.match(previewMarkup, /aria-label="Stop previewing Test Song"/);
 assert.match(previewMarkup, /data-icon="pause"/);
-assert.match(previewMarkup, /style="width:42%"/);
+assert.doesNotMatch(previewMarkup, /style="width:/);
+assert.doesNotMatch(previewMarkup, /aria-hidden="true"/);
 assert.doesNotMatch(previewMarkup, /role="status"/);
 
 const idlePreviewMarkup = renderToStaticMarkup(
@@ -115,13 +114,13 @@ const idlePreviewMarkup = renderToStaticMarkup(
     ...sharedViewProps,
     mode: previewMode,
     isActive: false,
-    progress: 0.42,
   }),
 );
 assert.match(idlePreviewMarkup, /^<button\b/);
 assert.match(idlePreviewMarkup, /aria-pressed="false"/);
 assert.match(idlePreviewMarkup, /data-icon="play"/);
 assert.doesNotMatch(idlePreviewMarkup, /style="width:/);
+assert.doesNotMatch(idlePreviewMarkup, /aria-hidden="true"/);
 
 for (const scenario of [
   { hasPreview: false, failed: false, hasOfficialLink: true },
@@ -132,7 +131,6 @@ for (const scenario of [
       ...sharedViewProps,
       mode: resolvePreviewMediaControlMode(scenario),
       isActive: false,
-      progress: 0,
     }),
   );
   assert.match(fallbackMarkup, /^<a\b/);
@@ -150,7 +148,6 @@ assert.equal(
         hasOfficialLink: false,
       }),
       isActive: false,
-      progress: 0,
     }),
   ),
   "",
@@ -176,7 +173,16 @@ coverPreviewState.status = "playing";
 const activeCoverMarkup = renderCoverControl();
 assert.match(activeCoverMarkup, /aria-pressed="true"/);
 assert.match(activeCoverMarkup, /data-icon="pause"/);
-assert.match(activeCoverMarkup, /style="width:42%"/);
+assert.doesNotMatch(activeCoverMarkup, /style="width:/);
+assert.equal(
+  activeCoverMarkup
+    .replace(/aria-pressed="true"/, 'aria-pressed="false"')
+    .replace(/data-icon="pause"/, 'data-icon="play"')
+    .replace(/preview\.stopAria/, "preview.playAria")
+    .replace(/preview\.stop"/, 'preview.play"'),
+  idleCoverMarkup,
+  "playing and idle preview controls must differ only by icon, pressed state, and label",
+);
 
 const { messages } = loadTranspiledModule("src/i18n/messages.ts");
 const previewKeys = [

@@ -68,8 +68,7 @@ export function OfficialMediaCoverLink({
   const { t } = useLocale();
   const link = getPrimaryOfficialMediaLink(songId);
   const previewMedia = getPreviewMedia(songId);
-  const { playingSongId, status, progress, failedSongIds, toggle } =
-    usePreviewAudio();
+  const { playingSongId, status, failedSongIds, toggle } = usePreviewAudio();
   const mode = resolvePreviewMediaControlMode({
     hasPreview: Boolean(previewMedia),
     failed: failedSongIds.has(songId),
@@ -97,7 +96,7 @@ export function OfficialMediaCoverLink({
       >
         {children}
         <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/5 transition-colors duration-150 group-hover:bg-black/20 group-focus-visible:bg-black/20">
-          <PreviewGlyph isActive={isActive} progress={progress} size={32} />
+          <PreviewGlyph isActive={isActive} size={32} />
         </span>
       </button>
     );
@@ -142,8 +141,7 @@ export function PreviewMediaIconControl({
   const { t } = useLocale();
   const link = getPrimaryOfficialMediaLink(songId);
   const previewMedia = getPreviewMedia(songId);
-  const { playingSongId, status, progress, failedSongIds, toggle } =
-    usePreviewAudio();
+  const { playingSongId, status, failedSongIds, toggle } = usePreviewAudio();
   const mode = resolvePreviewMediaControlMode({
     hasPreview: Boolean(previewMedia),
     failed: failedSongIds.has(songId),
@@ -159,7 +157,6 @@ export function PreviewMediaIconControl({
     <PreviewMediaControlView
       mode={mode}
       isActive={isActive}
-      progress={progress}
       className={className}
       previewTitle={t(
         isActive ? "songDetail.preview.stop" : "songDetail.preview.play",
@@ -204,7 +201,6 @@ export function resolvePreviewMediaControlMode({
 export function PreviewMediaControlView({
   mode,
   isActive,
-  progress,
   className,
   previewTitle,
   previewAriaLabel,
@@ -215,7 +211,6 @@ export function PreviewMediaControlView({
 }: {
   mode: PreviewMediaControlMode;
   isActive: boolean;
-  progress: number;
   className: string;
   previewTitle: string;
   previewAriaLabel: string;
@@ -232,10 +227,9 @@ export function PreviewMediaControlView({
         aria-pressed={isActive}
         aria-label={previewAriaLabel}
         title={previewTitle}
-        className={`${className} relative overflow-hidden`}
+        className={className}
       >
         <AppIcon name={isActive ? "pause" : "play"} size={16} />
-        {isActive ? <ProgressBar progress={progress} /> : null}
       </button>
     );
   }
@@ -265,44 +259,16 @@ export function PreviewMediaControlView({
 
 function PreviewGlyph({
   isActive,
-  progress,
   size,
 }: {
   isActive: boolean;
-  progress: number;
   size: 16 | 32;
 }) {
   return (
-    <span className="relative flex h-14 w-14 overflow-hidden rounded-full bg-black/60 text-white shadow-lg transition-transform duration-150 group-hover:scale-[1.04] group-focus-visible:scale-[1.04] group-active:scale-[0.96]">
+    <span className="flex h-14 w-14 rounded-full bg-black/60 text-white shadow-lg transition-transform duration-150 group-hover:scale-[1.04] group-focus-visible:scale-[1.04] group-active:scale-[0.96]">
       <span className="m-auto flex items-center justify-center">
         <AppIcon name={isActive ? "pause" : "play"} size={size} />
       </span>
-      {isActive ? <ProgressBar progress={progress} onDark /> : null}
-    </span>
-  );
-}
-
-function ProgressBar({
-  progress,
-  onDark = false,
-}: {
-  progress: number;
-  onDark?: boolean;
-}) {
-  const boundedProgress = Math.min(1, Math.max(0, progress));
-  return (
-    <span
-      aria-hidden="true"
-      className={`pointer-events-none absolute inset-x-0 bottom-0 h-0.5 ${
-        onDark ? "bg-white/25" : "bg-[var(--line)]"
-      }`}
-    >
-      <span
-        className={`block h-full transition-[width] duration-200 motion-reduce:transition-none ${
-          onDark ? "bg-white" : "bg-[var(--project-primary)]"
-        }`}
-        style={{ width: `${boundedProgress * 100}%` }}
-      />
     </span>
   );
 }

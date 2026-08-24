@@ -18,7 +18,6 @@ export type PreviewAudioStatus = "idle" | "loading" | "playing" | "error";
 interface PreviewAudioContextValue {
   playingSongId: string | null;
   status: PreviewAudioStatus;
-  progress: number;
   failedSongIds: ReadonlySet<string>;
   toggle: (songId: string) => void;
   stop: () => void;
@@ -46,7 +45,6 @@ export default function PreviewAudioProvider({
   const failedSongIdsRef = useRef<ReadonlySet<string>>(new Set());
   const [playingSongId, setPlayingSongId] = useState<string | null>(null);
   const [status, setStatus] = useState<PreviewAudioStatus>("idle");
-  const [progress, setProgress] = useState(0);
   const [failedSongIds, setFailedSongIds] = useState<ReadonlySet<string>>(
     new Set(),
   );
@@ -66,7 +64,6 @@ export default function PreviewAudioProvider({
 
     setPlayingSongId(null);
     setStatus("idle");
-    setProgress(0);
   }, []);
 
   const toggle = useCallback(
@@ -99,7 +96,6 @@ export default function PreviewAudioProvider({
         audio.removeEventListener("playing", handlePlaying);
         audio.removeEventListener("ended", handleEnded);
         audio.removeEventListener("error", handleError);
-        audio.removeEventListener("timeupdate", handleTimeUpdate);
       };
       const clearCurrentSource = () => {
         removeListeners();
@@ -111,7 +107,6 @@ export default function PreviewAudioProvider({
         audio.load();
         activePreviewRef.current = null;
         setPlayingSongId(null);
-        setProgress(0);
       };
       const markFailed = () => {
         if (!isCurrent()) return;
@@ -133,25 +128,15 @@ export default function PreviewAudioProvider({
       function handleError() {
         markFailed();
       }
-      function handleTimeUpdate() {
-        if (!isCurrent()) return;
-        const nextProgress =
-          Number.isFinite(audio.duration) && audio.duration > 0
-            ? audio.currentTime / audio.duration
-            : 0;
-        setProgress(Math.min(1, Math.max(0, nextProgress)));
-      }
 
       audio.addEventListener("playing", handlePlaying);
       audio.addEventListener("ended", handleEnded);
       audio.addEventListener("error", handleError);
-      audio.addEventListener("timeupdate", handleTimeUpdate);
       removeListenersRef.current = removeListeners;
       audio.src = media.previewUrl;
 
       setPlayingSongId(songId);
       setStatus("loading");
-      setProgress(0);
 
       try {
         const playResult = audio.play();
@@ -172,12 +157,11 @@ export default function PreviewAudioProvider({
     () => ({
       playingSongId,
       status,
-      progress,
       failedSongIds,
       toggle,
       stop,
     }),
-    [failedSongIds, playingSongId, progress, status, stop, toggle],
+    [failedSongIds, playingSongId, status, stop, toggle],
   );
 
   return (
