@@ -127,11 +127,16 @@ test("the repository boundary rejects local-only paths at any depth", () => {
     ".env.example",
     ".gitignore",
     "apps/atlas/src/app/page.tsx",
+    "apps\\atlas\\src\\app\\page.tsx",
   ]) {
     assert.deepEqual(validateRepositoryPath(allowedPath), [], allowedPath);
   }
 
   const rejectedPaths = [
+    [".ENV.EXAMPLE", "environment files are local-only"],
+    ["PACKAGE.JSON", "root file is not"],
+    ["Apps/atlas/src/app/page.tsx", "not public-allowlisted"],
+    ["apps/Atlas/src/app/page.tsx", "not public-allowlisted"],
     ["apps/other/src/app/page.tsx", "not public-allowlisted"],
     ["apps/atlas/notes/Agent.MD", "workflow basename"],
     ["apps/atlas/notes/AGENTS.md", "workflow basename"],

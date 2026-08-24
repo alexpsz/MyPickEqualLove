@@ -58,16 +58,6 @@ const BLOCKED_DIRECTORY_SEGMENTS = new Set([
   ".wrangler",
 ]);
 
-const NORMALIZED_ALLOWED_ROOT_FILES = new Set(
-  [...ALLOWED_ROOT_FILES].map((path) => path.toLowerCase()),
-);
-const NORMALIZED_ALLOWED_ROOT_DIRECTORIES = new Set(
-  [...ALLOWED_ROOT_DIRECTORIES].map((path) => path.toLowerCase()),
-);
-const NORMALIZED_ALLOWED_PUBLIC_DOCS = new Set(
-  [...ALLOWED_PUBLIC_DOCS].map((path) => path.toLowerCase()),
-);
-
 const PUBLIC_TEXT_EXTENSIONS = new Set([".md", ".mdx", ".txt"]);
 const LOCAL_PATH_PATTERNS = [
   { label: "Windows user-home path", pattern: /[A-Za-z]:\\Users\\[^\\\s]+\\/ },
@@ -120,8 +110,8 @@ function normalizeRepositoryPath(path) {
 
 export function validateRepositoryPath(repositoryPath) {
   const path = normalizeRepositoryPath(repositoryPath);
-  const normalizedPath = path.toLowerCase();
-  const segments = normalizedPath.split("/");
+  const lowercasePath = path.toLowerCase();
+  const segments = lowercasePath.split("/");
   const basename = segments.at(-1) ?? "";
   const directorySegments = segments.slice(0, -1);
   const violations = [];
@@ -144,7 +134,7 @@ export function validateRepositoryPath(repositoryPath) {
   }
 
   const isEnvironmentFile = basename === ".env" || basename.startsWith(".env.");
-  if (isEnvironmentFile && normalizedPath !== ".env.example") {
+  if (isEnvironmentFile && path !== ".env.example") {
     violations.push(
       `${path}: environment files are local-only except root .env.example`,
     );
@@ -155,26 +145,23 @@ export function validateRepositoryPath(repositoryPath) {
     violations.push(`${path}: looks like an accidental copy-suffix file`);
   }
 
-  if (
-    normalizedPath.startsWith("docs/") &&
-    !NORMALIZED_ALLOWED_PUBLIC_DOCS.has(normalizedPath)
-  ) {
+  if (path.startsWith("docs/") && !ALLOWED_PUBLIC_DOCS.has(path)) {
     violations.push(
       `${path}: docs/ is public-only and uses an explicit allowlist`,
     );
     return violations;
   }
 
-  const [root] = normalizedPath.split("/", 1);
-  if (!normalizedPath.includes("/")) {
-    if (!NORMALIZED_ALLOWED_ROOT_FILES.has(normalizedPath)) {
+  const [root] = path.split("/", 1);
+  if (!path.includes("/")) {
+    if (!ALLOWED_ROOT_FILES.has(path)) {
       violations.push(
         `${path}: root file is not in the public repository allowlist`,
       );
     }
   } else if (
-    !NORMALIZED_ALLOWED_ROOT_DIRECTORIES.has(root) &&
-    !ALLOWED_APP_PREFIXES.some((prefix) => normalizedPath.startsWith(prefix))
+    !ALLOWED_ROOT_DIRECTORIES.has(root) &&
+    !ALLOWED_APP_PREFIXES.some((prefix) => path.startsWith(prefix))
   ) {
     violations.push(
       `${path}: top-level directory ${root}/ is not public-allowlisted`,
@@ -185,7 +172,7 @@ export function validateRepositoryPath(repositoryPath) {
 }
 
 function validatePublicText(path, staged, violations) {
-  const normalizedPath = normalizeRepositoryPath(path).toLowerCase();
+  const normalizedPath = normalizeRepositoryPath(path);
   const isRootDocument =
     !normalizedPath.includes("/") &&
     PUBLIC_TEXT_EXTENSIONS.has(extname(normalizedPath));
