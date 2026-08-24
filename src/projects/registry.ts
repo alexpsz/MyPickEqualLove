@@ -1,5 +1,6 @@
 import { resolveProjectId } from "../schema/project";
 import type { ProjectId } from "../schema/project";
+import { MY_PICK_SITE_URLS } from "./product-family-sites";
 
 export {
   DEFAULT_PROJECT_ID,
@@ -42,7 +43,7 @@ export const PROJECTS: Record<ProjectId, ProjectDefinition> = {
       subtitle: "＝LOVEのお気に入り楽曲を選ぼう！",
       description:
         "＝LOVEのお気に入り楽曲を選び、オリジナルのピック画像を作成して共有できるファンツールです。",
-      siteUrl: "https://mypick.kozueginko.com",
+      siteUrl: MY_PICK_SITE_URLS["equal-love"],
       repoUrl: "https://github.com/alexpsz/MyPickEqualLove",
       themeColor: "#ea6c81",
       logoAccentColor: "#00d9f3",
@@ -73,7 +74,7 @@ export const PROJECTS: Record<ProjectId, ProjectDefinition> = {
       subtitle: "≒JOYのお気に入り楽曲を選ぼう！",
       description:
         "≒JOYのお気に入り楽曲を選び、オリジナルのピック画像を作成して共有できるファンツールです。",
-      siteUrl: "https://mypick-nearly-equal-joy.kozueginko.com",
+      siteUrl: MY_PICK_SITE_URLS["nearly-equal-joy"],
       repoUrl: "https://github.com/alexpsz/MyPickEqualLove",
       themeColor: "#f2c94c",
       logoAccentColor: "#00a7c8",
@@ -104,7 +105,7 @@ export const PROJECTS: Record<ProjectId, ProjectDefinition> = {
       subtitle: "≠MEのお気に入り楽曲を選ぼう！",
       description:
         "≠MEのお気に入り楽曲を選び、オリジナルのピック画像を作成して共有できるファンツールです。",
-      siteUrl: "https://mypick-not-equal-me.kozueginko.com",
+      siteUrl: MY_PICK_SITE_URLS["not-equal-me"],
       repoUrl: "https://github.com/alexpsz/MyPickEqualLove",
       themeColor: "#3bb8e8",
       logoAccentColor: "#ea6c81",
