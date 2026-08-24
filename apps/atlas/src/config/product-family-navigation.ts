@@ -1,20 +1,17 @@
 import "server-only";
 
-import {
-  PROJECTS,
-  PROJECT_IDS,
-  type ProjectId,
-} from "../../../../src/projects/registry";
+import { MY_PICK_SITE_URLS } from "../../../../src/projects/product-family-sites";
+import { PUBLIC_ATLAS_SITE_IDS } from "../contracts/identity";
 
 export type ProductFamilyDestination = Readonly<{
-  siteId: ProjectId;
+  siteId: (typeof PUBLIC_ATLAS_SITE_IDS)[number];
   href: string;
 }>;
 
-// Keep the MyPick registry as the only source of deployment URLs. Atlas only
-// projects the public product IDs into links for its own shell.
+// Keep the URL-only product-family facts as the sole deployment URL source.
+// Atlas only projects the public product IDs into links for its own shell.
 export const PRODUCT_FAMILY_NAVIGATION: readonly ProductFamilyDestination[] =
-  PROJECT_IDS.map((siteId) => ({
+  PUBLIC_ATLAS_SITE_IDS.map((siteId) => ({
     siteId,
-    href: PROJECTS[siteId].config.siteUrl,
+    href: MY_PICK_SITE_URLS[siteId],
   }));

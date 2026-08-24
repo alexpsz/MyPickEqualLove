@@ -14,7 +14,9 @@ const require = createRequire(import.meta.url);
 const typescript = require("typescript");
 const SCRIPT_DIRECTORY = dirname(fileURLToPath(import.meta.url));
 const ATLAS_ROOT = resolve(SCRIPT_DIRECTORY, "..");
+const REPOSITORY_ROOT = resolve(ATLAS_ROOT, "../..");
 const COMPILED_ROOT = mkdtempSync(join(tmpdir(), "atlas-shell-test-"));
+const COMPILED_REPOSITORY_ROOT = join(COMPILED_ROOT, "repository");
 
 after(async () => {
   await rm(COMPILED_ROOT, { recursive: true, force: true });
@@ -43,6 +45,33 @@ async function compileShellModule(relativePath) {
   await writeFile(outputPath, output, "utf8");
 }
 
+async function compileRepositoryModule(
+  relativePath,
+  { stripServerOnly = false } = {},
+) {
+  const sourcePath = join(REPOSITORY_ROOT, relativePath);
+  const outputPath = join(
+    COMPILED_REPOSITORY_ROOT,
+    relativePath.replace(/\.ts$/, ".js"),
+  );
+  const source = await readFile(sourcePath, "utf8");
+  const output = typescript.transpileModule(
+    stripServerOnly
+      ? source.replace(/^import "server-only";\r?\n\r?\n/, "")
+      : source,
+    {
+      fileName: sourcePath,
+      compilerOptions: {
+        target: typescript.ScriptTarget.ES2022,
+        module: typescript.ModuleKind.CommonJS,
+      },
+    },
+  ).outputText;
+
+  await mkdir(dirname(outputPath), { recursive: true });
+  await writeFile(outputPath, output, "utf8");
+}
+
 await Promise.all(
   [
     "src/i18n/shell/messages.ts",
@@ -51,11 +80,32 @@ await Promise.all(
   ].map(compileShellModule),
 );
 
+await Promise.all([
+  compileRepositoryModule("src/projects/product-family-sites.ts"),
+  compileRepositoryModule("apps/atlas/src/contracts/strict.ts"),
+  compileRepositoryModule("apps/atlas/src/contracts/identity.ts"),
+  compileRepositoryModule(
+    "apps/atlas/src/config/product-family-navigation.ts",
+    {
+      stripServerOnly: true,
+    },
+  ),
+]);
+
 const messages = require(join(COMPILED_ROOT, "i18n/shell/messages.js"));
 const preferences = require(
   join(COMPILED_ROOT, "i18n/shell/shell-preferences.js"),
 );
 const routes = require(join(COMPILED_ROOT, "i18n/shell/shell-routes.js"));
+const productFamilySites = require(
+  join(COMPILED_REPOSITORY_ROOT, "src/projects/product-family-sites.js"),
+);
+const productFamilyNavigation = require(
+  join(
+    COMPILED_REPOSITORY_ROOT,
+    "apps/atlas/src/config/product-family-navigation.js",
+  ),
+);
 
 function extractCssRule(source, selector) {
   const start = source.indexOf(selector);
@@ -122,14 +172,44 @@ function executeThemeBootstrap({
   return root;
 }
 
-test("the product-family adapter reads MyPick URLs from the canonical registry", () => {
-  const navigation = readAtlasFile("src/config/product-family-navigation.ts");
+test("the product-family adapter projects only the canonical URL-only facts", () => {
+  const navigationSource = readAtlasFile(
+    "src/config/product-family-navigation.ts",
+  );
+  const { MY_PICK_SITE_URLS } = productFamilySites;
 
-  assert.ok(navigation.includes('from "../../../../src/projects/registry"'));
-  assert.match(navigation, /PROJECTS\[siteId\]\.config\.siteUrl/);
-  assert.match(navigation, /PROJECT_IDS\.map/);
-  assert.doesNotMatch(navigation, /contracts\/identity/);
-  assert.doesNotMatch(navigation, /https?:\/\//);
+  assert.match(navigationSource, /^import "server-only";/);
+  assert.ok(
+    navigationSource.includes(
+      'from "../../../../src/projects/product-family-sites"',
+    ),
+  );
+  assert.match(navigationSource, /MY_PICK_SITE_URLS\[siteId\]/);
+  assert.match(navigationSource, /PUBLIC_ATLAS_SITE_IDS/);
+  assert.doesNotMatch(navigationSource, /projects\/registry/);
+  assert.doesNotMatch(navigationSource, /src\/schema\/project/);
+  assert.doesNotMatch(navigationSource, /\bPROJECTS\b/);
+  assert.doesNotMatch(navigationSource, /NEXT_PUBLIC_PROJECT_ID/);
+  assert.doesNotMatch(navigationSource, /\bstoragePrefix\b/);
+  assert.doesNotMatch(navigationSource, /\bimageFileName\b/);
+  assert.doesNotMatch(navigationSource, /\bshareText\b/);
+  assert.doesNotMatch(navigationSource, /\brepoUrl\b/);
+  assert.doesNotMatch(navigationSource, /https?:\/\//);
+
+  assert.deepEqual(productFamilyNavigation.PRODUCT_FAMILY_NAVIGATION, [
+    {
+      siteId: "equal-love",
+      href: MY_PICK_SITE_URLS["equal-love"],
+    },
+    {
+      siteId: "nearly-equal-joy",
+      href: MY_PICK_SITE_URLS["nearly-equal-joy"],
+    },
+    {
+      siteId: "not-equal-me",
+      href: MY_PICK_SITE_URLS["not-equal-me"],
+    },
+  ]);
 });
 
 test("the shell preference resolver keeps locale and theme input bounded", () => {
