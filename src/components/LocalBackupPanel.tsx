@@ -151,7 +151,7 @@ export default function LocalBackupPanel({
               {t("backup.summary")}
             </p>
 
-            <div className="mt-4 border-t border-[var(--border)] pt-4">
+            <div className="mt-4 border-t border-[var(--line)] pt-4">
               <p className="text-sm leading-relaxed text-[var(--foreground)]">
                 {t("backup.singleSite", { project: projectName })}
               </p>
@@ -199,7 +199,7 @@ export default function LocalBackupPanel({
               ) : null}
 
               {restorePlan ? (
-                <div className="mt-5 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
+                <div className="mt-5 rounded-2xl border border-[var(--line)] bg-[var(--paper)] p-4">
                   <h3 className="text-sm font-semibold text-[var(--foreground)]">
                     {t("backup.reviewTitle")}
                   </h3>

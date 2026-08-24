@@ -110,7 +110,7 @@ function OnboardingAction({
       data-onboarding-action={action}
       data-dialog-return-key={returnFocusKey}
       onClick={onClick}
-      className="group flex min-h-24 w-full items-start gap-3 rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--paper)] p-3.5 text-left transition-colors hover:border-[var(--line-strong)] hover:bg-[var(--paper-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--project-primary)]"
+      className="group flex min-h-24 w-full items-start gap-3 rounded-[var(--radius-md)] border border-[var(--line)] bg-[var(--paper)] p-3.5 text-left transition-colors hover:border-[var(--line-strong)] hover:bg-[var(--quiet-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--project-primary)]"
     >
       <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[var(--project-primary-wash)] text-[var(--project-primary)]">
         <AppIcon name={icon} size={16} />
