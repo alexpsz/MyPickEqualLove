@@ -30,7 +30,7 @@ export function JourneyPageFrame({ active, children }: JourneyPageFrameProps) {
   }, []);
 
   return (
-    <main className={styles.page}>
+    <div className={styles.page}>
       <div className={styles.shell}>
         <header className={styles.topbar}>
           <Link className={styles.brand} href="/">
@@ -42,6 +42,7 @@ export function JourneyPageFrame({ active, children }: JourneyPageFrameProps) {
           >
             <Link
               className={styles.navLink}
+              aria-current={active === "journey" ? "page" : undefined}
               data-active={active === "journey"}
               href="/journey/"
             >
@@ -49,6 +50,7 @@ export function JourneyPageFrame({ active, children }: JourneyPageFrameProps) {
             </Link>
             <Link
               className={styles.navLink}
+              aria-current={active === "local-event" ? "page" : undefined}
               data-active={active === "local-event"}
               href="/local-event/"
             >
@@ -74,6 +76,6 @@ export function JourneyPageFrame({ active, children }: JourneyPageFrameProps) {
         </header>
         {children(locale)}
       </div>
-    </main>
+    </div>
   );
 }

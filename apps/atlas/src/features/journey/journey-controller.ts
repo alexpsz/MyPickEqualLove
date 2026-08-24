@@ -41,6 +41,95 @@ export interface ExperienceEntryUpdate {
   readonly now: string;
 }
 
+export interface JourneyInteractionBinding {
+  readonly revision: number | null;
+  readonly generation: number;
+}
+
+export type JourneyInteractionBindingResult =
+  | { readonly ok: true }
+  | {
+      readonly ok: false;
+      readonly reason: "revision-changed" | "session-invalidated";
+    };
+
+export type JourneyRestoreSession<T> =
+  | { readonly status: "idle" }
+  | {
+      readonly status: "ready";
+      readonly binding: JourneyInteractionBinding;
+      readonly plan: T;
+    };
+
+export type JourneyRestoreConsumption<T> =
+  | { readonly status: "empty"; readonly next: JourneyRestoreSession<T> }
+  | { readonly status: "stale"; readonly next: JourneyRestoreSession<T> }
+  | {
+      readonly status: "consumed";
+      readonly plan: T;
+      readonly next: JourneyRestoreSession<T>;
+    };
+
+export function bindJourneyInteraction(
+  revision: number | null,
+  generation: number,
+): JourneyInteractionBinding {
+  if (revision !== null && (!Number.isInteger(revision) || revision < 0)) {
+    throw new Error("A null or non-negative Journey revision is required");
+  }
+  if (!Number.isInteger(generation) || generation < 0) {
+    throw new Error("A non-negative interaction generation is required");
+  }
+  return { revision, generation };
+}
+
+export function validateJourneyInteractionBinding(
+  binding: JourneyInteractionBinding,
+  current: JourneyInteractionBinding,
+): JourneyInteractionBindingResult {
+  if (binding.generation !== current.generation) {
+    return { ok: false, reason: "session-invalidated" };
+  }
+  if (binding.revision !== current.revision) {
+    return { ok: false, reason: "revision-changed" };
+  }
+  return { ok: true };
+}
+
+export function nextJourneyInteractionGeneration(current: number) {
+  if (!Number.isInteger(current) || current < 0) {
+    throw new Error("A non-negative interaction generation is required");
+  }
+  return current + 1;
+}
+
+export function idleJourneyRestoreSession<T>(): JourneyRestoreSession<T> {
+  return { status: "idle" };
+}
+
+export function stageJourneyRestorePlan<T>(
+  binding: JourneyInteractionBinding,
+  plan: T,
+): JourneyRestoreSession<T> {
+  return { status: "ready", binding, plan };
+}
+
+export function clearJourneyRestorePlan<T>(): JourneyRestoreSession<T> {
+  return idleJourneyRestoreSession<T>();
+}
+
+export function consumeJourneyRestorePlan<T>(
+  session: JourneyRestoreSession<T>,
+  current: JourneyInteractionBinding,
+): JourneyRestoreConsumption<T> {
+  const next = idleJourneyRestoreSession<T>();
+  if (session.status === "idle") return { status: "empty", next };
+  if (!validateJourneyInteractionBinding(session.binding, current).ok) {
+    return { status: "stale", next };
+  }
+  return { status: "consumed", plan: session.plan, next };
+}
+
 function normalizeRequiredText(value: string) {
   const normalized = value.trim().replace(/\s+/g, " ");
   if (normalized.length === 0) {

@@ -230,6 +230,68 @@ test("timeline ordering prefers the latest real experience then subject date", (
   );
 });
 
+test("revision bindings reject stale drafts after revision or session invalidation", () => {
+  const opened = controller.bindJourneyInteraction(4, 8);
+  assert.deepEqual(
+    controller.validateJourneyInteractionBinding(
+      opened,
+      controller.bindJourneyInteraction(4, 8),
+    ),
+    { ok: true },
+  );
+  assert.deepEqual(
+    controller.validateJourneyInteractionBinding(
+      opened,
+      controller.bindJourneyInteraction(5, 8),
+    ),
+    { ok: false, reason: "revision-changed" },
+  );
+  assert.deepEqual(
+    controller.validateJourneyInteractionBinding(
+      opened,
+      controller.bindJourneyInteraction(4, 9),
+    ),
+    { ok: false, reason: "session-invalidated" },
+  );
+  assert.equal(controller.nextJourneyInteractionGeneration(8), 9);
+  assert.deepEqual(controller.bindJourneyInteraction(null, 3), {
+    revision: null,
+    generation: 3,
+  });
+});
+
+test("restore sessions clear on picker, invalidation, consumption, and repeat apply", () => {
+  const opened = controller.bindJourneyInteraction(2, 5);
+  const ready = controller.stageJourneyRestorePlan(opened, {
+    expectedRevision: 2,
+  });
+
+  const consumed = controller.consumeJourneyRestorePlan(ready, opened);
+  assert.equal(consumed.status, "consumed");
+  assert.deepEqual(consumed.plan, { expectedRevision: 2 });
+  assert.deepEqual(consumed.next, { status: "idle" });
+  assert.equal(
+    controller.consumeJourneyRestorePlan(consumed.next, opened).status,
+    "empty",
+    "a consumed plan cannot be applied twice",
+  );
+
+  const revisionChanged = controller.consumeJourneyRestorePlan(
+    ready,
+    controller.bindJourneyInteraction(3, 5),
+  );
+  assert.equal(revisionChanged.status, "stale");
+  assert.deepEqual(revisionChanged.next, { status: "idle" });
+
+  const sessionInvalidated = controller.consumeJourneyRestorePlan(
+    ready,
+    controller.bindJourneyInteraction(2, 6),
+  );
+  assert.equal(sessionInvalidated.status, "stale");
+  assert.deepEqual(sessionInvalidated.next, { status: "idle" });
+  assert.deepEqual(controller.clearJourneyRestorePlan(), { status: "idle" });
+});
+
 test("four Journey catalogs are exact, non-empty, and placeholder-compatible", () => {
   const locales = ["zh-CN", "en", "ja", "ko"];
   const englishKeys = Object.keys(messages.JOURNEY_MESSAGES.en).sort();
@@ -271,7 +333,7 @@ async function collectFiles(directory) {
   return files;
 }
 
-test("production U2 code delegates storage to P1 and planning to P2", async () => {
+test("production U2 code delegates personal storage handling to P1", async () => {
   const roots = [
     join(sourceRoot, "app/journey"),
     join(sourceRoot, "app/local-event"),
@@ -286,8 +348,9 @@ test("production U2 code delegates storage to P1 and planning to P2", async () =
   assert.doesNotMatch(source, /\blocalStorage\b/);
   assert.doesNotMatch(source, /mypick/i);
   assert.match(source, /createBrowserJourneyRepository/);
-  assert.match(source, /dryRunAtlasBackupRestore/);
-  assert.match(source, /applyReplacePlan/);
+  assert.match(source, /handleStorageEvent/);
+  assert.match(source, /addEventListener\("storage"/);
+  assert.match(source, /removeEventListener\("storage"/);
   assert.match(source, /deleteAll/);
   assert.doesNotMatch(source, /fetch\s*\(/);
 });
@@ -304,12 +367,18 @@ test("private records use only fixed static routes with no personal id segment",
   assert.match(journeyPage, /index:\s*false/);
   assert.match(localPage, /index:\s*false/);
   assert.equal(
-    relative(sourceRoot, join(sourceRoot, "app/journey/page.tsx")),
-    "app\\journey\\page.tsx",
+    relative(sourceRoot, join(sourceRoot, "app/journey/page.tsx")).replaceAll(
+      "\\",
+      "/",
+    ),
+    "app/journey/page.tsx",
   );
   assert.equal(
-    relative(sourceRoot, join(sourceRoot, "app/local-event/page.tsx")),
-    "app\\local-event\\page.tsx",
+    relative(
+      sourceRoot,
+      join(sourceRoot, "app/local-event/page.tsx"),
+    ).replaceAll("\\", "/"),
+    "app/local-event/page.tsx",
   );
   const routeFiles = await collectFiles(join(sourceRoot, "app"));
   assert.equal(
@@ -319,27 +388,17 @@ test("private records use only fixed static routes with no personal id segment",
   );
 });
 
-test("import prechecks File.size, caps browser estimate, and keeps non-ready plans null", async () => {
+test("restore import fails closed while repository-owned capacity API is pending", async () => {
   const source = await readFile(
     join(sourceRoot, "components/journey/JourneyBackupPanel.tsx"),
     "utf8",
   );
-  const sizeCheck = source.indexOf("file.size > ATLAS_BACKUP_MAX_BYTES");
-  const textRead = source.indexOf("await file.text()");
-  assert.ok(
-    sizeCheck >= 0 && textRead > sizeCheck,
-    "File.size must precede File.text",
-  );
-  assert.match(source, /Math\.min\(remaining, ATLAS_BACKUP_MAX_BYTES\)/);
-  assert.match(source, /limits:\s*\{ maximumBytes: ATLAS_BACKUP_MAX_BYTES \}/);
-  assert.match(source, /if \(result\.status === "ready"\)/);
-  assert.match(source, /Every non-ready P2 result explicitly clears/);
-  assert.match(source, /setDryRun\(null\)/);
-  assert.match(source, /confirmRestore/);
-  assert.doesNotMatch(
-    source,
-    /availableBytes:\s*(?:Number|parseInt|formData|data\.get)/i,
-  );
+  assert.doesNotMatch(source, /navigator\.storage\.estimate/);
+  assert.doesNotMatch(source, /file\.text\(\)/);
+  assert.doesNotMatch(source, /dryRunAtlasBackupRestore/);
+  assert.doesNotMatch(source, /applyReplacePlan/);
+  assert.match(source, /restoreCapacityPendingTitle/);
+  assert.match(source, /disabled\s*\n\s*type="file"/);
 });
 
 test("UI names every fail-closed state and remains keyboard/mobile bounded", async () => {
@@ -370,4 +429,10 @@ test("UI names every fail-closed state and remains keyboard/mobile bounded", asy
   assert.match(css, /:focus-visible/);
   assert.match(confirmations, /confirmRef\.current\?\.focus\(\)/);
   assert.match(confirmations, /type="button"/);
+  const frame = await readFile(
+    join(sourceRoot, "components/journey/JourneyPageFrame.tsx"),
+    "utf8",
+  );
+  assert.match(frame, /aria-current=/);
+  assert.doesNotMatch(frame, /<main/);
 });

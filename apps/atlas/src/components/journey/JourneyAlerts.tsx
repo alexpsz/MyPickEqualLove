@@ -14,6 +14,7 @@ import styles from "./journey-ui.module.css";
 
 export type JourneyOperationFeedback =
   | { readonly kind: "success"; readonly message: JourneyMessageKey }
+  | { readonly kind: "stale" }
   | { readonly kind: "validation"; readonly error: string }
   | {
       readonly kind: "mutation";
@@ -131,6 +132,16 @@ export function JourneyFeedbackAlert({
   if (feedback.kind === "success") {
     return (
       <TextNotice locale={locale} title={feedback.message} tone="success" />
+    );
+  }
+  if (feedback.kind === "stale") {
+    return (
+      <TextNotice
+        body="staleDraftBody"
+        locale={locale}
+        title="staleDraftTitle"
+        tone="warning"
+      />
     );
   }
   if (feedback.kind === "validation") {

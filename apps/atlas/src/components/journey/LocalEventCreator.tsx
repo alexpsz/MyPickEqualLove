@@ -1,20 +1,30 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
 import type {
   JourneyDocumentReadResult,
   JourneyIntent,
 } from "../../contracts/journey-document.js";
 import {
+  bindJourneyInteraction,
   createLocalCustomJourney,
   expectedJourneyRevision,
+  nextJourneyInteractionGeneration,
+  validateJourneyInteractionBinding,
+  type JourneyInteractionBinding,
 } from "../../features/journey/journey-controller.js";
 import { journeyMessage } from "../../i18n/journey/messages.js";
+import { validateCompareAndWriteJourneyInput } from "../../ports/journey-repository.js";
 import {
   createBrowserJourneyRepository,
   type LocalStorageJourneyRepository,
 } from "../../storage/journey-storage.js";
-import { validateCompareAndWriteJourneyInput } from "../../ports/journey-repository.js";
 import {
   JourneyFeedbackAlert,
   JourneyReadAlert,
@@ -36,40 +46,128 @@ function readCurrentDocument(read: JourneyDocumentReadResult) {
   throw new Error("Journey storage is not writable in its current read state");
 }
 
+function bindingForRead(
+  read: JourneyDocumentReadResult | null,
+  generation: number,
+) {
+  if (read?.status === "absent")
+    return bindJourneyInteraction(null, generation);
+  if (read?.status === "valid") {
+    return bindJourneyInteraction(read.value.revision, generation);
+  }
+  return null;
+}
+
 export function LocalEventCreator() {
   const repositoryRef = useRef<LocalStorageJourneyRepository | null>(null);
+  const readRef = useRef<JourneyDocumentReadResult | null>(null);
+  const generationRef = useRef(0);
+  const headingRef = useRef<HTMLHeadingElement>(null);
   const [read, setRead] = useState<JourneyDocumentReadResult | null>(null);
+  const [interactionGeneration, setInteractionGeneration] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [needsReload, setNeedsReload] = useState(false);
   const [feedback, setFeedback] = useState<JourneyOperationFeedback | null>(
     null,
+  );
+
+  const focusHeading = useCallback(() => {
+    requestAnimationFrame(() => headingRef.current?.focus());
+  }, []);
+
+  const invalidateInteractions = useCallback(
+    (moveFocus: boolean) => {
+      generationRef.current = nextJourneyInteractionGeneration(
+        generationRef.current,
+      );
+      setInteractionGeneration(generationRef.current);
+      if (moveFocus) focusHeading();
+    },
+    [focusHeading],
+  );
+
+  const acceptAuthoritativeRead = useCallback(
+    (
+      nextRead: JourneyDocumentReadResult,
+      message: "externalRefresh" | "reloaded" | null,
+      moveFocus: boolean,
+    ) => {
+      readRef.current = nextRead;
+      setRead(nextRead);
+      setNeedsReload(false);
+      setFeedback(message === null ? null : { kind: "success", message });
+      invalidateInteractions(moveFocus);
+    },
+    [invalidateInteractions],
   );
 
   async function reload() {
     const repository = repositoryRef.current;
     if (repository === null) return;
-    setFeedback(null);
-    setRead(await repository.read());
+    setBusy(true);
+    try {
+      acceptAuthoritativeRead(await repository.read(), "reloaded", true);
+    } finally {
+      setBusy(false);
+    }
   }
 
   useEffect(() => {
     const repository = createBrowserJourneyRepository();
+    let active = true;
     repositoryRef.current = repository;
-    void repository.read().then(setRead);
+    void repository.read().then((nextRead) => {
+      if (active) acceptAuthoritativeRead(nextRead, null, false);
+    });
+
+    function handleStorage(event: StorageEvent) {
+      void repository
+        .handleStorageEvent({
+          key: event.key,
+          storageArea: event.storageArea,
+        })
+        .then((result) => {
+          if (active && result.status === "reread") {
+            acceptAuthoritativeRead(result.read, "externalRefresh", true);
+          }
+        });
+    }
+
+    window.addEventListener("storage", handleStorage);
     return () => {
+      active = false;
+      window.removeEventListener("storage", handleStorage);
       repositoryRef.current = null;
     };
-  }, []);
+  }, [acceptAuthoritativeRead]);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function rejectStaleInteraction() {
+    setNeedsReload(true);
+    setFeedback({ kind: "stale" });
+    invalidateInteractions(true);
+  }
+
+  async function handleSubmit(
+    event: FormEvent<HTMLFormElement>,
+    binding: JourneyInteractionBinding,
+  ) {
     event.preventDefault();
     const repository = repositoryRef.current;
-    if (repository === null || read === null) return;
-    const form = event.currentTarget;
-    const formData = new FormData(form);
+    const currentRead = readRef.current;
+    const activeBinding = bindingForRead(currentRead, generationRef.current);
+    if (repository === null || currentRead === null || activeBinding === null) {
+      return;
+    }
+    if (!validateJourneyInteractionBinding(binding, activeBinding).ok) {
+      rejectStaleInteraction();
+      return;
+    }
+
+    const formData = new FormData(event.currentTarget);
     setBusy(true);
     setFeedback(null);
     try {
-      const current = readCurrentDocument(read);
+      const current = readCurrentDocument(currentRead);
       const intentValue = String(formData.get("intent") ?? "");
       const intent: JourneyIntent =
         intentValue === "interested" || intentValue === "planned"
@@ -93,11 +191,12 @@ export function LocalEventCreator() {
       }
       const result = await repository.compareAndWrite(validated.value);
       if (result.status === "committed") {
-        setRead(result.readback);
+        acceptAuthoritativeRead(result.readback, null, false);
         setFeedback({ kind: "success", message: "created" });
-        form.reset();
       } else {
         setFeedback({ kind: "mutation", result });
+        setNeedsReload(true);
+        invalidateInteractions(true);
       }
     } catch (error) {
       setFeedback({
@@ -109,6 +208,10 @@ export function LocalEventCreator() {
     }
   }
 
+  const formBinding = bindingForRead(read, interactionGeneration);
+  const readBlocked =
+    read !== null && read.status !== "absent" && read.status !== "valid";
+
   return (
     <JourneyPageFrame active="local-event">
       {(locale) => (
@@ -117,7 +220,7 @@ export function LocalEventCreator() {
             <p className={styles.eyebrow}>
               {journeyMessage(locale, "localOnly")}
             </p>
-            <h1 className={styles.title}>
+            <h1 className={styles.title} ref={headingRef} tabIndex={-1}>
               {journeyMessage(locale, "localEventTitle")}
             </h1>
             <p className={styles.lede}>
@@ -138,20 +241,23 @@ export function LocalEventCreator() {
               <JourneyReadAlert locale={locale} read={read} />
             )}
             <JourneyFeedbackAlert feedback={feedback} locale={locale} />
-            {feedback?.kind === "mutation" &&
-            feedback.result.status === "conflict" ? (
+            {readBlocked || needsReload ? (
               <button
                 className={styles.buttonSecondary}
+                disabled={busy}
                 onClick={() => void reload()}
                 type="button"
               >
                 {journeyMessage(locale, "reload")}
               </button>
             ) : null}
-            {read !== null &&
-            (read.status === "absent" || read.status === "valid") ? (
+            {formBinding !== null && !needsReload ? (
               <section className={styles.panel}>
-                <form className={styles.form} onSubmit={handleSubmit}>
+                <form
+                  className={styles.form}
+                  key={interactionGeneration}
+                  onSubmit={(event) => void handleSubmit(event, formBinding)}
+                >
                   <label className={styles.field}>
                     <span>
                       {journeyMessage(locale, "title")} ·{" "}

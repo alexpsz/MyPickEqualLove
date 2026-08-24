@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import type {
   ExperienceMode,
   JourneyDocumentV1,
@@ -9,11 +9,13 @@ import type {
 } from "../../contracts/journey-document.js";
 import {
   addJourneyExperienceEntry,
+  bindJourneyInteraction,
   deleteJourneyExperienceEntry,
   deleteJourneyRecord,
   updateJourneyExperienceEntry,
   updateJourneyIntent,
   updateLocalCustomSubject,
+  type JourneyInteractionBinding,
 } from "../../features/journey/journey-controller.js";
 import { journeyMessage } from "../../i18n/journey/messages.js";
 import {
@@ -25,6 +27,11 @@ import { InlineConfirmation } from "./InlineConfirmation.js";
 import styles from "./journey-ui.module.css";
 
 export type JourneyMutation = (current: JourneyDocumentV1) => JourneyDocumentV1;
+
+type JourneyMutationRunner = (
+  binding: JourneyInteractionBinding,
+  mutation: JourneyMutation,
+) => Promise<boolean>;
 
 function createEntryId() {
   if (typeof crypto.randomUUID !== "function") {
@@ -153,24 +160,48 @@ export function JourneyRecordCard({
   locale,
   record,
   busy,
+  documentRevision,
+  interactionGeneration,
   onMutate,
+  onFocusFallback,
 }: {
   readonly locale: JourneyLocale;
   readonly record: JourneyRecord;
   readonly busy: boolean;
-  readonly onMutate: (mutation: JourneyMutation) => Promise<boolean>;
+  readonly documentRevision: number;
+  readonly interactionGeneration: number;
+  readonly onMutate: JourneyMutationRunner;
+  readonly onFocusFallback: () => void;
 }) {
+  const interactionBinding = bindJourneyInteraction(
+    documentRevision,
+    interactionGeneration,
+  );
+  const cardRef = useRef<HTMLElement>(null);
+  const journeyDeleteButtonRef = useRef<HTMLButtonElement>(null);
+  const entryDeleteButtonRefs = useRef(new Map<string, HTMLButtonElement>());
   const [confirmingJourneyDelete, setConfirmingJourneyDelete] = useState(false);
   const [confirmingEntryDelete, setConfirmingEntryDelete] = useState<
     string | null
   >(null);
   const fallback = subjectFallback(record);
 
+  function focusAfterConfirmation(
+    findButton: () => HTMLButtonElement | undefined | null,
+  ) {
+    requestAnimationFrame(() => {
+      const button = findButton();
+      if (button?.isConnected) button.focus();
+      else if (cardRef.current?.isConnected) cardRef.current.focus();
+      else onFocusFallback();
+    });
+  }
+
   async function submitIntent(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     const intent = parseIntent(data.get("intent"));
-    await onMutate((current) =>
+    await onMutate(interactionBinding, (current) =>
       updateJourneyIntent(current, record.id, intent, new Date().toISOString()),
     );
   }
@@ -178,7 +209,7 @@ export function JourneyRecordCard({
   async function submitSubject(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
-    await onMutate((current) =>
+    await onMutate(interactionBinding, (current) =>
       updateLocalCustomSubject(current, record.id, {
         title: String(data.get("title") ?? ""),
         date: String(data.get("date") ?? "") || null,
@@ -192,7 +223,7 @@ export function JourneyRecordCard({
     event.preventDefault();
     const form = event.currentTarget;
     const data = new FormData(form);
-    const saved = await onMutate((current) =>
+    const saved = await onMutate(interactionBinding, (current) =>
       addJourneyExperienceEntry(current, record.id, {
         entryId: createEntryId(),
         mode: parseMode(data.get("mode")),
@@ -211,7 +242,7 @@ export function JourneyRecordCard({
   ) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
-    await onMutate((current) =>
+    await onMutate(interactionBinding, (current) =>
       updateJourneyExperienceEntry(current, record.id, entryId, {
         mode: parseMode(data.get("mode")),
         occurredAt: canonicalTimestamp(data.get("occurredAt")),
@@ -223,7 +254,7 @@ export function JourneyRecordCard({
   }
 
   return (
-    <article className={styles.card}>
+    <article className={styles.card} ref={cardRef} tabIndex={-1}>
       <header className={styles.cardHeader}>
         <div className={styles.metaRow}>
           <span className={styles.badge}>
@@ -393,17 +424,25 @@ export function JourneyRecordCard({
                           confirmLabel="confirmDeleteExperience"
                           locale={locale}
                           message="deleteExperience"
-                          onCancel={() => setConfirmingEntryDelete(null)}
+                          onCancel={() => {
+                            setConfirmingEntryDelete(null);
+                            focusAfterConfirmation(() =>
+                              entryDeleteButtonRefs.current.get(entry.id),
+                            );
+                          }}
                           onConfirm={() => {
-                            void onMutate((current) =>
+                            void onMutate(interactionBinding, (current) =>
                               deleteJourneyExperienceEntry(
                                 current,
                                 record.id,
                                 entry.id,
                                 new Date().toISOString(),
                               ),
-                            ).then((deleted) => {
-                              if (deleted) setConfirmingEntryDelete(null);
+                            ).finally(() => {
+                              setConfirmingEntryDelete(null);
+                              focusAfterConfirmation(() =>
+                                entryDeleteButtonRefs.current.get(entry.id),
+                              );
                             });
                           }}
                         />
@@ -412,6 +451,16 @@ export function JourneyRecordCard({
                           className={styles.buttonDanger}
                           disabled={busy}
                           onClick={() => setConfirmingEntryDelete(entry.id)}
+                          ref={(button) => {
+                            if (button === null) {
+                              entryDeleteButtonRefs.current.delete(entry.id);
+                            } else {
+                              entryDeleteButtonRefs.current.set(
+                                entry.id,
+                                button,
+                              );
+                            }
+                          }}
                           type="button"
                         >
                           {journeyMessage(locale, "deleteExperience")}
@@ -443,16 +492,20 @@ export function JourneyRecordCard({
             confirmLabel="confirmDeleteJourney"
             locale={locale}
             message="deleteJourney"
-            onCancel={() => setConfirmingJourneyDelete(false)}
+            onCancel={() => {
+              setConfirmingJourneyDelete(false);
+              focusAfterConfirmation(() => journeyDeleteButtonRef.current);
+            }}
             onConfirm={() => {
-              void onMutate((current) =>
+              void onMutate(interactionBinding, (current) =>
                 deleteJourneyRecord(
                   current,
                   record.id,
                   new Date().toISOString(),
                 ),
-              ).then((deleted) => {
-                if (deleted) setConfirmingJourneyDelete(false);
+              ).finally(() => {
+                setConfirmingJourneyDelete(false);
+                focusAfterConfirmation(() => journeyDeleteButtonRef.current);
               });
             }}
           />
@@ -461,6 +514,7 @@ export function JourneyRecordCard({
             className={styles.buttonDanger}
             disabled={busy}
             onClick={() => setConfirmingJourneyDelete(true)}
+            ref={journeyDeleteButtonRef}
             type="button"
           >
             {journeyMessage(locale, "deleteJourney")}

@@ -53,6 +53,12 @@ const en = {
   saved: "Changes saved.",
   deleted: "Record deleted.",
   reload: "Reload latest stored data",
+  reloaded: "Latest stored Journey data loaded. Stale drafts were cleared.",
+  externalRefresh:
+    "Another tab changed Journey storage. The latest value was loaded and stale drafts were cleared.",
+  staleDraftTitle: "This draft is stale",
+  staleDraftBody:
+    "The Journey revision changed after this edit or confirmation opened. Nothing was written. Reload before editing again.",
   validationError:
     "The change does not match the Atlas Journey contract: {error}",
   conflictTitle: "Revision conflict",
@@ -90,9 +96,14 @@ const en = {
     "The backup uses future schema version {version}. No apply plan was created.",
   importInvalid: "The backup is invalid: {error}. No apply plan was created.",
   importCapacity:
-    "The replacement needs {required} bytes, but the conservative browser estimate allows {available}. Nothing was applied.",
+    "The replacement needs {required} bytes, but the repository-owned capacity check allows {available}. Nothing was applied.",
   estimateUnavailable:
-    "A conservative browser storage estimate is unavailable, so this import cannot proceed safely.",
+    "The repository-owned replacement-capacity check is unavailable, so this import cannot proceed safely.",
+  restoreCapacityPendingTitle: "Backup import is temporarily unavailable",
+  restoreCapacityPendingBody:
+    "Atlas is waiting for the repository-owned replacement-capacity check. Export remains available; no import file will be read or applied.",
+  restoreUnexpected:
+    "The restore operation stopped unexpectedly: {error}. The plan was discarded; reload stored data before retrying.",
   dryRunTitle: "Whole-replace dry run",
   dryRunBody:
     "Review every count below. Existing records not present in the backup will be deleted.",
@@ -171,6 +182,11 @@ const zhCN: JourneyMessages = {
   saved: "修改已保存。",
   deleted: "记录已删除。",
   reload: "重新读取最新数据",
+  reloaded: "已读取最新旅程数据，并清除旧草稿。",
+  externalRefresh: "其他标签页修改了旅程存储。已读取最新值并清除旧草稿。",
+  staleDraftTitle: "此草稿已过期",
+  staleDraftBody:
+    "打开编辑或确认后，旅程版本已经变化。没有写入任何内容，请重新读取后再编辑。",
   validationError: "修改不符合 Atlas Journey 合同：{error}",
   conflictTitle: "版本冲突",
   conflictBody:
@@ -204,9 +220,13 @@ const zhCN: JourneyMessages = {
   importFuture: "备份使用未来 schema 版本 {version}，未创建 apply plan。",
   importInvalid: "备份无效：{error}。未创建 apply plan。",
   importCapacity:
-    "替换需要 {required} 字节，但保守估算仅剩 {available} 字节。未应用任何数据。",
-  estimateUnavailable:
-    "无法得到保守的浏览器存储余量估算，因此不能安全继续导入。",
+    "替换需要 {required} 字节，但仓储层容量检查仅允许 {available} 字节。未应用任何数据。",
+  estimateUnavailable: "仓储层的替换容量检查不可用，因此不能安全继续导入。",
+  restoreCapacityPendingTitle: "备份导入暂不可用",
+  restoreCapacityPendingBody:
+    "Atlas 正在等待由仓储层提供的替换容量检查。仍可导出；不会读取或应用导入文件。",
+  restoreUnexpected:
+    "恢复操作意外停止：{error}。计划已丢弃，请重新读取存储数据后再试。",
   dryRunTitle: "整体替换预检",
   dryRunBody: "请核对以下数量。备份中不存在的现有记录将被删除。",
   journeys: "旅程",
@@ -283,6 +303,12 @@ const ja: JourneyMessages = {
   saved: "変更を保存しました。",
   deleted: "記録を削除しました。",
   reload: "最新の保存データを再読込",
+  reloaded: "最新の Journey を読み込み、古い下書きを破棄しました。",
+  externalRefresh:
+    "別タブが Journey ストレージを変更しました。最新値を読み込み、古い下書きを破棄しました。",
+  staleDraftTitle: "この下書きは古くなっています",
+  staleDraftBody:
+    "編集または確認を開いた後に Journey のリビジョンが変わりました。書き込みはしていません。再読込してから編集してください。",
   validationError: "変更は Atlas Journey 契約に適合しません：{error}",
   conflictTitle: "リビジョン競合",
   conflictBody:
@@ -320,9 +346,14 @@ const ja: JourneyMessages = {
   importInvalid:
     "バックアップが無効です：{error}。apply plan は作成されませんでした。",
   importCapacity:
-    "置換には {required} バイト必要ですが、保守的な空き容量は {available} バイトです。適用していません。",
+    "置換には {required} バイト必要ですが、リポジトリの容量チェックでは {available} バイトまでです。適用していません。",
   estimateUnavailable:
-    "保守的なブラウザ空き容量を取得できないため、安全に読み込みを続けられません。",
+    "リポジトリの置換容量チェックを利用できないため、安全に読み込みを続けられません。",
+  restoreCapacityPendingTitle: "バックアップの読み込みは一時停止中です",
+  restoreCapacityPendingBody:
+    "リポジトリが提供する置換容量チェックを待っています。書き出しは利用できますが、読み込みファイルは読み取りも適用もしません。",
+  restoreUnexpected:
+    "復元処理が予期せず停止しました：{error}。プランは破棄されました。保存データを再読込してからやり直してください。",
   dryRunTitle: "全体置換の事前確認",
   dryRunBody:
     "以下の件数を確認してください。バックアップにない既存記録は削除されます。",
@@ -402,6 +433,12 @@ const ko: JourneyMessages = {
   saved: "변경 사항을 저장했습니다.",
   deleted: "기록을 삭제했습니다.",
   reload: "최신 저장 데이터 다시 읽기",
+  reloaded: "최신 여정 데이터를 읽고 오래된 초안을 지웠습니다.",
+  externalRefresh:
+    "다른 탭에서 여정 저장소를 변경했습니다. 최신 값을 읽고 오래된 초안을 지웠습니다.",
+  staleDraftTitle: "이 초안은 오래되었습니다",
+  staleDraftBody:
+    "편집이나 확인을 연 뒤 여정 리비전이 변경되었습니다. 아무것도 쓰지 않았습니다. 다시 읽은 후 편집하세요.",
   validationError: "변경 사항이 Atlas Journey 계약과 맞지 않습니다: {error}",
   conflictTitle: "리비전 충돌",
   conflictBody:
@@ -438,9 +475,14 @@ const ko: JourneyMessages = {
   importInvalid:
     "백업이 유효하지 않습니다: {error}. apply plan을 만들지 않았습니다.",
   importCapacity:
-    "교체에 {required}바이트가 필요하지만 보수적 여유 공간은 {available}바이트입니다. 적용하지 않았습니다.",
+    "교체에 {required}바이트가 필요하지만 저장소 계층 용량 검사는 {available}바이트만 허용합니다. 적용하지 않았습니다.",
   estimateUnavailable:
-    "보수적인 브라우저 저장 공간 추정치를 얻을 수 없어 안전하게 가져올 수 없습니다.",
+    "저장소 계층의 교체 용량 검사를 사용할 수 없어 안전하게 가져올 수 없습니다.",
+  restoreCapacityPendingTitle: "백업 가져오기를 일시적으로 사용할 수 없습니다",
+  restoreCapacityPendingBody:
+    "저장소 계층이 제공할 교체 용량 검사를 기다리고 있습니다. 내보내기는 가능하지만 가져오기 파일은 읽거나 적용하지 않습니다.",
+  restoreUnexpected:
+    "복원이 예기치 않게 중단되었습니다: {error}. 계획을 폐기했으니 저장 데이터를 다시 읽은 뒤 재시도하세요.",
   dryRunTitle: "전체 교체 사전 검토",
   dryRunBody: "아래 개수를 확인하세요. 백업에 없는 기존 기록은 삭제됩니다.",
   journeys: "여정",

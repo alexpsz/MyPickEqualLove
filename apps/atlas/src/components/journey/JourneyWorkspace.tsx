@@ -1,11 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type RefObject,
+} from "react";
 import type { JourneyDocumentReadResult } from "../../contracts/journey-document.js";
 import {
+  bindJourneyInteraction,
   expectedJourneyRevision,
+  nextJourneyInteractionGeneration,
   sortJourneysForTimeline,
+  validateJourneyInteractionBinding,
+  type JourneyInteractionBinding,
 } from "../../features/journey/journey-controller.js";
 import { journeyMessage } from "../../i18n/journey/messages.js";
 import { validateCompareAndWriteJourneyInput } from "../../ports/journey-repository.js";
@@ -31,25 +41,68 @@ function currentDocument(read: JourneyDocumentReadResult) {
   return read.status === "valid" ? read.value : null;
 }
 
+function focusAfterRender(
+  preferred: RefObject<HTMLElement | null>,
+  fallback: RefObject<HTMLElement | null>,
+) {
+  requestAnimationFrame(() => {
+    (preferred.current ?? fallback.current)?.focus();
+  });
+}
+
 export function JourneyWorkspace() {
   const repositoryRef = useRef<LocalStorageJourneyRepository | null>(null);
-  const [repository, setRepository] =
-    useState<LocalStorageJourneyRepository | null>(null);
+  const readRef = useRef<JourneyDocumentReadResult | null>(null);
+  const generationRef = useRef(0);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const deleteAllButtonRef = useRef<HTMLButtonElement>(null);
   const [read, setRead] = useState<JourneyDocumentReadResult | null>(null);
+  const [interactionGeneration, setInteractionGeneration] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [needsReload, setNeedsReload] = useState(false);
   const [feedback, setFeedback] = useState<JourneyOperationFeedback | null>(
     null,
   );
-  const [confirmingDeleteAll, setConfirmingDeleteAll] = useState(false);
+  const [deleteAllBinding, setDeleteAllBinding] =
+    useState<JourneyInteractionBinding | null>(null);
+
+  const focusWorkspace = useCallback(() => {
+    focusAfterRender(headingRef, headingRef);
+  }, []);
+
+  const invalidateInteractions = useCallback(
+    (moveFocus: boolean) => {
+      generationRef.current = nextJourneyInteractionGeneration(
+        generationRef.current,
+      );
+      setInteractionGeneration(generationRef.current);
+      setDeleteAllBinding(null);
+      if (moveFocus) focusWorkspace();
+    },
+    [focusWorkspace],
+  );
+
+  const acceptAuthoritativeRead = useCallback(
+    (
+      nextRead: JourneyDocumentReadResult,
+      message: "externalRefresh" | "reloaded" | null,
+      moveFocus: boolean,
+    ) => {
+      readRef.current = nextRead;
+      setRead(nextRead);
+      setNeedsReload(false);
+      setFeedback(message === null ? null : { kind: "success", message });
+      invalidateInteractions(moveFocus);
+    },
+    [invalidateInteractions],
+  );
 
   async function reload() {
     const activeRepository = repositoryRef.current;
     if (activeRepository === null) return;
     setBusy(true);
-    setFeedback(null);
-    setConfirmingDeleteAll(false);
     try {
-      setRead(await activeRepository.read());
+      acceptAuthoritativeRead(await activeRepository.read(), "reloaded", true);
     } finally {
       setBusy(false);
     }
@@ -57,25 +110,74 @@ export function JourneyWorkspace() {
 
   useEffect(() => {
     const activeRepository = createBrowserJourneyRepository();
+    let active = true;
     repositoryRef.current = activeRepository;
-    setRepository(activeRepository);
-    void activeRepository.read().then(setRead);
+    void activeRepository.read().then((nextRead) => {
+      if (active) acceptAuthoritativeRead(nextRead, null, false);
+    });
+
+    function handleStorage(event: StorageEvent) {
+      void activeRepository
+        .handleStorageEvent({
+          key: event.key,
+          storageArea: event.storageArea,
+        })
+        .then((result) => {
+          if (active && result.status === "reread") {
+            acceptAuthoritativeRead(result.read, "externalRefresh", true);
+          }
+        });
+    }
+
+    window.addEventListener("storage", handleStorage);
     return () => {
+      active = false;
+      window.removeEventListener("storage", handleStorage);
       repositoryRef.current = null;
     };
-  }, []);
+  }, [acceptAuthoritativeRead]);
 
-  async function mutate(mutation: JourneyMutation) {
+  function currentInteractionBinding() {
+    const currentRead = readRef.current;
+    return currentRead?.status === "valid"
+      ? bindJourneyInteraction(
+          currentRead.value.revision,
+          generationRef.current,
+        )
+      : null;
+  }
+
+  function rejectStaleInteraction() {
+    setNeedsReload(true);
+    setFeedback({ kind: "stale" });
+    invalidateInteractions(true);
+  }
+
+  async function mutate(
+    binding: JourneyInteractionBinding,
+    mutation: JourneyMutation,
+  ) {
     const activeRepository = repositoryRef.current;
-    if (activeRepository === null || read === null || read.status !== "valid") {
+    const currentRead = readRef.current;
+    const activeBinding = currentInteractionBinding();
+    if (
+      activeRepository === null ||
+      currentRead?.status !== "valid" ||
+      activeBinding === null
+    ) {
       return false;
     }
+    if (!validateJourneyInteractionBinding(binding, activeBinding).ok) {
+      rejectStaleInteraction();
+      return false;
+    }
+
     setBusy(true);
     setFeedback(null);
     try {
-      const next = mutation(read.value);
+      const next = mutation(currentRead.value);
       const validated = validateCompareAndWriteJourneyInput({
-        expectedRevision: expectedJourneyRevision(read.value),
+        expectedRevision: expectedJourneyRevision(currentRead.value),
         next,
       });
       if (!validated.ok) {
@@ -83,11 +185,13 @@ export function JourneyWorkspace() {
       }
       const result = await activeRepository.compareAndWrite(validated.value);
       if (result.status === "committed") {
-        setRead(result.readback);
+        acceptAuthoritativeRead(result.readback, null, false);
         setFeedback({ kind: "success", message: "saved" });
         return true;
       }
       setFeedback({ kind: "mutation", result });
+      setNeedsReload(true);
+      invalidateInteractions(true);
       return false;
     } catch (error) {
       setFeedback({
@@ -100,26 +204,47 @@ export function JourneyWorkspace() {
     }
   }
 
-  async function deleteAll() {
+  function closeDeleteAllConfirmation() {
+    setDeleteAllBinding(null);
+    focusAfterRender(deleteAllButtonRef, headingRef);
+  }
+
+  async function deleteAll(binding: JourneyInteractionBinding) {
     const activeRepository = repositoryRef.current;
-    if (activeRepository === null || read === null) return;
-    const document = currentDocument(read);
-    if (document === null) return;
+    const currentRead = readRef.current;
+    const activeBinding = currentInteractionBinding();
+    if (
+      activeRepository === null ||
+      currentRead?.status !== "valid" ||
+      activeBinding === null
+    ) {
+      closeDeleteAllConfirmation();
+      return;
+    }
+    if (!validateJourneyInteractionBinding(binding, activeBinding).ok) {
+      rejectStaleInteraction();
+      closeDeleteAllConfirmation();
+      return;
+    }
+
     setBusy(true);
     setFeedback(null);
     try {
       const result = await activeRepository.deleteAll({
-        expectedRevision: expectedJourneyRevision(document),
+        expectedRevision: expectedJourneyRevision(currentRead.value),
       });
       if (result.status === "deleted") {
-        setRead(result.readback);
+        acceptAuthoritativeRead(result.readback, null, false);
         setFeedback({ kind: "success", message: "deleteAllDone" });
-        setConfirmingDeleteAll(false);
       } else {
         setFeedback({ kind: "mutation", result });
+        setNeedsReload(true);
+        invalidateInteractions(false);
       }
     } finally {
       setBusy(false);
+      setDeleteAllBinding(null);
+      focusAfterRender(deleteAllButtonRef, headingRef);
     }
   }
 
@@ -129,13 +254,9 @@ export function JourneyWorkspace() {
         const document = read === null ? null : currentDocument(read);
         const timeline =
           document === null ? [] : sortJourneysForTimeline(document.journeys);
-        const writeBlocked =
+        const readBlocked =
           read !== null && read.status !== "absent" && read.status !== "valid";
-        const showReload =
-          writeBlocked ||
-          (feedback?.kind === "mutation" &&
-            feedback.result.status !== "committed" &&
-            feedback.result.status !== "deleted");
+        const writeBlocked = readBlocked || needsReload;
 
         return (
           <>
@@ -143,7 +264,7 @@ export function JourneyWorkspace() {
               <p className={styles.eyebrow}>
                 {journeyMessage(locale, "localOnly")}
               </p>
-              <h1 className={styles.title}>
+              <h1 className={styles.title} ref={headingRef} tabIndex={-1}>
                 {journeyMessage(locale, "journeyTitle")}
               </h1>
               <p className={styles.lede}>
@@ -164,7 +285,7 @@ export function JourneyWorkspace() {
                 <JourneyReadAlert locale={locale} read={read} />
               )}
               <JourneyFeedbackAlert feedback={feedback} locale={locale} />
-              {showReload ? (
+              {readBlocked || needsReload ? (
                 <div className={styles.actionRow}>
                   <button
                     className={styles.buttonSecondary}
@@ -204,10 +325,13 @@ export function JourneyWorkspace() {
                       </div>
                       <ol className={styles.timeline}>
                         {timeline.map((record) => (
-                          <li key={record.id}>
+                          <li key={`${record.id}:${interactionGeneration}`}>
                             <JourneyRecordCard
                               busy={busy}
+                              documentRevision={document?.revision ?? 0}
+                              interactionGeneration={interactionGeneration}
                               locale={locale}
+                              onFocusFallback={focusWorkspace}
                               onMutate={mutate}
                               record={record}
                             />
@@ -217,19 +341,11 @@ export function JourneyWorkspace() {
                     </>
                   )}
 
-                  {repository !== null ? (
-                    <JourneyBackupPanel
-                      busy={busy}
-                      current={document}
-                      locale={locale}
-                      onBusyChange={setBusy}
-                      onCommitted={(nextRead) => {
-                        setRead(nextRead);
-                        setFeedback(null);
-                      }}
-                      repository={repository}
-                    />
-                  ) : null}
+                  <JourneyBackupPanel
+                    busy={busy}
+                    current={document}
+                    locale={locale}
+                  />
 
                   {document !== null ? (
                     <section className={styles.dangerZone}>
@@ -238,20 +354,24 @@ export function JourneyWorkspace() {
                         {journeyMessage(locale, "deleteAllWarning")}
                       </p>
                       <div className={styles.spacer} />
-                      {confirmingDeleteAll ? (
+                      {deleteAllBinding !== null ? (
                         <InlineConfirmation
                           busy={busy}
                           confirmLabel="confirmDeleteAll"
                           locale={locale}
                           message="deleteAllWarning"
-                          onCancel={() => setConfirmingDeleteAll(false)}
-                          onConfirm={() => void deleteAll()}
+                          onCancel={closeDeleteAllConfirmation}
+                          onConfirm={() => void deleteAll(deleteAllBinding)}
                         />
                       ) : (
                         <button
                           className={styles.buttonDanger}
                           disabled={busy}
-                          onClick={() => setConfirmingDeleteAll(true)}
+                          onClick={() => {
+                            const binding = currentInteractionBinding();
+                            if (binding !== null) setDeleteAllBinding(binding);
+                          }}
+                          ref={deleteAllButtonRef}
                           type="button"
                         >
                           {journeyMessage(locale, "deleteAll")}
