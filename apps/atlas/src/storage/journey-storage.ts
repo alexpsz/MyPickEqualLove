@@ -206,7 +206,12 @@ export class LocalStorageJourneyRepository implements JourneyRepository {
     try {
       this.#storageProvider().removeItem(ATLAS_JOURNEY_STORAGE_KEY_V1);
     } catch (error) {
-      return this.#failureWithRollback("write", rawBefore, error);
+      return this.#failureWithConditionalRollback(
+        "write",
+        rawBefore,
+        null,
+        error,
+      );
     }
 
     const readback = await this.read();
@@ -215,7 +220,12 @@ export class LocalStorageJourneyRepository implements JourneyRepository {
         readback.status === "read-failed"
           ? readback.error
           : `Delete readback was ${readback.status}, not absent`;
-      return this.#failureWithRollback("readback", rawBefore, error);
+      return this.#failureWithConditionalRollback(
+        "readback",
+        rawBefore,
+        null,
+        error,
+      );
     }
     return { status: "deleted", readback: { status: "absent" } };
   }
@@ -274,7 +284,12 @@ export class LocalStorageJourneyRepository implements JourneyRepository {
         prepared.raw,
       );
     } catch (error) {
-      return this.#failureWithRollback("write", rawBefore, error);
+      return this.#failureWithConditionalRollback(
+        "write",
+        rawBefore,
+        prepared.raw,
+        error,
+      );
     }
 
     const readback = await this.read();
@@ -283,14 +298,20 @@ export class LocalStorageJourneyRepository implements JourneyRepository {
         readback.status === "read-failed"
           ? readback.error
           : `Journey readback did not match committed revision ${prepared.value.revision}`;
-      return this.#failureWithRollback("readback", rawBefore, error);
+      return this.#failureWithConditionalRollback(
+        "readback",
+        rawBefore,
+        prepared.raw,
+        error,
+      );
     }
     return { status: "committed", readback };
   }
 
-  #failureWithRollback(
+  #failureWithConditionalRollback(
     stage: "write" | "readback",
     rawBefore: string | null,
+    attemptedRaw: string | null,
     error: unknown,
   ): JourneyMutationFailure {
     return {
@@ -298,13 +319,41 @@ export class LocalStorageJourneyRepository implements JourneyRepository {
       stage,
       rawBefore,
       error: typeof error === "string" ? error : describeError(error),
-      rollback: this.#restoreRaw(rawBefore),
+      rollback: this.#restoreRawIfOwned(rawBefore, attemptedRaw),
     };
   }
 
-  #restoreRaw(rawBefore: string | null): JourneyRollbackResult {
+  #restoreRawIfOwned(
+    rawBefore: string | null,
+    attemptedRaw: string | null,
+  ): JourneyRollbackResult {
+    let storage: JourneyStorageLike;
+    let currentRaw: string | null;
     try {
-      const storage = this.#storageProvider();
+      storage = this.#storageProvider();
+      currentRaw = storage.getItem(ATLAS_JOURNEY_STORAGE_KEY_V1);
+      this.#lastObservedRaw = currentRaw;
+    } catch (error) {
+      return {
+        status: "failed",
+        raw: rawBefore,
+        error: `Safe rollback blocked because current storage could not be read: ${describeError(error)}`,
+      };
+    }
+
+    if (currentRaw === rawBefore) {
+      return { status: "not-required" };
+    }
+    if (currentRaw !== attemptedRaw) {
+      return {
+        status: "failed",
+        raw: rawBefore,
+        error:
+          "Safe rollback blocked because a concurrent or external value replaced this operation's attempted value",
+      };
+    }
+
+    try {
       if (rawBefore === null) {
         storage.removeItem(ATLAS_JOURNEY_STORAGE_KEY_V1);
       } else {

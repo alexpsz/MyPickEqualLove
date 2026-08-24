@@ -273,6 +273,20 @@ test("a stale CAS conflicts without writing", async () => {
   assert.equal(storage.setCalls.length, 0);
 });
 
+test("a stale absent expectation conflicts with actual revision 0 without mutation", async () => {
+  const storage = new TestStorage(JSON.stringify(validDocument(0)));
+  const repository = new LocalStorageJourneyRepository(storage);
+  const result = await repository.compareAndWrite(
+    validatedWrite({ state: "absent" }, validDocument(0, "Stale create")),
+  );
+
+  assert.equal(result.status, "conflict");
+  assert.equal(result.actual.status, "valid");
+  assert.equal(result.actual.value.revision, 0);
+  assert.equal(storage.setCalls.length, 0);
+  assert.equal(storage.removeCalls.length, 0);
+});
+
 test("future, corrupt, and invalid raw are never overwritten", async () => {
   const invalid = validDocument();
   invalid.unknown = true;
@@ -334,6 +348,47 @@ test("write failure restores the exact previous raw and preserves quota errors",
   assert.equal(storage.setCalls.at(-1).value, oldRaw);
 });
 
+test("write failure needs no rollback when the attempted value never took effect", async () => {
+  const oldRaw = JSON.stringify(validDocument(0));
+  const storage = new TestStorage(oldRaw);
+  storage.setQueue.push(namedError("QuotaExceededError", "quota full"));
+  const repository = new LocalStorageJourneyRepository(storage);
+  const result = await repository.compareAndWrite(
+    validatedWrite({ state: "present", revision: 0 }, validDocument(1)),
+  );
+
+  assert.equal(result.status, "failure");
+  assert.deepEqual(result.rollback, { status: "not-required" });
+  assert.equal(storage.raw, oldRaw);
+  assert.equal(storage.setCalls.length, 1);
+});
+
+test("write error never rolls an external value back to the old raw", async () => {
+  const oldRaw = JSON.stringify(validDocument(0));
+  const externalRaw = JSON.stringify(validDocument(1, "External commit"));
+  const storage = new TestStorage(oldRaw);
+  storage.setQueue.push((target, value) => {
+    target.raw = value;
+    target.raw = externalRaw;
+    throw namedError("QuotaExceededError", "write reported failure");
+  });
+  const repository = new LocalStorageJourneyRepository(storage);
+  const result = await repository.compareAndWrite(
+    validatedWrite(
+      { state: "present", revision: 0 },
+      validDocument(1, "Attempted commit"),
+    ),
+  );
+
+  assert.equal(result.status, "failure");
+  assert.equal(result.stage, "write");
+  assert.equal(result.rollback.status, "failed");
+  assert.match(result.rollback.error, /concurrent or external value/);
+  assert.equal(storage.raw, externalRaw);
+  assert.equal(storage.setCalls.length, 1);
+  assert.notEqual(storage.setCalls.at(-1).value, oldRaw);
+});
+
 test("failed first write restores exact absence", async () => {
   const storage = new TestStorage();
   storage.setQueue.push((target, value) => {
@@ -390,11 +445,14 @@ test("malformed readback rolls back the exact previous raw", async () => {
   assert.equal(storage.raw, oldRaw);
 });
 
-test("valid but mismatched readback rolls back instead of claiming success", async () => {
+test("valid other-tab readback is preserved instead of being rolled back", async () => {
   const oldRaw = JSON.stringify(validDocument(0));
-  const mismatched = JSON.stringify(validDocument(1, "Other tab content"));
+  const externalRaw = JSON.stringify(validDocument(1, "Other tab content"));
   const storage = new TestStorage(oldRaw);
-  storage.getQueue.push(oldRaw, mismatched);
+  storage.getQueue.push(oldRaw, (target) => {
+    target.raw = externalRaw;
+    return externalRaw;
+  });
   const repository = new LocalStorageJourneyRepository(storage);
   const result = await repository.compareAndWrite(
     validatedWrite(
@@ -406,8 +464,11 @@ test("valid but mismatched readback rolls back instead of claiming success", asy
   assert.equal(result.status, "failure");
   assert.equal(result.stage, "readback");
   assert.match(result.error, /did not match/);
-  assert.deepEqual(result.rollback, { status: "restored", raw: oldRaw });
-  assert.equal(storage.raw, oldRaw);
+  assert.equal(result.rollback.status, "failed");
+  assert.match(result.rollback.error, /concurrent or external value/);
+  assert.equal(storage.raw, externalRaw);
+  assert.equal(storage.setCalls.length, 1);
+  assert.notEqual(storage.setCalls.at(-1).value, oldRaw);
 });
 
 test("readback exceptions are distinct from write failures and roll back", async () => {
@@ -426,6 +487,27 @@ test("readback exceptions are distinct from write failures and roll back", async
   assert.equal(result.stage, "readback");
   assert.equal(result.error, "SecurityError: readback blocked");
   assert.deepEqual(result.rollback, { status: "restored", raw: oldRaw });
+});
+
+test("an unreadable rollback ownership check fails closed without writing old raw", async () => {
+  const oldRaw = JSON.stringify(validDocument(0));
+  const storage = new TestStorage(oldRaw);
+  storage.getQueue.push(
+    oldRaw,
+    namedError("SecurityError", "readback blocked"),
+    namedError("SecurityError", "ownership check blocked"),
+  );
+  const repository = new LocalStorageJourneyRepository(storage);
+  const result = await repository.compareAndWrite(
+    validatedWrite({ state: "present", revision: 0 }, validDocument(1)),
+  );
+
+  assert.equal(result.status, "failure");
+  assert.equal(result.stage, "readback");
+  assert.equal(result.rollback.status, "failed");
+  assert.match(result.rollback.error, /current storage could not be read/);
+  assert.notEqual(storage.raw, oldRaw);
+  assert.equal(storage.setCalls.length, 1);
 });
 
 test("replace uses the same strict CAS and readback transaction", async () => {
@@ -487,10 +569,14 @@ test("delete-all write failure restores the exact original raw", async () => {
   assert.equal(storage.raw, oldRaw);
 });
 
-test("delete-all non-absent readback fails and restores old raw", async () => {
+test("delete-all preserves another writer value observed after removal", async () => {
   const oldRaw = JSON.stringify(validDocument(0));
+  const externalRaw = JSON.stringify(validDocument(1, "External commit"));
   const storage = new TestStorage(oldRaw);
-  storage.getQueue.push(oldRaw, oldRaw);
+  storage.getQueue.push(oldRaw, (target) => {
+    target.raw = externalRaw;
+    return externalRaw;
+  });
   const repository = new LocalStorageJourneyRepository(storage);
   const result = await repository.deleteAll({
     expectedRevision: { state: "present", revision: 0 },
@@ -498,8 +584,10 @@ test("delete-all non-absent readback fails and restores old raw", async () => {
 
   assert.equal(result.status, "failure");
   assert.equal(result.stage, "readback");
-  assert.deepEqual(result.rollback, { status: "restored", raw: oldRaw });
-  assert.equal(storage.raw, oldRaw);
+  assert.equal(result.rollback.status, "failed");
+  assert.match(result.rollback.error, /concurrent or external value/);
+  assert.equal(storage.raw, externalRaw);
+  assert.equal(storage.setCalls.length, 0);
 });
 
 test("P2 replace apply plan is executed through the repository transaction", async () => {
