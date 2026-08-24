@@ -1,0 +1,192 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "atlas-public-event-source-go-hold-v1",
+  "sourceCommit": "b872042026a54efc736fcdfb95ae5e3d0009227f",
+  "sourceRevisionAlgorithm": "sha256 of canonical UTF-8 atlas-public-source-revision-v1 input",
+  "historicalBaseline": {
+    "contractPath": "apps/atlas/src/contracts/baseline-receipt.ts",
+    "sourceCommit": "60b3012d7412c10c1fe189dbbdca3ba1abb17810",
+    "totals": {
+      "events": 4,
+      "performances": 6,
+      "setlistEntries": 172
+    }
+  },
+  "contractFiles": [
+    {
+      "path": "apps/atlas/src/contracts/public-atlas-projection.ts",
+      "sha256": "8fc30820da460f53c4e70cb07b6c569441f963e45851a04b9b57e6bba74d9dd8"
+    },
+    {
+      "path": "apps/atlas/src/contracts/identity.ts",
+      "sha256": "3b96db7700a5a8facef4cba6d7835fdbf6b127651b2b9dabb95edcc8d54e051f"
+    },
+    {
+      "path": "apps/atlas/src/contracts/public-reference.ts",
+      "sha256": "9bdcda8974ad0bff6feedbbd410aad4bb26a4ec6a86259dacd8a961fbb3f2188"
+    },
+    {
+      "path": "apps/atlas/src/contracts/strict.ts",
+      "sha256": "6f33a569fbe9b31d2594d2ff60fa939d9deae9bd5a2b27a7817b17308657b987"
+    },
+    {
+      "path": "apps/atlas/src/contracts/baseline-receipt.ts",
+      "sha256": "6d1d74a3996f60a3612401c3aa9dc0bd8a506153f0f084e429890ab1352d3f3b"
+    },
+    {
+      "path": "apps/atlas/src/contracts/publication-authority.ts",
+      "sha256": "2148050c6c09eacb565d1387728f5d0cfa046c1d998f271b898b982948db231b"
+    }
+  ],
+  "evidenceFiles": [],
+  "seeds": [
+    {
+      "siteId": "equal-love",
+      "sourcePath": "src/projects/equal-love/live-experiences.json",
+      "sourceSha256": "c272dd0d8b02ddd7001e852a0e830f8d8b0a7bd00bf16a74a59e90ae6e312649",
+      "songsPath": "src/projects/equal-love/songs.json",
+      "songsSha256": "060774dab39fe3fda230f866e1d132fcc31cda01dc62137fc98c040e0670b141",
+      "baselineCounts": {
+        "events": 2,
+        "performances": 2,
+        "setlistEntries": 60
+      },
+      "decision": "HOLD",
+      "withdrawalState": "unknown",
+      "gates": {
+        "sourceUseBoundary": {
+          "status": "HOLD",
+          "evidenceRefs": [],
+          "gap": "No repository evidence explicitly approves these sources for an Atlas public seed."
+        },
+        "claimLevelEvidence": {
+          "status": "HOLD",
+          "evidenceRefs": [],
+          "gap": "The two Kokuritsu setlists start at source order 2 but have no structured excludedEntries for source order 1."
+        },
+        "temporalVerification": {
+          "status": "HOLD",
+          "evidenceRefs": [],
+          "gap": "The seed has no complete asOf and lastVerifiedAt metadata."
+        },
+        "timezoneAndLifecycle": {
+          "status": "HOLD",
+          "evidenceRefs": [],
+          "gap": "The seed has no explicit IANA timezone or Atlas public lifecycle metadata."
+        },
+        "refreshInvalidationWithdrawal": {
+          "status": "HOLD",
+          "evidenceRefs": [],
+          "gap": "Refresh cadence, staleness, invalidation, and withdrawal handling are not approved in the source."
+        },
+        "maintenanceOwner": {
+          "status": "HOLD",
+          "evidenceRefs": [],
+          "gap": "No unique maintenance owner is named for this Atlas public seed."
+        }
+      }
+    },
+    {
+      "siteId": "nearly-equal-joy",
+      "sourcePath": "src/projects/nearly-equal-joy/live-experiences.json",
+      "sourceSha256": "20373a5cefd37b0d64b86ddaf835852fd814af6140bf32bc392b2126df7109cc",
+      "songsPath": "src/projects/nearly-equal-joy/songs.json",
+      "songsSha256": "737b6d68d3fb494304a261da55fda0711dd1105e1ef67387394271ace6a7efba",
+      "baselineCounts": {
+        "events": 1,
+        "performances": 2,
+        "setlistEntries": 57
+      },
+      "decision": "HOLD",
+      "withdrawalState": "unknown",
+      "gates": {
+        "sourceUseBoundary": {
+          "status": "HOLD",
+          "evidenceRefs": [],
+          "gap": "No repository evidence explicitly approves these sources for an Atlas public seed."
+        },
+        "claimLevelEvidence": {
+          "status": "GO",
+          "evidenceRefs": [
+            "src/projects/nearly-equal-joy/live-experiences.json#/0/eventEvidence",
+            "src/projects/nearly-equal-joy/live-experiences.json#/0/performances/0",
+            "src/projects/nearly-equal-joy/live-experiences.json#/0/performances/1",
+            "src/projects/nearly-equal-joy/songs.json#"
+          ],
+          "gap": null
+        },
+        "temporalVerification": {
+          "status": "HOLD",
+          "evidenceRefs": [],
+          "gap": "Performance review dates exist, but the seed has no complete event-level asOf and lastVerifiedAt metadata."
+        },
+        "timezoneAndLifecycle": {
+          "status": "HOLD",
+          "evidenceRefs": [],
+          "gap": "The seed has no explicit IANA timezone or Atlas public lifecycle metadata."
+        },
+        "refreshInvalidationWithdrawal": {
+          "status": "HOLD",
+          "evidenceRefs": [],
+          "gap": "Refresh cadence, staleness, invalidation, and withdrawal handling are not approved in the source."
+        },
+        "maintenanceOwner": {
+          "status": "HOLD",
+          "evidenceRefs": [],
+          "gap": "No unique maintenance owner is named for this Atlas public seed."
+        }
+      }
+    },
+    {
+      "siteId": "not-equal-me",
+      "sourcePath": "src/projects/not-equal-me/live-experiences.json",
+      "sourceSha256": "81b39e2287d36dc7db57ab543e99179eb6996a84847c049a3e7ea12e7e07465c",
+      "songsPath": "src/projects/not-equal-me/songs.json",
+      "songsSha256": "f9b706462fd0f1fcfc700f4d1b9f6cc3fe3c6e303e39d50e6b9682603e582d82",
+      "baselineCounts": {
+        "events": 1,
+        "performances": 2,
+        "setlistEntries": 55
+      },
+      "decision": "HOLD",
+      "withdrawalState": "unknown",
+      "gates": {
+        "sourceUseBoundary": {
+          "status": "HOLD",
+          "evidenceRefs": [],
+          "gap": "No repository evidence explicitly approves these sources for an Atlas public seed."
+        },
+        "claimLevelEvidence": {
+          "status": "GO",
+          "evidenceRefs": [
+            "src/projects/not-equal-me/live-experiences.json#/0/eventEvidence",
+            "src/projects/not-equal-me/live-experiences.json#/0/performances/0",
+            "src/projects/not-equal-me/live-experiences.json#/0/performances/1",
+            "src/projects/not-equal-me/songs.json#"
+          ],
+          "gap": null
+        },
+        "temporalVerification": {
+          "status": "HOLD",
+          "evidenceRefs": [],
+          "gap": "Performance review dates exist, but the seed has no complete event-level asOf and lastVerifiedAt metadata."
+        },
+        "timezoneAndLifecycle": {
+          "status": "HOLD",
+          "evidenceRefs": [],
+          "gap": "The seed has no explicit IANA timezone or Atlas public lifecycle metadata."
+        },
+        "refreshInvalidationWithdrawal": {
+          "status": "HOLD",
+          "evidenceRefs": [],
+          "gap": "Refresh cadence, staleness, invalidation, and withdrawal handling are not approved in the source."
+        },
+        "maintenanceOwner": {
+          "status": "HOLD",
+          "evidenceRefs": [],
+          "gap": "No unique maintenance owner is named for this Atlas public seed."
+        }
+      }
+    }
+  ]
+}
