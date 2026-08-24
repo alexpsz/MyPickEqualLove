@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "receiptId": "atlas-public-event-source-go-hold-v1",
-  "sourceCommit": "e6e8c1ff8cd3ebcfdf39a07fa3e81dd414244e97",
+  "sourceCommit": "b872042026a54efc736fcdfb95ae5e3d0009227f",
   "sourceRevisionAlgorithm": "sha256 of canonical UTF-8 atlas-public-source-revision-v1 input",
   "historicalBaseline": {
     "contractPath": "apps/atlas/src/contracts/baseline-receipt.ts",
@@ -32,6 +32,10 @@
     {
       "path": "apps/atlas/src/contracts/baseline-receipt.ts",
       "sha256": "6d1d74a3996f60a3612401c3aa9dc0bd8a506153f0f084e429890ab1352d3f3b"
+    },
+    {
+      "path": "apps/atlas/src/contracts/publication-authority.ts",
+      "sha256": "2148050c6c09eacb565d1387728f5d0cfa046c1d998f271b898b982948db231b"
     }
   ],
   "evidenceFiles": [],

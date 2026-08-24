@@ -25,11 +25,25 @@ commit must be byte-identical to both the receipt hash and current file. Reads
 also verify realpath containment so a symlink or junction cannot escape the
 repository.
 
+The generated artifact path has a stronger physical-chain rule: every existing
+component from the repository root through
+`apps/atlas/src/generated/public-atlas-projection.v1.json` is inspected with
+`lstat` and `realpath` and must be the fixed physical component, never a
+symlink, junction, or other redirecting path. Generate checks before and after
+directory creation and before rename; check rejects the chain before reading.
+
 The historical trust root is the actual exported
 `ATLAS_C0_BASELINE_RECEIPT`, not the E1 receipt's copy of its totals. E1 loads
 that TypeScript constant, requires its commit to be an ancestor of both the
 current source commit and `HEAD`, reads the three historical source blobs from
 Git, and re-derives their byte hashes, IDs, counts, and setlist order ranges.
+It also canonical-deep-compares each historical source with the current source,
+preserving array order and every protected fact. Only the exact
+`Event.publicAtlasEvidence` and
+`Performance.provenance.excludedEntries` evidence paths are removed from both
+sides. Event/Performance identity, labels, dates, venue, membership/order,
+setlist order/song IDs, and all fields and catalog order of referenced song
+records remain protected; a first-difference path is reported on drift.
 CI integration therefore needs complete Git history (`checkout` with
 `fetch-depth: 0`, or an explicit fetch of every receipt commit); this E1 package
 does not change the shared workflow.
@@ -66,8 +80,9 @@ the `lastVerifiedAt + staleAfterDays` expiry date and becomes HOLD the next day.
 That metadata covers the Event and its child Performances; each Performance date
 must be an exact member of the parent Event's evidence dates.
 
-Governance owners and approval authorities are trimmed, nonblank, and bounded
-to 128 characters. Refresh cadence is one of `on-source-change`, `daily`,
+Governance owners and signers use the canonical `principal:` grammar from the
+fixed publication-authority contract; approval authorities use its canonical
+`authority:` grammar. Refresh cadence is one of `on-source-change`, `daily`,
 `weekly`, or `monthly`; `staleAfterDays` is in `1..365`; invalidation and
 withdrawal actions are exactly `HOLD`. Approval timestamps are real canonical
 UTC instants with seconds and optional three-digit milliseconds, so calendar
@@ -85,12 +100,18 @@ A receipt GO must cite exact, resolving `repoPath#JSON-pointer` references for
 every gate. Source-use approval can only point to the seed's fixed independent
 approval record under `scripts/atlas/evidence/`; that versioned record binds the
 fixed site and `atlas-public-seed-v1` scope, exact source and songs paths and
-SHA-256 hashes, bounded approval authority, approval time, maintenance owner,
-and active/withdrawn status. It is included in the receipt evidence-file hashes
-and the source Git commit, so an old approval cannot authorize revised source
-bytes. Adding real approval or metadata requires a reviewed repository evidence
-change; the projector never infers permission from route publication or
-verification status.
+SHA-256 hashes, `approvalAuthorityId`, explicit `approverId`,
+`maintenanceOwnerId`, approval time, and active/withdrawn status. The approver
+must be a member of the coordinator-owned
+`ATLAS_PUBLICATION_AUTHORITY_CONTRACT`, as decided only by its exported
+`isConfiguredAtlasPublicationApprover`; it must differ from the maintenance
+owner. The authority contract itself is a fixed receipt/hash/Git-blob binding,
+and neither receipt nor approval can supply a substitute roster. The production
+roster is intentionally empty, so production remains HOLD. An approval is also
+included in the receipt evidence-file hashes and source Git commit, so an old
+approval cannot authorize revised source bytes. Adding real approval or
+metadata requires a reviewed repository evidence change; the projector never
+infers permission from route publication or verification status.
 
 Projection shape validation is performed by the actual pinned C0
 `parsePublicAtlasProjection` implementation, loaded with the repository's

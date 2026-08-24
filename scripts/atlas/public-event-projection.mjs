@@ -2,6 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { execFile } from "node:child_process";
 import { createRequire } from "node:module";
 import {
+  lstat,
   mkdir,
   readFile,
   realpath,
@@ -53,12 +54,17 @@ export const FIXED_SEEDS = [
       "scripts/atlas/evidence/not-equal-me-public-seed-approval.v1.json",
   },
 ];
+export const FIXED_BASELINE_CONTRACT_PATH =
+  "apps/atlas/src/contracts/baseline-receipt.ts";
+export const FIXED_AUTHORITY_CONTRACT_PATH =
+  "apps/atlas/src/contracts/publication-authority.ts";
 export const FIXED_CONTRACT_PATHS = [
   "apps/atlas/src/contracts/public-atlas-projection.ts",
   "apps/atlas/src/contracts/identity.ts",
   "apps/atlas/src/contracts/public-reference.ts",
   "apps/atlas/src/contracts/strict.ts",
-  "apps/atlas/src/contracts/baseline-receipt.ts",
+  FIXED_BASELINE_CONTRACT_PATH,
+  FIXED_AUTHORITY_CONTRACT_PATH,
 ];
 export const FIXED_ARTIFACT_PATH =
   "apps/atlas/src/generated/public-atlas-projection.v1.json";
@@ -96,6 +102,7 @@ const LIFECYCLES = new Set([
 ]);
 const c0ParserCache = new Map();
 const c0BaselineCache = new Map();
+const authorityContractCache = new Map();
 
 function fail(path, message) {
   throw new Error(`${path}: ${message}`);
@@ -118,15 +125,6 @@ function string(value, path) {
     fail(path, "expected a non-empty string");
   }
   return value;
-}
-
-function governanceText(value, path, { max = 128 } = {}) {
-  if (typeof value !== "string") fail(path, "expected governance text");
-  const trimmed = value.trim();
-  if (trimmed.length === 0 || trimmed.length > max) {
-    fail(path, `expected nonblank governance text with length 1..${max}`);
-  }
-  return trimmed;
 }
 
 function integer(value, path, min = Number.MIN_SAFE_INTEGER) {
@@ -289,16 +287,35 @@ async function validateExactReceiptPath(repositoryRoot, receiptPath) {
   return { expected, rootReal };
 }
 
-async function nearestExistingRealpath(target) {
-  let candidate = target;
-  for (;;) {
+function samePhysicalPath(left, right) {
+  return relative(left, right) === "" && relative(right, left) === "";
+}
+
+async function validateFixedArtifactChain(repositoryRoot, rootReal) {
+  let lexicalPath = resolve(repositoryRoot);
+  let expectedRealPath = rootReal;
+  for (const component of FIXED_ARTIFACT_PATH.split("/")) {
+    lexicalPath = resolve(lexicalPath, component);
+    expectedRealPath = resolve(expectedRealPath, component);
+    let status;
     try {
-      return await realpath(candidate);
+      status = await lstat(lexicalPath);
     } catch (error) {
-      if (error?.code !== "ENOENT") throw error;
-      const parent = dirname(candidate);
-      if (parent === candidate) throw error;
-      candidate = parent;
+      if (error?.code === "ENOENT") return;
+      throw error;
+    }
+    if (status.isSymbolicLink()) {
+      fail(
+        "artifactPath",
+        `physical path component is a symbolic link or junction: ${component}`,
+      );
+    }
+    const actualRealPath = await realpath(lexicalPath);
+    if (!samePhysicalPath(actualRealPath, expectedRealPath)) {
+      fail(
+        "artifactPath",
+        `physical path component does not match its fixed repository location: ${component}`,
+      );
     }
   }
 }
@@ -309,10 +326,7 @@ async function validateExactArtifactPath(repositoryRoot, artifactPath) {
     fail("artifactPath", `must be exactly ${expected}`);
   }
   const rootReal = await realpath(repositoryRoot);
-  const existingReal = await nearestExistingRealpath(expected);
-  if (existingReal === rootReal || isOutside(rootReal, existingReal)) {
-    fail("artifactPath", "realpath or parent realpath escapes the repository");
-  }
+  await validateFixedArtifactChain(repositoryRoot, rootReal);
   return { expected, rootReal };
 }
 
@@ -447,7 +461,7 @@ export function validateReceipt(
     "sourceCommit",
     "totals",
   ]);
-  if (value.historicalBaseline.contractPath !== FIXED_CONTRACT_PATHS.at(-1)) {
+  if (value.historicalBaseline.contractPath !== FIXED_BASELINE_CONTRACT_PATH) {
     fail(
       "$receipt.historicalBaseline.contractPath",
       "unexpected baseline contract path",
@@ -564,14 +578,33 @@ function addDays(date, days) {
   return value.toISOString().slice(0, 10);
 }
 
-function validatePublicAtlasEvidence(value, path, auditDate) {
+function governancePrincipalId(value, path, authorityContract) {
+  if (!authorityContract?.isAtlasGovernancePrincipalId?.(value)) {
+    fail(path, "expected a canonical configured-contract principal id");
+  }
+  return value;
+}
+
+function publicationAuthorityId(value, path, authorityContract) {
+  if (!authorityContract?.isAtlasAuthorityId?.(value)) {
+    fail(path, "expected a canonical configured-contract authority id");
+  }
+  return value;
+}
+
+function validatePublicAtlasEvidence(
+  value,
+  path,
+  auditDate,
+  authorityContract,
+) {
   exactKeys(value, path, [
     "asOf",
     "lastVerifiedAt",
     "timezone",
     "lifecycle",
     "refreshPolicy",
-    "maintenanceOwner",
+    "maintenanceOwnerId",
   ]);
   const asOf = isoDate(value.asOf, `${path}.asOf`);
   const lastVerifiedAt = isoDate(
@@ -627,9 +660,10 @@ function validatePublicAtlasEvidence(value, path, auditDate) {
       onInvalidation: "HOLD",
       onWithdrawal: "HOLD",
     },
-    maintenanceOwner: governanceText(
-      value.maintenanceOwner,
-      `${path}.maintenanceOwner`,
+    maintenanceOwnerId: governancePrincipalId(
+      value.maintenanceOwnerId,
+      `${path}.maintenanceOwnerId`,
+      authorityContract,
     ),
   };
 }
@@ -721,7 +755,7 @@ function coverageIssuesFor(performance, excluded) {
       ];
 }
 
-function validateLiveSource(value, seed, songs, auditDate) {
+function validateLiveSource(value, seed, songs, auditDate, authorityContract) {
   const path = seed.sourcePath;
   const events = array(value, path);
   const eventIds = new Set();
@@ -831,8 +865,9 @@ function validateLiveSource(value, seed, songs, auditDate) {
         event.publicAtlasEvidence,
         `${eventPath}.publicAtlasEvidence`,
         auditDate,
+        authorityContract,
       );
-      ownerNames.add(evidence.maintenanceOwner);
+      ownerNames.add(evidence.maintenanceOwnerId);
     }
 
     const performanceIds = new Set();
@@ -931,7 +966,14 @@ function validateLiveSource(value, seed, songs, auditDate) {
   };
 }
 
-function validateApproval(value, fixed, seed, auditDate, path) {
+function validateApproval(
+  value,
+  fixed,
+  seed,
+  auditDate,
+  path,
+  authorityContract,
+) {
   exactKeys(value, path, [
     "schemaVersion",
     "siteId",
@@ -941,9 +983,10 @@ function validateApproval(value, fixed, seed, auditDate, path) {
     "songsPath",
     "songsSha256",
     "atlasPublicSeedApproval",
-    "approvalAuthority",
+    "approvalAuthorityId",
+    "approverId",
     "approvedAt",
-    "maintenanceOwner",
+    "maintenanceOwnerId",
     "withdrawalState",
   ]);
   if (value.schemaVersion !== 1) fail(`${path}.schemaVersion`, "expected 1");
@@ -979,21 +1022,42 @@ function validateApproval(value, fixed, seed, auditDate, path) {
   if (value.atlasPublicSeedApproval !== "approved") {
     fail(`${path}.atlasPublicSeedApproval`, "must explicitly be approved");
   }
-  const approvalAuthority = governanceText(
-    value.approvalAuthority,
-    `${path}.approvalAuthority`,
+  const approvalAuthorityId = publicationAuthorityId(
+    value.approvalAuthorityId,
+    `${path}.approvalAuthorityId`,
+    authorityContract,
   );
+  const approverId = governancePrincipalId(
+    value.approverId,
+    `${path}.approverId`,
+    authorityContract,
+  );
+  const maintenanceOwnerId = governancePrincipalId(
+    value.maintenanceOwnerId,
+    `${path}.maintenanceOwnerId`,
+    authorityContract,
+  );
+  if (approverId === maintenanceOwnerId) {
+    fail(path, "approverId must differ from maintenanceOwnerId");
+  }
+  if (
+    !authorityContract.isConfiguredAtlasPublicationApprover(
+      approvalAuthorityId,
+      approverId,
+      maintenanceOwnerId,
+    )
+  ) {
+    fail(path, "signer is not in the fixed publication authority roster");
+  }
   const approvedAt = utcTimestamp(value.approvedAt, `${path}.approvedAt`);
   if (approvedAt.slice(0, 10) > auditDate) {
     fail(`${path}.approvedAt`, `cannot be after auditDate ${auditDate}`);
   }
   return {
     ...value,
-    approvalAuthority,
-    maintenanceOwner: governanceText(
-      value.maintenanceOwner,
-      `${path}.maintenanceOwner`,
-    ),
+    approvalAuthorityId,
+    approverId,
+    maintenanceOwnerId,
     withdrawalState: enumValue(
       value.withdrawalState,
       `${path}.withdrawalState`,
@@ -1063,7 +1127,7 @@ function expectedGateRefs(fixed, source, gateName) {
       sourceRefs.push(`${eventBase}/publicAtlasEvidence/refreshPolicy`);
     }
     if (gateName === "maintenanceOwner") {
-      sourceRefs.push(`${eventBase}/publicAtlasEvidence/maintenanceOwner`);
+      sourceRefs.push(`${eventBase}/publicAtlasEvidence/maintenanceOwnerId`);
     }
   });
   if (gateName === "sourceUseBoundary") return [`${fixed.approvalPath}#`];
@@ -1073,7 +1137,7 @@ function expectedGateRefs(fixed, source, gateName) {
     return [...sourceRefs, `${fixed.approvalPath}#/withdrawalState`];
   }
   if (gateName === "maintenanceOwner") {
-    return [...sourceRefs, `${fixed.approvalPath}#/maintenanceOwner`];
+    return [...sourceRefs, `${fixed.approvalPath}#/maintenanceOwnerId`];
   }
   return sourceRefs;
 }
@@ -1158,12 +1222,12 @@ function validateGateEvidence(seedResult, fixed, documents) {
       errors.push(`APPROVAL_MISSING:${seed.siteId}:${fixed.approvalPath}`);
     } else {
       const owners = new Set(
-        source.events.map((event) =>
-          event.publicAtlasEvidence?.maintenanceOwner?.trim(),
+        source.events.map(
+          (event) => event.publicAtlasEvidence?.maintenanceOwnerId,
         ),
       );
       owners.delete(undefined);
-      if (owners.size !== 1 || !owners.has(approval.maintenanceOwner)) {
+      if (owners.size !== 1 || !owners.has(approval.maintenanceOwnerId)) {
         errors.push(
           `APPROVAL_OWNER:${seed.siteId}:approval and source owner must match`,
         );
@@ -1429,6 +1493,114 @@ function deriveHistoricalSourceReceipt(bytes, fixed) {
   };
 }
 
+function protectedLiveSourceProjection(document, path) {
+  const protectedEvents = structuredClone(array(document, path));
+  protectedEvents.forEach((event, eventIndex) => {
+    const eventPath = `${path}[${eventIndex}]`;
+    const item = record(event, eventPath);
+    delete item.publicAtlasEvidence;
+    const performances = item.performances ?? [];
+    array(performances, `${eventPath}.performances`).forEach(
+      (performance, performanceIndex) => {
+        const performancePath = `${eventPath}.performances[${performanceIndex}]`;
+        const performanceItem = record(performance, performancePath);
+        if (performanceItem.provenance === undefined) return;
+        const provenance = record(
+          performanceItem.provenance,
+          `${performancePath}.provenance`,
+        );
+        delete provenance.excludedEntries;
+        if (Object.keys(provenance).length === 0) {
+          delete performanceItem.provenance;
+        }
+      },
+    );
+  });
+  return protectedEvents;
+}
+
+function referencedSongIds(document, path) {
+  const ids = new Set();
+  array(document, path).forEach((event, eventIndex) => {
+    const item = record(event, `${path}[${eventIndex}]`);
+    array(
+      item.performances ?? [],
+      `${path}[${eventIndex}].performances`,
+    ).forEach((performance, performanceIndex) => {
+      const performancePath = `${path}[${eventIndex}].performances[${performanceIndex}]`;
+      const performanceItem = record(performance, performancePath);
+      array(performanceItem.setlist, `${performancePath}.setlist`).forEach(
+        (entry, entryIndex) => {
+          const entryItem = record(
+            entry,
+            `${performancePath}.setlist[${entryIndex}]`,
+          );
+          ids.add(
+            string(
+              entryItem.songId,
+              `${performancePath}.setlist[${entryIndex}].songId`,
+            ),
+          );
+        },
+      );
+    });
+  });
+  return ids;
+}
+
+function protectedReferencedSongs(document, referencedIds, path) {
+  const found = new Set();
+  const projection = [];
+  array(document, path).forEach((song, index) => {
+    const item = record(song, `${path}[${index}]`);
+    const id = string(item.id, `${path}[${index}].id`);
+    if (!referencedIds.has(id)) return;
+    if (found.has(id))
+      fail(`${path}[${index}].id`, "duplicate referenced song");
+    found.add(id);
+    projection.push(structuredClone(item));
+  });
+  for (const id of referencedIds) {
+    if (!found.has(id)) fail(path, `referenced song ${id} is missing`);
+  }
+  return projection;
+}
+
+function firstProtectedDifference(left, right, path = "$") {
+  if (Object.is(left, right)) return null;
+  if (Array.isArray(left) || Array.isArray(right)) {
+    if (!Array.isArray(left) || !Array.isArray(right)) return path;
+    if (left.length !== right.length) return `${path}.length`;
+    for (let index = 0; index < left.length; index += 1) {
+      const difference = firstProtectedDifference(
+        left[index],
+        right[index],
+        `${path}[${index}]`,
+      );
+      if (difference) return difference;
+    }
+    return null;
+  }
+  const leftIsObject = left !== null && typeof left === "object";
+  const rightIsObject = right !== null && typeof right === "object";
+  if (leftIsObject || rightIsObject) {
+    if (!leftIsObject || !rightIsObject) return path;
+    const leftKeys = Object.keys(left).sort();
+    const rightKeys = Object.keys(right).sort();
+    if (!sameOrderedStrings(leftKeys, rightKeys)) return `${path}.{keys}`;
+    for (const key of leftKeys) {
+      const difference = firstProtectedDifference(
+        left[key],
+        right[key],
+        `${path}.${key}`,
+      );
+      if (difference) return difference;
+    }
+    return null;
+  }
+  return path;
+}
+
 function canonicalEqual(left, right) {
   return canonicalUtf8(left).equals(canonicalUtf8(right));
 }
@@ -1501,14 +1673,20 @@ async function auditHistoricalBaseline(repositoryRoot, receipt, headCommit) {
       );
     }
   }
+  const rootReal = await realpath(repositoryRoot);
   for (const [index, expected] of baseline.sources.entries()) {
+    const fixed = FIXED_SEEDS[index];
+    let historicalSourceBytes;
     try {
-      const bytes = await gitBlob(
+      historicalSourceBytes = await gitBlob(
         repositoryRoot,
         baseline.sourceCommit,
         expected.sourcePath,
       );
-      const observed = deriveHistoricalSourceReceipt(bytes, FIXED_SEEDS[index]);
+      const observed = deriveHistoricalSourceReceipt(
+        historicalSourceBytes,
+        fixed,
+      );
       if (!canonicalEqual(observed, expected)) {
         errors.push(
           `HISTORICAL_SOURCE:${expected.siteId}:constant does not match historical Git blob`,
@@ -1518,6 +1696,73 @@ async function auditHistoricalBaseline(repositoryRoot, receipt, headCommit) {
       errors.push(
         `HISTORICAL_SOURCE:${expected.siteId}:${expected.sourcePath}:${error.message}`,
       );
+      continue;
+    }
+    try {
+      const currentSourceBytes = await readContainedFile(
+        repositoryRoot,
+        rootReal,
+        fixed.sourcePath,
+      );
+      const historicalSource = parseUtf8Json(
+        historicalSourceBytes,
+        `${baseline.sourceCommit}:${fixed.sourcePath}`,
+      );
+      const currentSource = parseUtf8Json(currentSourceBytes, fixed.sourcePath);
+      const sourceDifference = firstProtectedDifference(
+        protectedLiveSourceProjection(
+          historicalSource,
+          `${baseline.sourceCommit}:${fixed.sourcePath}`,
+        ),
+        protectedLiveSourceProjection(currentSource, fixed.sourcePath),
+      );
+      if (sourceDifference) {
+        errors.push(
+          `HISTORICAL_FACT_DRIFT:${fixed.siteId}:live-source:${sourceDifference}`,
+        );
+      }
+
+      const historicalSongIds = referencedSongIds(
+        historicalSource,
+        `${baseline.sourceCommit}:${fixed.sourcePath}`,
+      );
+      const currentSongIds = referencedSongIds(currentSource, fixed.sourcePath);
+      const protectedSongIds = new Set([
+        ...historicalSongIds,
+        ...currentSongIds,
+      ]);
+      const historicalSongsBytes = await gitBlob(
+        repositoryRoot,
+        baseline.sourceCommit,
+        fixed.songsPath,
+      );
+      const currentSongsBytes = await readContainedFile(
+        repositoryRoot,
+        rootReal,
+        fixed.songsPath,
+      );
+      const songDifference = firstProtectedDifference(
+        protectedReferencedSongs(
+          parseUtf8Json(
+            historicalSongsBytes,
+            `${baseline.sourceCommit}:${fixed.songsPath}`,
+          ),
+          protectedSongIds,
+          `${baseline.sourceCommit}:${fixed.songsPath}`,
+        ),
+        protectedReferencedSongs(
+          parseUtf8Json(currentSongsBytes, fixed.songsPath),
+          protectedSongIds,
+          fixed.songsPath,
+        ),
+      );
+      if (songDifference) {
+        errors.push(
+          `HISTORICAL_FACT_DRIFT:${fixed.siteId}:referenced-songs:${songDifference}`,
+        );
+      }
+    } catch (error) {
+      errors.push(`HISTORICAL_FACT_DRIFT:${fixed.siteId}:${error.message}`);
     }
   }
   return errors;
@@ -1607,6 +1852,13 @@ export async function auditWorkspace({
     }
   }
 
+  let authorityContract;
+  try {
+    authorityContract = await loadPublicationAuthorityContract(repositoryRoot);
+  } catch (error) {
+    errors.push(`AUTHORITY_CONTRACT:${error.message}`);
+  }
+
   const documents = new Map();
   for (const seed of receipt.seeds) {
     for (const path of [seed.sourcePath, seed.songsPath]) {
@@ -1633,9 +1885,17 @@ export async function auditWorkspace({
       );
       const document = parseUtf8Json(bytes, evidenceFile.path);
       documents.set(evidenceFile.path, document);
+      if (!authorityContract) throw new Error("authority contract unavailable");
       approvals.set(
         fixed.siteId,
-        validateApproval(document, fixed, seed, auditDate, evidenceFile.path),
+        validateApproval(
+          document,
+          fixed,
+          seed,
+          auditDate,
+          evidenceFile.path,
+          authorityContract,
+        ),
       );
     } catch (error) {
       errors.push(`APPROVAL_SCHEMA:${evidenceFile.path}:${error.message}`);
@@ -1661,7 +1921,13 @@ export async function auditWorkspace({
       if (sourceDocument === undefined)
         throw new Error("live source unavailable");
       if (!songs) throw new Error("songs validation failed");
-      source = validateLiveSource(sourceDocument, seed, songs, auditDate);
+      source = validateLiveSource(
+        sourceDocument,
+        seed,
+        songs,
+        auditDate,
+        authorityContract,
+      );
       if (!sameCounts(source.counts, seed.baselineCounts)) {
         seedErrors.push(
           `BASELINE_DRIFT:${seed.siteId}:expected ${JSON.stringify(seed.baselineCounts)}, observed ${JSON.stringify(source.counts)}`,
@@ -1786,6 +2052,46 @@ async function loadC0BaselineReceipt(repositoryRoot) {
   const baseline = c0Module.ATLAS_C0_BASELINE_RECEIPT;
   c0BaselineCache.set(cacheKey, baseline);
   return baseline;
+}
+
+async function loadPublicationAuthorityContract(repositoryRoot) {
+  const rootReal = await realpath(repositoryRoot);
+  const source = new TextDecoder("utf-8", { fatal: true }).decode(
+    await readContainedFile(
+      repositoryRoot,
+      rootReal,
+      FIXED_AUTHORITY_CONTRACT_PATH,
+    ),
+  );
+  const cacheKey = sha256(Buffer.from(source, "utf8"));
+  if (authorityContractCache.has(cacheKey)) {
+    return authorityContractCache.get(cacheKey);
+  }
+  const authorityContract = await import(
+    dataModule(transpile(source, FIXED_AUTHORITY_CONTRACT_PATH))
+  );
+  for (const exportName of [
+    "ATLAS_PUBLICATION_AUTHORITY_CONTRACT",
+    "isAtlasAuthorityId",
+    "isAtlasGovernancePrincipalId",
+    "isConfiguredAtlasPublicationApprover",
+    "parseAtlasPublicationAuthorityContract",
+  ]) {
+    if (!(exportName in authorityContract)) {
+      fail(FIXED_AUTHORITY_CONTRACT_PATH, `missing export ${exportName}`);
+    }
+  }
+  const parsed = authorityContract.parseAtlasPublicationAuthorityContract(
+    authorityContract.ATLAS_PUBLICATION_AUTHORITY_CONTRACT,
+  );
+  if (!parsed?.ok) {
+    fail(
+      FIXED_AUTHORITY_CONTRACT_PATH,
+      `configured authority contract is invalid: ${parsed?.reason ?? "unknown reason"}`,
+    );
+  }
+  authorityContractCache.set(cacheKey, authorityContract);
+  return authorityContract;
 }
 
 async function loadC0ProjectionParser(repositoryRoot) {
@@ -1988,6 +2294,7 @@ async function atomicWrite(repositoryRoot, artifactPath, bytes) {
     artifactPath,
   );
   await mkdir(dirname(expected), { recursive: true });
+  await validateFixedArtifactChain(repositoryRoot, rootReal);
   const parentReal = await realpath(dirname(expected));
   if (parentReal === rootReal || isOutside(rootReal, parentReal)) {
     fail("artifactPath", "generated directory realpath escapes the repository");
@@ -1995,6 +2302,7 @@ async function atomicWrite(repositoryRoot, artifactPath, bytes) {
   const temporaryPath = `${expected}.tmp-${process.pid}-${randomUUID()}`;
   try {
     await writeFile(temporaryPath, bytes, { flag: "wx" });
+    await validateFixedArtifactChain(repositoryRoot, rootReal);
     await rename(temporaryPath, expected);
   } catch (error) {
     try {

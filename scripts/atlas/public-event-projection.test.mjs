@@ -19,6 +19,8 @@ import {
   DEFAULT_RECEIPT_PATH,
   DEFAULT_REPOSITORY_ROOT,
   FIXED_ARTIFACT_PATH,
+  FIXED_AUTHORITY_CONTRACT_PATH,
+  FIXED_BASELINE_CONTRACT_PATH,
   FIXED_CONTRACT_PATHS,
   FIXED_RECEIPT_PATH,
   FIXED_SEEDS,
@@ -33,11 +35,34 @@ import {
 } from "./public-event-projection.mjs";
 
 const execFileAsync = promisify(execFile);
+const FIXTURE_AUTHORITY_ID = "authority:atlas-fixture";
+const FIXTURE_APPROVER_ID = "principal:atlas-fixture-approver";
+
+function fixtureOwnerId(siteId) {
+  return `principal:fixture-${siteId}-owner`;
+}
 
 async function temporaryRoot(t, prefix) {
   const root = await mkdtemp(join(tmpdir(), prefix));
   t.after(() => rm(root, { recursive: true, force: true }));
   return root;
+}
+
+async function createLinkOrSkip(t, target, path, types) {
+  let lastError;
+  for (const type of types) {
+    try {
+      await symlink(target, path, type);
+      return true;
+    } catch (error) {
+      if (!["EPERM", "EACCES", "UNKNOWN", "EINVAL"].includes(error?.code)) {
+        throw error;
+      }
+      lastError = error;
+    }
+  }
+  t.skip(`filesystem link creation unavailable: ${lastError?.code}`);
+  return false;
 }
 
 async function readJson(path) {
@@ -73,9 +98,10 @@ function approvalFor(fixed, sourceSha256, songsSha256) {
     songsPath: fixed.songsPath,
     songsSha256,
     atlasPublicSeedApproval: "approved",
-    approvalAuthority: "fixture-atlas-governance",
+    approvalAuthorityId: FIXTURE_AUTHORITY_ID,
+    approverId: FIXTURE_APPROVER_ID,
     approvedAt: "2026-07-31T00:00:00.000Z",
-    maintenanceOwner: `fixture-${fixed.siteId}-owner`,
+    maintenanceOwnerId: fixtureOwnerId(fixed.siteId),
     withdrawalState: "active",
   };
 }
@@ -92,7 +118,7 @@ function publicEvidenceFor(event, siteId) {
       onInvalidation: "HOLD",
       onWithdrawal: "HOLD",
     },
-    maintenanceOwner: `fixture-${siteId}-owner`,
+    maintenanceOwnerId: fixtureOwnerId(siteId),
   };
 }
 
@@ -176,6 +202,51 @@ async function writeFixtureBaseline(root, baseline) {
   );
 }
 
+async function writeFixtureAuthority(
+  root,
+  authorities = [
+    {
+      authorityId: FIXTURE_AUTHORITY_ID,
+      approverIds: [FIXTURE_APPROVER_ID],
+    },
+  ],
+) {
+  const contract = {
+    schemaVersion: 1,
+    scope: "atlas-public-seed-approval-authority-v1",
+    authorities,
+  };
+  const source = `
+const AUTHORITY_ID_PATTERN = /^authority:[a-z0-9](?:[a-z0-9._-]{0,62}[a-z0-9])?$/;
+const PRINCIPAL_ID_PATTERN = /^principal:[a-z0-9](?:[a-z0-9._-]{0,62}[a-z0-9])?$/;
+export const ATLAS_PUBLICATION_AUTHORITY_CONTRACT = Object.freeze(${JSON.stringify(contract, null, 2)});
+export function isAtlasAuthorityId(value) {
+  return typeof value === "string" && AUTHORITY_ID_PATTERN.test(value);
+}
+export function isAtlasGovernancePrincipalId(value) {
+  return typeof value === "string" && PRINCIPAL_ID_PATTERN.test(value);
+}
+export function parseAtlasPublicationAuthorityContract(value) {
+  if (value !== ATLAS_PUBLICATION_AUTHORITY_CONTRACT) {
+    return { ok: false, reason: "not the configured fixture contract" };
+  }
+  return { ok: true, value };
+}
+export function isConfiguredAtlasPublicationApprover(authorityId, approverId, maintenanceOwnerId) {
+  return isAtlasAuthorityId(authorityId) &&
+    isAtlasGovernancePrincipalId(approverId) &&
+    isAtlasGovernancePrincipalId(maintenanceOwnerId) &&
+    approverId !== maintenanceOwnerId &&
+    ATLAS_PUBLICATION_AUTHORITY_CONTRACT.authorities.some(
+      (authority) => authority.authorityId === authorityId && authority.approverIds.includes(approverId),
+    );
+}
+`;
+  const path = resolve(root, FIXED_AUTHORITY_CONTRACT_PATH);
+  await mkdir(dirname(path), { recursive: true });
+  await writeFile(path, source.trimStart(), "utf8");
+}
+
 function gateRefs(fixed, events, gateName) {
   const refs = [];
   events.forEach((event, eventIndex) => {
@@ -198,7 +269,7 @@ function gateRefs(fixed, events, gateName) {
       refs.push(`${base}/publicAtlasEvidence/refreshPolicy`);
     }
     if (gateName === "maintenanceOwner") {
-      refs.push(`${base}/publicAtlasEvidence/maintenanceOwner`);
+      refs.push(`${base}/publicAtlasEvidence/maintenanceOwnerId`);
     }
   });
   if (gateName === "sourceUseBoundary") return [`${fixed.approvalPath}#`];
@@ -208,7 +279,7 @@ function gateRefs(fixed, events, gateName) {
     return [...refs, `${fixed.approvalPath}#/withdrawalState`];
   }
   if (gateName === "maintenanceOwner") {
-    return [...refs, `${fixed.approvalPath}#/maintenanceOwner`];
+    return [...refs, `${fixed.approvalPath}#/maintenanceOwnerId`];
   }
   return refs;
 }
@@ -267,7 +338,7 @@ async function commitFixture(
   await updateReceiptHashes(fixture);
 }
 
-async function createGoFixture(t) {
+async function createGoFixture(t, { beforeHistoricalCommit } = {}) {
   const root = await temporaryRoot(t, "atlas-e1-go-");
   await git(root, ["init", "-q"]);
   await git(root, ["config", "user.name", "Atlas Fixture"]);
@@ -298,6 +369,8 @@ async function createGoFixture(t) {
     sourcePaths.push(fixed.sourcePath, fixed.songsPath);
   }
 
+  if (beforeHistoricalCommit) await beforeHistoricalCommit(root);
+
   await git(root, ["add", "--", ...sourcePaths]);
   await git(root, ["commit", "-q", "-m", "fixture historical sources"]);
   const historicalCommit = (
@@ -305,13 +378,14 @@ async function createGoFixture(t) {
   ).stdout.trim();
   const baseline = await createFixtureBaseline(root, historicalCommit);
 
-  for (const contractPath of FIXED_CONTRACT_PATHS.slice(0, -1)) {
+  for (const contractPath of FIXED_CONTRACT_PATHS.slice(0, 4)) {
     await copyRepositoryFile(root, contractPath);
   }
-  await mkdir(dirname(resolve(root, FIXED_CONTRACT_PATHS.at(-1))), {
+  await mkdir(dirname(resolve(root, FIXED_BASELINE_CONTRACT_PATH)), {
     recursive: true,
   });
   await writeFixtureBaseline(root, baseline);
+  await writeFixtureAuthority(root);
   for (const fixed of FIXED_SEEDS) {
     const sourceSha256 = sha256(
       await readFile(resolve(root, fixed.sourcePath)),
@@ -335,7 +409,7 @@ async function createGoFixture(t) {
   await git(root, ["commit", "-q", "-m", "fixture governance evidence"]);
 
   receipt.historicalBaseline = {
-    contractPath: FIXED_CONTRACT_PATHS.at(-1),
+    contractPath: FIXED_BASELINE_CONTRACT_PATH,
     sourceCommit: historicalCommit,
     totals: baseline.totals,
   };
@@ -593,7 +667,7 @@ test("approval site, withdrawal, and owner are committed evidence rather than re
   const ownerMissing = await createGoFixture(t);
   const ownerPath = resolve(ownerMissing.root, FIXED_SEEDS[2].approvalPath);
   const ownerApproval = await readJson(ownerPath);
-  delete ownerApproval.maintenanceOwner;
+  delete ownerApproval.maintenanceOwnerId;
   await writeJson(ownerPath, ownerApproval);
   await commitFixture(ownerMissing, [FIXED_SEEDS[2].approvalPath]);
   const ownerAudit = await auditWorkspace(options(ownerMissing));
@@ -609,7 +683,7 @@ test("governance-closing text, cadence, TTL, and fail-closed actions are semanti
       name: "blank source owner",
       kind: "source",
       mutate: (events) => {
-        events[0].publicAtlasEvidence.maintenanceOwner = "   ";
+        events[0].publicAtlasEvidence.maintenanceOwnerId = "   ";
       },
       errorPrefix: "SOURCE_SCHEMA:",
     },
@@ -617,7 +691,7 @@ test("governance-closing text, cadence, TTL, and fail-closed actions are semanti
       name: "overlong source owner",
       kind: "source",
       mutate: (events) => {
-        events[0].publicAtlasEvidence.maintenanceOwner = "x".repeat(129);
+        events[0].publicAtlasEvidence.maintenanceOwnerId = "x".repeat(129);
       },
       errorPrefix: "SOURCE_SCHEMA:",
     },
@@ -625,7 +699,7 @@ test("governance-closing text, cadence, TTL, and fail-closed actions are semanti
       name: "blank approval owner",
       kind: "approval",
       mutate: (approval) => {
-        approval.maintenanceOwner = " \t ";
+        approval.maintenanceOwnerId = " \t ";
       },
       errorPrefix: "APPROVAL_SCHEMA:",
     },
@@ -633,7 +707,7 @@ test("governance-closing text, cadence, TTL, and fail-closed actions are semanti
       name: "overlong approval owner",
       kind: "approval",
       mutate: (approval) => {
-        approval.maintenanceOwner = "x".repeat(129);
+        approval.maintenanceOwnerId = "x".repeat(129);
       },
       errorPrefix: "APPROVAL_SCHEMA:",
     },
@@ -641,7 +715,7 @@ test("governance-closing text, cadence, TTL, and fail-closed actions are semanti
       name: "blank approval authority",
       kind: "approval",
       mutate: (approval) => {
-        approval.approvalAuthority = "   ";
+        approval.approvalAuthorityId = "   ";
       },
       errorPrefix: "APPROVAL_SCHEMA:",
     },
@@ -649,7 +723,7 @@ test("governance-closing text, cadence, TTL, and fail-closed actions are semanti
       name: "overlong approval authority",
       kind: "approval",
       mutate: (approval) => {
-        approval.approvalAuthority = "x".repeat(129);
+        approval.approvalAuthorityId = "x".repeat(129);
       },
       errorPrefix: "APPROVAL_SCHEMA:",
     },
@@ -758,6 +832,26 @@ test("approval scope and exact source/song identity cannot be replayed or mismat
     ],
     ["songs hash", (approval) => (approval.songsSha256 = "e".repeat(64))],
     ["scope", (approval) => (approval.scope = "atlas-public-seed-v2")],
+    [
+      "unknown authority",
+      (approval) => (approval.approvalAuthorityId = "authority:unknown"),
+    ],
+    [
+      "unknown approver",
+      (approval) => (approval.approverId = "principal:unknown-approver"),
+    ],
+    [
+      "same approver and owner principal",
+      (approval) => (approval.approverId = approval.maintenanceOwnerId),
+    ],
+    [
+      "legacy authority alias",
+      (approval) => (approval.approvalAuthorityId = "fixture-atlas-governance"),
+    ],
+    [
+      "malformed approver alias",
+      (approval) => (approval.approverId = "Fixture Approver"),
+    ],
   ];
   for (const [name, mutate] of cases) {
     const fixture = await createGoFixture(t);
@@ -775,6 +869,24 @@ test("approval scope and exact source/song identity cannot be replayed or mismat
       `${name}: ${audit.errors.join("\n")}`,
     );
   }
+
+  const emptyRoster = await createGoFixture(t);
+  await copyRepositoryFile(emptyRoster.root, FIXED_AUTHORITY_CONTRACT_PATH);
+  await commitFixture(
+    emptyRoster,
+    [FIXED_AUTHORITY_CONTRACT_PATH],
+    "fixed empty authority roster",
+  );
+  const emptyRosterAudit = await auditWorkspace(options(emptyRoster));
+  assert.equal(
+    emptyRosterAudit.errors.some(
+      (error) =>
+        error.startsWith("APPROVAL_SCHEMA:") &&
+        error.includes("fixed publication authority roster"),
+    ),
+    true,
+    emptyRosterAudit.errors.join("\n"),
+  );
 
   const replay = await createGoFixture(t);
   const sourcePath = resolve(replay.root, fixed.sourcePath);
@@ -833,7 +945,7 @@ test("the frozen C0 historical receipt is re-derived from immutable Git blobs", 
   await writeFixtureBaseline(identity.root, identityBaseline);
   await commitFixture(
     identity,
-    [FIXED_CONTRACT_PATHS.at(-1)],
+    [FIXED_BASELINE_CONTRACT_PATH],
     "baseline identity tamper",
   );
   assert.equal(
@@ -852,7 +964,7 @@ test("the frozen C0 historical receipt is re-derived from immutable Git blobs", 
   await writeFixtureBaseline(order.root, orderBaseline);
   await commitFixture(
     order,
-    [FIXED_CONTRACT_PATHS.at(-1)],
+    [FIXED_BASELINE_CONTRACT_PATH],
     "baseline order tamper",
   );
   assert.equal(
@@ -861,6 +973,107 @@ test("the frozen C0 historical receipt is re-derived from immutable Git blobs", 
     ),
     true,
   );
+});
+
+test("count-preserving protected fact drift is compared field-by-field against historical Git blobs", async (t) => {
+  const fixed = FIXED_SEEDS[1];
+  const cases = [
+    {
+      name: "Event ID",
+      repositoryPath: fixed.sourcePath,
+      mutate: (events) => {
+        events[0].id = "changed_event";
+      },
+    },
+    {
+      name: "Performance ID",
+      repositoryPath: fixed.sourcePath,
+      mutate: (events) => {
+        events[0].performances[0].id = "changed_performance";
+      },
+    },
+    {
+      name: "setlist order",
+      repositoryPath: fixed.sourcePath,
+      mutate: (events) => {
+        for (const entry of events[0].performances[0].setlist) entry.order += 1;
+        for (const excluded of events[0].performances[0].provenance
+          .excludedEntries) {
+          if (Object.hasOwn(excluded, "beforeSourceOrder")) {
+            excluded.beforeSourceOrder += 1;
+          }
+        }
+      },
+    },
+    {
+      name: "song ID",
+      repositoryPath: fixed.sourcePath,
+      mutate: (events) => {
+        events[0].performances[0].setlist[0].songId =
+          events[0].performances[0].setlist[1].songId;
+      },
+    },
+    {
+      name: "date",
+      repositoryPath: fixed.sourcePath,
+      mutate: (events) => {
+        events[0].eventEvidence.dates = ["2026-03-31"];
+        for (const performance of events[0].performances) {
+          performance.date = "2026-03-31";
+        }
+      },
+    },
+    {
+      name: "venue",
+      repositoryPath: fixed.sourcePath,
+      mutate: (events) => {
+        events[0].venue = "Changed fixture venue";
+      },
+    },
+    {
+      name: "referenced song canonicalPath",
+      repositoryPath: fixed.songsPath,
+      mutate: (songs) => {
+        const referencedId = "nearly-equal-joy";
+        const song = songs.find(({ id }) => id === referencedId);
+        assert.ok(song, `fixture song ${referencedId} must exist`);
+        song.canonicalPath = "/songs/changed-fixture-path/";
+      },
+    },
+  ];
+
+  for (const testCase of cases) {
+    const fixture = await createGoFixture(t);
+    const path = resolve(fixture.root, testCase.repositoryPath);
+    const document = await readJson(path);
+    testCase.mutate(document);
+    await writeJson(path, document);
+    await commitFixture(
+      fixture,
+      [testCase.repositoryPath],
+      `protected fact drift: ${testCase.name}`,
+    );
+    const audit = await auditWorkspace(options(fixture));
+    assert.equal(
+      audit.errors.some((error) =>
+        error.startsWith(`HISTORICAL_FACT_DRIFT:${fixed.siteId}:`),
+      ),
+      true,
+      `${testCase.name}: ${audit.errors.join("\n")}`,
+    );
+    assert.deepEqual(
+      audit.totals,
+      {
+        events: 4,
+        performances: 6,
+        setlistEntries: 172,
+      },
+      `${testCase.name}: ${audit.errors.join("\n")}`,
+    );
+    const generated = await generateProjection(options(fixture));
+    assert.equal(generated.ok, false, testCase.name);
+    await assert.rejects(readFile(fixture.artifactPath), { code: "ENOENT" });
+  }
 });
 
 test("current and historical receipt commits must belong to the audited HEAD ancestry", async (t) => {
@@ -906,7 +1119,7 @@ test("current and historical receipt commits must belong to the audited HEAD anc
   await writeFixtureBaseline(historical.root, orphanBaseline);
   await commitFixture(
     historical,
-    [FIXED_CONTRACT_PATHS.at(-1)],
+    [FIXED_BASELINE_CONTRACT_PATH],
     "bind orphan historical commit",
   );
   const historicalAudit = await auditWorkspace(options(historical));
@@ -1102,12 +1315,14 @@ test("realpath containment rejects a source symlink escape when the platform per
 });
 
 test("the actual C0 parser rejects whitespace-only text and credential-bearing public URLs", async (t) => {
-  const whitespace = await createGoFixture(t);
-  const whitespacePath = resolve(whitespace.root, FIXED_SEEDS[0].sourcePath);
-  const whitespaceEvents = await readJson(whitespacePath);
-  whitespaceEvents[0].eventName = "   ";
-  await writeJson(whitespacePath, whitespaceEvents);
-  await commitFixture(whitespace, [FIXED_SEEDS[0].sourcePath]);
+  const whitespace = await createGoFixture(t, {
+    beforeHistoricalCommit: async (root) => {
+      const path = resolve(root, FIXED_SEEDS[0].sourcePath);
+      const events = await readJson(path);
+      events[0].eventName = "   ";
+      await writeJson(path, events);
+    },
+  });
   const whitespaceGenerate = await generateProjection(options(whitespace));
   assert.equal(whitespaceGenerate.ok, false);
   assert.equal(
@@ -1117,13 +1332,15 @@ test("the actual C0 parser rejects whitespace-only text and credential-bearing p
     true,
   );
 
-  const credentials = await createGoFixture(t);
-  const credentialPath = resolve(credentials.root, FIXED_SEEDS[1].sourcePath);
-  const credentialEvents = await readJson(credentialPath);
-  credentialEvents[0].performances[0].sourceUrls[0] =
-    "https://user:password@example.com/source";
-  await writeJson(credentialPath, credentialEvents);
-  await commitFixture(credentials, [FIXED_SEEDS[1].sourcePath]);
+  const credentials = await createGoFixture(t, {
+    beforeHistoricalCommit: async (root) => {
+      const path = resolve(root, FIXED_SEEDS[1].sourcePath);
+      const events = await readJson(path);
+      events[0].performances[0].sourceUrls[0] =
+        "https://user:password@example.com/source";
+      await writeJson(path, events);
+    },
+  });
   const credentialGenerate = await generateProjection(options(credentials));
   assert.equal(credentialGenerate.ok, false);
   assert.equal(
@@ -1157,6 +1374,52 @@ test("artifactPath accepts only the exact generated path and never mutates arbit
   }
   assert.equal(await readFile(outsidePath, "utf8"), "outside sentinel");
   assert.equal(await readFile(internalPath, "utf8"), "internal sentinel");
+});
+
+test("an in-repository generated-directory junction or symlink is rejected before sentinel access", async (t) => {
+  const fixture = await createGoFixture(t);
+  const targetDirectory = resolve(fixture.root, "artifact-parent-sentinel");
+  const generatedDirectory = dirname(fixture.artifactPath);
+  const sentinelPath = resolve(
+    targetDirectory,
+    "public-atlas-projection.v1.json",
+  );
+  await mkdir(targetDirectory, { recursive: true });
+  await writeFile(sentinelPath, "parent link sentinel", "utf8");
+  const linked = await createLinkOrSkip(
+    t,
+    targetDirectory,
+    generatedDirectory,
+    process.platform === "win32" ? ["junction", "dir"] : ["dir"],
+  );
+  if (!linked) return;
+
+  const checked = await checkProjection(options(fixture));
+  assert.equal(checked.ok, false);
+  assert.equal(checked.errors[0].startsWith("ARTIFACT_PATH:"), true);
+  const generated = await generateProjection(options(fixture));
+  assert.equal(generated.ok, false);
+  assert.equal(generated.errors[0].startsWith("ARTIFACT_PATH:"), true);
+  assert.equal(await readFile(sentinelPath, "utf8"), "parent link sentinel");
+});
+
+test("an artifact-file symlink is rejected without reading, unlinking, or overwriting its sentinel", async (t) => {
+  const fixture = await createGoFixture(t);
+  const sentinelPath = resolve(fixture.root, "artifact-file-sentinel.json");
+  await mkdir(dirname(fixture.artifactPath), { recursive: true });
+  await writeFile(sentinelPath, "artifact file sentinel", "utf8");
+  const linked = await createLinkOrSkip(t, sentinelPath, fixture.artifactPath, [
+    "file",
+  ]);
+  if (!linked) return;
+
+  const checked = await checkProjection(options(fixture));
+  assert.equal(checked.ok, false);
+  assert.equal(checked.errors[0].startsWith("ARTIFACT_PATH:"), true);
+  const generated = await generateProjection(options(fixture));
+  assert.equal(generated.ok, false);
+  assert.equal(generated.errors[0].startsWith("ARTIFACT_PATH:"), true);
+  assert.equal(await readFile(sentinelPath, "utf8"), "artifact file sentinel");
 });
 
 test("check detects a hand edit and one receipt HOLD invalidates the exact artifact", async (t) => {
