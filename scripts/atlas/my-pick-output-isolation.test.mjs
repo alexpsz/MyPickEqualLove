@@ -95,9 +95,21 @@ test("content scanning rejects Atlas CSS merged into a differently hashed chunk"
       "Atlas Journey or Memory CSS module leaked into _next/static/chunks/app.js",
     ),
   );
+});
+
+test("content scanning distinguishes Atlas UI markers from a build path", async (t) => {
+  const output = await outputFixture(t);
+  const chunk = path.join(output, "_next", "static", "chunks", "app.js");
+  await writeFile(
+    chunk,
+    'const cwd = "/ROOT/.codex/worktrees/atlas-v1-integration/node_modules";',
+  );
+  assert.deepEqual(await inspect(output), []);
+
+  await writeFile(chunk, 'const className = "atlas-shell__brand";');
   assert.ok(
-    violations.includes(
-      "standalone Atlas token leaked into _next/static/chunks/app.js",
+    (await inspect(output)).includes(
+      "Atlas shell or home marker leaked into _next/static/chunks/app.js",
     ),
   );
 });

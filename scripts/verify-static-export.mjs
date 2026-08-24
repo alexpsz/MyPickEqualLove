@@ -67,7 +67,10 @@ const ATLAS_RUNTIME_MARKERS = [
   "public-atlas-projection-v1",
 ];
 const ATLAS_TEXT_PATTERNS = [
-  { label: "standalone Atlas token", pattern: /\batlas\b/i },
+  {
+    label: "Atlas shell or home marker",
+    pattern: /atlas-(?:shell|home)(?:__|\b)/i,
+  },
   { label: "Atlas CSS custom property", pattern: /--atlas-/i },
   {
     label: "Atlas Journey or Memory CSS module",
