@@ -31,6 +31,8 @@ const ALLOWED_ROOT_DIRECTORIES = new Set([
   "src",
 ]);
 
+const ALLOWED_APP_PREFIXES = ["apps/atlas/"];
+
 const ALLOWED_PUBLIC_DOCS = new Set([
   "docs/equal-love-kokuritsu-2026-afterglow-day1.png",
   "docs/equal-love-mypicks-preview.png",
@@ -132,7 +134,10 @@ function validatePath(path, violations) {
         `${path}: root file is not in the public repository allowlist`,
       );
     }
-  } else if (!ALLOWED_ROOT_DIRECTORIES.has(root)) {
+  } else if (
+    !ALLOWED_ROOT_DIRECTORIES.has(root) &&
+    !ALLOWED_APP_PREFIXES.some((prefix) => path.startsWith(prefix))
+  ) {
     violations.push(
       `${path}: top-level directory ${root}/ is not public-allowlisted`,
     );

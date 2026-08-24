@@ -2,6 +2,9 @@
   "name": "mypickequallove",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "apps/atlas"
+  ],
   "engines": {
     "node": ">=20.9.0"
   },
@@ -11,13 +14,17 @@
     "dev:equal-love": "node scripts/run-project-command.mjs equal-love dev",
     "dev:nearly-equal-joy": "node scripts/run-project-command.mjs nearly-equal-joy dev",
     "dev:not-equal-me": "node scripts/run-project-command.mjs not-equal-me dev",
+    "dev:atlas": "npm run dev --workspace @mypick/atlas",
     "build": "node scripts/clean-static-export.mjs && next build && node scripts/copy-public-assets.mjs && npm run generate:service-worker",
     "build:equal-love": "node scripts/run-project-command.mjs equal-love build",
     "build:nearly-equal-joy": "node scripts/run-project-command.mjs nearly-equal-joy build",
     "build:not-equal-me": "node scripts/run-project-command.mjs not-equal-me build",
+    "build:atlas": "npm run build --workspace @mypick/atlas",
     "start": "node scripts/run-project-command.mjs serve",
     "lint": "eslint src scripts next.config.ts eslint.config.mjs postcss.config.mjs",
+    "lint:atlas": "npm run lint --workspace @mypick/atlas",
     "typecheck": "tsc --noEmit --incremental false",
+    "typecheck:atlas": "npm run typecheck --workspace @mypick/atlas",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "sync:data": "python scripts/sync-project-discography.py --project equal-love && npm run generate:share-validation",
@@ -74,7 +81,9 @@
     "test:keyboard-shortcuts": "node scripts/run-ts-tests.mjs keyboard-shortcuts",
     "test:onboarding": "node scripts/run-ts-tests.mjs onboarding",
     "test:command-palette-ui": "node scripts/test-command-palette-ui.mjs",
-    "test:install-prompt": "node scripts/test-install-prompt.mjs"
+    "test:install-prompt": "node scripts/test-install-prompt.mjs",
+    "test:atlas": "npm run test --workspace @mypick/atlas",
+    "verify:atlas": "npm run verify --workspace @mypick/atlas"
   },
   "dependencies": {
     "html2canvas": "^1.4.1",
