@@ -11,6 +11,7 @@ export interface ShellMessages {
   languageName: string;
   navigation: {
     label: string;
+    skipToMain: string;
     home: string;
     journey: string;
     localEvent: string;
@@ -52,6 +53,7 @@ export const SHELL_MESSAGES: Record<ShellLocale, ShellMessages> = {
     languageName: "简体中文",
     navigation: {
       label: "Atlas 导航",
+      skipToMain: "跳到主要内容",
       home: "首页",
       journey: "我的 Journey",
       localEvent: "本地自定义记录",
@@ -101,6 +103,7 @@ export const SHELL_MESSAGES: Record<ShellLocale, ShellMessages> = {
     languageName: "English",
     navigation: {
       label: "Atlas navigation",
+      skipToMain: "Skip to main content",
       home: "Home",
       journey: "My Journey",
       localEvent: "Local custom event",
@@ -152,6 +155,7 @@ export const SHELL_MESSAGES: Record<ShellLocale, ShellMessages> = {
     languageName: "日本語",
     navigation: {
       label: "Atlas ナビゲーション",
+      skipToMain: "メインコンテンツへ移動",
       home: "ホーム",
       journey: "わたしの Journey",
       localEvent: "ローカルのカスタム記録",
@@ -203,6 +207,7 @@ export const SHELL_MESSAGES: Record<ShellLocale, ShellMessages> = {
     languageName: "한국어",
     navigation: {
       label: "Atlas 탐색",
+      skipToMain: "본문으로 건너뛰기",
       home: "홈",
       journey: "나의 Journey",
       localEvent: "로컬 맞춤 기록",

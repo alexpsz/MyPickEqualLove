@@ -7,6 +7,7 @@
   --atlas-border: #cbd7e6;
   --atlas-accent: #3559c7;
   --atlas-accent-strong: #233b92;
+  --atlas-on-accent: #ffffff;
   --atlas-focus: #d36914;
   --atlas-shadow: 0 20px 60px rgb(30 51 91 / 12%);
   background: var(--atlas-background);
@@ -31,6 +32,7 @@
   --atlas-border: #3a4d70;
   --atlas-accent: #9eb6ff;
   --atlas-accent-strong: #d4e0ff;
+  --atlas-on-accent: #172033;
   --atlas-focus: #ffd27d;
   --atlas-shadow: 0 20px 60px rgb(0 0 0 / 28%);
   color-scheme: dark;
@@ -128,7 +130,7 @@ select:focus-visible,
   place-items: center;
   border-radius: 0.65rem 0.65rem 0.65rem 0.15rem;
   background: var(--atlas-accent);
-  color: #ffffff;
+  color: var(--atlas-on-accent);
   font-family: Georgia, "Times New Roman", serif;
   font-size: 1.2rem;
 }
@@ -311,7 +313,7 @@ select:focus-visible,
   border-radius: 0.8rem;
   background: var(--atlas-accent);
   box-shadow: var(--atlas-shadow);
-  color: #ffffff;
+  color: var(--atlas-on-accent);
   padding: 0.95rem 1.1rem;
   font-weight: 800;
   line-height: 1.3;

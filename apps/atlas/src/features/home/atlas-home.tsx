@@ -1,6 +1,7 @@
 "use client";
 
 import { useShell } from "@/i18n/shell/shell-context";
+import { SHELL_ROUTES } from "@/i18n/shell/shell-routes";
 
 export function AtlasHome() {
   const { messages } = useShell();
@@ -14,7 +15,7 @@ export function AtlasHome() {
         <a
           aria-describedby="atlas-home-action-hint"
           className="atlas-home__primary-action"
-          href="#local-custom-event"
+          href={SHELL_ROUTES.localEvent}
         >
           {messages.home.primaryAction}
           <span aria-hidden="true">→</span>

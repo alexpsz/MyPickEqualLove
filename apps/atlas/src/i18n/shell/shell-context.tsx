@@ -10,18 +10,18 @@ import {
   type ReactNode,
 } from "react";
 
-import { SHELL_LOCALES, SHELL_MESSAGES, type ShellLocale } from "./messages";
+import { SHELL_MESSAGES, type ShellLocale } from "./messages";
+import {
+  DEFAULT_SHELL_PREFERENCES,
+  resolveShellPreferences,
+  SHELL_PREFERENCES_STORAGE_KEY,
+  type ShellPreferences,
+  type ShellTheme,
+} from "./shell-preferences";
 
-const SHELL_PREFERENCES_STORAGE_KEY = "atlas.shell.preferences.v1";
+export type { ShellPreferences, ShellTheme } from "./shell-preferences";
 
-type ShellTheme = "light" | "dark";
-
-interface ShellPreferences {
-  locale: ShellLocale;
-  theme: ShellTheme;
-}
-
-interface ShellContextValue {
+export interface ShellContextValue {
   locale: ShellLocale;
   messages: (typeof SHELL_MESSAGES)[ShellLocale];
   setLocale: (locale: ShellLocale) => void;
@@ -29,73 +29,23 @@ interface ShellContextValue {
   toggleTheme: () => void;
 }
 
-const SERVER_PREFERENCES: ShellPreferences = {
-  locale: "en",
-  theme: "light",
-};
-
 let browserPreferences: ShellPreferences | null = null;
 
 const ShellContext = createContext<ShellContextValue | null>(null);
 
-function isShellLocale(value: string | undefined): value is ShellLocale {
-  return SHELL_LOCALES.includes(value as ShellLocale);
-}
-
-function isShellTheme(value: string | undefined): value is ShellTheme {
-  return value === "light" || value === "dark";
-}
-
-function resolveBrowserLocale(): ShellLocale {
-  const browserLocales = navigator.languages.length
-    ? navigator.languages
-    : [navigator.language];
-
-  for (const browserLocale of browserLocales) {
-    if (isShellLocale(browserLocale)) {
-      return browserLocale;
-    }
-
-    if (browserLocale.toLowerCase().startsWith("zh")) {
-      return "zh-CN";
-    }
-
-    if (browserLocale.toLowerCase().startsWith("ja")) {
-      return "ja";
-    }
-
-    if (browserLocale.toLowerCase().startsWith("ko")) {
-      return "ko";
-    }
-  }
-
-  return "en";
-}
-
-function readStoredPreferences(): Partial<ShellPreferences> | null {
+function readStoredPreferences(): string | null {
   try {
-    const storedValue = window.localStorage.getItem(
-      SHELL_PREFERENCES_STORAGE_KEY,
-    );
-
-    if (!storedValue) {
-      return null;
-    }
-
-    const parsedValue: unknown = JSON.parse(storedValue);
-    if (typeof parsedValue !== "object" || parsedValue === null) {
-      return null;
-    }
-
-    const preferences = parsedValue as Partial<ShellPreferences>;
-    return {
-      locale: isShellLocale(preferences.locale)
-        ? preferences.locale
-        : undefined,
-      theme: isShellTheme(preferences.theme) ? preferences.theme : undefined,
-    };
+    return window.localStorage.getItem(SHELL_PREFERENCES_STORAGE_KEY);
   } catch {
     return null;
+  }
+}
+
+function resolveSystemPrefersDark(): boolean {
+  try {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches;
+  } catch {
+    return false;
   }
 }
 
@@ -104,23 +54,26 @@ function getBrowserPreferences(): ShellPreferences {
     return browserPreferences;
   }
 
-  const storedPreferences = readStoredPreferences();
-  browserPreferences = {
-    locale: storedPreferences?.locale ?? resolveBrowserLocale(),
-    theme:
-      storedPreferences?.theme ??
-      (window.matchMedia("(prefers-color-scheme: dark)").matches
-        ? "dark"
-        : "light"),
-  };
+  browserPreferences = resolveShellPreferences({
+    browserLanguage: navigator.language,
+    browserLocales: navigator.languages,
+    prefersDark: resolveSystemPrefersDark(),
+    storedValue: readStoredPreferences(),
+  });
   return browserPreferences;
+}
+
+function getServerPreferences(): ShellPreferences {
+  return DEFAULT_SHELL_PREFERENCES;
 }
 
 function subscribeToBrowserPreferences() {
   return () => {};
 }
 
-function writeStoredPreferences(preferences: ShellPreferences) {
+function persistPreferences(preferences: ShellPreferences) {
+  browserPreferences = preferences;
+
   try {
     window.localStorage.setItem(
       SHELL_PREFERENCES_STORAGE_KEY,
@@ -135,7 +88,7 @@ export function ShellProvider({ children }: { children: ReactNode }) {
   const initialPreferences = useSyncExternalStore(
     subscribeToBrowserPreferences,
     getBrowserPreferences,
-    () => SERVER_PREFERENCES,
+    getServerPreferences,
   );
   const [overrides, setOverrides] = useState<Partial<ShellPreferences>>({});
   const locale = overrides.locale ?? initialPreferences.locale;
@@ -152,20 +105,21 @@ export function ShellProvider({ children }: { children: ReactNode }) {
       locale,
       messages: SHELL_MESSAGES[locale],
       setLocale: (nextLocale) => {
-        setOverrides((currentOverrides) => ({
-          ...currentOverrides,
+        const nextPreferences: ShellPreferences = {
           locale: nextLocale,
-        }));
-        writeStoredPreferences({ locale: nextLocale, theme });
+          theme,
+        };
+        setOverrides(nextPreferences);
+        persistPreferences(nextPreferences);
       },
       theme,
       toggleTheme: () => {
-        const nextTheme = theme === "light" ? "dark" : "light";
-        setOverrides((currentOverrides) => ({
-          ...currentOverrides,
-          theme: nextTheme,
-        }));
-        writeStoredPreferences({ locale, theme: nextTheme });
+        const nextPreferences: ShellPreferences = {
+          locale,
+          theme: theme === "light" ? "dark" : "light",
+        };
+        setOverrides(nextPreferences);
+        persistPreferences(nextPreferences);
       },
     }),
     [locale, theme],
