@@ -10,7 +10,7 @@
     "lint": "eslint src next.config.ts eslint.config.mjs",
     "typecheck": "tsc --noEmit --incremental false",
     "test": "node --test scripts/foundation.test.mjs scripts/contracts.test.mjs",
-    "build": "next build",
+    "build": "next build --webpack",
     "verify:static-export": "node scripts/verify-static-export.mjs",
     "verify": "npm run lint && npm run typecheck && npm test && npm run build && npm run verify:static-export"
   },

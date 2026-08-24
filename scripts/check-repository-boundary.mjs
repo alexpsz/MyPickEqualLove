@@ -34,6 +34,12 @@ const ALLOWED_ROOT_DIRECTORIES = new Set([
 
 const ALLOWED_APP_PREFIXES = ["apps/atlas/"];
 
+const ALLOWED_ATLAS_PRODUCT_MEMORY_PREFIXES = [
+  "apps/atlas/src/app/memory/",
+  "apps/atlas/src/components/memory/",
+  "apps/atlas/src/i18n/memory/",
+];
+
 const ALLOWED_PUBLIC_DOCS = new Set([
   "docs/equal-love-kokuritsu-2026-afterglow-day1.png",
   "docs/equal-love-mypicks-preview.png",
@@ -123,8 +129,16 @@ export function validateRepositoryPath(repositoryPath) {
     return violations;
   }
 
-  const blockedDirectorySegment = directorySegments.find((segment) =>
-    BLOCKED_DIRECTORY_SEGMENTS.has(segment),
+  const atlasProductMemoryPrefix = ALLOWED_ATLAS_PRODUCT_MEMORY_PREFIXES.find(
+    (prefix) => path.startsWith(prefix),
+  );
+  const atlasProductMemorySegmentIndex = atlasProductMemoryPrefix
+    ? atlasProductMemoryPrefix.slice(0, -1).split("/").length - 1
+    : -1;
+  const blockedDirectorySegment = directorySegments.find(
+    (segment, index) =>
+      BLOCKED_DIRECTORY_SEGMENTS.has(segment) &&
+      !(segment === "memory" && index === atlasProductMemorySegmentIndex),
   );
   if (blockedDirectorySegment) {
     violations.push(

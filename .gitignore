@@ -37,6 +37,9 @@
 /apps/atlas/**/internal/
 /apps/atlas/**/memory/
 /apps/atlas/**/memories/
+!/apps/atlas/src/app/memory/
+!/apps/atlas/src/components/memory/
+!/apps/atlas/src/i18n/memory/
 /apps/atlas/**/.vercel/
 /apps/atlas/**/.wrangler/
 /apps/atlas/**/.env

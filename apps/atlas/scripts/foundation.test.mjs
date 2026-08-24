@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import {
   mkdirSync,
   mkdtempSync,
@@ -6,6 +7,7 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -19,9 +21,35 @@ import { validateRepositoryPath } from "../../../scripts/check-repository-bounda
 const SCRIPT_DIRECTORY = path.dirname(fileURLToPath(import.meta.url));
 const ATLAS_ROOT = path.resolve(SCRIPT_DIRECTORY, "..");
 const REPOSITORY_ROOT = path.resolve(ATLAS_ROOT, "..", "..");
+const require = createRequire(import.meta.url);
+const typescript = require("typescript");
 
 function readJson(filePath) {
   return JSON.parse(readFileSync(filePath, "utf8"));
+}
+
+async function loadAtlasNextConfig() {
+  const source = readFileSync(path.join(ATLAS_ROOT, "next.config.ts"), "utf8");
+  const compiled = typescript.transpileModule(source, {
+    fileName: "next.config.ts",
+    compilerOptions: {
+      module: typescript.ModuleKind.ES2022,
+      target: typescript.ScriptTarget.ES2022,
+    },
+  }).outputText;
+  const moduleUrl = `data:text/javascript;base64,${Buffer.from(compiled).toString("base64")}`;
+  return (await import(moduleUrl)).default;
+}
+
+function isIgnoredByGit(repositoryPath) {
+  const result = spawnSync(
+    "git",
+    ["check-ignore", "-q", "--no-index", "--", repositoryPath],
+    { cwd: REPOSITORY_ROOT, encoding: "utf8" },
+  );
+  if (result.status === 0) return true;
+  if (result.status === 1) return false;
+  throw new Error(result.stderr || result.stdout || "git check-ignore failed");
 }
 
 function withExportFixture(run) {
@@ -102,6 +130,8 @@ test("Atlas is a private workspace with independent quality commands", () => {
     assert.equal(typeof atlasPackage.scripts[command], "string");
   }
 
+  assert.equal(atlasPackage.scripts.build, "next build --webpack");
+
   for (const dependency of ["next", "react", "react-dom"]) {
     assert.equal(
       atlasPackage.dependencies[dependency],
@@ -110,15 +140,32 @@ test("Atlas is a private workspace with independent quality commands", () => {
   }
 });
 
-test("Atlas keeps its static-export contract local", () => {
+test("Atlas keeps its static-export contract local", async () => {
   const nextConfig = readFileSync(
     path.join(ATLAS_ROOT, "next.config.ts"),
     "utf8",
   );
+  const executableConfig = await loadAtlasNextConfig();
   const rootTsconfig = readJson(path.join(REPOSITORY_ROOT, "tsconfig.json"));
 
   assert.match(nextConfig, /output:\s*["']export["']/);
   assert.match(nextConfig, /unoptimized:\s*true/);
+  assert.equal(executableConfig.output, "export");
+  assert.equal(executableConfig.images.unoptimized, true);
+
+  const sentinelAlias = { sentinel: "preserved" };
+  const webpackConfig = {
+    resolve: {
+      alias: sentinelAlias,
+      extensionAlias: { ".css": [".css"] },
+    },
+  };
+  assert.equal(executableConfig.webpack(webpackConfig), webpackConfig);
+  assert.equal(webpackConfig.resolve.alias, sentinelAlias);
+  assert.deepEqual(webpackConfig.resolve.extensionAlias, {
+    ".css": [".css"],
+    ".js": [".ts", ".tsx", ".js"],
+  });
   assert.ok(rootTsconfig.exclude.includes("apps/atlas"));
 });
 
@@ -127,7 +174,11 @@ test("the repository boundary rejects local-only paths at any depth", () => {
     ".env.example",
     ".gitignore",
     "apps/atlas/src/app/page.tsx",
+    "apps/atlas/src/app/memory/page.tsx",
+    "apps/atlas/src/components/memory/MemoryPage.tsx",
+    "apps/atlas/src/i18n/memory/messages.ts",
     "apps\\atlas\\src\\app\\page.tsx",
+    "apps\\atlas\\src\\app\\memory\\page.tsx",
   ]) {
     assert.deepEqual(validateRepositoryPath(allowedPath), [], allowedPath);
   }
@@ -148,6 +199,12 @@ test("the repository boundary rejects local-only paths at any depth", () => {
     ["apps/atlas/src/.InTeRnAl/private.txt", ".internal/"],
     ["apps/atlas/src/InTeRnAl/private.txt", "internal/"],
     ["apps/atlas/src/MeMoRy/private.txt", "memory/"],
+    ["apps/atlas/src/share/memory/private.txt", "memory/"],
+    ["apps/atlas/src/app/MeMoRy/private.txt", "memory/"],
+    ["apps/atlas/src/app/memory/nested/memory/private.txt", "memory/"],
+    ["apps/atlas/src/app/memory/internal/private.txt", "internal/"],
+    ["apps/atlas/src/components/memory/.codex/private.txt", ".codex/"],
+    ["apps/atlas/src/i18n/memory/memories/private.txt", "memories/"],
     ["apps/atlas/src/MeMoRiEs/private.txt", "memories/"],
     ["apps/atlas/src/.VeRcEl/private.txt", ".vercel/"],
     ["apps/atlas/src/.WrAnGlEr/private.txt", ".wrangler/"],
@@ -163,6 +220,26 @@ test("the repository boundary rejects local-only paths at any depth", () => {
       violations[0].includes(expectedReason),
       `${repositoryPath}: ${violations[0]}`,
     );
+  }
+});
+
+test("gitignore exposes only the reviewed Atlas product memory trees", () => {
+  for (const publicProductPath of [
+    "apps/atlas/src/app/memory/page.tsx",
+    "apps/atlas/src/components/memory/MemoryPage.tsx",
+    "apps/atlas/src/i18n/memory/messages.ts",
+  ]) {
+    assert.equal(isIgnoredByGit(publicProductPath), false, publicProductPath);
+  }
+
+  for (const localOnlyPath of [
+    "apps/atlas/src/share/memory/private.txt",
+    "apps/atlas/src/app/memory/nested/memory/private.txt",
+    "apps/atlas/src/app/memory/internal/private.txt",
+    "apps/atlas/src/components/memory/.codex/private.txt",
+    "apps/atlas/src/i18n/memory/memories/private.txt",
+  ]) {
+    assert.equal(isIgnoredByGit(localOnlyPath), true, localOnlyPath);
   }
 });
 
