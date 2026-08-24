@@ -21,6 +21,11 @@ import type { JourneyRevisionExpectation } from "../ports/journey-repository.js"
 
 export const ATLAS_BACKUP_PRODUCT_FAMILY_SITE_ID = "atlas" as const;
 export const ATLAS_BACKUP_SCHEMA_VERSION = 1 as const;
+/**
+ * Atlas-only import ceiling. U2 may use this against File.size before File.text(),
+ * but the codec enforces it again for every raw string it receives.
+ */
+export const ATLAS_BACKUP_MAX_BYTES = 8 * 1024 * 1024;
 
 export interface AtlasBackupEnvelopeV1 {
   readonly productFamilySiteId: typeof ATLAS_BACKUP_PRODUCT_FAMILY_SITE_ID;
@@ -58,8 +63,8 @@ export type AtlasBackupParseResult =
     };
 
 export interface AtlasBackupImportLimits {
+  /** A caller may request a lower import ceiling, but never raise the hard cap. */
   readonly maximumBytes: number;
-  readonly availableBytes: number;
 }
 
 export type AtlasBackupImportInput =
@@ -74,7 +79,7 @@ export type AtlasBackupPreflightResult =
   | {
       readonly status: "ready";
       readonly raw: string;
-      readonly byteLength: number;
+      readonly importByteLength: number;
       readonly backup: AtlasBackupEnvelopeV1;
     }
   | {
@@ -85,39 +90,41 @@ export type AtlasBackupPreflightResult =
   | {
       readonly status: "oversize";
       readonly raw: string;
-      readonly byteLength: number;
-      readonly maximumBytes: number;
-      readonly issue: ContractIssue;
-    }
-  | {
-      readonly status: "capacity-failed";
-      readonly raw: string;
-      readonly byteLength: number;
-      readonly availableBytes: number;
+      /** Lower bound only: counting stops as soon as the effective cap is exceeded. */
+      readonly minimumImportByteLength: number;
+      readonly importHardCapBytes: typeof ATLAS_BACKUP_MAX_BYTES;
+      readonly effectiveMaximumBytes: number;
       readonly issue: ContractIssue;
     }
   | {
       readonly status: "corrupt";
       readonly raw: string;
-      readonly byteLength: number;
+      readonly importByteLength: number;
       readonly issue: ContractIssue;
     }
   | {
       readonly status: "future-version";
       readonly raw: string;
-      readonly byteLength: number;
+      readonly importByteLength: number;
       readonly version: number;
       readonly issue: ContractIssue;
     }
   | {
       readonly status: "invalid";
       readonly raw: string | null;
-      readonly byteLength: number | null;
+      readonly importByteLength: number | null;
       readonly issue: ContractIssue;
     };
 
+export type AtlasBackupPreflightFailure = Exclude<
+  AtlasBackupPreflightResult,
+  { readonly status: "ready" }
+>;
+
 export interface AtlasBackupRestoreTransaction {
   readonly expectedRevision: JourneyRevisionExpectation;
+  /** Capacity for the canonical Journey replacement, never the import envelope. */
+  readonly availableBytes: number;
 }
 
 export interface AtlasBackupDryRunInput {
@@ -131,18 +138,22 @@ export type AtlasBackupDryRunResult =
   | {
       readonly status: "ready";
       readonly raw: string;
-      readonly byteLength: number;
+      readonly importByteLength: number;
+      readonly replacementByteLength: number;
       readonly backup: AtlasBackupEnvelopeV1;
       readonly applyPlan: JourneyReplaceApplyPlan;
     }
+  | (AtlasBackupPreflightFailure & { readonly applyPlan: null })
   | {
-      readonly status:
-        | "cancelled"
-        | "oversize"
-        | "capacity-failed"
-        | "corrupt"
-        | "future-version"
-        | "invalid";
+      readonly status: "capacity-failed";
+      readonly raw: string;
+      readonly replacementByteLength: number;
+      readonly availableBytes: number;
+      readonly issue: ContractIssue;
+      readonly applyPlan: null;
+    }
+  | {
+      readonly status: "invalid";
       readonly raw: string | null;
       readonly issue: ContractIssue;
       readonly applyPlan: null;
@@ -173,6 +184,19 @@ function rawForDiagnostic(value: unknown): string | null {
   }
 }
 
+function requireExportedAtAtOrAfterJourney(
+  exportedAt: string,
+  journey: JourneyDocumentV1,
+) {
+  if (exportedAt < journey.updatedAt) {
+    throw new ContractValidationError(
+      "$.exportedAt",
+      "exportedAt cannot precede Journey updatedAt",
+    );
+  }
+  return exportedAt;
+}
+
 function parseAtlasBackupEnvelopeValue(value: unknown): AtlasBackupEnvelopeV1 {
   const record = expectRecord(value, "$");
   expectExactKeys(record, "$", [
@@ -181,6 +205,7 @@ function parseAtlasBackupEnvelopeValue(value: unknown): AtlasBackupEnvelopeV1 {
     "exportedAt",
     "journey",
   ]);
+  const journey = parseJourneyDocumentValue(record.journey);
   return {
     productFamilySiteId: expectLiteral(
       record.productFamilySiteId,
@@ -190,8 +215,11 @@ function parseAtlasBackupEnvelopeValue(value: unknown): AtlasBackupEnvelopeV1 {
     schemaVersion: expectLiteral(record.schemaVersion, "$.schemaVersion", [
       ATLAS_BACKUP_SCHEMA_VERSION,
     ]),
-    exportedAt: expectIsoTimestamp(record.exportedAt, "$.exportedAt"),
-    journey: parseJourneyDocumentValue(record.journey),
+    exportedAt: requireExportedAtAtOrAfterJourney(
+      expectIsoTimestamp(record.exportedAt, "$.exportedAt"),
+      journey,
+    ),
+    journey,
   };
 }
 
@@ -235,11 +263,16 @@ export function parseAtlasBackup(raw: string): AtlasBackupParseResult {
 export function encodeAtlasBackup(input: AtlasBackupEncodeInput): string {
   const record = expectRecord(input, "$");
   expectExactKeys(record, "$", ["exportedAt", "journey"]);
+  const journey = parseJourneyDocumentValue(record.journey);
+  const exportedAt = requireExportedAtAtOrAfterJourney(
+    expectIsoTimestamp(record.exportedAt, "$.exportedAt"),
+    journey,
+  );
   const raw = JSON.stringify({
     productFamilySiteId: ATLAS_BACKUP_PRODUCT_FAMILY_SITE_ID,
     schemaVersion: ATLAS_BACKUP_SCHEMA_VERSION,
-    exportedAt: expectIsoTimestamp(record.exportedAt, "$.exportedAt"),
-    journey: parseJourneyDocumentValue(record.journey),
+    exportedAt,
+    journey,
   });
   const verification = parseAtlasBackup(raw);
   if (verification.status !== "valid") {
@@ -253,26 +286,76 @@ export function encodeAtlasBackup(input: AtlasBackupEncodeInput): string {
 
 function parseImportLimits(value: unknown): AtlasBackupImportLimits {
   const record = expectRecord(value, "$.limits");
-  expectExactKeys(record, "$.limits", ["maximumBytes", "availableBytes"]);
+  expectExactKeys(record, "$.limits", ["maximumBytes"]);
   return {
     maximumBytes: expectInteger(record.maximumBytes, "$.limits.maximumBytes", {
       min: 0,
     }),
-    availableBytes: expectInteger(
-      record.availableBytes,
-      "$.limits.availableBytes",
-      { min: 0 },
-    ),
   };
 }
 
-/** Uses UTF-8 bytes rather than JavaScript string length. */
+interface Utf8ByteCount {
+  readonly byteLength: number;
+  readonly exceeded: boolean;
+}
+
+/** Counts UTF-8 bytes without allocating a same-sized Uint8Array. */
+function countUtf8BytesAtMost(
+  value: string,
+  maximumBytes: number,
+): Utf8ByteCount {
+  let byteLength = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    const codeUnit = value.charCodeAt(index);
+    if (codeUnit <= 0x7f) {
+      byteLength += 1;
+    } else if (codeUnit <= 0x7ff) {
+      byteLength += 2;
+    } else if (
+      codeUnit >= 0xd800 &&
+      codeUnit <= 0xdbff &&
+      index + 1 < value.length &&
+      value.charCodeAt(index + 1) >= 0xdc00 &&
+      value.charCodeAt(index + 1) <= 0xdfff
+    ) {
+      byteLength += 4;
+      index += 1;
+    } else {
+      // A lone surrogate serializes as U+FFFD, which is three bytes.
+      byteLength += 3;
+    }
+    if (byteLength > maximumBytes) {
+      return { byteLength, exceeded: true };
+    }
+  }
+  return { byteLength, exceeded: false };
+}
+
+/** Uses UTF-8 bytes rather than JavaScript string length or a large buffer. */
 export function utf8ByteLength(value: string): number {
-  return new TextEncoder().encode(value).byteLength;
+  return countUtf8BytesAtMost(value, Number.MAX_SAFE_INTEGER).byteLength;
+}
+
+function oversizeImportResult(
+  raw: string,
+  minimumImportByteLength: number,
+  effectiveMaximumBytes: number,
+): Extract<AtlasBackupPreflightResult, { readonly status: "oversize" }> {
+  return {
+    status: "oversize",
+    raw,
+    minimumImportByteLength,
+    importHardCapBytes: ATLAS_BACKUP_MAX_BYTES,
+    effectiveMaximumBytes,
+    issue: {
+      path: "$.raw",
+      message: "backup exceeds the effective import UTF-8 byte limit",
+    },
+  };
 }
 
 /**
- * Performs the import capacity gate before parsing the backup JSON. It cannot
+ * Performs the non-bypassable import hard-cap gate before parsing backup JSON. It cannot
  * create an apply plan or write personal state.
  */
 export function preflightAtlasBackupImport(
@@ -295,31 +378,28 @@ export function preflightAtlasBackupImport(
       min: 0,
       max: Number.MAX_SAFE_INTEGER,
     });
-    const limits = parseImportLimits(record.limits);
-    const byteLength = utf8ByteLength(selectedRaw);
-    if (byteLength > limits.maximumBytes) {
-      return {
-        status: "oversize",
-        raw: selectedRaw,
-        byteLength,
-        maximumBytes: limits.maximumBytes,
-        issue: {
-          path: "$.raw",
-          message: "backup exceeds the configured UTF-8 byte limit",
-        },
-      };
+    if (selectedRaw.length > ATLAS_BACKUP_MAX_BYTES) {
+      return oversizeImportResult(
+        selectedRaw,
+        selectedRaw.length,
+        ATLAS_BACKUP_MAX_BYTES,
+      );
     }
-    if (byteLength > limits.availableBytes) {
-      return {
-        status: "capacity-failed",
-        raw: selectedRaw,
-        byteLength,
-        availableBytes: limits.availableBytes,
-        issue: {
-          path: "$.raw",
-          message: "backup exceeds the available UTF-8 byte capacity",
-        },
-      };
+    const limits = parseImportLimits(record.limits);
+    const effectiveMaximumBytes = Math.min(
+      limits.maximumBytes,
+      ATLAS_BACKUP_MAX_BYTES,
+    );
+    const importBytes = countUtf8BytesAtMost(
+      selectedRaw,
+      effectiveMaximumBytes,
+    );
+    if (importBytes.exceeded) {
+      return oversizeImportResult(
+        selectedRaw,
+        importBytes.byteLength,
+        effectiveMaximumBytes,
+      );
     }
 
     const parsed = parseAtlasBackup(selectedRaw);
@@ -327,7 +407,7 @@ export function preflightAtlasBackupImport(
       return {
         status: "ready",
         raw: selectedRaw,
-        byteLength,
+        importByteLength: importBytes.byteLength,
         backup: parsed.value,
       };
     }
@@ -335,7 +415,7 @@ export function preflightAtlasBackupImport(
       return {
         status: "future-version",
         raw: selectedRaw,
-        byteLength,
+        importByteLength: importBytes.byteLength,
         version: parsed.version,
         issue: parsed.issue,
       };
@@ -344,21 +424,24 @@ export function preflightAtlasBackupImport(
       return {
         status: "corrupt",
         raw: selectedRaw,
-        byteLength,
+        importByteLength: importBytes.byteLength,
         issue: parsed.issue,
       };
     }
     return {
       status: "invalid",
       raw: selectedRaw,
-      byteLength,
+      importByteLength: importBytes.byteLength,
       issue: parsed.issue,
     };
   } catch (error) {
     return {
       status: "invalid",
       raw,
-      byteLength: raw === null ? null : utf8ByteLength(raw),
+      importByteLength:
+        raw === null || raw.length > ATLAS_BACKUP_MAX_BYTES
+          ? null
+          : utf8ByteLength(raw),
       issue: issueFrom(error),
     };
   }
@@ -368,7 +451,15 @@ function parseRestoreTransaction(
   value: unknown,
 ): AtlasBackupRestoreTransaction {
   const record = expectRecord(value, "$.transaction");
-  expectExactKeys(record, "$.transaction", ["expectedRevision"]);
+  expectExactKeys(record, "$.transaction", [
+    "expectedRevision",
+    "availableBytes",
+  ]);
+  const availableBytes = expectInteger(
+    record.availableBytes,
+    "$.transaction.availableBytes",
+    { min: 0 },
+  );
   const expectedRecord = expectRecord(
     record.expectedRevision,
     "$.transaction.expectedRevision",
@@ -382,7 +473,7 @@ function parseRestoreTransaction(
     expectExactKeys(expectedRecord, "$.transaction.expectedRevision", [
       "state",
     ]);
-    return { expectedRevision: { state } };
+    return { expectedRevision: { state }, availableBytes };
   }
   expectExactKeys(expectedRecord, "$.transaction.expectedRevision", [
     "state",
@@ -397,20 +488,18 @@ function parseRestoreTransaction(
         { min: 0 },
       ),
     },
+    availableBytes,
   };
 }
 
-type AtlasBackupDryRunFailureStatus = Exclude<
-  AtlasBackupDryRunResult["status"],
-  "ready"
->;
+function withNoApplyPlan<T extends AtlasBackupPreflightFailure>(
+  failure: T,
+): T & { readonly applyPlan: null } {
+  return { ...failure, applyPlan: null };
+}
 
-function dryRunFailure(
-  status: AtlasBackupDryRunFailureStatus,
-  raw: string | null,
-  issue: ContractIssue,
-): AtlasBackupDryRunResult {
-  return { status, raw, issue, applyPlan: null };
+function invalidDryRunFailure(raw: string | null, issue: ContractIssue) {
+  return { status: "invalid" as const, raw, issue, applyPlan: null };
 }
 
 /**
@@ -432,7 +521,7 @@ export function dryRunAtlasBackupRestore(
     expectExactKeys(record, "$", ["import", "current", "now", "transaction"]);
     const preflight = preflightAtlasBackupImport(record.import);
     if (preflight.status !== "ready") {
-      return dryRunFailure(preflight.status, preflight.raw, preflight.issue);
+      return withNoApplyPlan(preflight);
     }
 
     const current =
@@ -441,12 +530,13 @@ export function dryRunAtlasBackupRestore(
         : parseJourneyDocumentValue(record.current);
     const now = expectIsoTimestamp(record.now, "$.now");
     if (
+      now < preflight.backup.exportedAt ||
       now < preflight.backup.journey.updatedAt ||
       (current !== null && now < current.updatedAt)
     ) {
       throw new ContractValidationError(
         "$.now",
-        "restore time cannot precede the current or imported Journey timestamp",
+        "restore time cannot precede the backup export, current, or imported Journey timestamp",
       );
     }
     const transaction = parseRestoreTransaction(record.transaction);
@@ -471,7 +561,7 @@ export function dryRunAtlasBackupRestore(
       replacement,
     });
     if (planned.status !== "ready") {
-      return dryRunFailure("invalid", preflight.raw, {
+      return invalidDryRunFailure(preflight.raw, {
         path: "$.transaction.expectedRevision",
         message:
           planned.status === "invalid"
@@ -479,14 +569,30 @@ export function dryRunAtlasBackupRestore(
             : "restore plan rejected a validated backup input",
       });
     }
+    const replacementByteLength = utf8ByteLength(JSON.stringify(replacement));
+    if (replacementByteLength > transaction.availableBytes) {
+      return {
+        status: "capacity-failed",
+        raw: preflight.raw,
+        replacementByteLength,
+        availableBytes: transaction.availableBytes,
+        issue: {
+          path: "$.transaction.availableBytes",
+          message:
+            "canonical Journey replacement exceeds the available storage capacity",
+        },
+        applyPlan: null,
+      };
+    }
     return {
       status: "ready",
       raw: preflight.raw,
-      byteLength: preflight.byteLength,
+      importByteLength: preflight.importByteLength,
+      replacementByteLength,
       backup: preflight.backup,
       applyPlan: planned.applyPlan,
     };
   } catch (error) {
-    return dryRunFailure("invalid", inputRaw, issueFrom(error));
+    return invalidDryRunFailure(inputRaw, issueFrom(error));
   }
 }

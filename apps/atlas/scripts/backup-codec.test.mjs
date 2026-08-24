@@ -114,14 +114,11 @@ function encodedBackup(journey = journeyDocument()) {
   return backup.encodeAtlasBackup({ exportedAt: EXPORTED_AT, journey });
 }
 
-function selected(raw, limits = {}) {
+function selected(raw, maximumBytes = backup.ATLAS_BACKUP_MAX_BYTES) {
   return {
     status: "selected",
     raw,
-    limits: {
-      maximumBytes: limits.maximumBytes ?? 1_000_000,
-      availableBytes: limits.availableBytes ?? 1_000_000,
-    },
+    limits: { maximumBytes },
   };
 }
 
@@ -132,13 +129,14 @@ function dryRunInput({
   expectedRevision = current === null
     ? { state: "absent" }
     : { state: "present", revision: current.revision },
-  limits,
+  maximumBytes = backup.ATLAS_BACKUP_MAX_BYTES,
+  availableBytes = 1_000_000,
 } = {}) {
   return {
-    import: selected(raw, limits),
+    import: selected(raw, maximumBytes),
     current,
     now,
-    transaction: { expectedRevision },
+    transaction: { expectedRevision, availableBytes },
   };
 }
 
@@ -175,6 +173,24 @@ test("encode is stable and re-verifies the C0 Journey shape", () => {
       }),
     /unknown field/,
   );
+});
+
+test("exportedAt cannot precede the complete Journey timestamp", () => {
+  const earlyExportedAt = "2026-06-21T09:59:59.999Z";
+  assert.throws(
+    () =>
+      backup.encodeAtlasBackup({
+        exportedAt: earlyExportedAt,
+        journey: journeyDocument(),
+      }),
+    /exportedAt cannot precede Journey updatedAt/,
+  );
+
+  const raw = JSON.parse(encodedBackup());
+  raw.exportedAt = earlyExportedAt;
+  const parsed = backup.parseAtlasBackup(JSON.stringify(raw));
+  assert.equal(parsed.status, "invalid");
+  assert.equal(parsed.issue.path, "$.exportedAt");
 });
 
 test("envelope keys are exact and cross-product backups fail closed", () => {
@@ -224,28 +240,96 @@ test("UTF-8 preflight uses byte length, not JavaScript string length", () => {
   const raw = "あ";
   assert.equal(raw.length, 1);
   assert.equal(backup.utf8ByteLength(raw), 3);
-  const exactlyFits = backup.preflightAtlasBackupImport(
-    selected(raw, { maximumBytes: 3, availableBytes: 3 }),
-  );
+  const exactlyFits = backup.preflightAtlasBackupImport(selected(raw, 3));
   assert.equal(exactlyFits.status, "corrupt");
-  assert.equal(exactlyFits.byteLength, 3);
+  assert.equal(exactlyFits.importByteLength, 3);
 
-  const oversize = backup.preflightAtlasBackupImport(
-    selected(raw, { maximumBytes: 2, availableBytes: 3 }),
-  );
+  const oversize = backup.preflightAtlasBackupImport(selected(raw, 2));
   assert.deepEqual(oversize, {
     status: "oversize",
     raw,
-    byteLength: 3,
-    maximumBytes: 2,
+    minimumImportByteLength: 3,
+    importHardCapBytes: backup.ATLAS_BACKUP_MAX_BYTES,
+    effectiveMaximumBytes: 2,
     issue: {
       path: "$.raw",
-      message: "backup exceeds the configured UTF-8 byte limit",
+      message: "backup exceeds the effective import UTF-8 byte limit",
     },
   });
 });
 
-test("cancellation and capacity failure never produce an apply plan", () => {
+test("ASCII import hard-cap boundary cannot be raised by a caller", () => {
+  const atHardCap = "a".repeat(backup.ATLAS_BACKUP_MAX_BYTES);
+  const exactBoundary = backup.preflightAtlasBackupImport(
+    selected(atHardCap, Number.MAX_SAFE_INTEGER),
+  );
+  assert.equal(exactBoundary.status, "corrupt");
+  assert.equal(exactBoundary.importByteLength, backup.ATLAS_BACKUP_MAX_BYTES);
+
+  const beyondHardCap = backup.preflightAtlasBackupImport(
+    selected(`${atHardCap}a`, Number.MAX_SAFE_INTEGER),
+  );
+  assert.equal(beyondHardCap.status, "oversize");
+  assert.equal(
+    beyondHardCap.minimumImportByteLength,
+    backup.ATLAS_BACKUP_MAX_BYTES + 1,
+  );
+  assert.equal(beyondHardCap.importHardCapBytes, backup.ATLAS_BACKUP_MAX_BYTES);
+  assert.equal(
+    beyondHardCap.effectiveMaximumBytes,
+    backup.ATLAS_BACKUP_MAX_BYTES,
+  );
+});
+
+test("multibyte import hard-cap boundary is counted without a UTF-8 buffer", () => {
+  const exactBoundary = `${"あ".repeat(
+    Math.floor(backup.ATLAS_BACKUP_MAX_BYTES / 3),
+  )}aa`;
+  assert.equal(
+    backup.utf8ByteLength(exactBoundary),
+    backup.ATLAS_BACKUP_MAX_BYTES,
+  );
+  assert.equal(
+    backup.preflightAtlasBackupImport(
+      selected(exactBoundary, Number.MAX_SAFE_INTEGER),
+    ).status,
+    "corrupt",
+  );
+
+  const beyondHardCap = backup.preflightAtlasBackupImport(
+    selected(`${exactBoundary}あ`, Number.MAX_SAFE_INTEGER),
+  );
+  assert.equal(beyondHardCap.status, "oversize");
+  assert.equal(
+    beyondHardCap.minimumImportByteLength,
+    backup.ATLAS_BACKUP_MAX_BYTES + 3,
+  );
+});
+
+test("surrogate-pair import hard-cap boundary is counted without a UTF-8 buffer", () => {
+  const exactBoundary = "😀".repeat(backup.ATLAS_BACKUP_MAX_BYTES / 4);
+  assert.equal(
+    backup.utf8ByteLength(exactBoundary),
+    backup.ATLAS_BACKUP_MAX_BYTES,
+  );
+  assert.equal(
+    backup.preflightAtlasBackupImport(
+      selected(exactBoundary, Number.MAX_SAFE_INTEGER),
+    ).status,
+    "corrupt",
+  );
+
+  const beyondHardCap = backup.preflightAtlasBackupImport(
+    selected(`${exactBoundary}😀`, Number.MAX_SAFE_INTEGER),
+  );
+  assert.equal(beyondHardCap.status, "oversize");
+  assert.equal(
+    beyondHardCap.minimumImportByteLength,
+    backup.ATLAS_BACKUP_MAX_BYTES + 4,
+  );
+});
+
+test("cancellation, import oversize, and replacement capacity failure never produce an apply plan", () => {
   const raw = encodedBackup();
   const current = journeyDocument();
   const currentBefore = structuredClone(current);
@@ -260,10 +344,7 @@ test("cancellation and capacity failure never produce an apply plan", () => {
     dryRunInput({
       current,
       raw,
-      limits: {
-        maximumBytes: backup.utf8ByteLength(raw) - 1,
-        availableBytes: 1_000_000,
-      },
+      maximumBytes: backup.utf8ByteLength(raw) - 1,
     }),
   );
   assert.equal(oversize.status, "oversize");
@@ -273,14 +354,13 @@ test("cancellation and capacity failure never produce an apply plan", () => {
     dryRunInput({
       current,
       raw,
-      limits: {
-        maximumBytes: backup.utf8ByteLength(raw),
-        availableBytes: backup.utf8ByteLength(raw) - 1,
-      },
+      availableBytes: 0,
     }),
   );
   assert.equal(capacity.status, "capacity-failed");
   assert.equal(capacity.applyPlan, null);
+  assert.equal(capacity.replacementByteLength > 0, true);
+  assert.equal(capacity.availableBytes, 0);
   assert.deepEqual(current, currentBefore);
 });
 
@@ -313,6 +393,96 @@ test("a restore to a present document rebases revision continuously", () => {
   assert.equal(result.applyPlan.replacement.revision, 8);
 });
 
+test("storage capacity is measured from the canonical replacement, not envelope overhead", () => {
+  const prettyRaw = JSON.stringify(JSON.parse(encodedBackup()), null, 2);
+  const raw = `${" ".repeat(1024 * 1024)}${prettyRaw}`;
+  const unbounded = backup.dryRunAtlasBackupRestore(
+    dryRunInput({ raw, availableBytes: 1_000_000 }),
+  );
+
+  assert.equal(unbounded.status, "ready");
+  assert.equal(
+    backup.utf8ByteLength(raw) > unbounded.replacementByteLength,
+    true,
+  );
+  const exactReplacementCapacity = backup.dryRunAtlasBackupRestore(
+    dryRunInput({
+      raw,
+      availableBytes: unbounded.replacementByteLength,
+    }),
+  );
+  assert.equal(exactReplacementCapacity.status, "ready");
+  assert.equal(
+    exactReplacementCapacity.replacementByteLength,
+    unbounded.replacementByteLength,
+  );
+});
+
+test("replacement capacity failure returns replacement bytes and no apply plan", () => {
+  const raw = encodedBackup();
+  const ready = backup.dryRunAtlasBackupRestore(
+    dryRunInput({ raw, availableBytes: 1_000_000 }),
+  );
+  assert.equal(ready.status, "ready");
+
+  const rejected = backup.dryRunAtlasBackupRestore(
+    dryRunInput({
+      raw,
+      availableBytes: ready.replacementByteLength - 1,
+    }),
+  );
+  assert.deepEqual(rejected, {
+    status: "capacity-failed",
+    raw,
+    replacementByteLength: ready.replacementByteLength,
+    availableBytes: ready.replacementByteLength - 1,
+    issue: {
+      path: "$.transaction.availableBytes",
+      message:
+        "canonical Journey replacement exceeds the available storage capacity",
+    },
+    applyPlan: null,
+  });
+});
+
+test("revision digit changes are included in the replacement capacity threshold", () => {
+  const raw = encodedBackup(journeyDocument({ revision: 0 }));
+  const revisionNine = backup.dryRunAtlasBackupRestore(
+    dryRunInput({
+      raw,
+      current: journeyDocument({ revision: 8 }),
+      availableBytes: 1_000_000,
+    }),
+  );
+  const revisionTen = backup.dryRunAtlasBackupRestore(
+    dryRunInput({
+      raw,
+      current: journeyDocument({ revision: 9 }),
+      availableBytes: 1_000_000,
+    }),
+  );
+  assert.equal(revisionNine.status, "ready");
+  assert.equal(revisionTen.status, "ready");
+  assert.equal(
+    revisionTen.replacementByteLength,
+    revisionNine.replacementByteLength + 1,
+  );
+
+  const rejected = backup.dryRunAtlasBackupRestore(
+    dryRunInput({
+      raw,
+      current: journeyDocument({ revision: 9 }),
+      availableBytes: revisionTen.replacementByteLength - 1,
+    }),
+  );
+  assert.equal(rejected.status, "capacity-failed");
+  assert.equal(
+    rejected.replacementByteLength,
+    revisionTen.replacementByteLength,
+  );
+  assert.equal(rejected.applyPlan, null);
+});
+
 test("old, high, and equal imported revisions never alter the next revision", () => {
   for (const importedRevision of [0, 7, 999]) {
     const result = backup.dryRunAtlasBackupRestore(
@@ -334,6 +504,16 @@ test("transaction revision mismatch fails closed without an apply plan", () => {
   assert.equal(result.status, "invalid");
   assert.equal(result.applyPlan, null);
   assert.equal(result.issue.path, "$.transaction.expectedRevision");
+});
+
+test("dry-run rejects a restore time before the backup export", () => {
+  const result = backup.dryRunAtlasBackupRestore(
+    dryRunInput({ now: "2026-08-25T01:02:03.455Z" }),
+  );
+
+  assert.equal(result.status, "invalid");
+  assert.equal(result.applyPlan, null);
+  assert.equal(result.issue.path, "$.now");
 });
 
 test("dry-run summary reports Journey and experience adds, updates, deletes, and unchanged", () => {
@@ -450,6 +630,8 @@ test("backup codec has no Storage/window access and keeps dry-run inputs pure", 
     codecSource,
     /\b(?:window|localStorage|sessionStorage|Storage)\b/,
   );
+  assert.doesNotMatch(codecSource, /\bTextEncoder\b/);
+  assert.doesNotMatch(codecSource, /\.encode\s*\(/);
 
   const raw = encodedBackup();
   const current = journeyDocument();
