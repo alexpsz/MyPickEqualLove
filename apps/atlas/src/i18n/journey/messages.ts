@@ -103,9 +103,6 @@ const en = {
     "The replacement needs {required} bytes, but the repository-owned capacity check allows {available}. Nothing was applied.",
   estimateUnavailable:
     "The repository-owned replacement-capacity check is unavailable, so this import cannot proceed safely.",
-  restoreCapacityPendingTitle: "Backup import is temporarily unavailable",
-  restoreCapacityPendingBody:
-    "Atlas is waiting for the repository-owned replacement-capacity check. Export remains available; no import file will be read or applied.",
   restoreUnexpected:
     "The restore operation stopped unexpectedly: {error}. The plan was discarded; reload stored data before retrying.",
   restoreReading: "Reading and validating the selected backup…",
@@ -239,9 +236,6 @@ const zhCN: JourneyMessages = {
   importCapacity:
     "替换需要 {required} 字节，但仓储层容量检查仅允许 {available} 字节。未应用任何数据。",
   estimateUnavailable: "仓储层的替换容量检查不可用，因此不能安全继续导入。",
-  restoreCapacityPendingTitle: "备份导入暂不可用",
-  restoreCapacityPendingBody:
-    "Atlas 正在等待由仓储层提供的替换容量检查。仍可导出；不会读取或应用导入文件。",
   restoreUnexpected:
     "恢复操作意外停止：{error}。计划已丢弃，请重新读取存储数据后再试。",
   restoreReading: "正在读取并严格校验所选备份…",
@@ -380,9 +374,6 @@ const ja: JourneyMessages = {
     "置換には {required} バイト必要ですが、リポジトリの容量チェックでは {available} バイトまでです。適用していません。",
   estimateUnavailable:
     "リポジトリの置換容量チェックを利用できないため、安全に読み込みを続けられません。",
-  restoreCapacityPendingTitle: "バックアップの読み込みは一時停止中です",
-  restoreCapacityPendingBody:
-    "リポジトリが提供する置換容量チェックを待っています。書き出しは利用できますが、読み込みファイルは読み取りも適用もしません。",
   restoreUnexpected:
     "復元処理が予期せず停止しました：{error}。プランは破棄されました。保存データを再読込してからやり直してください。",
   restoreReading: "選択したバックアップを読み込み、厳密に検証しています…",
@@ -523,9 +514,6 @@ const ko: JourneyMessages = {
     "교체에 {required}바이트가 필요하지만 저장소 계층 용량 검사는 {available}바이트만 허용합니다. 적용하지 않았습니다.",
   estimateUnavailable:
     "저장소 계층의 교체 용량 검사를 사용할 수 없어 안전하게 가져올 수 없습니다.",
-  restoreCapacityPendingTitle: "백업 가져오기를 일시적으로 사용할 수 없습니다",
-  restoreCapacityPendingBody:
-    "저장소 계층이 제공할 교체 용량 검사를 기다리고 있습니다. 내보내기는 가능하지만 가져오기 파일은 읽거나 적용하지 않습니다.",
   restoreUnexpected:
     "복원이 예기치 않게 중단되었습니다: {error}. 계획을 폐기했으니 저장 데이터를 다시 읽은 뒤 재시도하세요.",
   restoreReading: "선택한 백업을 읽고 엄격하게 검증하는 중…",

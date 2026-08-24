@@ -239,6 +239,14 @@ function backupFile(raw, size = renderBackup.utf8ByteLength(raw)) {
   };
 }
 
+function deferred() {
+  let resolvePromise;
+  const promise = new Promise((resolveValue) => {
+    resolvePromise = resolveValue;
+  });
+  return { promise, resolve: resolvePromise };
+}
+
 function encodedReplacementBackup() {
   return renderBackup.encodeAtlasBackup({
     exportedAt: "2026-08-25T03:00:00.000Z",
@@ -301,6 +309,7 @@ function createRestoreHarness({ current = localJourney(), repository } = {}) {
       state = nextState;
     },
   });
+  let disconnect = workflow.connect();
   return {
     activeRepository,
     committedReads,
@@ -315,6 +324,12 @@ function createRestoreHarness({ current = localJourney(), repository } = {}) {
     },
     setVisibleDocument(next) {
       visibleDocument = next;
+    },
+    cleanup() {
+      disconnect();
+    },
+    setup() {
+      disconnect = workflow.connect();
     },
     workflow,
   };
@@ -540,6 +555,22 @@ test("four Journey catalogs are exact, non-empty, and placeholder-compatible", (
   const locales = ["zh-CN", "en", "ja", "ko"];
   const englishKeys = Object.keys(messages.JOURNEY_MESSAGES.en).sort();
   for (const locale of locales) {
+    assert.equal(
+      Object.hasOwn(
+        messages.JOURNEY_MESSAGES[locale],
+        "restoreCapacityPendingTitle",
+      ),
+      false,
+      `${locale} retains obsolete restoreCapacityPendingTitle`,
+    );
+    assert.equal(
+      Object.hasOwn(
+        messages.JOURNEY_MESSAGES[locale],
+        "restoreCapacityPendingBody",
+      ),
+      false,
+      `${locale} retains obsolete restoreCapacityPendingBody`,
+    );
     assert.deepEqual(
       Object.keys(messages.JOURNEY_MESSAGES[locale]).sort(),
       englishKeys,
@@ -767,7 +798,7 @@ test("restore workflow rejects cancelled, invalid, future, corrupt, and oversize
   assert.equal(applyCalls, 0);
 });
 
-test("component disposal invalidates an in-flight file read before planning", async () => {
+test("effect cleanup invalidates an in-flight file read before planning", async () => {
   let releaseFile;
   let preflightCalls = 0;
   const repository = {
@@ -790,11 +821,152 @@ test("component disposal invalidates an in-flight file read before planning", as
         releaseFile = resolveText;
       }),
   });
-  harness.workflow.dispose();
+  harness.cleanup();
   releaseFile(encodedReplacementBackup());
   await selection;
   assert.equal(preflightCalls, 0);
   assert.equal(await harness.workflow.apply(), "ignored");
+  assert.equal(harness.committedReads.length, 0);
+  assert.equal(harness.focusRequests, 0);
+});
+
+test("Strict Effects setup-cleanup-setup reconnects the same workflow instance", async () => {
+  const harness = createRestoreHarness();
+  harness.cleanup();
+  harness.setup();
+
+  await harness.workflow.selectFile(backupFile(encodedReplacementBackup()));
+  assert.equal(harness.state.status, "review");
+  assert.equal(harness.state.session.eligibility.status, "eligible");
+  assert.equal(harness.committedReads.length, 0);
+});
+
+test("a file text ticket from the first effect setup cannot publish after reconnect", async () => {
+  const oldText = deferred();
+  const harness = createRestoreHarness();
+  const oldSelection = harness.workflow.selectFile({
+    size: 1,
+    text: () => oldText.promise,
+  });
+
+  harness.cleanup();
+  harness.setup();
+  await harness.workflow.selectFile(backupFile(encodedReplacementBackup()));
+  const reconnectedReview = harness.state;
+  assert.equal(reconnectedReview.status, "review");
+
+  oldText.resolve("{");
+  await oldSelection;
+  assert.strictEqual(harness.state, reconnectedReview);
+  assert.equal(harness.committedReads.length, 0);
+  assert.equal(harness.focusRequests, 0);
+});
+
+test("an eligibility ticket from the first effect setup cannot publish after reconnect", async () => {
+  const oldEligibility = deferred();
+  const firstEligibilityStarted = deferred();
+  let preflightCalls = 0;
+  const repository = {
+    async read() {
+      throw new Error("eligibility-only test must not read");
+    },
+    async preflightReplaceEligibility({ plan }) {
+      preflightCalls += 1;
+      if (preflightCalls === 1) {
+        firstEligibilityStarted.resolve();
+        return oldEligibility.promise;
+      }
+      const raw = JSON.stringify(plan.replacement);
+      return {
+        status: "eligible",
+        storageCapacity: "unknown",
+        replacementByteLength: renderBackup.utf8ByteLength(raw),
+        requiredStorageUnits: Math.max(
+          raw.length,
+          renderBackup.utf8ByteLength(raw),
+        ),
+      };
+    },
+    async applyReplacePlan() {
+      throw new Error("eligibility-only test must not apply");
+    },
+  };
+  const harness = createRestoreHarness({ repository });
+  const oldSelection = harness.workflow.selectFile(
+    backupFile(encodedReplacementBackup()),
+  );
+  await firstEligibilityStarted.promise;
+
+  harness.cleanup();
+  harness.setup();
+  await harness.workflow.selectFile(backupFile(encodedReplacementBackup()));
+  const reconnectedReview = harness.state;
+  assert.equal(reconnectedReview.status, "review");
+
+  oldEligibility.resolve({
+    status: "ineligible",
+    storageCapacity: "unknown",
+    reason: "replacement-exceeds-authoritative-limit",
+    replacementByteLength: renderBackup.ATLAS_BACKUP_MAX_BYTES + 1,
+    requiredStorageUnits: renderBackup.ATLAS_BACKUP_MAX_BYTES + 1,
+    error: "stale eligibility result",
+  });
+  await oldSelection;
+  assert.strictEqual(harness.state, reconnectedReview);
+  assert.equal(harness.focusRequests, 0);
+  assert.equal(harness.committedReads.length, 0);
+});
+
+test("an apply ticket from the first effect setup cannot hand off after reconnect", async () => {
+  const oldApply = deferred();
+  const firstApplyStarted = deferred();
+  let oldPlan = null;
+  let readCalls = 0;
+  const repository = {
+    async read() {
+      readCalls += 1;
+      throw new Error("stale committed apply must not trigger reread");
+    },
+    async preflightReplaceEligibility({ plan }) {
+      const raw = JSON.stringify(plan.replacement);
+      return {
+        status: "eligible",
+        storageCapacity: "unknown",
+        replacementByteLength: renderBackup.utf8ByteLength(raw),
+        requiredStorageUnits: Math.max(
+          raw.length,
+          renderBackup.utf8ByteLength(raw),
+        ),
+      };
+    },
+    async applyReplacePlan(plan) {
+      oldPlan = plan;
+      firstApplyStarted.resolve();
+      return oldApply.promise;
+    },
+  };
+  const harness = createRestoreHarness({ repository });
+  await harness.workflow.selectFile(backupFile(encodedReplacementBackup()));
+  const oldApplication = harness.workflow.apply();
+  await firstApplyStarted.promise;
+
+  harness.cleanup();
+  harness.setup();
+  await harness.workflow.selectFile(backupFile(encodedReplacementBackup()));
+  const reconnectedReview = harness.state;
+  assert.equal(reconnectedReview.status, "review");
+
+  oldApply.resolve({
+    status: "committed",
+    readback: {
+      status: "valid",
+      raw: JSON.stringify(oldPlan.replacement),
+      value: oldPlan.replacement,
+    },
+  });
+  assert.equal(await oldApplication, "ignored");
+  assert.strictEqual(harness.state, reconnectedReview);
+  assert.equal(readCalls, 0);
   assert.equal(harness.committedReads.length, 0);
   assert.equal(harness.focusRequests, 0);
 });
@@ -1015,7 +1187,12 @@ test("restore component uses authoritative P2/P1 gates and resets the real picke
   assert.match(source, /applyReplacePlan/);
   assert.match(source, /event\.currentTarget\.value = ""/);
   assert.match(source, /onRestoreCommitted/);
-  assert.doesNotMatch(source, /restoreCapacityPendingTitle/);
+  assert.match(source, /const disconnect = workflow\.connect\(\)/);
+  assert.doesNotMatch(source, /workflow\.dispose\(\)/);
+  assert.doesNotMatch(
+    source,
+    /restoreCapacityPendingTitle|restoreCapacityPendingBody/,
+  );
   assert.doesNotMatch(
     Object.values(messages.JOURNEY_MESSAGES.en).join("\n"),
     /\bREADY\b|capacity verified/i,

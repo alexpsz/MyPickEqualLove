@@ -172,34 +172,66 @@ function rereadMatchesCommitted(
 export function createJourneyBackupWorkflow(
   dependencies: JourneyBackupWorkflowDependencies,
 ) {
-  let active = true;
+  let connectionGeneration = 0;
+  let activeConnection: number | null = null;
   let operation = 0;
   let state = IDLE_RESTORE_STATE;
 
-  function publish(next: JourneyBackupWorkflowState) {
+  function publish(
+    next: JourneyBackupWorkflowState,
+    connection = activeConnection,
+  ) {
+    if (connection === null || activeConnection !== connection) return false;
     state = next;
-    if (active) dependencies.onStateChange(next);
+    dependencies.onStateChange(next);
+    return true;
   }
 
-  function settle(feedback: RestoreFeedback | null, focus = true) {
-    publish({ status: "idle", feedback, session: null });
-    if (focus && active) dependencies.onFocusRequest();
+  function settle(
+    feedback: RestoreFeedback | null,
+    focus = true,
+    connection = activeConnection,
+  ) {
+    if (publish({ status: "idle", feedback, session: null }, connection)) {
+      if (focus) dependencies.onFocusRequest();
+    }
+  }
+
+  function isCurrent(connection: number, ticket: number) {
+    return activeConnection === connection && operation === ticket;
+  }
+
+  function connect() {
+    const connection = ++connectionGeneration;
+    activeConnection = connection;
+    operation += 1;
+    state = IDLE_RESTORE_STATE;
+    dependencies.onStateChange(IDLE_RESTORE_STATE);
+    return () => {
+      if (activeConnection !== connection) return;
+      activeConnection = null;
+      operation += 1;
+      state = IDLE_RESTORE_STATE;
+    };
   }
 
   function beginPicker() {
+    if (activeConnection === null) return;
     operation += 1;
     publish(IDLE_RESTORE_STATE);
   }
 
   async function selectFile(file: JourneyBackupFile | null) {
+    const connection = activeConnection;
+    if (connection === null) return;
     const ticket = ++operation;
-    publish({ status: "reading", feedback: null, session: null });
+    publish({ status: "reading", feedback: null, session: null }, connection);
     if (file === null) {
-      settle(null, false);
+      settle(null, false, connection);
       return;
     }
     if (file.size > ATLAS_BACKUP_MAX_BYTES) {
-      settle({ status: "oversize" });
+      settle({ status: "oversize" }, true, connection);
       return;
     }
 
@@ -208,8 +240,7 @@ export function createJourneyBackupWorkflow(
     try {
       const raw = await file.text();
       if (
-        !active ||
-        ticket !== operation ||
+        !isCurrent(connection, ticket) ||
         binding !== documentBinding(dependencies.getCurrent())
       ) {
         return;
@@ -228,7 +259,7 @@ export function createJourneyBackupWorkflow(
         },
       });
       if (dryRun.status !== "ready") {
-        settle(feedbackForDryRun(dryRun));
+        settle(feedbackForDryRun(dryRun), true, connection);
         return;
       }
 
@@ -236,53 +267,78 @@ export function createJourneyBackupWorkflow(
         .getRepository()
         .preflightReplaceEligibility({ plan: dryRun.applyPlan });
       if (
-        !active ||
-        ticket !== operation ||
+        !isCurrent(connection, ticket) ||
         binding !== documentBinding(dependencies.getCurrent())
       ) {
         return;
       }
       if (eligibility.status === "eligible") {
-        publish({
-          status: "review",
-          feedback: null,
-          session: { binding, dryRun, eligibility },
-        });
+        publish(
+          {
+            status: "review",
+            feedback: null,
+            session: { binding, dryRun, eligibility },
+          },
+          connection,
+        );
         return;
       }
       if (eligibility.status === "ineligible") {
-        settle({
-          status: "ineligible",
-          required: eligibility.requiredStorageUnits,
-        });
+        settle(
+          {
+            status: "ineligible",
+            required: eligibility.requiredStorageUnits,
+          },
+          true,
+          connection,
+        );
         return;
       }
-      settle({ status: "eligibility-error", error: eligibility.error });
+      settle(
+        { status: "eligibility-error", error: eligibility.error },
+        true,
+        connection,
+      );
     } catch (error) {
-      if (active && ticket === operation) {
-        settle({ status: "unexpected", error: describeError(error) });
+      if (isCurrent(connection, ticket)) {
+        settle(
+          { status: "unexpected", error: describeError(error) },
+          true,
+          connection,
+        );
       }
     }
   }
 
   function discard() {
+    const connection = activeConnection;
+    if (connection === null) return;
     operation += 1;
-    settle(null);
+    settle(null, true, connection);
   }
 
   function invalidateForCurrentChange() {
+    const connection = activeConnection;
+    if (connection === null) return;
     const hadActiveRestore = state.status !== "idle";
     operation += 1;
-    settle(hadActiveRestore ? { status: "stale" } : null, hadActiveRestore);
+    settle(
+      hadActiveRestore ? { status: "stale" } : null,
+      hadActiveRestore,
+      connection,
+    );
   }
 
   async function apply() {
-    if (!active || state.status !== "review") return "ignored" as const;
+    const connection = activeConnection;
+    if (connection === null || state.status !== "review") {
+      return "ignored" as const;
+    }
     const session = state.session;
     const ticket = ++operation;
-    publish({ status: "applying", feedback: null, session: null });
+    publish({ status: "applying", feedback: null, session: null }, connection);
     if (session.binding !== documentBinding(dependencies.getCurrent())) {
-      settle({ status: "stale" });
+      settle({ status: "stale" }, true, connection);
       return "rejected" as const;
     }
 
@@ -290,42 +346,44 @@ export function createJourneyBackupWorkflow(
       const result = await dependencies
         .getRepository()
         .applyReplacePlan(session.dryRun.applyPlan);
-      if (!active || ticket !== operation) return "ignored" as const;
+      if (!isCurrent(connection, ticket)) return "ignored" as const;
       if (result.status !== "committed") {
-        settle({ status: "apply-result", result });
+        settle({ status: "apply-result", result }, true, connection);
         return "rejected" as const;
       }
       const reread = await dependencies.getRepository().read();
-      if (!active || ticket !== operation) return "ignored" as const;
+      if (!isCurrent(connection, ticket)) return "ignored" as const;
       if (!rereadMatchesCommitted(reread, result)) {
-        settle({
-          status: "unexpected",
-          error: `authoritative reread returned ${reread.status}`,
-        });
+        settle(
+          {
+            status: "unexpected",
+            error: `authoritative reread returned ${reread.status}`,
+          },
+          true,
+          connection,
+        );
         return "rejected" as const;
       }
       dependencies.onCommittedRead(reread);
-      settle({ status: "applied" });
+      settle({ status: "applied" }, true, connection);
       return "applied" as const;
     } catch (error) {
-      if (active && ticket === operation) {
-        settle({ status: "unexpected", error: describeError(error) });
+      if (isCurrent(connection, ticket)) {
+        settle(
+          { status: "unexpected", error: describeError(error) },
+          true,
+          connection,
+        );
       }
       return "rejected" as const;
     }
   }
 
-  function dispose() {
-    active = false;
-    operation += 1;
-    state = IDLE_RESTORE_STATE;
-  }
-
   return {
     apply,
     beginPicker,
+    connect,
     discard,
-    dispose,
     invalidateForCurrentChange,
     selectFile,
   };
@@ -553,13 +611,14 @@ export function JourneyBackupPanel({
     }
   }, [restoreState.status]);
 
-  useEffect(
-    () => () => {
-      if (fileInputRef.current !== null) fileInputRef.current.value = "";
-      workflow.dispose();
-    },
-    [workflow],
-  );
+  useEffect(() => {
+    const disconnect = workflow.connect();
+    const fileInput = fileInputRef.current;
+    return () => {
+      if (fileInput !== null) fileInput.value = "";
+      disconnect();
+    };
+  }, [workflow]);
 
   function handleExport() {
     setBackupFeedback(null);
