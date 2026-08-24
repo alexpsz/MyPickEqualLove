@@ -127,7 +127,8 @@ test("the product-family adapter reads MyPick URLs from the canonical registry",
 
   assert.ok(navigation.includes('from "../../../../src/projects/registry"'));
   assert.match(navigation, /PROJECTS\[siteId\]\.config\.siteUrl/);
-  assert.match(navigation, /PUBLIC_ATLAS_SITE_IDS/);
+  assert.match(navigation, /PROJECT_IDS\.map/);
+  assert.doesNotMatch(navigation, /contracts\/identity/);
   assert.doesNotMatch(navigation, /https?:\/\//);
 });
 
