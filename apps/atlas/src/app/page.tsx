@@ -1,7 +1,5 @@
+import { AtlasHome } from "@/features/home/atlas-home";
+
 export default function Home() {
-  return (
-    <main>
-      <h1>Atlas</h1>
-    </main>
-  );
+  return <AtlasHome />;
 }
