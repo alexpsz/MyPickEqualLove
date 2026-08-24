@@ -10,6 +10,13 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Atlas | My Journey",
   description: "A private, local-first home for your personal Journey.",
+  robots: {
+    index: false,
+    follow: false,
+    noarchive: true,
+    noimageindex: true,
+    nocache: true,
+  },
 };
 
 export default function RootLayout({
