@@ -14,10 +14,10 @@ interface RecordActionButtonProps {
 }
 
 const buttonStyle: CSSProperties = {
-  background: "var(--atlas-action-background, #111827)",
+  background: "var(--atlas-accent, #3559c7)",
   border: "1px solid var(--atlas-border, #d1d5db)",
   borderRadius: 10,
-  color: "var(--atlas-action-foreground, #ffffff)",
+  color: "var(--atlas-on-accent, #ffffff)",
   cursor: "pointer",
   font: "inherit",
   minHeight: 44,

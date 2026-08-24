@@ -718,8 +718,12 @@ test("holds all routes, generated artifacts, navigation, and persistence outside
   assert.doesNotMatch(e2Source, /\b(?:Mock|Demo)\b/);
 });
 
-test("uses tokenized standalone colors and narrow-width-safe presentation contracts", async () => {
+test("uses F0 token pairs and narrow-width-safe presentation contracts", async () => {
   const componentDirectory = join(sourceRoot, "components", "events");
+  const recordActionSource = await readFile(
+    join(componentDirectory, "RecordActionButton.tsx"),
+    "utf8",
+  );
   const componentFiles = (await walkTree(componentDirectory)).filter(
     (filePath) => filePath.endsWith(".tsx"),
   );
@@ -732,11 +736,8 @@ test("uses tokenized standalone colors and narrow-width-safe presentation contra
   for (const [token, fallback] of [
     ["--atlas-text", "#111827"],
     ["--atlas-text-muted", "#4b5563"],
-    ["--atlas-accent", "#1d4ed8"],
     ["--atlas-border", "#d1d5db"],
     ["--atlas-surface", "#ffffff"],
-    ["--atlas-action-background", "#111827"],
-    ["--atlas-action-foreground", "#ffffff"],
   ]) {
     assert.match(
       source,
@@ -746,15 +747,38 @@ test("uses tokenized standalone colors and narrow-width-safe presentation contra
   }
 
   for (const line of source.split("\n")) {
-    if (/(?:#111827|#4b5563|#1d4ed8|#d1d5db|#ffffff)/.test(line)) {
+    if (/(?:#111827|#4b5563|#1d4ed8|#3559c7|#d1d5db|#ffffff)/.test(line)) {
       assert.match(line, /var\(--atlas-[a-z-]+, #[0-9a-f]{6}\)/i, line);
     }
+  }
+
+  assert.match(
+    recordActionSource,
+    /background:\s*"var\(--atlas-accent, #3559c7\)"/,
+  );
+  assert.match(
+    recordActionSource,
+    /color:\s*"var\(--atlas-on-accent, #ffffff\)"/,
+  );
+  assert.doesNotMatch(
+    recordActionSource,
+    /--atlas-action-(?:background|foreground)/,
+  );
+
+  const frozenF0AccentPairs = [
+    { theme: "light", accent: "#3559c7", onAccent: "#ffffff" },
+    { theme: "dark", accent: "#9eb6ff", onAccent: "#172033" },
+  ];
+  for (const { accent, onAccent, theme } of frozenF0AccentPairs) {
+    assert.ok(
+      contrastRatio(onAccent, accent) >= 4.5,
+      `${theme} F0 accent/on-accent contrast must meet 4.5:1`,
+    );
   }
 
   assert.ok(contrastRatio("#111827", "#ffffff") >= 4.5);
   assert.ok(contrastRatio("#4b5563", "#ffffff") >= 4.5);
   assert.ok(contrastRatio("#1d4ed8", "#ffffff") >= 4.5);
-  assert.ok(contrastRatio("#ffffff", "#111827") >= 4.5);
   assert.match(source, /minWidth:\s*0/);
   assert.match(source, /maxWidth:\s*"100%"/);
   assert.match(source, /minHeight:\s*44/);
