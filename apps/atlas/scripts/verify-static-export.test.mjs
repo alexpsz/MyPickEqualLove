@@ -126,6 +126,11 @@ function createValidFixture(atlasRoot) {
   );
   writeFixtureFile(
     outputDirectory,
+    "_next/static/media/atlas.png",
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+  );
+  writeFixtureFile(
+    outputDirectory,
     "robots.txt",
     "# private preview\nUser-Agent: *\nDisallow: /\n",
   );
@@ -508,7 +513,7 @@ test("sitemap routes are rejected from .next metadata and paths", () => {
   });
 });
 
-test("every route-bearing manifest rejects a residual fifth route", () => {
+test("the four exact route manifests reject a residual fifth route", () => {
   for (const [file, mutate, pattern] of [
     [
       "app-path-routes-manifest.json",
@@ -545,6 +550,37 @@ test("every route-bearing manifest rejects a residual fifth route", () => {
       mutate(manifest);
       writeFixtureFile(fixture.nextDirectory, file, JSON.stringify(manifest));
       assertViolation(inspectFixture(fixture), pattern);
+    });
+  }
+});
+
+test("routes manifest rejects one duplicate replacing one omitted route", () => {
+  withFixture((fixture) => {
+    const file = "routes-manifest.json";
+    const manifestPath = path.join(fixture.nextDirectory, file);
+    const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+    manifest.staticRoutes = manifest.staticRoutes.map((route) =>
+      route.page === "/memory" ? { page: "/journey" } : route,
+    );
+    writeFixtureFile(fixture.nextDirectory, file, JSON.stringify(manifest));
+    assertViolation(
+      inspectFixture(fixture),
+      /routes-manifest\.json static routes do not match/,
+    );
+  });
+});
+
+test("build manifests restrict route keys when a route map is present", () => {
+  for (const [file, pages] of [
+    ["build-manifest.json", { "/_app": [], "/events": [] }],
+    ["app-build-manifest.json", { "/page": [], "/events/page": [] }],
+  ]) {
+    withFixture((fixture) => {
+      writeFixtureFile(fixture.nextDirectory, file, JSON.stringify({ pages }));
+      assertViolation(
+        inspectFixture(fixture),
+        new RegExp(`unexpected build manifest route key in ${file}`),
+      );
     });
   }
 });
@@ -594,6 +630,32 @@ test("renamed internal and provider content remains detectable", () => {
   }
 });
 
+test("binary-looking filenames cannot hide internal text", () => {
+  withFixture((fixture) => {
+    writeFixtureFile(
+      fixture.outputDirectory,
+      "_next/static/media/disguised.png",
+      "# AGENTS.md\ninternal instructions",
+    );
+    writeFixtureFile(
+      fixture.nextDirectory,
+      "cache/disguised.zip",
+      "ATLAS_C0_BASELINE_RECEIPT",
+    );
+    const result = inspectFixture(fixture);
+    assertViolation(
+      result,
+      /AGENTS\.md found in _next\/static\/media\/disguised\.png/,
+    );
+    assertViolation(
+      result,
+      /C0 baseline receipt found in cache\/disguised\.zip/,
+    );
+    assertViolation(result, /binary file does not match \.png magic/);
+    assertViolation(result, /archive or compressed artifact is not allowed/);
+  });
+});
+
 test("MyPick runtime and registry markers remain strict failures", () => {
   for (const [content, pattern] of [
     ["NEXT_PUBLIC_PROJECT_ID", /NEXT_PUBLIC_PROJECT_ID/],
@@ -618,7 +680,7 @@ test("MyPick runtime and registry markers remain strict failures", () => {
     writeFixtureFile(
       fixture.outputDirectory,
       "_next/static/media/eQuAlLoVe_MyPiCkS.png",
-      Buffer.from([0x89, 0x50, 0x4e, 0x47]),
+      Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
     );
     assertViolation(inspectFixture(fixture), /MyPick artifact marker/);
   });

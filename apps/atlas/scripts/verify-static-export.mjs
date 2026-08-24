@@ -55,6 +55,13 @@ const OPTIONAL_NEXT_APP_PATH_ENTRIES = new Map([
   ["/_global-error/page", "app/_global-error/page.js"],
   ["/_not-found/page", "app/_not-found/page.js"],
 ]);
+const ALLOWED_BUILD_MANIFEST_ROUTE_KEYS = new Set([
+  "/_app",
+  "/_error",
+  "/layout",
+  ...REQUIRED_NEXT_ROUTE_ENTRIES.keys(),
+  ...OPTIONAL_NEXT_ROUTE_ENTRIES.keys(),
+]);
 const EXPECTED_PUBLIC_ROUTES = new Set([
   "/",
   "/_global-error",
@@ -195,6 +202,7 @@ const KNOWN_BINARY_EXTENSIONS = new Set([
   ".woff2",
   ".zip",
 ]);
+const FORBIDDEN_ARCHIVE_EXTENSIONS = new Set([".br", ".gz", ".zip"]);
 const INTERNAL_CONTENT_MARKERS = [
   { label: "AGENTS.md", pattern: /\bAGENTS\.md\b/i },
   {
@@ -364,6 +372,131 @@ function isKnownBinaryPath(relativePath) {
   );
 }
 
+function binaryExtension(relativePath) {
+  const lowerPath = relativePath.toLowerCase();
+  if (lowerPath.endsWith(".pack.old")) return ".pack.old";
+  if (lowerPath.endsWith(".pack")) return ".pack";
+  return path.posix.extname(lowerPath);
+}
+
+function startsWithBytes(buffer, bytes) {
+  return (
+    buffer.length >= bytes.length &&
+    bytes.every((byte, index) => buffer[index] === byte)
+  );
+}
+
+function startsWithAscii(buffer, value, offset = 0) {
+  return (
+    buffer.length >= offset + value.length &&
+    buffer.subarray(offset, offset + value.length).toString("ascii") === value
+  );
+}
+
+function hasIsoBaseMediaMagic(buffer, brands = null) {
+  if (!startsWithAscii(buffer, "ftyp", 4)) return false;
+  if (brands === null) return true;
+  const limit = Math.min(buffer.length - 3, 64);
+  for (let offset = 8; offset < limit; offset += 4) {
+    if (brands.has(buffer.subarray(offset, offset + 4).toString("ascii"))) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function hasBinaryMagic(relativePath, buffer) {
+  switch (binaryExtension(relativePath)) {
+    case ".avif":
+      return hasIsoBaseMediaMagic(buffer, new Set(["avif", "avis"]));
+    case ".bmp":
+      return startsWithAscii(buffer, "BM");
+    case ".eot":
+      return buffer.length >= 36 && buffer[34] === 0x4c && buffer[35] === 0x50;
+    case ".gif":
+      return (
+        startsWithAscii(buffer, "GIF87a") || startsWithAscii(buffer, "GIF89a")
+      );
+    case ".heic":
+      return hasIsoBaseMediaMagic(
+        buffer,
+        new Set(["heic", "heix", "hevc", "hevx", "mif1"]),
+      );
+    case ".heif":
+      return hasIsoBaseMediaMagic(buffer, new Set(["heif", "mif1", "msf1"]));
+    case ".ico":
+      return startsWithBytes(buffer, [0x00, 0x00, 0x01, 0x00]);
+    case ".jpeg":
+    case ".jpg":
+      return startsWithBytes(buffer, [0xff, 0xd8, 0xff]);
+    case ".mov":
+    case ".mp4":
+      return hasIsoBaseMediaMagic(buffer);
+    case ".mp3":
+      return (
+        startsWithAscii(buffer, "ID3") ||
+        (buffer.length >= 2 &&
+          buffer[0] === 0xff &&
+          (buffer[1] & 0xe0) === 0xe0)
+      );
+    case ".mpeg":
+      return (
+        startsWithBytes(buffer, [0x00, 0x00, 0x01, 0xba]) ||
+        startsWithBytes(buffer, [0x00, 0x00, 0x01, 0xb3])
+      );
+    case ".node":
+      return (
+        startsWithAscii(buffer, "MZ") ||
+        startsWithBytes(buffer, [0x7f, 0x45, 0x4c, 0x46]) ||
+        [
+          [0xfe, 0xed, 0xfa, 0xce],
+          [0xfe, 0xed, 0xfa, 0xcf],
+          [0xce, 0xfa, 0xed, 0xfe],
+          [0xcf, 0xfa, 0xed, 0xfe],
+        ].some((magic) => startsWithBytes(buffer, magic))
+      );
+    case ".ogg":
+      return startsWithAscii(buffer, "OggS");
+    case ".otf":
+      return startsWithAscii(buffer, "OTTO");
+    case ".pack":
+    case ".pack.old":
+      return startsWithAscii(buffer, "wpc");
+    case ".pdf":
+      return startsWithAscii(buffer, "%PDF-");
+    case ".png":
+      return startsWithBytes(
+        buffer,
+        [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a],
+      );
+    case ".ttf":
+      return (
+        startsWithBytes(buffer, [0x00, 0x01, 0x00, 0x00]) ||
+        startsWithAscii(buffer, "true") ||
+        startsWithAscii(buffer, "typ1") ||
+        startsWithAscii(buffer, "ttcf")
+      );
+    case ".wasm":
+      return startsWithBytes(buffer, [0x00, 0x61, 0x73, 0x6d]);
+    case ".wav":
+      return (
+        startsWithAscii(buffer, "RIFF") && startsWithAscii(buffer, "WAVE", 8)
+      );
+    case ".webm":
+      return startsWithBytes(buffer, [0x1a, 0x45, 0xdf, 0xa3]);
+    case ".webp":
+      return (
+        startsWithAscii(buffer, "RIFF") && startsWithAscii(buffer, "WEBP", 8)
+      );
+    case ".woff":
+      return startsWithAscii(buffer, "wOFF");
+    case ".woff2":
+      return startsWithAscii(buffer, "wOF2");
+    default:
+      return false;
+  }
+}
+
 function readPrefix(filePath, byteCount) {
   const descriptor = openSync(filePath, "r");
   try {
@@ -420,25 +553,35 @@ function readTextArtifacts(inspection, label, violations) {
       continue;
     }
 
-    let shouldRead = isKnownTextPath(relativePath);
-    const knownBinary = isKnownBinaryPath(relativePath);
-    if (!shouldRead && !knownBinary) {
-      try {
-        shouldRead = looksLikeUtf8Text(
-          readPrefix(absolutePath, Math.min(stats.size, 4096)),
-        );
-      } catch {
-        violations.push(`${label}: unable to sniff file: ${relativePath}`);
-        continue;
-      }
-      if (!shouldRead) {
-        violations.push(
-          `${label}: unrecognized binary file type is not allowed: ${relativePath}`,
-        );
-        continue;
-      }
+    let prefix;
+    try {
+      prefix = readPrefix(absolutePath, Math.min(stats.size, 4096));
+    } catch {
+      violations.push(`${label}: unable to sniff file: ${relativePath}`);
+      continue;
     }
-    if (!shouldRead) continue;
+
+    const prefixLooksText = looksLikeUtf8Text(prefix);
+    const shouldRead = isKnownTextPath(relativePath) || prefixLooksText;
+    const knownBinary = isKnownBinaryPath(relativePath);
+    const extension = binaryExtension(relativePath);
+    if (FORBIDDEN_ARCHIVE_EXTENSIONS.has(extension)) {
+      violations.push(
+        `${label}: archive or compressed artifact is not allowed: ${relativePath}`,
+      );
+      if (!prefixLooksText) continue;
+    } else if (knownBinary) {
+      if (hasBinaryMagic(relativePath, prefix)) continue;
+      violations.push(
+        `${label}: binary file does not match ${extension} magic: ${relativePath}`,
+      );
+      if (!prefixLooksText) continue;
+    } else if (!shouldRead) {
+      violations.push(
+        `${label}: unrecognized binary file type is not allowed: ${relativePath}`,
+      );
+      continue;
+    }
     if (stats.size > MAX_TEXT_FILE_BYTES) {
       violations.push(
         `${label}: text file exceeds ${MAX_TEXT_FILE_BYTES} bytes: ${relativePath}`,
@@ -907,9 +1050,12 @@ function exactStringSet(values, expected) {
   ) {
     return false;
   }
+  const actual = new Set(values);
   return (
+    actual.size === values.length &&
     values.length === expected.size &&
-    values.every((value) => expected.has(value))
+    actual.size === expected.size &&
+    [...actual].every((value) => expected.has(value))
   );
 }
 
@@ -996,6 +1142,50 @@ function inspectPrerenderManifest(textFiles, violations) {
   }
 }
 
+function inspectBuildManifestRouteKeys(textFiles, violations) {
+  for (const file of ["build-manifest.json", "app-build-manifest.json"]) {
+    const content = textFiles.get(file);
+    if (content === undefined) continue;
+    let manifest;
+    try {
+      manifest = JSON.parse(content);
+    } catch {
+      violations.push(`.next: invalid JSON: ${file}`);
+      continue;
+    }
+    if (
+      manifest === null ||
+      Array.isArray(manifest) ||
+      typeof manifest !== "object"
+    ) {
+      violations.push(`.next: invalid build manifest shape: ${file}`);
+      continue;
+    }
+
+    const routeKeys = Object.keys(manifest).filter((key) =>
+      key.startsWith("/"),
+    );
+    if (Object.hasOwn(manifest, "pages")) {
+      if (
+        manifest.pages === null ||
+        Array.isArray(manifest.pages) ||
+        typeof manifest.pages !== "object"
+      ) {
+        violations.push(`.next: invalid build manifest pages map: ${file}`);
+        continue;
+      }
+      routeKeys.push(...Object.keys(manifest.pages));
+    }
+    for (const routeKey of stable(routeKeys)) {
+      if (!ALLOWED_BUILD_MANIFEST_ROUTE_KEYS.has(routeKey)) {
+        violations.push(
+          `.next: unexpected build manifest route key in ${file}: ${routeKey}`,
+        );
+      }
+    }
+  }
+}
+
 function allowedBuildRouteArtifact(relativePath) {
   const serverPrefix = "server/app/";
   if (relativePath.startsWith(serverPrefix)) {
@@ -1039,6 +1229,7 @@ function inspectNextFiles(files, textFiles, violations) {
   inspectServerAppPathsManifest(textFiles, violations);
   inspectRoutesManifest(textFiles, violations);
   inspectPrerenderManifest(textFiles, violations);
+  inspectBuildManifestRouteKeys(textFiles, violations);
 }
 
 function normalizeContentForScan(content) {
