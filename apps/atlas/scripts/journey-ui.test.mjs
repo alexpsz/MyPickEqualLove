@@ -678,6 +678,31 @@ test("both private routes compose one executable Atlas shell and follow its loca
   }
 });
 
+test("Journey exposes a native localized link to the static Memory route", () => {
+  renderNavigation.__setPathname("/journey/");
+
+  for (const locale of ["zh-CN", "en", "ja", "ko"]) {
+    renderShellContext.__setShellLocale(locale);
+    const markup = renderToStaticMarkup(
+      createElement(
+        RenderAtlasShell,
+        { familyNavigation: [] },
+        createElement(RenderJourneyPage),
+      ),
+    );
+    const memoryLink = markup.match(
+      /<a\b[^>]*href="\/memory\/"[^>]*>([^<]+)<\/a>/,
+    );
+
+    assert.ok(memoryLink, `${locale} Journey must link to /memory/`);
+    assert.equal(
+      memoryLink[1],
+      messages.JOURNEY_MESSAGES[locale].createMemory,
+      `${locale} Memory link needs a visible accessible label`,
+    );
+  }
+});
+
 async function collectFiles(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
   const files = [];

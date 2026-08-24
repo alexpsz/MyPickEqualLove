@@ -271,6 +271,11 @@ export function JourneyWorkspace() {
                 <span className={styles.privacyDot} aria-hidden="true" />
                 <span>{journeyMessage(locale, "noAutomaticMerge")}</span>
               </p>
+              <div className={styles.actionRow}>
+                <Link className={styles.buttonSecondary} href="/memory/">
+                  {journeyMessage(locale, "createMemory")}
+                </Link>
+              </div>
             </section>
 
             <div className={styles.stack}>
