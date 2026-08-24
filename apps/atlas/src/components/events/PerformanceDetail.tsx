@@ -9,6 +9,7 @@ import type {
 } from "../../features/events/event-presentation.js";
 import {
   getEventsMessages,
+  getLifecycleLabel,
   type EventsLocale,
 } from "../../i18n/events/messages.js";
 
@@ -19,6 +20,8 @@ interface PerformanceDetailProps {
 }
 
 const detailStyle: CSSProperties = {
+  background: "var(--atlas-surface, #ffffff)",
+  color: "var(--atlas-text, #111827)",
   display: "grid",
   gap: 20,
   maxWidth: "100%",
@@ -40,13 +43,14 @@ const factStyle: CSSProperties = {
 };
 
 const labelStyle: CSSProperties = {
-  color: "#4b5563",
+  color: "var(--atlas-text-muted, #4b5563)",
   fontSize: "0.875rem",
   fontWeight: 600,
   margin: 0,
 };
 
 const valueStyle: CSSProperties = {
+  color: "var(--atlas-text, #111827)",
   margin: 0,
   overflowWrap: "anywhere",
 };
@@ -61,7 +65,8 @@ const setlistStyle: CSSProperties = {
 
 const setlistItemStyle: CSSProperties = {
   alignItems: "start",
-  border: "1px solid #d1d5db",
+  background: "var(--atlas-surface, #ffffff)",
+  border: "1px solid var(--atlas-border, #d1d5db)",
   borderRadius: 12,
   display: "grid",
   gap: 8,
@@ -72,7 +77,7 @@ const setlistItemStyle: CSSProperties = {
 
 const songLinkStyle: CSSProperties = {
   alignItems: "center",
-  color: "#1d4ed8",
+  color: "var(--atlas-accent, #1d4ed8)",
   display: "inline-flex",
   minHeight: 44,
   overflowWrap: "anywhere",
@@ -106,6 +111,10 @@ export function PerformanceDetail({
           <dd style={valueStyle}>{performance.date}</dd>
         </div>
         <div style={factStyle}>
+          <dt style={labelStyle}>{messages.dates}</dt>
+          <dd style={valueStyle}>{performance.eventDateRange}</dd>
+        </div>
+        <div style={factStyle}>
           <dt style={labelStyle}>{messages.venue}</dt>
           <dd style={valueStyle}>{performance.venueName}</dd>
         </div>
@@ -115,12 +124,15 @@ export function PerformanceDetail({
         </div>
         <div style={factStyle}>
           <dt style={labelStyle}>{messages.lifecycle}</dt>
-          <dd style={valueStyle}>{performance.lifecycle}</dd>
+          <dd style={valueStyle}>
+            {getLifecycleLabel(messages, performance.lifecycle)}
+          </dd>
         </div>
       </dl>
 
       <EventEvidence
         evidence={performance.evidence}
+        headingLevel={2}
         messages={messages}
         sectionId={`${titleId}-evidence`}
       />
@@ -135,7 +147,10 @@ export function PerformanceDetail({
         {performance.isSetlistAvailable ? (
           <ol style={setlistStyle}>
             {performance.setlist.map((song) => (
-              <li key={song.songReference.entityId} style={setlistItemStyle}>
+              <li
+                key={`${song.order}-${song.songReference.entityId}`}
+                style={setlistItemStyle}
+              >
                 <strong>{song.order}</strong>
                 <div style={{ minWidth: 0 }}>
                   {song.canonicalSongHref ? (

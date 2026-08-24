@@ -98,6 +98,7 @@ const { RecordActionButton } = await load(
 );
 
 const sourceRevision = "atlas-events-ui-r1";
+const canonicalSiteOrigins = { "equal-love": "https://mypick.example" };
 
 function evidence(overrides = {}) {
   return {
@@ -134,6 +135,7 @@ function emptyGroup(siteId) {
 
 function acceptedProjectionFixture() {
   const eventLocalId = "festival-2026";
+  const daySong = songReference("equal-love", "song-one", "Song One");
   const equalLove = {
     id: identity.createGroupEntityId("equal-love", "equal-love"),
     siteId: "equal-love",
@@ -187,10 +189,8 @@ function acceptedProjectionFixture() {
             timezone: "Asia/Tokyo",
             lifecycle: "completed",
             setlist: [
-              {
-                order: 1,
-                songRef: songReference("equal-love", "song-one", "Song One"),
-              },
+              { order: 1, songRef: daySong },
+              { order: 2, songRef: daySong },
             ],
             ...evidence(),
           },
@@ -234,7 +234,7 @@ function acceptedProjectionFixture() {
     sourceCommit: "a".repeat(40),
     sourceRevision,
     groupCounts: {
-      "equal-love": { events: 2, performances: 2, setlistEntries: 1 },
+      "equal-love": { events: 2, performances: 2, setlistEntries: 2 },
       "nearly-equal-joy": { events: 0, performances: 0, setlistEntries: 0 },
       "not-equal-me": { events: 0, performances: 0, setlistEntries: 0 },
     },
@@ -250,6 +250,28 @@ function parsedFixture() {
   return result.value;
 }
 
+function findFixtureRecords(projection) {
+  const eventsForEqualLove = projection.groups[0].events;
+  const tokyoDome = eventsForEqualLove.find(
+    (event) => event.displayName === "Tokyo Dome 2027",
+  );
+  const festival = eventsForEqualLove.find(
+    (event) => event.displayName === "Festival 2026",
+  );
+  assert.ok(tokyoDome);
+  assert.ok(festival);
+
+  const day = festival.performances.find(
+    (performance) => performance.displayName === "Day",
+  );
+  const night = festival.performances.find(
+    (performance) => performance.displayName === "Night",
+  );
+  assert.ok(day);
+  assert.ok(night);
+  return { day, festival, night, tokyoDome };
+}
+
 async function exists(path) {
   try {
     await access(path, constants.F_OK);
@@ -259,22 +281,79 @@ async function exists(path) {
   }
 }
 
+async function walkTree(directory) {
+  const entries = await readdir(directory, { withFileTypes: true });
+  const paths = [];
+  for (const entry of entries) {
+    const entryPath = join(directory, entry.name);
+    paths.push(entryPath);
+    if (entry.isDirectory()) {
+      paths.push(...(await walkTree(entryPath)));
+    }
+  }
+  return paths;
+}
+
+function escapeRegularExpression(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function assertIdReferenceTargets(markup) {
+  const identifiers = new Set(
+    [...markup.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]),
+  );
+  const references = [...markup.matchAll(/\saria-labelledby="([^"]+)"/g)].map(
+    (match) => match[1],
+  );
+
+  for (const reference of references) {
+    assert.ok(identifiers.has(reference), `missing IDREF target: ${reference}`);
+  }
+}
+
+function headingPattern(level, id) {
+  return new RegExp(`<h${level}[^>]*id="${escapeRegularExpression(id)}"`);
+}
+
+function contrastRatio(foreground, background) {
+  const channelToLinear = (channel) => {
+    const normalized = channel / 255;
+    return normalized <= 0.04045
+      ? normalized / 12.92
+      : ((normalized + 0.055) / 1.055) ** 2.4;
+  };
+  const luminance = (hex) => {
+    const channels = [1, 3, 5].map((offset) =>
+      channelToLinear(Number.parseInt(hex.slice(offset, offset + 2), 16)),
+    );
+    return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+  };
+  const first = luminance(foreground);
+  const second = luminance(background);
+  return (Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05);
+}
+
 test("maps only C0-accepted projection shapes without changing their evidence", () => {
   const projection = parsedFixture();
   const before = JSON.stringify(projection);
   const summaries = events.mapEventList(projection);
-  const tokyoDome = summaries.find(
-    (event) => event.eventName === "Tokyo Dome 2027",
+  const { tokyoDome } = findFixtureRecords(projection);
+  const tokyoDomeSummary = summaries.find(
+    (event) => event.eventId === tokyoDome.id,
   );
 
-  assert.ok(tokyoDome);
-  assert.equal(tokyoDome.isEventOnly, true);
-  assert.equal(tokyoDome.performanceCount, 0);
-  assert.deepEqual(tokyoDome.evidence.coverage, { included: 0, total: 1 });
-  assert.equal(tokyoDome.evidence.unresolved.length, 1);
-  assert.equal(tokyoDome.recordAction.kind, "record-event");
+  assert.ok(tokyoDomeSummary);
+  assert.equal(tokyoDomeSummary.isEventOnly, true);
+  assert.equal(tokyoDomeSummary.performanceCount, 0);
+  assert.equal(tokyoDomeSummary.timezone, "Asia/Tokyo");
+  assert.deepEqual(tokyoDomeSummary.evidence.coverage, {
+    included: 0,
+    total: 1,
+  });
+  assert.equal(tokyoDomeSummary.evidence.unresolved.length, 1);
+  assert.equal(tokyoDomeSummary.recordAction.kind, "record-event");
 
-  const detail = events.mapEventDetail(projection, tokyoDome.eventId);
+  const detail = events.mapEventDetail(projection, tokyoDomeSummary.eventId);
   assert.ok(detail);
   assert.equal(detail.isEventOnly, true);
   assert.deepEqual(detail.performances, []);
@@ -283,16 +362,9 @@ test("maps only C0-accepted projection shapes without changing their evidence", 
 
 test("keeps a missing setlist empty and exposes its coverage and unresolved state", () => {
   const projection = parsedFixture();
-  const festival = projection.groups[0].events.find(
-    (event) => event.displayName === "Festival 2026",
-  );
-  assert.ok(festival);
-  const night = festival.performances.find(
-    (performance) => performance.displayName === "Night",
-  );
-  assert.ok(night);
-
+  const { night } = findFixtureRecords(projection);
   const detail = events.mapPerformanceDetail(projection, night.id);
+
   assert.ok(detail);
   assert.equal(detail.isSetlistAvailable, false);
   assert.deepEqual(detail.setlist, []);
@@ -301,49 +373,86 @@ test("keeps a missing setlist empty and exposes its coverage and unresolved stat
   assert.equal(detail.recordAction.kind, "record-performance");
 });
 
-test("uses a song deep link only for one exact caller-supplied canonical mapping", () => {
+test("fails closed for canonical song links without one exact policy-bound mapping", () => {
   const projection = parsedFixture();
-  const festival = projection.groups[0].events.find(
-    (event) => event.displayName === "Festival 2026",
-  );
-  assert.ok(festival);
-  const day = festival.performances.find(
-    (performance) => performance.displayName === "Day",
-  );
-  assert.ok(day);
+  const { day } = findFixtureRecords(projection);
   const songReference = day.setlist[0].songRef;
   const exactMapping = {
     entityId: songReference.entityId,
     sourceRevision: songReference.sourceRevision,
     canonicalHref: "https://mypick.example/songs/song-one/",
   };
+  const mappedHref = (canonicalSongLinks, canonicalSongSiteOrigins) => {
+    const detail = events.mapPerformanceDetail(projection, day.id, {
+      canonicalSongLinks,
+      canonicalSongSiteOrigins,
+    });
+    assert.ok(detail);
+    return detail.setlist[0].canonicalSongHref;
+  };
 
-  const exact = events.mapPerformanceDetail(projection, day.id, {
-    canonicalSongLinks: [exactMapping],
-  });
-  assert.ok(exact);
   assert.equal(
-    exact.setlist[0].canonicalSongHref,
-    "https://mypick.example/songs/song-one/",
+    mappedHref([exactMapping], canonicalSiteOrigins),
+    exactMapping.canonicalHref,
+  );
+  assert.equal(mappedHref([exactMapping]), null);
+  assert.equal(
+    mappedHref([exactMapping], { "equal-love": "https://foreign.example" }),
+    null,
+  );
+  assert.equal(
+    mappedHref([exactMapping], {
+      "equal-love": "https://mypick.example/policy",
+    }),
+    null,
+  );
+  assert.equal(
+    mappedHref(
+      [{ ...exactMapping, sourceRevision: "older-revision" }],
+      canonicalSiteOrigins,
+    ),
+    null,
   );
 
-  const wrongRevision = events.mapPerformanceDetail(projection, day.id, {
-    canonicalSongLinks: [{ ...exactMapping, sourceRevision: "older-revision" }],
-  });
-  assert.ok(wrongRevision);
-  assert.equal(wrongRevision.setlist[0].canonicalSongHref, null);
+  for (const canonicalHref of [
+    "https://user:secret@mypick.example/songs/song-one/",
+    "https://foreign.example/songs/song-one/",
+    "https://mypick.example/songs/song-one/?source=atlas",
+    "https://mypick.example/songs/song-one/#details",
+    "https://mypick.example/songs/another-song/",
+    "https://mypick.example/songs/song-one",
+    "http://mypick.example/songs/song-one/",
+  ]) {
+    assert.equal(
+      mappedHref([{ ...exactMapping, canonicalHref }], canonicalSiteOrigins),
+      null,
+      canonicalHref,
+    );
+  }
 
-  const ambiguous = events.mapPerformanceDetail(projection, day.id, {
-    canonicalSongLinks: [
-      exactMapping,
-      { ...exactMapping, canonicalHref: "https://mypick.example/songs/other/" },
-    ],
-  });
-  assert.ok(ambiguous);
-  assert.equal(ambiguous.setlist[0].canonicalSongHref, null);
+  assert.equal(
+    mappedHref(
+      [
+        exactMapping,
+        {
+          ...exactMapping,
+          canonicalHref: "https://mypick.example/songs/song-one/",
+        },
+      ],
+      canonicalSiteOrigins,
+    ),
+    null,
+  );
+  assert.equal(
+    mappedHref(
+      [exactMapping, { ...exactMapping, sourceRevision: "older-revision" }],
+      canonicalSiteOrigins,
+    ),
+    null,
+  );
 });
 
-test("supplies complete zh-CN, en, ja, and ko event copy", () => {
+test("supplies complete localized lifecycle and evidence-kind labels", () => {
   assert.deepEqual(messages.EVENTS_LOCALES, ["zh-CN", "en", "ja", "ko"]);
   for (const locale of messages.EVENTS_LOCALES) {
     const catalog = messages.getEventsMessages(locale);
@@ -356,138 +465,298 @@ test("supplies complete zh-CN, en, ja, and ko event copy", () => {
       "coverage",
       "unresolved",
       "noCanonicalSongLink",
+      "lifecycleScheduled",
+      "lifecyclePostponed",
+      "lifecycleCancelled",
+      "lifecycleCompleted",
+      "lifecycleUnknown",
+      "excludedKindEvent",
+      "excludedKindPerformance",
+      "excludedKindSetlistEntry",
+      "unresolvedKindVenue",
+      "unresolvedKindSong",
+      "unresolvedKindSource",
     ]) {
       assert.equal(typeof catalog[key], "string", `${locale}:${key}`);
       assert.notEqual(catalog[key], "", `${locale}:${key}`);
     }
+    assert.equal(
+      messages.getLifecycleLabel(catalog, "scheduled"),
+      catalog.lifecycleScheduled,
+    );
+    assert.equal(
+      messages.getExcludedKindLabel(catalog, "performance"),
+      catalog.excludedKindPerformance,
+    );
+    assert.equal(
+      messages.getUnresolvedKindLabel(catalog, "source"),
+      catalog.unresolvedKindSource,
+    );
   }
 });
 
-test("renders C0 evidence, true empty states, and an injectable record action", () => {
+test("renders C0 states and localized fields in all four locales", () => {
   const projection = parsedFixture();
   const summaries = events.mapEventList(projection);
-  const tokyoDome = summaries.find(
-    (event) => event.eventName === "Tokyo Dome 2027",
-  );
-  assert.ok(tokyoDome);
-  const festival = projection.groups[0].events.find(
-    (event) => event.displayName === "Festival 2026",
-  );
-  assert.ok(festival);
-  const night = festival.performances.find(
-    (performance) => performance.displayName === "Night",
-  );
-  assert.ok(night);
+  const { day, festival, night, tokyoDome } = findFixtureRecords(projection);
+  const festivalDetail = events.mapEventDetail(projection, festival.id);
+  const eventOnlyDetail = events.mapEventDetail(projection, tokyoDome.id);
+  const dayDetail = events.mapPerformanceDetail(projection, day.id);
+  const nightDetail = events.mapPerformanceDetail(projection, night.id);
+  assert.ok(festivalDetail);
+  assert.ok(eventOnlyDetail);
+  assert.ok(dayDetail);
+  assert.ok(nightDetail);
 
   const receivedActions = [];
   const onRecord = (action) => receivedActions.push(action);
-  const eventDetail = events.mapEventDetail(projection, tokyoDome.eventId);
-  const nightDetail = events.mapPerformanceDetail(projection, night.id);
-  assert.ok(eventDetail);
-  assert.ok(nightDetail);
 
-  const listMarkup = renderToStaticMarkup(
-    react.createElement(EventsList, {
-      events: summaries,
-      locale: "en",
-      onRecord,
-    }),
-  );
-  const eventMarkup = renderToStaticMarkup(
-    react.createElement(EventDetail, {
-      event: eventDetail,
-      locale: "en",
-      onRecord,
-    }),
-  );
-  const performanceMarkup = renderToStaticMarkup(
-    react.createElement(PerformanceDetail, {
-      performance: nightDetail,
-      locale: "en",
-      onRecord,
-    }),
-  );
+  for (const locale of messages.EVENTS_LOCALES) {
+    const catalog = messages.getEventsMessages(locale);
+    const listMarkup = renderToStaticMarkup(
+      react.createElement(EventsList, { events: summaries, locale, onRecord }),
+    );
+    const festivalMarkup = renderToStaticMarkup(
+      react.createElement(EventDetail, {
+        event: festivalDetail,
+        locale,
+        onRecord,
+      }),
+    );
+    const eventOnlyMarkup = renderToStaticMarkup(
+      react.createElement(EventDetail, {
+        event: eventOnlyDetail,
+        locale,
+        onRecord,
+      }),
+    );
+    const dayMarkup = renderToStaticMarkup(
+      react.createElement(PerformanceDetail, {
+        performance: dayDetail,
+        locale,
+        onRecord,
+      }),
+    );
+    const nightMarkup = renderToStaticMarkup(
+      react.createElement(PerformanceDetail, {
+        performance: nightDetail,
+        locale,
+        onRecord,
+      }),
+    );
 
-  assert.match(listMarkup, /data-events-evidence/);
-  assert.match(listMarkup, /data-coverage/);
-  assert.match(listMarkup, /data-unresolved-items/);
-  assert.match(listMarkup, /data-record-action="record-event"/);
-  assert.match(eventMarkup, /data-event-only/);
-  assert.match(eventMarkup, /This event explicitly has zero performances/);
-  assert.match(performanceMarkup, /data-setlist-empty/);
-  assert.match(performanceMarkup, /No public setlist is available/);
+    assert.match(listMarkup, /data-events-evidence/);
+    assert.match(listMarkup, /Asia\/Tokyo/);
+    assert.ok(listMarkup.includes(catalog.lifecycleScheduled), locale);
+    assert.match(listMarkup, /data-record-action="record-event"/);
+    assert.ok(festivalMarkup.includes(catalog.lifecycleCompleted), locale);
+    assert.match(festivalMarkup, /Asia\/Tokyo/);
+    assert.ok(
+      eventOnlyMarkup.includes(catalog.excludedKindPerformance),
+      locale,
+    );
+    assert.ok(eventOnlyMarkup.includes(catalog.unresolvedKindSource), locale);
+    assert.doesNotMatch(eventOnlyMarkup, /performance: tokyo-dome-2027/);
+    assert.doesNotMatch(eventOnlyMarkup, /source: official schedule/);
+    assert.match(eventOnlyMarkup, /data-event-only/);
+    assert.ok(dayMarkup.includes("Song One"), locale);
+    assert.ok(dayMarkup.includes(dayDetail.eventDateRange), locale);
+    assert.match(nightMarkup, /data-setlist-empty/);
+    assert.ok(nightMarkup.includes(catalog.unresolvedKindSong), locale);
+    assert.ok(nightMarkup.includes(catalog.noSetlist), locale);
+  }
 
   const actionTree = RecordActionButton({
-    action: tokyoDome.recordAction,
+    action: eventOnlyDetail.recordAction,
     messages: messages.getEventsMessages("en"),
     onRecord,
   });
   const [recordButton] = react.Children.toArray(actionTree.props.children);
   assert.equal(recordButton.props.type, "button");
   recordButton.props.onClick();
-  assert.deepEqual(receivedActions, [tokyoDome.recordAction]);
+  assert.deepEqual(receivedActions, [eventOnlyDetail.recordAction]);
 });
 
-test("holds routes, generated artifacts, navigation, and persistence outside E2", async () => {
-  const componentDirectory = join(sourceRoot, "components", "events");
-  const featureDirectory = join(sourceRoot, "features", "events");
-  const i18nDirectory = join(sourceRoot, "i18n", "events");
-  const files = [
-    ...(await readdir(componentDirectory)).map((fileName) =>
-      join(componentDirectory, fileName),
-    ),
-    ...(await readdir(featureDirectory)).map((fileName) =>
-      join(featureDirectory, fileName),
-    ),
-    ...(await readdir(i18nDirectory)).map((fileName) =>
-      join(i18nDirectory, fileName),
-    ),
+test("uses contextual evidence heading depth and resolves every aria-labelledby IDREF", () => {
+  const projection = parsedFixture();
+  const summaries = events.mapEventList(projection);
+  const { day, festival } = findFixtureRecords(projection);
+  const festivalDetail = events.mapEventDetail(projection, festival.id);
+  const dayDetail = events.mapPerformanceDetail(projection, day.id);
+  assert.ok(festivalDetail);
+  assert.ok(dayDetail);
+
+  const listMarkup = renderToStaticMarkup(
+    react.createElement(EventsList, { events: summaries, locale: "en" }),
+  );
+  const eventMarkup = renderToStaticMarkup(
+    react.createElement(EventDetail, { event: festivalDetail, locale: "en" }),
+  );
+  const performanceMarkup = renderToStaticMarkup(
+    react.createElement(PerformanceDetail, {
+      performance: dayDetail,
+      locale: "en",
+    }),
+  );
+
+  const listEvidenceId = `event-summary-${festival.id}-evidence`;
+  const eventEvidenceId = `event-detail-${festival.id}-evidence`;
+  const nestedEvidenceId = `performance-summary-${day.id}-evidence`;
+  const performanceEvidenceId = `performance-detail-${day.id}-evidence`;
+  assert.match(listMarkup, headingPattern(3, listEvidenceId));
+  assert.match(listMarkup, headingPattern(4, `${listEvidenceId}-sources`));
+  assert.match(eventMarkup, headingPattern(2, eventEvidenceId));
+  assert.match(eventMarkup, headingPattern(3, `${eventEvidenceId}-sources`));
+  assert.match(eventMarkup, headingPattern(4, nestedEvidenceId));
+  assert.match(eventMarkup, headingPattern(5, `${nestedEvidenceId}-sources`));
+  assert.match(performanceMarkup, headingPattern(2, performanceEvidenceId));
+  assert.match(
+    performanceMarkup,
+    headingPattern(3, `${performanceEvidenceId}-sources`),
+  );
+
+  assertIdReferenceTargets(listMarkup);
+  assertIdReferenceTargets(eventMarkup);
+  assertIdReferenceTargets(performanceMarkup);
+});
+
+test("renders repeated accepted song references at distinct orders without key warnings", () => {
+  const projection = parsedFixture();
+  const { day } = findFixtureRecords(projection);
+  const dayDetail = events.mapPerformanceDetail(projection, day.id);
+  assert.ok(dayDetail);
+  assert.equal(dayDetail.setlist.length, 2);
+  assert.deepEqual(
+    dayDetail.setlist.map((song) => song.order),
+    [1, 2],
+  );
+
+  const originalConsoleError = console.error;
+  const consoleErrors = [];
+  console.error = (...values) => {
+    consoleErrors.push(values.map(String).join(" "));
+  };
+  try {
+    const markup = renderToStaticMarkup(
+      react.createElement(PerformanceDetail, {
+        performance: dayDetail,
+        locale: "en",
+      }),
+    );
+    assert.equal((markup.match(/Song One/g) ?? []).length, 2);
+  } finally {
+    console.error = originalConsoleError;
+  }
+
+  assert.equal(
+    consoleErrors.filter((message) => /unique[\s\S]*key/i.test(message)).length,
+    0,
+  );
+});
+
+test("holds all routes, generated artifacts, navigation, and persistence outside E2", async () => {
+  const appRoot = join(sourceRoot, "app");
+  const appTree = (await exists(appRoot)) ? await walkTree(appRoot) : [];
+  const routeSegments = new Set([
+    "event",
+    "events",
+    "performance",
+    "performances",
+  ]);
+  for (const appPath of appTree) {
+    const segments = relative(appRoot, appPath)
+      .split(/[\\/]/)
+      .filter(Boolean)
+      .map((segment) => segment.toLowerCase());
+    assert.equal(
+      segments.some((segment) => routeSegments.has(segment)),
+      false,
+      `App Router event/performance leakage: ${relative(sourceRoot, appPath)}`,
+    );
+  }
+
+  const sourceTree = await walkTree(sourceRoot);
+  for (const sourcePath of sourceTree) {
+    const segments = relative(sourceRoot, sourcePath)
+      .split(/[\\/]/)
+      .filter(Boolean)
+      .map((segment) => segment.toLowerCase());
+    assert.equal(
+      segments.includes("generated"),
+      false,
+      `generated artifact leakage: ${relative(sourceRoot, sourcePath)}`,
+    );
+  }
+
+  const e2Directories = [
+    join(sourceRoot, "components", "events"),
+    join(sourceRoot, "features", "events"),
+    join(sourceRoot, "i18n", "events"),
   ];
-  const source = (
-    await Promise.all(files.map((filePath) => readFile(filePath, "utf8")))
+  const e2Files = (
+    await Promise.all(e2Directories.map((directory) => walkTree(directory)))
+  )
+    .flat()
+    .filter((filePath) => /\.tsx?$/.test(filePath));
+  const e2Source = (
+    await Promise.all(e2Files.map((filePath) => readFile(filePath, "utf8")))
   ).join("\n");
 
-  assert.equal(await exists(join(sourceRoot, "app", "events")), false);
-  assert.equal(await exists(join(sourceRoot, "app", "performances")), false);
-  assert.equal(await exists(join(sourceRoot, "generated")), false);
   assert.doesNotMatch(
-    source,
+    e2Source,
     /\b(?:localStorage|sessionStorage|JourneyRepository|journey-storage)\b/,
   );
-  assert.doesNotMatch(source, /\b(?:parsePublicAtlasProjection|JSON\.parse)\b/);
-  assert.doesNotMatch(source, /(?:next\/link|next\/navigation|<nav\b)/i);
   assert.doesNotMatch(
-    source,
-    /(?:sitemap|robots|manifest|src\/generated|\/app\/(?:events|performances))/i,
+    e2Source,
+    /\b(?:parsePublicAtlasProjection|JSON\.parse)\b/,
   );
-  assert.doesNotMatch(source, /\b(?:Mock|Demo)\b/);
+  assert.doesNotMatch(e2Source, /(?:next\/link|next\/navigation|<nav\b)/i);
+  assert.doesNotMatch(
+    e2Source,
+    /(?:sitemap|robots|manifest|src\/generated|\/app\/(?:events?|performances?))/i,
+  );
+  assert.doesNotMatch(e2Source, /\b(?:Mock|Demo)\b/);
 });
 
-test("keeps detail actions keyboard-ready and evidence structurally visible at narrow widths", async () => {
-  const evidenceSource = await readFile(
-    join(sourceRoot, "components", "events", "EventEvidence.tsx"),
-    "utf8",
+test("uses tokenized standalone colors and narrow-width-safe presentation contracts", async () => {
+  const componentDirectory = join(sourceRoot, "components", "events");
+  const componentFiles = (await walkTree(componentDirectory)).filter(
+    (filePath) => filePath.endsWith(".tsx"),
   );
-  const actionSource = await readFile(
-    join(sourceRoot, "components", "events", "RecordActionButton.tsx"),
-    "utf8",
-  );
-  const eventDetailSource = await readFile(
-    join(sourceRoot, "components", "events", "EventDetail.tsx"),
-    "utf8",
-  );
-  const performanceDetailSource = await readFile(
-    join(sourceRoot, "components", "events", "PerformanceDetail.tsx"),
-    "utf8",
-  );
+  const source = (
+    await Promise.all(
+      componentFiles.map((filePath) => readFile(filePath, "utf8")),
+    )
+  ).join("\n");
 
-  assert.match(evidenceSource, /data-coverage/);
-  assert.match(evidenceSource, /data-unresolved-items/);
-  assert.match(evidenceSource, /minWidth:\s*0/);
-  assert.match(actionSource, /type="button"/);
-  assert.match(actionSource, /minHeight:\s*44/);
-  assert.match(eventDetailSource, /aria-labelledby/);
-  assert.match(eventDetailSource, /data-event-only/);
-  assert.match(performanceDetailSource, /data-setlist-empty/);
-  assert.match(performanceDetailSource, /data-c0-song-fallback/);
+  for (const [token, fallback] of [
+    ["--atlas-text", "#111827"],
+    ["--atlas-text-muted", "#4b5563"],
+    ["--atlas-accent", "#1d4ed8"],
+    ["--atlas-border", "#d1d5db"],
+    ["--atlas-surface", "#ffffff"],
+    ["--atlas-action-background", "#111827"],
+    ["--atlas-action-foreground", "#ffffff"],
+  ]) {
+    assert.match(
+      source,
+      new RegExp(`var\\(${escapeRegularExpression(token)}, ${fallback}\\)`),
+      token,
+    );
+  }
+
+  for (const line of source.split("\n")) {
+    if (/(?:#111827|#4b5563|#1d4ed8|#d1d5db|#ffffff)/.test(line)) {
+      assert.match(line, /var\(--atlas-[a-z-]+, #[0-9a-f]{6}\)/i, line);
+    }
+  }
+
+  assert.ok(contrastRatio("#111827", "#ffffff") >= 4.5);
+  assert.ok(contrastRatio("#4b5563", "#ffffff") >= 4.5);
+  assert.ok(contrastRatio("#1d4ed8", "#ffffff") >= 4.5);
+  assert.ok(contrastRatio("#ffffff", "#111827") >= 4.5);
+  assert.match(source, /minWidth:\s*0/);
+  assert.match(source, /maxWidth:\s*"100%"/);
+  assert.match(source, /minHeight:\s*44/);
+  assert.match(source, /type="button"/);
 });

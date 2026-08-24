@@ -12,7 +12,11 @@ import type {
   AtlasVerificationStatus,
   ProjectionCoverage,
 } from "../../contracts/public-atlas-projection.js";
-import type { NamespacedEntityId } from "../../contracts/identity.js";
+import {
+  parseNamespacedEntityId,
+  type NamespacedEntityId,
+  type PublicAtlasSiteId,
+} from "../../contracts/identity.js";
 import type {
   PublicEntityReference,
   ReadableFallbackSnapshot,
@@ -44,8 +48,17 @@ export interface ExactCanonicalSongLink {
   readonly canonicalHref: string;
 }
 
+/**
+ * An explicit coordinator-supplied policy, expected to be backed by the
+ * registry adapter. Mapping rows never establish their own trusted origin.
+ */
+export type CanonicalSongSiteOrigins = Readonly<
+  Partial<Record<PublicAtlasSiteId, string>>
+>;
+
 export interface EventPresentationOptions {
   readonly canonicalSongLinks?: readonly ExactCanonicalSongLink[];
+  readonly canonicalSongSiteOrigins?: CanonicalSongSiteOrigins;
 }
 
 export interface EventListItemViewModel {
@@ -210,34 +223,85 @@ function mapPerformanceSummary(
   };
 }
 
-function isHttpsUrl(value: string): boolean {
+function parseTrustedSiteOrigin(value: string | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+
   try {
-    return new URL(value).protocol === "https:";
+    const url = new URL(value);
+    if (
+      url.protocol !== "https:" ||
+      url.username !== "" ||
+      url.password !== "" ||
+      url.search !== "" ||
+      url.hash !== "" ||
+      url.pathname !== "/" ||
+      url.href !== `${url.origin}/`
+    ) {
+      return null;
+    }
+    return url.origin;
   } catch {
-    return false;
+    return null;
   }
 }
 
 /**
- * A song link is intentionally unavailable unless the caller supplies exactly
- * one mapping for the full namespaced ID and the matching source revision.
+ * A song link is intentionally unavailable unless an explicit site-origin
+ * policy and exactly one full-ID mapping agree with the accepted reference.
  */
 export function resolveExactCanonicalSongHref(
   songReference: PublicEntityReference<"song">,
   canonicalSongLinks: readonly ExactCanonicalSongLink[] = [],
+  canonicalSongSiteOrigins?: CanonicalSongSiteOrigins,
 ): string | null {
-  const matches = canonicalSongLinks.filter(
-    (candidate) =>
-      candidate.entityId === songReference.entityId &&
-      candidate.sourceRevision === songReference.sourceRevision &&
-      isHttpsUrl(candidate.canonicalHref),
+  const parsedSongId = parseNamespacedEntityId(songReference.entityId);
+  if (!parsedSongId.ok || parsedSongId.value.kind !== "song") {
+    return null;
+  }
+
+  const candidatesForSong = canonicalSongLinks.filter(
+    (candidate) => candidate.entityId === songReference.entityId,
   );
-  return matches.length === 1 ? matches[0].canonicalHref : null;
+  if (candidatesForSong.length !== 1) {
+    return null;
+  }
+
+  const candidate = candidatesForSong[0];
+  if (candidate.sourceRevision !== songReference.sourceRevision) {
+    return null;
+  }
+
+  const trustedOrigin = parseTrustedSiteOrigin(
+    canonicalSongSiteOrigins?.[parsedSongId.value.siteId],
+  );
+  if (!trustedOrigin) {
+    return null;
+  }
+
+  try {
+    const url = new URL(candidate.canonicalHref);
+    if (
+      url.protocol !== "https:" ||
+      url.username !== "" ||
+      url.password !== "" ||
+      url.search !== "" ||
+      url.hash !== "" ||
+      url.origin !== trustedOrigin ||
+      url.pathname !== `/songs/${parsedSongId.value.localId}/`
+    ) {
+      return null;
+    }
+    return candidate.canonicalHref;
+  } catch {
+    return null;
+  }
 }
 
 function mapSetlistEntry(
   entry: ProjectionSetlistEntry,
-  canonicalSongLinks: readonly ExactCanonicalSongLink[],
+  options: EventPresentationOptions,
 ): SetlistSongViewModel {
   return {
     order: entry.order,
@@ -245,7 +309,8 @@ function mapSetlistEntry(
     songTitle: entry.songRef.fallback.title,
     canonicalSongHref: resolveExactCanonicalSongHref(
       entry.songRef,
-      canonicalSongLinks,
+      options.canonicalSongLinks,
+      options.canonicalSongSiteOrigins,
     ),
   };
 }
@@ -325,7 +390,6 @@ export function mapPerformanceDetail(
   if (!found) {
     return null;
   }
-  const canonicalSongLinks = options.canonicalSongLinks ?? [];
   return {
     ...mapPerformanceSummary(
       found.group,
@@ -339,7 +403,7 @@ export function mapPerformanceDetail(
     eventDateRange: dateRangeLabel(found.event.dates),
     isSetlistAvailable: found.performance.setlist.length > 0,
     setlist: found.performance.setlist.map((entry) =>
-      mapSetlistEntry(entry, canonicalSongLinks),
+      mapSetlistEntry(entry, options),
     ),
   };
 }

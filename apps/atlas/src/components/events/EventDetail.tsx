@@ -9,6 +9,7 @@ import type {
 } from "../../features/events/event-presentation.js";
 import {
   getEventsMessages,
+  getLifecycleLabel,
   type EventsLocale,
 } from "../../i18n/events/messages.js";
 
@@ -19,6 +20,8 @@ interface EventDetailProps {
 }
 
 const detailStyle: CSSProperties = {
+  background: "var(--atlas-surface, #ffffff)",
+  color: "var(--atlas-text, #111827)",
   display: "grid",
   gap: 20,
   maxWidth: "100%",
@@ -40,13 +43,14 @@ const factStyle: CSSProperties = {
 };
 
 const labelStyle: CSSProperties = {
-  color: "#4b5563",
+  color: "var(--atlas-text-muted, #4b5563)",
   fontSize: "0.875rem",
   fontWeight: 600,
   margin: 0,
 };
 
 const valueStyle: CSSProperties = {
+  color: "var(--atlas-text, #111827)",
   margin: 0,
   overflowWrap: "anywhere",
 };
@@ -60,7 +64,8 @@ const performanceListStyle: CSSProperties = {
 };
 
 const performanceStyle: CSSProperties = {
-  border: "1px solid #d1d5db",
+  background: "var(--atlas-surface, #ffffff)",
+  border: "1px solid var(--atlas-border, #d1d5db)",
   borderRadius: 12,
   display: "grid",
   gap: 12,
@@ -99,12 +104,15 @@ export function EventDetail({
         </div>
         <div style={factStyle}>
           <dt style={labelStyle}>{messages.lifecycle}</dt>
-          <dd style={valueStyle}>{event.lifecycle}</dd>
+          <dd style={valueStyle}>
+            {getLifecycleLabel(messages, event.lifecycle)}
+          </dd>
         </div>
       </dl>
 
       <EventEvidence
         evidence={event.evidence}
+        headingLevel={2}
         messages={messages}
         sectionId={`${titleId}-evidence`}
       />
@@ -123,37 +131,56 @@ export function EventDetail({
           </div>
         ) : (
           <ul style={performanceListStyle}>
-            {event.performances.map((performance) => (
-              <li key={performance.performanceId}>
-                <article style={performanceStyle}>
-                  <h3 style={{ margin: 0 }}>{performance.performanceName}</h3>
-                  <dl style={factsStyle}>
-                    <div style={factStyle}>
-                      <dt style={labelStyle}>{messages.date}</dt>
-                      <dd style={valueStyle}>{performance.date}</dd>
-                    </div>
-                    <div style={factStyle}>
-                      <dt style={labelStyle}>{messages.venue}</dt>
-                      <dd style={valueStyle}>{performance.venueName}</dd>
-                    </div>
-                    <div style={factStyle}>
-                      <dt style={labelStyle}>{messages.setlistCount}</dt>
-                      <dd style={valueStyle}>{performance.setlistCount}</dd>
-                    </div>
-                  </dl>
-                  <EventEvidence
-                    evidence={performance.evidence}
-                    messages={messages}
-                    sectionId={`performance-summary-${performance.performanceId}-evidence`}
-                  />
-                  <RecordActionButton
-                    action={performance.recordAction}
-                    messages={messages}
-                    onRecord={onRecord}
-                  />
-                </article>
-              </li>
-            ))}
+            {event.performances.map((performance) => {
+              const performanceHeadingId = `performance-summary-${performance.performanceId}`;
+              return (
+                <li key={performance.performanceId}>
+                  <article
+                    aria-labelledby={performanceHeadingId}
+                    style={performanceStyle}
+                  >
+                    <h3 id={performanceHeadingId} style={{ margin: 0 }}>
+                      {performance.performanceName}
+                    </h3>
+                    <dl style={factsStyle}>
+                      <div style={factStyle}>
+                        <dt style={labelStyle}>{messages.date}</dt>
+                        <dd style={valueStyle}>{performance.date}</dd>
+                      </div>
+                      <div style={factStyle}>
+                        <dt style={labelStyle}>{messages.venue}</dt>
+                        <dd style={valueStyle}>{performance.venueName}</dd>
+                      </div>
+                      <div style={factStyle}>
+                        <dt style={labelStyle}>{messages.timezone}</dt>
+                        <dd style={valueStyle}>{performance.timezone}</dd>
+                      </div>
+                      <div style={factStyle}>
+                        <dt style={labelStyle}>{messages.lifecycle}</dt>
+                        <dd style={valueStyle}>
+                          {getLifecycleLabel(messages, performance.lifecycle)}
+                        </dd>
+                      </div>
+                      <div style={factStyle}>
+                        <dt style={labelStyle}>{messages.setlistCount}</dt>
+                        <dd style={valueStyle}>{performance.setlistCount}</dd>
+                      </div>
+                    </dl>
+                    <EventEvidence
+                      evidence={performance.evidence}
+                      headingLevel={4}
+                      messages={messages}
+                      sectionId={`${performanceHeadingId}-evidence`}
+                    />
+                    <RecordActionButton
+                      action={performance.recordAction}
+                      messages={messages}
+                      onRecord={onRecord}
+                    />
+                  </article>
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>

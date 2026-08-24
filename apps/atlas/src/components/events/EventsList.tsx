@@ -9,6 +9,7 @@ import type {
 } from "../../features/events/event-presentation.js";
 import {
   getEventsMessages,
+  getLifecycleLabel,
   type EventsLocale,
 } from "../../i18n/events/messages.js";
 
@@ -28,6 +29,10 @@ const listStyle: CSSProperties = {
 };
 
 const cardStyle: CSSProperties = {
+  background: "var(--atlas-surface, #ffffff)",
+  border: "1px solid var(--atlas-border, #d1d5db)",
+  borderRadius: 12,
+  color: "var(--atlas-text, #111827)",
   display: "grid",
   gap: 16,
   minWidth: 0,
@@ -49,13 +54,14 @@ const factStyle: CSSProperties = {
 };
 
 const labelStyle: CSSProperties = {
-  color: "#4b5563",
+  color: "var(--atlas-text-muted, #4b5563)",
   fontSize: "0.875rem",
   fontWeight: 600,
   margin: 0,
 };
 
 const valueStyle: CSSProperties = {
+  color: "var(--atlas-text, #111827)",
   margin: 0,
   overflowWrap: "anywhere",
 };
@@ -100,8 +106,14 @@ export function EventsList({
                       <dd style={valueStyle}>{event.dateRange}</dd>
                     </div>
                     <div style={factStyle}>
+                      <dt style={labelStyle}>{messages.timezone}</dt>
+                      <dd style={valueStyle}>{event.timezone}</dd>
+                    </div>
+                    <div style={factStyle}>
                       <dt style={labelStyle}>{messages.lifecycle}</dt>
-                      <dd style={valueStyle}>{event.lifecycle}</dd>
+                      <dd style={valueStyle}>
+                        {getLifecycleLabel(messages, event.lifecycle)}
+                      </dd>
                     </div>
                     <div style={factStyle}>
                       <dt style={labelStyle}>{messages.performances}</dt>
@@ -117,6 +129,7 @@ export function EventsList({
 
                   <EventEvidence
                     evidence={event.evidence}
+                    headingLevel={3}
                     messages={messages}
                     sectionId={`${headingId}-evidence`}
                   />

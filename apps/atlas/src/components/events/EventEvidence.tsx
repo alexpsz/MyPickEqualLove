@@ -1,16 +1,32 @@
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import type { EventEvidenceViewModel } from "../../features/events/event-presentation.js";
-import type { EventsMessages } from "../../i18n/events/messages.js";
+import {
+  getExcludedKindLabel,
+  getUnresolvedKindLabel,
+  type EventsMessages,
+} from "../../i18n/events/messages.js";
+
+type EvidenceHeadingLevel = 2 | 3 | 4;
+type HeadingLevel = EvidenceHeadingLevel | 5;
 
 interface EventEvidenceProps {
   readonly evidence: EventEvidenceViewModel;
+  readonly headingLevel: EvidenceHeadingLevel;
   readonly messages: EventsMessages;
   readonly sectionId: string;
 }
 
+interface EvidenceHeadingProps {
+  readonly children: ReactNode;
+  readonly id: string;
+  readonly level: HeadingLevel;
+}
+
 const surfaceStyle: CSSProperties = {
-  border: "1px solid #d1d5db",
+  background: "var(--atlas-surface, #ffffff)",
+  border: "1px solid var(--atlas-border, #d1d5db)",
   borderRadius: 12,
+  color: "var(--atlas-text, #111827)",
   display: "grid",
   gap: 16,
   maxWidth: "100%",
@@ -31,14 +47,20 @@ const factStyle: CSSProperties = {
   minWidth: 0,
 };
 
+const headingStyle: CSSProperties = {
+  color: "var(--atlas-text, #111827)",
+  margin: 0,
+};
+
 const labelStyle: CSSProperties = {
-  color: "#4b5563",
+  color: "var(--atlas-text-muted, #4b5563)",
   fontSize: "0.875rem",
   fontWeight: 600,
   margin: 0,
 };
 
 const valueStyle: CSSProperties = {
+  color: "var(--atlas-text, #111827)",
   margin: 0,
   overflowWrap: "anywhere",
 };
@@ -52,11 +74,46 @@ const listStyle: CSSProperties = {
 
 const linkStyle: CSSProperties = {
   alignItems: "center",
-  color: "#1d4ed8",
+  color: "var(--atlas-accent, #1d4ed8)",
   display: "inline-flex",
   minHeight: 44,
   overflowWrap: "anywhere",
 };
+
+function EvidenceHeading({ children, id, level }: EvidenceHeadingProps) {
+  switch (level) {
+    case 2:
+      return (
+        <h2 id={id} style={headingStyle}>
+          {children}
+        </h2>
+      );
+    case 3:
+      return (
+        <h3 id={id} style={headingStyle}>
+          {children}
+        </h3>
+      );
+    case 4:
+      return (
+        <h4 id={id} style={headingStyle}>
+          {children}
+        </h4>
+      );
+    case 5:
+      return (
+        <h5 id={id} style={headingStyle}>
+          {children}
+        </h5>
+      );
+  }
+}
+
+function subsectionHeadingLevel(
+  headingLevel: EvidenceHeadingLevel,
+): HeadingLevel {
+  return (headingLevel + 1) as HeadingLevel;
+}
 
 function verificationLabel(
   messages: EventsMessages,
@@ -67,12 +124,14 @@ function verificationLabel(
 
 export function EventEvidence({
   evidence,
+  headingLevel,
   messages,
   sectionId,
 }: EventEvidenceProps) {
   const sourcesId = `${sectionId}-sources`;
   const excludedId = `${sectionId}-excluded`;
   const unresolvedId = `${sectionId}-unresolved`;
+  const subheadingLevel = subsectionHeadingLevel(headingLevel);
 
   return (
     <section
@@ -80,9 +139,9 @@ export function EventEvidence({
       data-events-evidence
       style={surfaceStyle}
     >
-      <h2 id={sectionId} style={{ margin: 0 }}>
+      <EvidenceHeading id={sectionId} level={headingLevel}>
         {messages.evidence}
-      </h2>
+      </EvidenceHeading>
 
       <dl style={factsStyle}>
         <div style={factStyle}>
@@ -103,9 +162,9 @@ export function EventEvidence({
       </dl>
 
       <section aria-labelledby={sourcesId}>
-        <h3 id={sourcesId} style={{ margin: 0 }}>
+        <EvidenceHeading id={sourcesId} level={subheadingLevel}>
           {messages.sources}
-        </h3>
+        </EvidenceHeading>
         {evidence.sourceUrls.length === 0 ? (
           <p style={valueStyle}>{messages.noSources}</p>
         ) : (
@@ -127,16 +186,17 @@ export function EventEvidence({
       </section>
 
       <section aria-labelledby={excludedId}>
-        <h3 id={excludedId} style={{ margin: 0 }}>
+        <EvidenceHeading id={excludedId} level={subheadingLevel}>
           {messages.excluded}
-        </h3>
+        </EvidenceHeading>
         {evidence.excluded.length === 0 ? (
           <p style={valueStyle}>{messages.noExcluded}</p>
         ) : (
           <ul data-excluded-items style={listStyle}>
             {evidence.excluded.map((item, index) => (
               <li key={`${item.kind}-${item.sourceId}-${index}`}>
-                {item.kind}: {item.sourceId} — {item.reason}
+                {getExcludedKindLabel(messages, item.kind)}: {item.sourceId} —{" "}
+                {item.reason}
               </li>
             ))}
           </ul>
@@ -144,9 +204,9 @@ export function EventEvidence({
       </section>
 
       <section aria-labelledby={unresolvedId}>
-        <h3 id={unresolvedId} style={{ margin: 0 }}>
+        <EvidenceHeading id={unresolvedId} level={subheadingLevel}>
           {messages.unresolved}
-        </h3>
+        </EvidenceHeading>
         {evidence.unresolved.length === 0 ? (
           <p data-unresolved-items style={valueStyle}>
             {messages.noUnresolved}
@@ -155,7 +215,8 @@ export function EventEvidence({
           <ul data-unresolved-items style={listStyle}>
             {evidence.unresolved.map((item, index) => (
               <li key={`${item.kind}-${item.sourceValue}-${index}`}>
-                {item.kind}: {item.sourceValue} — {item.reason}
+                {getUnresolvedKindLabel(messages, item.kind)}:{" "}
+                {item.sourceValue} — {item.reason}
               </li>
             ))}
           </ul>

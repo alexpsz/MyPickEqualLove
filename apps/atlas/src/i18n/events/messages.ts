@@ -1,3 +1,9 @@
+import type {
+  AtlasLifecycle,
+  ProjectionExcludedItem,
+  ProjectionUnresolvedItem,
+} from "../../contracts/public-atlas-projection.js";
+
 export const EVENTS_LOCALES = ["zh-CN", "en", "ja", "ko"] as const;
 
 export type EventsLocale = (typeof EVENTS_LOCALES)[number];
@@ -36,6 +42,17 @@ export interface EventsMessages {
   readonly verified: string;
   readonly partial: string;
   readonly unverified: string;
+  readonly lifecycleScheduled: string;
+  readonly lifecyclePostponed: string;
+  readonly lifecycleCancelled: string;
+  readonly lifecycleCompleted: string;
+  readonly lifecycleUnknown: string;
+  readonly excludedKindEvent: string;
+  readonly excludedKindPerformance: string;
+  readonly excludedKindSetlistEntry: string;
+  readonly unresolvedKindVenue: string;
+  readonly unresolvedKindSong: string;
+  readonly unresolvedKindSource: string;
 }
 
 const MESSAGES: Readonly<Record<EventsLocale, EventsMessages>> = {
@@ -73,6 +90,17 @@ const MESSAGES: Readonly<Record<EventsLocale, EventsMessages>> = {
     verified: "已核验",
     partial: "部分核验",
     unverified: "未核验",
+    lifecycleScheduled: "已排期",
+    lifecyclePostponed: "已延期",
+    lifecycleCancelled: "已取消",
+    lifecycleCompleted: "已完成",
+    lifecycleUnknown: "未知",
+    excludedKindEvent: "活动",
+    excludedKindPerformance: "场次",
+    excludedKindSetlistEntry: "歌单曲目",
+    unresolvedKindVenue: "场馆",
+    unresolvedKindSong: "歌曲",
+    unresolvedKindSource: "来源",
   },
   en: {
     events: "Events",
@@ -112,6 +140,17 @@ const MESSAGES: Readonly<Record<EventsLocale, EventsMessages>> = {
     verified: "Verified",
     partial: "Partially verified",
     unverified: "Unverified",
+    lifecycleScheduled: "Scheduled",
+    lifecyclePostponed: "Postponed",
+    lifecycleCancelled: "Cancelled",
+    lifecycleCompleted: "Completed",
+    lifecycleUnknown: "Unknown",
+    excludedKindEvent: "Event",
+    excludedKindPerformance: "Performance",
+    excludedKindSetlistEntry: "Setlist entry",
+    unresolvedKindVenue: "Venue",
+    unresolvedKindSong: "Song",
+    unresolvedKindSource: "Source",
   },
   ja: {
     events: "イベント",
@@ -149,6 +188,17 @@ const MESSAGES: Readonly<Record<EventsLocale, EventsMessages>> = {
     verified: "検証済み",
     partial: "一部検証済み",
     unverified: "未検証",
+    lifecycleScheduled: "予定",
+    lifecyclePostponed: "延期",
+    lifecycleCancelled: "中止",
+    lifecycleCompleted: "完了",
+    lifecycleUnknown: "不明",
+    excludedKindEvent: "イベント",
+    excludedKindPerformance: "公演",
+    excludedKindSetlistEntry: "セットリスト曲目",
+    unresolvedKindVenue: "会場",
+    unresolvedKindSong: "楽曲",
+    unresolvedKindSource: "出典",
   },
   ko: {
     events: "이벤트",
@@ -186,9 +236,66 @@ const MESSAGES: Readonly<Record<EventsLocale, EventsMessages>> = {
     verified: "검증됨",
     partial: "부분 검증됨",
     unverified: "미검증",
+    lifecycleScheduled: "예정",
+    lifecyclePostponed: "연기됨",
+    lifecycleCancelled: "취소됨",
+    lifecycleCompleted: "완료됨",
+    lifecycleUnknown: "알 수 없음",
+    excludedKindEvent: "이벤트",
+    excludedKindPerformance: "공연",
+    excludedKindSetlistEntry: "세트리스트 곡목",
+    unresolvedKindVenue: "공연장",
+    unresolvedKindSong: "곡",
+    unresolvedKindSource: "출처",
   },
 };
 
 export function getEventsMessages(locale: EventsLocale): EventsMessages {
   return MESSAGES[locale];
+}
+
+export function getLifecycleLabel(
+  messages: EventsMessages,
+  lifecycle: AtlasLifecycle,
+): string {
+  switch (lifecycle) {
+    case "scheduled":
+      return messages.lifecycleScheduled;
+    case "postponed":
+      return messages.lifecyclePostponed;
+    case "cancelled":
+      return messages.lifecycleCancelled;
+    case "completed":
+      return messages.lifecycleCompleted;
+    case "unknown":
+      return messages.lifecycleUnknown;
+  }
+}
+
+export function getExcludedKindLabel(
+  messages: EventsMessages,
+  kind: ProjectionExcludedItem["kind"],
+): string {
+  switch (kind) {
+    case "event":
+      return messages.excludedKindEvent;
+    case "performance":
+      return messages.excludedKindPerformance;
+    case "setlist-entry":
+      return messages.excludedKindSetlistEntry;
+  }
+}
+
+export function getUnresolvedKindLabel(
+  messages: EventsMessages,
+  kind: ProjectionUnresolvedItem["kind"],
+): string {
+  switch (kind) {
+    case "venue":
+      return messages.unresolvedKindVenue;
+    case "song":
+      return messages.unresolvedKindSong;
+    case "source":
+      return messages.unresolvedKindSource;
+  }
 }
