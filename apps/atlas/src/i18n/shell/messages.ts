@@ -73,16 +73,16 @@ export const SHELL_MESSAGES: Record<ShellLocale, ShellMessages> = {
         "Atlas 用于保存你自己的回忆与选择；它不复制 MyPick 的歌曲浏览器或榜单。",
       primaryAction: "记录本地自定义事件",
       primaryActionHint:
-        "从本地自定义事件开始；有记录后，这里会成为继续 Journey 的入口。",
+        "从本地自定义事件开始；保存后可在“我的 Journey”中回顾和继续编辑。",
       emptyStateLabel: "我的 Journey",
-      emptyStateTitle: "还没有本地记录",
+      emptyStateTitle: "你的记录由你保管",
       emptyStateDescription:
-        "先写下一次只属于你的时刻。连接私有 Journey 存储后，本卡片会展示并继续你的本地记录。",
+        "先写下一次只属于你的时刻；保存的记录可在“我的 Journey”中回顾和编辑。",
       localEventTitle: "本地自定义事件",
       localEventDescription:
         "这是一个私有记录入口，不会创建公共活动，也不会使用示例或演示数据。",
-      localEventAction: "等待私有 Journey 操作接线",
-      localEventStatus: "该操作会在本地 Journey 存储接入后启用。",
+      localEventAction: "本地记录已可用",
+      localEventStatus: "记录只保存在此浏览器，可随时在 Journey 中继续编辑。",
       privacyTitle: "数据仅留在 Atlas",
       privacyDescription:
         "你的个人 Journey 数据只保存在此 Atlas origin 的本地浏览器存储中，绝不会上传，也不会发送给 MyPick。",
@@ -123,17 +123,17 @@ export const SHELL_MESSAGES: Record<ShellLocale, ShellMessages> = {
         "Atlas keeps your own memories and choices. It does not copy MyPick song browsers or rankings.",
       primaryAction: "Record a local custom event",
       primaryActionHint:
-        "Start with a local custom event; once you have entries, this becomes where you continue your Journey.",
+        "Start with a local custom event, then review and continue editing it in My Journey.",
       emptyStateLabel: "My Journey",
-      emptyStateTitle: "No local entries yet",
+      emptyStateTitle: "Your records stay in your hands",
       emptyStateDescription:
-        "Begin with a moment that matters to you. Once private Journey storage is connected, this card will show and continue only your local record.",
+        "Begin with a moment that matters to you. Saved records can be reviewed and edited in My Journey.",
       localEventTitle: "Local custom event",
       localEventDescription:
         "This is a private-recording entry point. It creates no public activity and uses no sample or demo data.",
-      localEventAction: "Private Journey action is waiting to be connected",
+      localEventAction: "Local recording is ready",
       localEventStatus:
-        "This action becomes available when local Journey storage is wired in.",
+        "The record stays in this browser and remains editable from Journey.",
       privacyTitle: "Your data stays in Atlas",
       privacyDescription:
         "Your personal Journey data is stored only in this Atlas origin's local browser storage. It is never uploaded or sent to MyPick.",
@@ -175,17 +175,17 @@ export const SHELL_MESSAGES: Record<ShellLocale, ShellMessages> = {
         "Atlas はあなたの思い出と選択を記録します。MyPick の楽曲ブラウザーやランキングを複製しません。",
       primaryAction: "ローカルのカスタムイベントを記録する",
       primaryActionHint:
-        "まずはローカルのカスタムイベントから。記録ができたら、ここが Journey を続ける入口になります。",
+        "まずはローカルのカスタムイベントから。保存後は「わたしの Journey」で振り返り、編集を続けられます。",
       emptyStateLabel: "わたしの Journey",
-      emptyStateTitle: "ローカルの記録はまだありません",
+      emptyStateTitle: "記録はあなた自身が管理します",
       emptyStateDescription:
-        "大切にしたい瞬間を書き留めましょう。プライベート Journey ストレージ接続後、このカードには自分のローカル記録だけが表示され、続きから始められます。",
+        "大切にしたい瞬間を書き留めましょう。保存した記録は「わたしの Journey」で振り返り、編集できます。",
       localEventTitle: "ローカルのカスタムイベント",
       localEventDescription:
         "これはプライベート記録の入口です。公開アクティビティを作成せず、サンプルやデモのデータも使いません。",
-      localEventAction: "プライベート Journey 操作の接続待ち",
+      localEventAction: "ローカル記録を利用できます",
       localEventStatus:
-        "ローカル Journey ストレージが接続されると、この操作を利用できます。",
+        "記録はこのブラウザー内だけに保存され、Journey からいつでも編集できます。",
       privacyTitle: "データは Atlas にだけ残ります",
       privacyDescription:
         "個人の Journey データは、この Atlas origin のローカルブラウザーストレージにのみ保存されます。アップロードも MyPick への送信も行いません。",
@@ -227,17 +227,17 @@ export const SHELL_MESSAGES: Record<ShellLocale, ShellMessages> = {
         "Atlas는 나의 기억과 선택을 보관합니다. MyPick의 곡 탐색기나 순위를 복제하지 않습니다.",
       primaryAction: "로컬 맞춤 이벤트 기록하기",
       primaryActionHint:
-        "로컬 맞춤 이벤트부터 시작하세요. 기록이 생기면 이곳에서 Journey를 이어갈 수 있습니다.",
+        "로컬 맞춤 이벤트부터 시작하세요. 저장한 뒤에는 '나의 Journey'에서 돌아보고 계속 수정할 수 있습니다.",
       emptyStateLabel: "나의 Journey",
-      emptyStateTitle: "아직 로컬 기록이 없습니다",
+      emptyStateTitle: "내 기록은 내가 관리합니다",
       emptyStateDescription:
-        "나에게 중요한 순간부터 남겨 보세요. 비공개 Journey 저장소가 연결되면 이 카드에는 내 로컬 기록만 표시되고 이어서 사용할 수 있습니다.",
+        "나에게 중요한 순간부터 남겨 보세요. 저장한 기록은 '나의 Journey'에서 돌아보고 수정할 수 있습니다.",
       localEventTitle: "로컬 맞춤 이벤트",
       localEventDescription:
         "이곳은 비공개 기록의 시작점입니다. 공개 활동을 만들지 않으며 샘플이나 데모 데이터를 사용하지 않습니다.",
-      localEventAction: "비공개 Journey 동작 연결 대기 중",
+      localEventAction: "로컬 기록을 사용할 수 있습니다",
       localEventStatus:
-        "로컬 Journey 저장소가 연결되면 이 동작을 사용할 수 있습니다.",
+        "기록은 이 브라우저에만 저장되며 Journey에서 언제든 수정할 수 있습니다.",
       privacyTitle: "데이터는 Atlas 안에만 남습니다",
       privacyDescription:
         "개인 Journey 데이터는 이 Atlas origin의 로컬 브라우저 저장소에만 보관됩니다. 업로드하거나 MyPick에 보내지 않습니다.",
