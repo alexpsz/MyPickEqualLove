@@ -14,6 +14,7 @@ export type AppIconName =
   | "image"
   | "info"
   | "keyboard"
+  | "list"
   | "menu"
   | "monitor"
   | "moon"
@@ -135,6 +136,23 @@ function getIconPaths(name: AppIconName) {
           <rect x="3.5" y="6.25" width="17" height="11.5" rx="2" />
           <path d="M6.75 10h.01M9.75 10h.01M12.75 10h.01M15.75 10h.01M6.75 13h.01M9.75 13h.01M12.75 13h.01M15.75 13h.01" />
           <path d="M8.5 15.5h7" />
+        </>
+      );
+    case "list":
+      return (
+        <>
+          <path d="M9 6.75h10.25" />
+          <path d="M9 12h10.25" />
+          <path d="M9 17.25h10.25" />
+          <circle cx="5.25" cy="6.75" r="1" fill="currentColor" stroke="none" />
+          <circle cx="5.25" cy="12" r="1" fill="currentColor" stroke="none" />
+          <circle
+            cx="5.25"
+            cy="17.25"
+            r="1"
+            fill="currentColor"
+            stroke="none"
+          />
         </>
       );
     case "menu":

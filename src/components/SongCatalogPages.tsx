@@ -33,7 +33,10 @@ export function SongCatalogIndex({
 
   return (
     <div className="site-shell relative flex min-h-full flex-1 flex-col">
-      <AppTopBar memberColorBackground={SONG_CATALOG_BAR_BACKGROUND} />
+      <AppTopBar
+        memberColorBackground={SONG_CATALOG_BAR_BACKGROUND}
+        songCatalogCurrent
+      />
       <main className="app-content-shell flex flex-1 flex-col px-4 pb-8 pt-6 sm:px-6 sm:pb-12 sm:pt-9 md:px-8">
         <SongNavigation showCatalogLink={false} />
         <header className="max-w-3xl">
