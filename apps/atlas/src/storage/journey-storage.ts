@@ -3,7 +3,16 @@ import {
   type JourneyDocumentReadResult,
   type JourneyDocumentV1,
 } from "../contracts/journey-document.js";
-import type { JourneyReplaceApplyPlan } from "../ports/restore-plan.js";
+import {
+  ATLAS_BACKUP_MAX_BYTES,
+  utf8ByteLength,
+} from "../backup/backup-codec.js";
+import {
+  createRestoreSummary,
+  type JourneyReplaceApplyPlan,
+  type RestoreEntitySummary,
+  type RestoreSummary,
+} from "../ports/restore-plan.js";
 import {
   validateReplaceJourneyInput,
   type DeleteAllJourneysInput,
@@ -48,6 +57,7 @@ export type JourneyReplacePlanApplyResult =
   | {
       readonly status: "invalid-plan";
       readonly reason:
+        | "invalid-shape"
         | "invalid-expected-revision"
         | "invalid-next-revision"
         | "non-consecutive-revision";
@@ -56,14 +66,13 @@ export type JourneyReplacePlanApplyResult =
 
 export interface JourneyReplacementCapacityPreflightInput {
   readonly plan: JourneyReplaceApplyPlan;
-  /** Supplied from the backup codec's single authoritative import limit. */
-  readonly maximumReplacementBytes: number;
 }
 
 export type JourneyReplacementCapacityPreflightResult =
   | {
       readonly status: "ready";
-      readonly applyPlan: JourneyReplaceApplyPlan;
+      /** Advisory only. Every apply path independently repeats all hard gates. */
+      readonly advisory: true;
       readonly replacementByteLength: number;
       readonly requiredStorageUnits: number;
     }
@@ -71,8 +80,7 @@ export type JourneyReplacementCapacityPreflightResult =
       readonly status: "capacity-failed";
       readonly applyPlan: null;
       readonly reason:
-        | "replacement-exceeds-authorized-limit"
-        | "replacement-exceeds-probe-hard-limit"
+        | "replacement-exceeds-authoritative-limit"
         | "probe-quota-exceeded";
       readonly replacementByteLength: number | null;
       readonly requiredStorageUnits: number;
@@ -85,9 +93,6 @@ export type JourneyReplacementCapacityPreflightResult =
         | "invalid-input"
         | "invalid-plan"
         | "measurement"
-        | "probe-in-use"
-        | "probe-read"
-        | "probe-occupied"
         | "probe-token"
         | "probe-write"
         | "probe-readback"
@@ -99,8 +104,10 @@ export type JourneyReplacementCapacityPreflightResult =
 
 type StorageProvider = () => JourneyStorageLike;
 
-const ATLAS_JOURNEY_CAPACITY_PROBE_KEY_V1 = "atlas:journey-capacity-probe:v1";
-const CAPACITY_PROBE_MAX_STORAGE_UNITS = 8 * 1024 * 1024;
+const ATLAS_JOURNEY_CAPACITY_PROBE_KEY_PREFIX_V1 =
+  "atlas:journey-capacity-probe:v1:";
+const ATLAS_JOURNEY_CAPACITY_PROBE_VALUE_PREFIX_V1 =
+  "atlas-capacity-placeholder:v1:";
 
 function describeError(error: unknown) {
   if (error instanceof Error) {
@@ -137,6 +144,142 @@ function unavailableCapacity(
     requiredStorageUnits,
     error,
   };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function hasExactKeys(
+  value: Record<string, unknown>,
+  expectedKeys: readonly string[],
+) {
+  const actualKeys = Object.keys(value).sort();
+  const expected = [...expectedKeys].sort();
+  return (
+    actualKeys.length === expected.length &&
+    actualKeys.every((key, index) => key === expected[index])
+  );
+}
+
+function isRestoreEntitySummary(value: unknown): value is RestoreEntitySummary {
+  if (
+    !isRecord(value) ||
+    !hasExactKeys(value, [
+      "before",
+      "after",
+      "added",
+      "updated",
+      "deleted",
+      "unchanged",
+    ])
+  ) {
+    return false;
+  }
+  const counts = [
+    value.before,
+    value.after,
+    value.added,
+    value.updated,
+    value.deleted,
+    value.unchanged,
+  ];
+  if (
+    !counts.every(
+      (count) =>
+        typeof count === "number" && Number.isInteger(count) && count >= 0,
+    )
+  ) {
+    return false;
+  }
+  const summary = value as unknown as RestoreEntitySummary;
+  return (
+    summary.before === summary.updated + summary.deleted + summary.unchanged &&
+    summary.after === summary.added + summary.updated + summary.unchanged
+  );
+}
+
+function isRestoreSummary(value: unknown): value is RestoreSummary {
+  return (
+    isRecord(value) &&
+    hasExactKeys(value, ["journeys", "experienceEntries"]) &&
+    isRestoreEntitySummary(value.journeys) &&
+    isRestoreEntitySummary(value.experienceEntries)
+  );
+}
+
+type ReplacePlanValidationResult =
+  | { readonly ok: true; readonly plan: JourneyReplaceApplyPlan }
+  | {
+      readonly ok: false;
+      readonly reason:
+        | "invalid-shape"
+        | "invalid-expected-revision"
+        | "invalid-next-revision"
+        | "non-consecutive-revision";
+      readonly expectedNextRevision: number | null;
+    };
+
+function validateReplacePlanShape(value: unknown): ReplacePlanValidationResult {
+  if (
+    !isRecord(value) ||
+    !hasExactKeys(value, [
+      "kind",
+      "expectedRevision",
+      "replacement",
+      "summary",
+    ]) ||
+    value.kind !== "replace-journey-document" ||
+    !isRecord(value.replacement) ||
+    !isRestoreSummary(value.summary)
+  ) {
+    return {
+      ok: false,
+      reason: "invalid-shape",
+      expectedNextRevision: null,
+    };
+  }
+  const plan = value as unknown as JourneyReplaceApplyPlan;
+  const validated = validateReplaceJourneyInput({
+    expectedRevision: plan.expectedRevision,
+    replacement: plan.replacement,
+  });
+  return validated.ok
+    ? { ok: true, plan }
+    : {
+        ok: false,
+        reason: validated.reason,
+        expectedNextRevision: validated.expectedNextRevision,
+      };
+}
+
+type CanonicalReplacementMeasurement =
+  | {
+      readonly fits: true;
+      readonly replacementByteLength: number;
+      readonly requiredStorageUnits: number;
+    }
+  | {
+      readonly fits: false;
+      readonly replacementByteLength: number | null;
+      readonly requiredStorageUnits: number;
+    };
+
+function measureCanonicalReplacement(
+  raw: string,
+): CanonicalReplacementMeasurement {
+  if (raw.length > ATLAS_BACKUP_MAX_BYTES) {
+    return {
+      fits: false,
+      replacementByteLength: null,
+      requiredStorageUnits: raw.length,
+    };
+  }
+  const replacementByteLength = utf8ByteLength(raw);
+  const requiredStorageUnits = Math.max(raw.length, replacementByteLength);
+  return requiredStorageUnits <= ATLAS_BACKUP_MAX_BYTES
+    ? { fits: true, replacementByteLength, requiredStorageUnits }
+    : { fits: false, replacementByteLength, requiredStorageUnits };
 }
 
 function rawFromRead(result: JourneyDocumentReadResult): string | null {
@@ -216,7 +359,6 @@ function readFailure(
 export class LocalStorageJourneyRepository implements JourneyRepository {
   readonly #storageProvider: StorageProvider;
   #lastObservedRaw: string | null = null;
-  #capacityProbeActive = false;
 
   constructor(storage: JourneyStorageLike | StorageProvider) {
     this.#storageProvider =
@@ -246,16 +388,28 @@ export class LocalStorageJourneyRepository implements JourneyRepository {
   async replace(
     input: ValidatedReplaceJourneyInput,
   ): Promise<JourneyWriteMutationResult> {
-    return this.#writeDocument(input.expectedRevision, input.replacement);
+    if (
+      !isRecord(input) ||
+      !hasExactKeys(input, ["expectedRevision", "replacement"])
+    ) {
+      return {
+        status: "failure",
+        stage: "write",
+        rawBefore: null,
+        error:
+          "Replace input must contain only expectedRevision and replacement",
+        rollback: { status: "not-required" },
+      };
+    }
+    return this.#writeDocument(input.expectedRevision, input.replacement, {
+      enforceAuthoritativeReplacementLimit: true,
+    });
   }
 
   async applyReplacePlan(
     plan: JourneyReplaceApplyPlan,
   ): Promise<JourneyReplacePlanApplyResult> {
-    const validated = validateReplaceJourneyInput({
-      expectedRevision: plan.expectedRevision,
-      replacement: plan.replacement,
-    });
+    const validated = validateReplacePlanShape(plan);
     if (!validated.ok) {
       return {
         status: "invalid-plan",
@@ -263,89 +417,55 @@ export class LocalStorageJourneyRepository implements JourneyRepository {
         expectedNextRevision: validated.expectedNextRevision,
       };
     }
-    return this.replace(validated.value);
+    return this.#writeDocument(
+      validated.plan.expectedRevision,
+      validated.plan.replacement,
+      {
+        enforceAuthoritativeReplacementLimit: true,
+        expectedRestoreSummary: validated.plan.summary,
+      },
+    );
   }
 
   async preflightReplaceCapacity(
     input: JourneyReplacementCapacityPreflightInput,
   ): Promise<JourneyReplacementCapacityPreflightResult> {
-    if (
-      !Number.isSafeInteger(input.maximumReplacementBytes) ||
-      input.maximumReplacementBytes <= 0
-    ) {
+    if (!isRecord(input) || !hasExactKeys(input, ["plan"])) {
       return unavailableCapacity(
         "invalid-input",
-        "maximumReplacementBytes must be a positive integer",
+        "replacement capacity input must contain only plan",
       );
     }
-    if (input.plan.kind !== "replace-journey-document") {
-      return unavailableCapacity(
-        "invalid-plan",
-        "replacement capacity requires a Journey replace apply plan",
-      );
-    }
-    const validated = validateReplaceJourneyInput({
-      expectedRevision: input.plan.expectedRevision,
-      replacement: input.plan.replacement,
-    });
+    const validated = validateReplacePlanShape(input.plan);
     if (!validated.ok) {
       return unavailableCapacity(
         "invalid-plan",
-        `replacement plan revision is invalid: ${validated.reason}`,
+        `replacement capacity plan is invalid: ${validated.reason}`,
       );
     }
 
-    let prepared: ReturnType<typeof prepareDocument>;
-    let replacementByteLength: number;
-    let requiredStorageUnits: number;
+    let measurement: CanonicalReplacementMeasurement;
     try {
-      prepared = prepareDocument(validated.value.replacement);
-      requiredStorageUnits = prepared.raw.length;
-      if (requiredStorageUnits > CAPACITY_PROBE_MAX_STORAGE_UNITS) {
-        return {
-          status: "capacity-failed",
-          applyPlan: null,
-          reason: "replacement-exceeds-probe-hard-limit",
-          replacementByteLength: null,
-          requiredStorageUnits,
-          error:
-            "canonical Journey replacement exceeds the probe allocation limit",
-        };
-      }
-      replacementByteLength = new TextEncoder().encode(prepared.raw).byteLength;
+      const prepared = prepareDocument(validated.plan.replacement);
+      measurement = measureCanonicalReplacement(prepared.raw);
     } catch (error) {
       return unavailableCapacity("measurement", describeError(error));
     }
-    if (replacementByteLength > input.maximumReplacementBytes) {
+    if (!measurement.fits) {
       return {
         status: "capacity-failed",
         applyPlan: null,
-        reason: "replacement-exceeds-authorized-limit",
-        replacementByteLength,
-        requiredStorageUnits,
+        reason: "replacement-exceeds-authoritative-limit",
+        replacementByteLength: measurement.replacementByteLength,
+        requiredStorageUnits: measurement.requiredStorageUnits,
         error:
-          "canonical Journey replacement exceeds the caller's authoritative byte limit",
+          "canonical Journey replacement exceeds the authoritative backup/storage limit",
       };
     }
-    if (this.#capacityProbeActive) {
-      return unavailableCapacity(
-        "probe-in-use",
-        "another replacement capacity probe is already active",
-        replacementByteLength,
-        requiredStorageUnits,
-      );
-    }
-
-    this.#capacityProbeActive = true;
-    try {
-      return this.#runReplacementCapacityProbe(
-        input.plan,
-        replacementByteLength,
-        requiredStorageUnits,
-      );
-    } finally {
-      this.#capacityProbeActive = false;
-    }
+    return this.#runReplacementCapacityProbe(
+      measurement.replacementByteLength,
+      measurement.requiredStorageUnits,
+    );
   }
 
   async deleteAll(
@@ -410,35 +530,14 @@ export class LocalStorageJourneyRepository implements JourneyRepository {
   }
 
   #runReplacementCapacityProbe(
-    plan: JourneyReplaceApplyPlan,
     replacementByteLength: number,
     requiredStorageUnits: number,
   ): JourneyReplacementCapacityPreflightResult {
-    let storage: JourneyStorageLike;
-    try {
-      storage = this.#storageProvider();
-      const existing = storage.getItem(ATLAS_JOURNEY_CAPACITY_PROBE_KEY_V1);
-      if (existing !== null) {
-        return unavailableCapacity(
-          "probe-occupied",
-          "replacement capacity probe key already contains a value",
-          replacementByteLength,
-          requiredStorageUnits,
-        );
-      }
-    } catch (error) {
-      return unavailableCapacity(
-        "probe-read",
-        describeError(error),
-        replacementByteLength,
-        requiredStorageUnits,
-      );
-    }
-
+    let probeKey: string;
     let probeValue: string;
     try {
-      const token = globalThis.crypto.randomUUID();
-      const seed = `atlas-capacity-probe:${token}:`;
+      probeKey = `${ATLAS_JOURNEY_CAPACITY_PROBE_KEY_PREFIX_V1}${globalThis.crypto.randomUUID()}`;
+      const seed = `${ATLAS_JOURNEY_CAPACITY_PROBE_VALUE_PREFIX_V1}${globalThis.crypto.randomUUID()}:`;
       probeValue = seed
         .repeat(Math.ceil(requiredStorageUnits / seed.length))
         .slice(0, requiredStorageUnits);
@@ -451,10 +550,29 @@ export class LocalStorageJourneyRepository implements JourneyRepository {
       );
     }
 
+    let storage: JourneyStorageLike;
     try {
-      storage.setItem(ATLAS_JOURNEY_CAPACITY_PROBE_KEY_V1, probeValue);
+      storage = this.#storageProvider();
     } catch (error) {
-      const cleanup = this.#cleanupCapacityProbe(storage, probeValue, true);
+      return unavailableCapacity(
+        "probe-write",
+        describeError(error),
+        replacementByteLength,
+        requiredStorageUnits,
+      );
+    }
+
+    try {
+      // A fresh UUID key is written directly; there is no shared fixed-key
+      // emptiness read for another tab to occupy before this write.
+      storage.setItem(probeKey, probeValue);
+    } catch (error) {
+      const cleanup = this.#cleanupCapacityProbe(
+        storage,
+        probeKey,
+        probeValue,
+        true,
+      );
       if (!cleanup.ok) {
         return unavailableCapacity(
           "probe-cleanup",
@@ -482,9 +600,14 @@ export class LocalStorageJourneyRepository implements JourneyRepository {
 
     let readback: string | null;
     try {
-      readback = storage.getItem(ATLAS_JOURNEY_CAPACITY_PROBE_KEY_V1);
+      readback = storage.getItem(probeKey);
     } catch (error) {
-      const cleanup = this.#cleanupCapacityProbe(storage, probeValue, false);
+      const cleanup = this.#cleanupCapacityProbe(
+        storage,
+        probeKey,
+        probeValue,
+        false,
+      );
       return unavailableCapacity(
         cleanup.ok ? "probe-readback" : "probe-cleanup",
         cleanup.ok ? describeError(error) : cleanup.error,
@@ -501,7 +624,12 @@ export class LocalStorageJourneyRepository implements JourneyRepository {
       );
     }
 
-    const cleanup = this.#cleanupCapacityProbe(storage, probeValue, false);
+    const cleanup = this.#cleanupCapacityProbe(
+      storage,
+      probeKey,
+      probeValue,
+      false,
+    );
     if (!cleanup.ok) {
       return unavailableCapacity(
         "probe-cleanup",
@@ -512,7 +640,7 @@ export class LocalStorageJourneyRepository implements JourneyRepository {
     }
     return {
       status: "ready",
-      applyPlan: plan,
+      advisory: true,
       replacementByteLength,
       requiredStorageUnits,
     };
@@ -520,12 +648,13 @@ export class LocalStorageJourneyRepository implements JourneyRepository {
 
   #cleanupCapacityProbe(
     storage: JourneyStorageLike,
+    probeKey: string,
     probeValue: string,
     allowMissing: boolean,
   ): { readonly ok: true } | { readonly ok: false; readonly error: string } {
     let current: string | null;
     try {
-      current = storage.getItem(ATLAS_JOURNEY_CAPACITY_PROBE_KEY_V1);
+      current = storage.getItem(probeKey);
     } catch (error) {
       return {
         ok: false,
@@ -549,7 +678,7 @@ export class LocalStorageJourneyRepository implements JourneyRepository {
     }
 
     try {
-      storage.removeItem(ATLAS_JOURNEY_CAPACITY_PROBE_KEY_V1);
+      storage.removeItem(probeKey);
     } catch (error) {
       return {
         ok: false,
@@ -557,7 +686,7 @@ export class LocalStorageJourneyRepository implements JourneyRepository {
       };
     }
     try {
-      return storage.getItem(ATLAS_JOURNEY_CAPACITY_PROBE_KEY_V1) === null
+      return storage.getItem(probeKey) === null
         ? { ok: true }
         : {
             ok: false,
@@ -574,6 +703,10 @@ export class LocalStorageJourneyRepository implements JourneyRepository {
   async #writeDocument(
     expectedRevision: JourneyRevisionExpectation,
     document: JourneyDocumentV1,
+    options: {
+      readonly enforceAuthoritativeReplacementLimit?: boolean;
+      readonly expectedRestoreSummary?: RestoreSummary;
+    } = {},
   ): Promise<JourneyWriteMutationResult> {
     const before = await this.read();
     if (before.status === "read-failed") {
@@ -584,6 +717,20 @@ export class LocalStorageJourneyRepository implements JourneyRepository {
     }
 
     const rawBefore = rawFromRead(before);
+    const revision = validateReplaceJourneyInput({
+      expectedRevision,
+      replacement: document,
+    });
+    if (!revision.ok) {
+      return {
+        status: "failure",
+        stage: "write",
+        rawBefore,
+        error: `Journey revision transition failed: ${revision.reason}`,
+        rollback: { status: "not-required" },
+      };
+    }
+
     let prepared: ReturnType<typeof prepareDocument>;
     try {
       prepared = prepareDocument(document);
@@ -595,6 +742,38 @@ export class LocalStorageJourneyRepository implements JourneyRepository {
         error: describeError(error),
         rollback: { status: "not-required" },
       };
+    }
+    if (options.enforceAuthoritativeReplacementLimit) {
+      const measurement = measureCanonicalReplacement(prepared.raw);
+      if (!measurement.fits) {
+        return {
+          status: "failure",
+          stage: "write",
+          rawBefore,
+          error:
+            "Canonical Journey replacement exceeds the authoritative backup/storage limit",
+          rollback: { status: "not-required" },
+        };
+      }
+    }
+    if (options.expectedRestoreSummary !== undefined) {
+      const actualSummary = createRestoreSummary(
+        before.status === "valid" ? before.value : null,
+        prepared.value,
+      );
+      if (
+        JSON.stringify(actualSummary) !==
+        JSON.stringify(options.expectedRestoreSummary)
+      ) {
+        return {
+          status: "failure",
+          stage: "write",
+          rawBefore,
+          error:
+            "Restore plan summary does not match the canonical current and replacement documents",
+          rollback: { status: "not-required" },
+        };
+      }
     }
 
     try {
