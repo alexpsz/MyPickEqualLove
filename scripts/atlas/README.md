@@ -27,11 +27,12 @@ receipt, source, songs, contract, or approval-evidence file with `lstat` and its
 expected `realpath`. A symlink, junction, or redirected component is rejected
 before reading even when it targets a same-byte file inside the repository.
 
-All fixed inputs are captured once, then their receipt hashes and Git blobs are
-verified before any repository TypeScript is transpiled or imported. The C0
-baseline, publication authority, and C0 projection parser consume only this
-verified in-memory byte snapshot; a failed executable-contract binding blocks
-all dynamic execution and no loader performs a second filesystem read.
+All fixed inputs are captured once. The receipt source commit must exist and be
+an ancestor of readable `HEAD`; every receipt binding must pass physical-path,
+hash, and Git-blob checks; and every fixed JSON input must parse before any
+repository TypeScript is transpiled or imported. The C0 baseline, publication
+authority, and C0 projection parser consume only this verified in-memory byte
+snapshot, and no loader performs a second filesystem read.
 
 The generated artifact path has a stronger physical-chain rule: every existing
 component from the repository root through

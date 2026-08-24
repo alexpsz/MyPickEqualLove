@@ -338,7 +338,10 @@ async function commitFixture(
   await updateReceiptHashes(fixture);
 }
 
-async function createGoFixture(t, { beforeHistoricalCommit } = {}) {
+async function createGoFixture(
+  t,
+  { beforeHistoricalCommit, beforeGovernanceCommit } = {},
+) {
   const root = await temporaryRoot(t, "atlas-e1-go-");
   await git(root, ["init", "-q"]);
   await git(root, ["config", "user.name", "Atlas Fixture"]);
@@ -400,6 +403,7 @@ async function createGoFixture(t, { beforeHistoricalCommit } = {}) {
       sha256: "0".repeat(64),
     });
   }
+  if (beforeGovernanceCommit) await beforeGovernanceCommit(root);
   await git(root, [
     "add",
     "--",
@@ -648,11 +652,105 @@ test("unverified executable contract bytes never run top-level side effects", as
       `${testCase.name}: ${result.errors.join("\n")}`,
     );
     assert.equal(
-      result.errors.includes(
-        "CONTRACT_EXECUTION_BLOCKED:not all fixed executable contract bindings are verified",
+      result.errors.some((error) =>
+        error.startsWith("CONTRACT_EXECUTION_BLOCKED:"),
       ),
       true,
       `${testCase.name}: ${result.errors.join("\n")}`,
+    );
+    await assert.rejects(readFile(sentinelPath), { code: "ENOENT" });
+  }
+});
+
+test("dynamic contract execution waits for every source/evidence binding and JSON parse prerequisite", async (t) => {
+  const cases = [
+    {
+      name: "source binding drift",
+      mutate: async (fixture) => {
+        const path = resolve(fixture.root, FIXED_SEEDS[0].sourcePath);
+        await writeFile(
+          path,
+          Buffer.concat([await readFile(path), Buffer.from(" \n")]),
+        );
+      },
+      expectedError: "SOURCE_DRIFT:",
+    },
+    {
+      name: "approval evidence binding drift",
+      mutate: async (fixture) => {
+        const path = resolve(fixture.root, FIXED_SEEDS[0].approvalPath);
+        await writeFile(
+          path,
+          Buffer.concat([await readFile(path), Buffer.from(" \n")]),
+        );
+      },
+      expectedError: "EVIDENCE_DRIFT:",
+    },
+    {
+      name: "source JSON parse failure",
+      mutate: async (fixture) => {
+        const repositoryPath = FIXED_SEEDS[0].sourcePath;
+        await writeFile(resolve(fixture.root, repositoryPath), "{\n", "utf8");
+        await git(fixture.root, ["add", "--", repositoryPath]);
+        await git(fixture.root, [
+          "commit",
+          "-q",
+          "-m",
+          "fixture malformed fixed JSON",
+        ]);
+        await updateReceiptHashes(fixture);
+      },
+      expectedError: `SOURCE_SCHEMA:${FIXED_SEEDS[0].sourcePath}:`,
+    },
+  ];
+
+  for (const testCase of cases) {
+    let sentinelPath;
+    const fixture = await createGoFixture(t, {
+      beforeGovernanceCommit: async (root) => {
+        sentinelPath = resolve(
+          root,
+          `${testCase.name.replaceAll(" ", "-")}-sentinel.txt`,
+        );
+        const contractPath = resolve(root, FIXED_AUTHORITY_CONTRACT_PATH);
+        const original = await readFile(contractPath, "utf8");
+        const sideEffect =
+          `import { writeFileSync as writeAtlasAllBindingsSentinel } from "node:fs";\n` +
+          `writeAtlasAllBindingsSentinel(${JSON.stringify(sentinelPath)}, "executed", "utf8");\n`;
+        await writeFile(contractPath, `${sideEffect}${original}`, "utf8");
+      },
+    });
+    await testCase.mutate(fixture);
+
+    const audit = await auditWorkspace(options(fixture));
+    assert.equal(audit.ok, false);
+    assert.equal(
+      audit.errors.some((error) => error.startsWith(testCase.expectedError)),
+      true,
+      `${testCase.name}: ${audit.errors.join("\n")}`,
+    );
+    assert.equal(
+      audit.errors.some((error) =>
+        error.startsWith("CONTRACT_EXECUTION_BLOCKED:"),
+      ),
+      true,
+      `${testCase.name}: ${audit.errors.join("\n")}`,
+    );
+    assert.equal(
+      audit.errors.some((error) =>
+        error.startsWith(`SCHEMA_DRIFT:${FIXED_AUTHORITY_CONTRACT_PATH}:`),
+      ),
+      false,
+      `${testCase.name}: ${audit.errors.join("\n")}`,
+    );
+    assert.equal(
+      audit.errors.some(
+        (error) =>
+          error.startsWith("GIT_BLOB") &&
+          error.includes(`:${FIXED_AUTHORITY_CONTRACT_PATH}`),
+      ),
+      false,
+      `${testCase.name}: ${audit.errors.join("\n")}`,
     );
     await assert.rejects(readFile(sentinelPath), { code: "ENOENT" });
   }
@@ -1193,6 +1291,60 @@ test("current and historical receipt commits must belong to the audited HEAD anc
   );
 });
 
+test("a fully bound orphan sourceCommit cannot execute committed contract side effects", async (t) => {
+  let sentinelPath;
+  const fixture = await createGoFixture(t, {
+    beforeGovernanceCommit: async (root) => {
+      sentinelPath = resolve(root, "orphan-contract-execution-sentinel.txt");
+      const contractPath = resolve(root, FIXED_AUTHORITY_CONTRACT_PATH);
+      const original = await readFile(contractPath, "utf8");
+      const sideEffect =
+        `import { writeFileSync as writeAtlasOrphanSentinel } from "node:fs";\n` +
+        `writeAtlasOrphanSentinel(${JSON.stringify(sentinelPath)}, "executed", "utf8");\n`;
+      await writeFile(contractPath, `${sideEffect}${original}`, "utf8");
+    },
+  });
+  const currentTree = (
+    await git(fixture.root, ["rev-parse", "HEAD^{tree}"])
+  ).stdout.trim();
+  const orphanCommit = (
+    await git(fixture.root, [
+      "commit-tree",
+      currentTree,
+      "-m",
+      "fully bound orphan governance",
+    ])
+  ).stdout.trim();
+  fixture.receipt.sourceCommit = orphanCommit;
+  await writeJson(fixture.receiptPath, fixture.receipt);
+
+  const audit = await auditWorkspace(options(fixture));
+  assert.equal(audit.ok, false);
+  assert.equal(
+    audit.errors.some((error) => error.startsWith("GIT_ANCESTRY:sourceCommit")),
+    true,
+    audit.errors.join("\n"),
+  );
+  assert.equal(
+    audit.errors.some((error) =>
+      error.startsWith("CONTRACT_EXECUTION_BLOCKED:"),
+    ),
+    true,
+    audit.errors.join("\n"),
+  );
+  assert.equal(
+    audit.errors.some((error) => error.startsWith("SCHEMA_DRIFT:")),
+    false,
+    audit.errors.join("\n"),
+  );
+  assert.equal(
+    audit.errors.some((error) => error.startsWith("GIT_BLOB")),
+    false,
+    audit.errors.join("\n"),
+  );
+  await assert.rejects(readFile(sentinelPath), { code: "ENOENT" });
+});
+
 test("approval timestamps accept canonical UTC seconds but reject normalized calendar dates", async (t) => {
   const fixed = FIXED_SEEDS[0];
   const seconds = await createGoFixture(t);
@@ -1383,7 +1535,8 @@ test("an internal same-byte source-file symlink cannot satisfy fixed input trust
   await writeFile(sentinelPath, sourceBytes);
   assert.equal(sha256(await readFile(sentinelPath)), sha256(sourceBytes));
   await unlink(sourcePath);
-  await symlink(sentinelPath, sourcePath, "file");
+  const linked = await createLinkOrSkip(t, sentinelPath, sourcePath, ["file"]);
+  if (!linked) return;
 
   const audit = await auditWorkspace(options(fixture));
   assert.equal(audit.ok, false);
@@ -1425,11 +1578,13 @@ test("an internal same-byte contract-directory junction cannot satisfy another f
     ),
   );
   await rm(contractsDirectory, { recursive: true });
-  await symlink(
+  const linked = await createLinkOrSkip(
+    t,
     sentinelDirectory,
     contractsDirectory,
-    process.platform === "win32" ? "junction" : "dir",
+    process.platform === "win32" ? ["junction", "dir"] : ["dir"],
   );
+  if (!linked) return;
 
   const audit = await auditWorkspace(options(fixture));
   assert.equal(audit.ok, false);

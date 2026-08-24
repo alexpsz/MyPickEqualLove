@@ -1807,6 +1807,8 @@ export async function auditWorkspace({
   const errors = [];
   const verifiedBytesByPath = new Map();
   let headCommit;
+  let sourceCommitExists = false;
+  let sourceCommitIsAncestor = false;
   try {
     headCommit = (
       await git(repositoryRoot, ["rev-parse", "HEAD"])
@@ -1816,18 +1818,33 @@ export async function auditWorkspace({
   }
   try {
     await verifyGitCommit(repositoryRoot, receipt.sourceCommit);
-    if (
-      headCommit &&
-      !(await isAncestor(repositoryRoot, receipt.sourceCommit, headCommit))
-    ) {
-      errors.push(
-        `GIT_ANCESTRY:sourceCommit ${receipt.sourceCommit} is not an ancestor of HEAD ${headCommit}`,
-      );
-    }
+    sourceCommitExists = true;
   } catch (error) {
     errors.push(`GIT_COMMIT:${receipt.sourceCommit}:${error.message}`);
   }
-  for (const binding of receiptFileBindings(receipt)) {
+  if (headCommit && sourceCommitExists) {
+    try {
+      sourceCommitIsAncestor = await isAncestor(
+        repositoryRoot,
+        receipt.sourceCommit,
+        headCommit,
+      );
+      if (!sourceCommitIsAncestor) {
+        errors.push(
+          `GIT_ANCESTRY:sourceCommit ${receipt.sourceCommit} is not an ancestor of HEAD ${headCommit}`,
+        );
+      }
+    } catch (error) {
+      errors.push(
+        `GIT_ANCESTRY:${receipt.sourceCommit}:${headCommit}:${error.message}`,
+      );
+    }
+  }
+  const sourceCommitTrusted = Boolean(
+    headCommit && sourceCommitExists && sourceCommitIsAncestor,
+  );
+  const bindings = receiptFileBindings(receipt);
+  for (const binding of bindings) {
     let current;
     let bindingVerified = true;
     try {
@@ -1869,15 +1886,36 @@ export async function auditWorkspace({
     if (bindingVerified) verifiedBytesByPath.set(binding.path, current);
   }
 
-  const executableContractsVerified = FIXED_CONTRACT_PATHS.every((path) =>
-    verifiedBytesByPath.has(path),
+  const documents = new Map();
+  let fixedJsonInputsParsed = true;
+  for (const binding of bindings) {
+    if (binding.kind === "SCHEMA") continue;
+    const bytes = verifiedBytesByPath.get(binding.path);
+    if (!bytes) {
+      fixedJsonInputsParsed = false;
+      continue;
+    }
+    try {
+      documents.set(binding.path, parseUtf8Json(bytes, binding.path));
+    } catch (error) {
+      fixedJsonInputsParsed = false;
+      const prefix =
+        binding.kind === "EVIDENCE" ? "APPROVAL_SCHEMA" : "SOURCE_SCHEMA";
+      errors.push(`${prefix}:${binding.path}:${error.message}`);
+    }
+  }
+
+  const allReceiptBindingsVerified = bindings.every((binding) =>
+    verifiedBytesByPath.has(binding.path),
   );
-  if (!executableContractsVerified) {
+  const contractExecutionReady =
+    sourceCommitTrusted && allReceiptBindingsVerified && fixedJsonInputsParsed;
+  if (!contractExecutionReady) {
     errors.push(
-      "CONTRACT_EXECUTION_BLOCKED:not all fixed executable contract bindings are verified",
+      "CONTRACT_EXECUTION_BLOCKED:source commit trust, all fixed receipt bindings, and JSON parse prerequisites are required",
     );
   }
-  if (headCommit && executableContractsVerified) {
+  if (contractExecutionReady) {
     errors.push(
       ...(await auditHistoricalBaseline(
         repositoryRoot,
@@ -1888,7 +1926,7 @@ export async function auditWorkspace({
     );
   }
   let authorityContract;
-  if (executableContractsVerified) {
+  if (contractExecutionReady) {
     try {
       authorityContract = await loadPublicationAuthorityContract(
         verifiedBytesByPath.get(FIXED_AUTHORITY_CONTRACT_PATH),
@@ -1898,23 +1936,10 @@ export async function auditWorkspace({
     }
   }
 
-  const documents = new Map();
-  for (const seed of receipt.seeds) {
-    for (const path of [seed.sourcePath, seed.songsPath]) {
-      const bytes = verifiedBytesByPath.get(path);
-      if (bytes) {
-        try {
-          documents.set(path, parseUtf8Json(bytes, path));
-        } catch (error) {
-          errors.push(`SOURCE_SCHEMA:${path}:${error.message}`);
-        }
-      }
-    }
-  }
   const approvals = new Map();
   for (const evidenceFile of receipt.evidenceFiles) {
-    const bytes = verifiedBytesByPath.get(evidenceFile.path);
-    if (!bytes) continue;
+    const document = documents.get(evidenceFile.path);
+    if (document === undefined) continue;
     try {
       const fixed = FIXED_SEEDS.find(
         (candidate) => candidate.approvalPath === evidenceFile.path,
@@ -1922,8 +1947,6 @@ export async function auditWorkspace({
       const seed = receipt.seeds.find(
         (candidate) => candidate.siteId === fixed.siteId,
       );
-      const document = parseUtf8Json(bytes, evidenceFile.path);
-      documents.set(evidenceFile.path, document);
       if (!authorityContract) throw new Error("authority contract unavailable");
       approvals.set(
         fixed.siteId,
