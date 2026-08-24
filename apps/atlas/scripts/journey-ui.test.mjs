@@ -12,6 +12,8 @@ import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 import { after, test } from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 
 const require = createRequire(import.meta.url);
 const typescript = require("typescript");
@@ -19,6 +21,7 @@ const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const atlasRoot = resolve(scriptDirectory, "..");
 const sourceRoot = join(atlasRoot, "src");
 const compiledRoot = await mkdtemp(join(tmpdir(), "atlas-journey-ui-"));
+const renderRoot = join(compiledRoot, "render");
 
 after(async () => {
   await rm(compiledRoot, { recursive: true, force: true });
@@ -50,6 +53,152 @@ for (const relativePath of pureSources) {
   await mkdir(dirname(outputPath), { recursive: true });
   await writeFile(outputPath, output.outputText, "utf8");
 }
+
+async function compileRenderModule(relativePath, replacements = []) {
+  const sourcePath = join(sourceRoot, relativePath);
+  const outputPath = join(renderRoot, relativePath.replace(/\.tsx?$/, ".js"));
+  let source = await readFile(sourcePath, "utf8");
+  for (const [from, to] of replacements) {
+    source = source.replaceAll(from, to);
+  }
+  let output = typescript.transpileModule(source, {
+    fileName: sourcePath,
+    compilerOptions: {
+      target: typescript.ScriptTarget.ES2022,
+      module: typescript.ModuleKind.CommonJS,
+      moduleResolution: typescript.ModuleResolutionKind.NodeNext,
+      jsx: typescript.JsxEmit.ReactJSX,
+      esModuleInterop: true,
+    },
+  }).outputText;
+  output = output.replaceAll(
+    'require("react/jsx-runtime")',
+    `require(${JSON.stringify(require.resolve("react/jsx-runtime"))})`,
+  );
+  output = output.replaceAll(
+    'require("react")',
+    `require(${JSON.stringify(require.resolve("react"))})`,
+  );
+  await mkdir(dirname(outputPath), { recursive: true });
+  await writeFile(outputPath, output, "utf8");
+}
+
+await Promise.all([
+  compileRenderModule("contracts/strict.ts"),
+  compileRenderModule("contracts/identity.ts"),
+  compileRenderModule("contracts/public-reference.ts"),
+  compileRenderModule("contracts/journey-document.ts"),
+  compileRenderModule("ports/journey-repository.ts"),
+  compileRenderModule("features/journey/journey-controller.ts"),
+  compileRenderModule("i18n/shell/messages.ts"),
+  compileRenderModule("i18n/shell/shell-routes.ts"),
+  compileRenderModule("i18n/journey/translate.ts"),
+  compileRenderModule("i18n/journey/messages.ts"),
+  compileRenderModule("components/journey/InlineConfirmation.tsx"),
+  compileRenderModule("components/journey/JourneyAlerts.tsx"),
+  compileRenderModule("components/journey/JourneyBackupPanel.tsx"),
+  compileRenderModule("components/journey/JourneyPageFrame.tsx"),
+  compileRenderModule("components/journey/JourneyRecordCard.tsx"),
+  compileRenderModule("components/journey/JourneyWorkspace.tsx"),
+  compileRenderModule("components/journey/LocalEventCreator.tsx"),
+  compileRenderModule("app/journey/page.tsx"),
+  compileRenderModule("app/local-event/page.tsx"),
+  compileRenderModule("components/shell/atlas-shell.tsx", [
+    ["@/i18n/shell/messages", "../../i18n/shell/messages"],
+    ["@/i18n/shell/shell-context", "../../i18n/shell/shell-context"],
+    ["@/i18n/shell/shell-routes", "../../i18n/shell/shell-routes"],
+  ]),
+]);
+
+await mkdir(join(renderRoot, "i18n/shell"), { recursive: true });
+await writeFile(
+  join(renderRoot, "i18n/shell/shell-context.js"),
+  `
+const { SHELL_MESSAGES } = require("./messages.js");
+let locale = "en";
+exports.__setShellLocale = (nextLocale) => { locale = nextLocale; };
+exports.ShellProvider = ({ children }) => children;
+exports.useShell = () => ({
+  locale,
+  messages: SHELL_MESSAGES[locale],
+  setLocale: () => {},
+  theme: "light",
+  toggleTheme: () => {},
+});
+`,
+  "utf8",
+);
+await mkdir(join(renderRoot, "storage"), { recursive: true });
+await writeFile(
+  join(renderRoot, "storage/journey-storage.js"),
+  `
+exports.createBrowserJourneyRepository = () => {
+  throw new Error("effects must not run during server composition tests");
+};
+`,
+  "utf8",
+);
+await mkdir(join(renderRoot, "backup"), { recursive: true });
+await writeFile(
+  join(renderRoot, "backup/backup-codec.js"),
+  `
+exports.encodeAtlasBackup = () => {
+  throw new Error("backup export must not run during composition tests");
+};
+`,
+  "utf8",
+);
+await mkdir(join(renderRoot, "node_modules/next"), { recursive: true });
+await writeFile(
+  join(renderRoot, "node_modules/next/navigation.js"),
+  `
+let pathname = "/";
+exports.__setPathname = (nextPathname) => { pathname = nextPathname; };
+exports.usePathname = () => pathname;
+`,
+  "utf8",
+);
+await writeFile(
+  join(renderRoot, "node_modules/next/link.js"),
+  `
+const { createElement } = require(${JSON.stringify(require.resolve("react"))});
+module.exports = {
+  __esModule: true,
+  default: ({ children, href, ...props }) =>
+    createElement("a", { ...props, href }, children),
+};
+`,
+  "utf8",
+);
+await mkdir(join(renderRoot, "components/journey"), { recursive: true });
+await writeFile(
+  join(renderRoot, "components/journey/journey-ui.module.css"),
+  "",
+  "utf8",
+);
+
+require.extensions[".css"] = (module) => {
+  module.exports = new Proxy(
+    {},
+    { get: (_target, property) => String(property) },
+  );
+};
+
+const renderShellContext = require(
+  join(renderRoot, "i18n/shell/shell-context.js"),
+);
+const renderNavigation = require(
+  join(renderRoot, "node_modules/next/navigation.js"),
+);
+const { AtlasShell: RenderAtlasShell } = require(
+  join(renderRoot, "components/shell/atlas-shell.js"),
+);
+const RenderJourneyPage = require(
+  join(renderRoot, "app/journey/page.js"),
+).default;
+const RenderLocalEventPage = require(
+  join(renderRoot, "app/local-event/page.js"),
+).default;
 
 const controller = await import(
   `${pathToFileURL(join(compiledRoot, "features/journey/journey-controller.js")).href}?${Date.now()}`
@@ -322,6 +471,54 @@ test("four Journey catalogs are exact, non-empty, and placeholder-compatible", (
   }
 });
 
+function countRenderedTag(markup, tagName) {
+  return [...markup.matchAll(new RegExp(`<${tagName}\\b`, "g"))].length;
+}
+
+test("both private routes compose one executable Atlas shell and follow its locale", () => {
+  const routeCases = [
+    {
+      Component: RenderJourneyPage,
+      pathname: "/journey/",
+      titleKey: "journeyTitle",
+    },
+    {
+      Component: RenderLocalEventPage,
+      pathname: "/local-event/",
+      titleKey: "localEventTitle",
+    },
+  ];
+
+  for (const locale of ["zh-CN", "en", "ja", "ko"]) {
+    renderShellContext.__setShellLocale(locale);
+    for (const routeCase of routeCases) {
+      renderNavigation.__setPathname(routeCase.pathname);
+      const markup = renderToStaticMarkup(
+        createElement(
+          RenderAtlasShell,
+          { familyNavigation: [] },
+          createElement(routeCase.Component),
+        ),
+      );
+
+      assert.equal(countRenderedTag(markup, "main"), 1, routeCase.pathname);
+      assert.equal(countRenderedTag(markup, "header"), 1, routeCase.pathname);
+      assert.equal(countRenderedTag(markup, "nav"), 1, routeCase.pathname);
+      assert.equal(countRenderedTag(markup, "select"), 1, routeCase.pathname);
+      assert.equal(
+        [...markup.matchAll(/aria-current="page"/g)].length,
+        1,
+        routeCase.pathname,
+      );
+      assert.ok(markup.includes('id="atlas-main"'), routeCase.pathname);
+      assert.ok(
+        markup.includes(messages.JOURNEY_MESSAGES[locale][routeCase.titleKey]),
+        `${routeCase.pathname} must render ${locale} Journey copy`,
+      );
+    }
+  }
+});
+
 async function collectFiles(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
   const files = [];
@@ -433,6 +630,7 @@ test("UI names every fail-closed state and remains keyboard/mobile bounded", asy
     join(sourceRoot, "components/journey/JourneyPageFrame.tsx"),
     "utf8",
   );
-  assert.match(frame, /aria-current=/);
-  assert.doesNotMatch(frame, /<main/);
+  assert.match(frame, /useShell\(\)/);
+  assert.doesNotMatch(frame, /useState|useEffect|navigator\.languages/);
+  assert.doesNotMatch(frame, /<header|<nav|<main|<select/);
 });
