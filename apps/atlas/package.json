@@ -9,10 +9,12 @@
     "dev": "next dev --webpack",
     "lint": "eslint src next.config.ts eslint.config.mjs",
     "typecheck": "tsc --noEmit --incremental false",
-    "test": "node --test scripts/foundation.test.mjs scripts/contracts.test.mjs",
+    "test": "node --test scripts/foundation.test.mjs scripts/contracts.test.mjs scripts/journey-storage.test.mjs scripts/backup-codec.test.mjs scripts/shell.test.mjs scripts/journey-ui.test.mjs scripts/events-ui.test.mjs scripts/memory-share.test.mjs scripts/verify-static-export.test.mjs",
+    "test:projection": "node --test ../../scripts/atlas/public-event-projection.test.mjs",
     "build": "next build --webpack",
     "verify:static-export": "node scripts/verify-static-export.mjs",
-    "verify": "npm run lint && npm run typecheck && npm test && npm run build && npm run verify:static-export"
+    "verify:publication-state": "node ../../scripts/atlas/verify-current-public-event-hold.mjs",
+    "verify": "npm run lint && npm run typecheck && npm test && npm run test:projection && npm run verify:publication-state && npm run build && npm run verify:static-export"
   },
   "dependencies": {
     "next": "^16.2.7",

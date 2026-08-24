@@ -4,6 +4,7 @@ import { lstat, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { verifyAtlasBuild } from "../../apps/atlas/scripts/verify-static-export.mjs";
 import { runNpmCommand } from "../run-project-command.mjs";
 import { verifyStaticExport } from "../verify-static-export.mjs";
 
@@ -139,6 +140,13 @@ async function verifyOutputIsolation() {
   const rootBeforeAtlas = await snapshotOutputTrees(REPOSITORY_ROOT, rootPaths);
 
   await runScript("build:atlas");
+  const atlasVerification = verifyAtlasBuild({
+    outputDirectory: path.join(REPOSITORY_ROOT, "apps", "atlas", "out"),
+    nextDirectory: path.join(REPOSITORY_ROOT, "apps", "atlas", ".next"),
+  });
+  console.log(
+    `Strict Atlas verification passed (${atlasVerification.outputFiles.length} out files; ${atlasVerification.nextFiles.length} .next files).`,
+  );
   assertSameOutputReceipt(
     rootBeforeAtlas,
     await snapshotOutputTrees(REPOSITORY_ROOT, rootPaths),

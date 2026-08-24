@@ -78,6 +78,10 @@ export interface JourneyBackupWorkflowRepository {
   ): Promise<JourneyReplacePlanApplyResult>;
 }
 
+type RestoreCommittedHandler = (
+  read: Extract<JourneyDocumentReadResult, { readonly status: "valid" }>,
+) => void;
+
 interface RestoreSession {
   readonly binding: string;
   readonly dryRun: ReadyDryRun;
@@ -108,9 +112,7 @@ export interface JourneyBackupWorkflowDependencies {
   readonly getCurrent: () => JourneyDocumentV1 | null;
   readonly getRepository: () => JourneyBackupWorkflowRepository;
   readonly now: () => string;
-  readonly onCommittedRead: (
-    read: Extract<JourneyDocumentReadResult, { readonly status: "valid" }>,
-  ) => void;
+  readonly onCommittedRead: RestoreCommittedHandler;
   readonly onStateChange: (state: JourneyBackupWorkflowState) => void;
   readonly onFocusRequest: () => void;
 }
@@ -389,6 +391,49 @@ export function createJourneyBackupWorkflow(
   };
 }
 
+function createJourneyBackupWorkflowBinding({
+  current: initialCurrent,
+  onRestoreCommitted: initialOnRestoreCommitted,
+  onStateChange,
+}: {
+  readonly current: JourneyDocumentV1 | null;
+  readonly onRestoreCommitted: RestoreCommittedHandler;
+  readonly onStateChange: (state: JourneyBackupWorkflowState) => void;
+}) {
+  let current = initialCurrent;
+  let onRestoreCommitted = initialOnRestoreCommitted;
+  let onFocusRequest = () => {};
+  let repository: JourneyBackupWorkflowRepository | null = null;
+  const workflow = createJourneyBackupWorkflow({
+    getCurrent: () => current,
+    getRepository: () => {
+      repository ??= createBrowserJourneyRepository();
+      return repository;
+    },
+    now: () => new Date().toISOString(),
+    onCommittedRead: (read) => onRestoreCommitted(read),
+    onStateChange,
+    onFocusRequest: () => onFocusRequest(),
+  });
+
+  return {
+    workflow,
+    update({
+      current: nextCurrent,
+      onRestoreCommitted: nextOnRestoreCommitted,
+      onFocusRequest: nextOnFocusRequest,
+    }: {
+      readonly current: JourneyDocumentV1 | null;
+      readonly onRestoreCommitted: RestoreCommittedHandler;
+      readonly onFocusRequest: () => void;
+    }) {
+      current = nextCurrent;
+      onRestoreCommitted = nextOnRestoreCommitted;
+      onFocusRequest = nextOnFocusRequest;
+    },
+  };
+}
+
 type BackupFeedback =
   | { readonly status: "exported" }
   | { readonly status: "empty" }
@@ -556,44 +601,35 @@ export function JourneyBackupPanel({
   readonly locale: JourneyLocale;
   readonly current: JourneyDocumentV1 | null;
   readonly busy: boolean;
-  readonly onRestoreCommitted: (
-    read: Extract<JourneyDocumentReadResult, { readonly status: "valid" }>,
-  ) => void;
+  readonly onRestoreCommitted: RestoreCommittedHandler;
 }) {
   const [backupFeedback, setBackupFeedback] = useState<BackupFeedback | null>(
     null,
   );
   const [restoreState, setRestoreState] =
     useState<JourneyBackupWorkflowState>(IDLE_RESTORE_STATE);
-  const currentRef = useRef(current);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const confirmRef = useRef<HTMLButtonElement>(null);
-  const repositoryRef = useRef<JourneyBackupWorkflowRepository | null>(null);
-  const onRestoreCommittedRef = useRef(onRestoreCommitted);
-  const workflowRef = useRef<ReturnType<
-    typeof createJourneyBackupWorkflow
-  > | null>(null);
-  currentRef.current = current;
-  onRestoreCommittedRef.current = onRestoreCommitted;
-
-  if (workflowRef.current === null) {
-    workflowRef.current = createJourneyBackupWorkflow({
-      getCurrent: () => currentRef.current,
-      getRepository: () => {
-        repositoryRef.current ??= createBrowserJourneyRepository();
-        return repositoryRef.current;
-      },
-      now: () => new Date().toISOString(),
-      onCommittedRead: (read) => onRestoreCommittedRef.current(read),
+  const [workflowBinding] = useState(() =>
+    createJourneyBackupWorkflowBinding({
+      current,
+      onRestoreCommitted,
       onStateChange: setRestoreState,
+    }),
+  );
+  const workflow = workflowBinding.workflow;
+  const currentBinding = documentBinding(current);
+  const previousBindingRef = useRef(currentBinding);
+
+  useEffect(() => {
+    workflowBinding.update({
+      current,
+      onRestoreCommitted,
       onFocusRequest: () => {
         requestAnimationFrame(() => fileInputRef.current?.focus());
       },
     });
-  }
-  const workflow = workflowRef.current;
-  const currentBinding = documentBinding(current);
-  const previousBindingRef = useRef(currentBinding);
+  }, [current, onRestoreCommitted, workflowBinding]);
 
   useEffect(() => {
     if (previousBindingRef.current !== currentBinding) {
