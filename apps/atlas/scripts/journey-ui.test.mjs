@@ -89,7 +89,10 @@ await Promise.all([
   compileRenderModule("contracts/public-reference.ts"),
   compileRenderModule("contracts/journey-document.ts"),
   compileRenderModule("ports/journey-repository.ts"),
+  compileRenderModule("ports/restore-plan.ts"),
+  compileRenderModule("backup/backup-codec.ts"),
   compileRenderModule("features/journey/journey-controller.ts"),
+  compileRenderModule("storage/journey-storage.ts"),
   compileRenderModule("i18n/shell/messages.ts"),
   compileRenderModule("i18n/shell/shell-routes.ts"),
   compileRenderModule("i18n/journey/translate.ts"),
@@ -125,26 +128,6 @@ exports.useShell = () => ({
   theme: "light",
   toggleTheme: () => {},
 });
-`,
-  "utf8",
-);
-await mkdir(join(renderRoot, "storage"), { recursive: true });
-await writeFile(
-  join(renderRoot, "storage/journey-storage.js"),
-  `
-exports.createBrowserJourneyRepository = () => {
-  throw new Error("effects must not run during server composition tests");
-};
-`,
-  "utf8",
-);
-await mkdir(join(renderRoot, "backup"), { recursive: true });
-await writeFile(
-  join(renderRoot, "backup/backup-codec.js"),
-  `
-exports.encodeAtlasBackup = () => {
-  throw new Error("backup export must not run during composition tests");
-};
 `,
   "utf8",
 );
@@ -199,6 +182,11 @@ const RenderJourneyPage = require(
 const RenderLocalEventPage = require(
   join(renderRoot, "app/local-event/page.js"),
 ).default;
+const renderBackup = require(join(renderRoot, "backup/backup-codec.js"));
+const renderStorage = require(join(renderRoot, "storage/journey-storage.js"));
+const { createJourneyBackupWorkflow } = require(
+  join(renderRoot, "components/journey/JourneyBackupPanel.js"),
+);
 
 const controller = await import(
   `${pathToFileURL(join(compiledRoot, "features/journey/journey-controller.js")).href}?${Date.now()}`
@@ -223,6 +211,113 @@ function localJourney({
     intent,
     now,
   });
+}
+
+function replacementJourney() {
+  return controller.createLocalCustomJourney(null, {
+    journeyId: "journey-restored",
+    localEventId: "local-event-restored",
+    title: "Restored visible event",
+    date: "2026-09-01",
+    venueName: "Restored venue",
+    intent: "interested",
+    now: "2026-08-25T02:00:00.000Z",
+  });
+}
+
+function backupFile(raw, size = renderBackup.utf8ByteLength(raw)) {
+  let textCalls = 0;
+  return {
+    size,
+    async text() {
+      textCalls += 1;
+      return raw;
+    },
+    get textCalls() {
+      return textCalls;
+    },
+  };
+}
+
+function encodedReplacementBackup() {
+  return renderBackup.encodeAtlasBackup({
+    exportedAt: "2026-08-25T03:00:00.000Z",
+    journey: replacementJourney(),
+  });
+}
+
+class WorkflowStorage {
+  constructor(raw) {
+    this.raw = raw;
+    this.failNextSet = false;
+    this.setCalls = [];
+  }
+
+  getItem(key) {
+    assert.equal(key, renderStorage.ATLAS_JOURNEY_STORAGE_KEY_V1);
+    return this.raw;
+  }
+
+  setItem(key, value) {
+    assert.equal(key, renderStorage.ATLAS_JOURNEY_STORAGE_KEY_V1);
+    this.setCalls.push(value);
+    this.raw = value;
+    if (this.failNextSet) {
+      this.failNextSet = false;
+      const error = new Error("workflow quota failure");
+      error.name = "QuotaExceededError";
+      throw error;
+    }
+  }
+
+  removeItem(key) {
+    assert.equal(key, renderStorage.ATLAS_JOURNEY_STORAGE_KEY_V1);
+    this.raw = null;
+  }
+}
+
+function createRestoreHarness({ current = localJourney(), repository } = {}) {
+  let visibleDocument = current;
+  let state = null;
+  let focusRequests = 0;
+  const committedReads = [];
+  const activeRepository =
+    repository ??
+    new renderStorage.LocalStorageJourneyRepository(
+      new WorkflowStorage(current === null ? null : JSON.stringify(current)),
+    );
+  const workflow = createJourneyBackupWorkflow({
+    getCurrent: () => visibleDocument,
+    getRepository: () => activeRepository,
+    now: () => "2026-08-25T04:00:00.000Z",
+    onCommittedRead(read) {
+      committedReads.push(read);
+      visibleDocument = read.value;
+    },
+    onFocusRequest() {
+      focusRequests += 1;
+    },
+    onStateChange(nextState) {
+      state = nextState;
+    },
+  });
+  return {
+    activeRepository,
+    committedReads,
+    get focusRequests() {
+      return focusRequests;
+    },
+    get state() {
+      return state;
+    },
+    get visibleDocument() {
+      return visibleDocument;
+    },
+    setVisibleDocument(next) {
+      visibleDocument = next;
+    },
+    workflow,
+  };
 }
 
 test("creates an exact C0 local Journey at absent revision zero", () => {
@@ -604,17 +699,337 @@ test("private records use only fixed static routes with no personal id segment",
   );
 });
 
-test("restore import fails closed while repository-owned capacity API is pending", async () => {
+test("restore workflow rejects cancelled, invalid, future, corrupt, and oversize inputs without apply", async () => {
+  let preflightCalls = 0;
+  let applyCalls = 0;
+  const repository = {
+    async read() {
+      throw new Error("read must not run for rejected input");
+    },
+    async preflightReplaceEligibility() {
+      preflightCalls += 1;
+      throw new Error("preflight must not run for rejected input");
+    },
+    async applyReplacePlan() {
+      applyCalls += 1;
+      throw new Error("apply must not run for rejected input");
+    },
+  };
+  const cases = [
+    { raw: "{", status: "corrupt" },
+    {
+      raw: JSON.stringify({ schemaVersion: 2, future: true }),
+      status: "future-version",
+    },
+    {
+      raw: JSON.stringify({ productFamilySiteId: "atlas" }),
+      status: "invalid",
+    },
+  ];
+  for (const item of cases) {
+    const harness = createRestoreHarness({ repository });
+    await harness.workflow.selectFile(backupFile(item.raw));
+    assert.equal(harness.state.status, "idle");
+    assert.equal(harness.state.feedback.status, item.status);
+    assert.equal(harness.state.session, null);
+    assert.equal(await harness.workflow.apply(), "ignored");
+  }
+
+  const oversizeHarness = createRestoreHarness({ repository });
+  const oversize = backupFile(
+    encodedReplacementBackup(),
+    renderBackup.ATLAS_BACKUP_MAX_BYTES + 1,
+  );
+  await oversizeHarness.workflow.selectFile(oversize);
+  assert.equal(oversize.textCalls, 0, "File.size rejects before File.text");
+  assert.equal(oversizeHarness.state.feedback.status, "oversize");
+
+  const readFailureHarness = createRestoreHarness({ repository });
+  await readFailureHarness.workflow.selectFile({
+    size: 1,
+    async text() {
+      throw new Error("file read rejected");
+    },
+  });
+  assert.equal(readFailureHarness.state.feedback.status, "unexpected");
+  assert.match(readFailureHarness.state.feedback.error, /file read rejected/);
+
+  const cancelledHarness = createRestoreHarness({ repository });
+  cancelledHarness.workflow.beginPicker();
+  await cancelledHarness.workflow.selectFile(null);
+  assert.deepEqual(cancelledHarness.state, {
+    status: "idle",
+    feedback: null,
+    session: null,
+  });
+  assert.equal(await cancelledHarness.workflow.apply(), "ignored");
+  assert.equal(preflightCalls, 0);
+  assert.equal(applyCalls, 0);
+});
+
+test("component disposal invalidates an in-flight file read before planning", async () => {
+  let releaseFile;
+  let preflightCalls = 0;
+  const repository = {
+    async read() {
+      throw new Error("disposed workflow must not read storage");
+    },
+    async preflightReplaceEligibility() {
+      preflightCalls += 1;
+      throw new Error("disposed workflow must not preflight");
+    },
+    async applyReplacePlan() {
+      throw new Error("disposed workflow must not apply");
+    },
+  };
+  const harness = createRestoreHarness({ repository });
+  const selection = harness.workflow.selectFile({
+    size: 1,
+    text: () =>
+      new Promise((resolveText) => {
+        releaseFile = resolveText;
+      }),
+  });
+  harness.workflow.dispose();
+  releaseFile(encodedReplacementBackup());
+  await selection;
+  assert.equal(preflightCalls, 0);
+  assert.equal(await harness.workflow.apply(), "ignored");
+  assert.equal(harness.committedReads.length, 0);
+  assert.equal(harness.focusRequests, 0);
+});
+
+test("eligible dry run is review-only until confirmation and successful handoff updates the visible document", async () => {
+  const current = localJourney();
+  const storage = new WorkflowStorage(JSON.stringify(current));
+  const repository = new renderStorage.LocalStorageJourneyRepository(storage);
+  const harness = createRestoreHarness({ current, repository });
+  const selected = backupFile(encodedReplacementBackup());
+
+  await harness.workflow.selectFile(selected);
+  assert.equal(harness.state.status, "review");
+  assert.equal(harness.state.session.eligibility.status, "eligible");
+  assert.equal(harness.state.session.eligibility.storageCapacity, "unknown");
+  assert.deepEqual(harness.state.session.dryRun.applyPlan.summary.journeys, {
+    before: 1,
+    after: 1,
+    added: 1,
+    updated: 0,
+    deleted: 1,
+    unchanged: 0,
+  });
+  assert.deepEqual(
+    Object.keys(
+      harness.state.session.dryRun.applyPlan.summary.experienceEntries,
+    ).sort(),
+    ["added", "after", "before", "deleted", "unchanged", "updated"],
+  );
+  assert.equal(storage.setCalls.length, 0, "dry run never applies");
+  assert.equal(harness.committedReads.length, 0);
+
+  harness.workflow.discard();
+  assert.equal(harness.state.status, "idle");
+  assert.equal(harness.focusRequests, 1);
+  assert.equal(await harness.workflow.apply(), "ignored");
+  assert.equal(storage.setCalls.length, 0);
+
+  await harness.workflow.selectFile(selected);
+  assert.equal(selected.textCalls, 2, "the same file can be selected again");
+  assert.equal(await harness.workflow.apply(), "applied");
+  assert.equal(harness.committedReads.length, 1);
+  assert.equal(
+    harness.visibleDocument.journeys[0].subject.fallback.title,
+    "Restored visible event",
+    "the authoritative read handoff updates parent-visible Journey state",
+  );
+  assert.equal(harness.state.feedback.status, "applied");
+  assert.equal(harness.focusRequests, 2);
+  assert.equal(storage.setCalls.length, 1);
+  assert.equal(await harness.workflow.apply(), "ignored");
+  assert.equal(storage.setCalls.length, 1, "a consumed plan cannot repeat");
+  assert.equal(harness.committedReads.length, 1);
+});
+
+test("ineligible and stale restore plans fail closed without authoritative handoff", async () => {
+  let applyCalls = 0;
+  const ineligibleRepository = {
+    async read() {
+      throw new Error("read must not run");
+    },
+    async preflightReplaceEligibility() {
+      return {
+        status: "ineligible",
+        storageCapacity: "unknown",
+        reason: "replacement-exceeds-authoritative-limit",
+        replacementByteLength: renderBackup.ATLAS_BACKUP_MAX_BYTES + 1,
+        requiredStorageUnits: renderBackup.ATLAS_BACKUP_MAX_BYTES + 1,
+        error: "authoritative limit",
+      };
+    },
+    async applyReplacePlan() {
+      applyCalls += 1;
+      throw new Error("ineligible plan must not apply");
+    },
+  };
+  const ineligible = createRestoreHarness({ repository: ineligibleRepository });
+  await ineligible.workflow.selectFile(backupFile(encodedReplacementBackup()));
+  assert.equal(ineligible.state.feedback.status, "ineligible");
+  assert.equal(await ineligible.workflow.apply(), "ignored");
+  assert.equal(applyCalls, 0);
+  assert.equal(ineligible.committedReads.length, 0);
+
+  const current = localJourney();
+  const oldRaw = JSON.stringify(current);
+  const storage = new WorkflowStorage(oldRaw);
+  const stale = createRestoreHarness({
+    current,
+    repository: new renderStorage.LocalStorageJourneyRepository(storage),
+  });
+  await stale.workflow.selectFile(backupFile(encodedReplacementBackup()));
+  assert.equal(stale.state.status, "review");
+  stale.setVisibleDocument(
+    controller.updateLocalCustomSubject(current, "journey-alpha", {
+      title: "External visible revision",
+      date: "2026-08-25",
+      venueName: "Sydney Hall",
+      now: "2026-08-25T03:30:00.000Z",
+    }),
+  );
+  stale.workflow.invalidateForCurrentChange();
+  assert.equal(stale.state.feedback.status, "stale");
+  assert.equal(stale.focusRequests, 1);
+  assert.equal(await stale.workflow.apply(), "ignored");
+  assert.equal(storage.raw, oldRaw);
+  assert.equal(storage.setCalls.length, 0);
+  assert.equal(stale.committedReads.length, 0);
+});
+
+test("quota failure restores the exact old raw, consumes confirmation, and remains retryable", async () => {
+  const current = localJourney();
+  const oldRaw = `  ${JSON.stringify(current)}\r\n`;
+  const storage = new WorkflowStorage(oldRaw);
+  const repository = new renderStorage.LocalStorageJourneyRepository(storage);
+  const harness = createRestoreHarness({ current, repository });
+  const selected = backupFile(encodedReplacementBackup());
+
+  await harness.workflow.selectFile(selected);
+  storage.failNextSet = true;
+  assert.equal(await harness.workflow.apply(), "rejected");
+  assert.equal(harness.state.feedback.status, "apply-result");
+  assert.equal(harness.state.feedback.result.status, "failure");
+  assert.equal(harness.state.feedback.result.stage, "write");
+  assert.deepEqual(harness.state.feedback.result.rollback, {
+    status: "restored",
+    raw: oldRaw,
+  });
+  assert.equal(storage.raw, oldRaw);
+  assert.equal(harness.committedReads.length, 0);
+  assert.equal(harness.focusRequests, 1);
+  const callsAfterFailure = storage.setCalls.length;
+  assert.equal(await harness.workflow.apply(), "ignored");
+  assert.equal(storage.setCalls.length, callsAfterFailure);
+
+  harness.workflow.beginPicker();
+  await harness.workflow.selectFile(selected);
+  assert.equal(harness.state.status, "review", "exact same file can retry");
+  assert.equal(harness.committedReads.length, 0);
+});
+
+test("a storage revision conflict after review preserves the external raw and never hands off", async () => {
+  const current = localJourney();
+  const storage = new WorkflowStorage(JSON.stringify(current));
+  const harness = createRestoreHarness({
+    current,
+    repository: new renderStorage.LocalStorageJourneyRepository(storage),
+  });
+  await harness.workflow.selectFile(backupFile(encodedReplacementBackup()));
+  assert.equal(harness.state.status, "review");
+
+  const externalDocument = controller.updateLocalCustomSubject(
+    current,
+    "journey-alpha",
+    {
+      title: "External stored revision",
+      date: "2026-08-25",
+      venueName: "Sydney Hall",
+      now: "2026-08-25T03:45:00.000Z",
+    },
+  );
+  const externalRaw = JSON.stringify(externalDocument);
+  storage.raw = externalRaw;
+  assert.equal(await harness.workflow.apply(), "rejected");
+  assert.equal(harness.state.feedback.status, "apply-result");
+  assert.equal(harness.state.feedback.result.status, "conflict");
+  assert.equal(storage.raw, externalRaw);
+  assert.equal(storage.setCalls.length, 0);
+  assert.equal(harness.committedReads.length, 0);
+  assert.equal(harness.focusRequests, 1);
+});
+
+test("unexpected apply errors discard the one-shot plan and request stable focus", async () => {
+  let applyCalls = 0;
+  const repository = {
+    async read() {
+      throw new Error("unexpected apply must not reach reread");
+    },
+    async preflightReplaceEligibility({ plan }) {
+      const raw = JSON.stringify(plan.replacement);
+      return {
+        status: "eligible",
+        storageCapacity: "unknown",
+        replacementByteLength: renderBackup.utf8ByteLength(raw),
+        requiredStorageUnits: Math.max(
+          raw.length,
+          renderBackup.utf8ByteLength(raw),
+        ),
+      };
+    },
+    async applyReplacePlan() {
+      applyCalls += 1;
+      throw new Error("unexpected repository rejection");
+    },
+  };
+  const harness = createRestoreHarness({ repository });
+  await harness.workflow.selectFile(backupFile(encodedReplacementBackup()));
+  assert.equal(harness.state.status, "review");
+  assert.equal(await harness.workflow.apply(), "rejected");
+  assert.equal(harness.state.feedback.status, "unexpected");
+  assert.match(harness.state.feedback.error, /unexpected repository rejection/);
+  assert.equal(harness.focusRequests, 1);
+  assert.equal(harness.committedReads.length, 0);
+  assert.equal(await harness.workflow.apply(), "ignored");
+  assert.equal(applyCalls, 1);
+});
+
+test("restore component uses authoritative P2/P1 gates and resets the real picker", async () => {
   const source = await readFile(
     join(sourceRoot, "components/journey/JourneyBackupPanel.tsx"),
     "utf8",
   );
   assert.doesNotMatch(source, /navigator\.storage\.estimate/);
-  assert.doesNotMatch(source, /file\.text\(\)/);
-  assert.doesNotMatch(source, /dryRunAtlasBackupRestore/);
-  assert.doesNotMatch(source, /applyReplacePlan/);
-  assert.match(source, /restoreCapacityPendingTitle/);
-  assert.match(source, /disabled\s*\n\s*type="file"/);
+  assert.doesNotMatch(source, /StorageManager/);
+  assert.match(source, /ATLAS_BACKUP_MAX_BYTES/);
+  assert.match(source, /file\.size > ATLAS_BACKUP_MAX_BYTES/);
+  assert.match(source, /dryRunAtlasBackupRestore/);
+  assert.match(source, /preflightReplaceEligibility/);
+  assert.match(source, /applyReplacePlan/);
+  assert.match(source, /event\.currentTarget\.value = ""/);
+  assert.match(source, /onRestoreCommitted/);
+  assert.doesNotMatch(source, /restoreCapacityPendingTitle/);
+  assert.doesNotMatch(
+    Object.values(messages.JOURNEY_MESSAGES.en).join("\n"),
+    /\bREADY\b|capacity verified/i,
+  );
+
+  const workspace = await readFile(
+    join(sourceRoot, "components/journey/JourneyWorkspace.tsx"),
+    "utf8",
+  );
+  assert.match(workspace, /onRestoreCommitted/);
+  assert.match(
+    workspace,
+    /acceptAuthoritativeRead\(restoredRead, null, false\)/,
+  );
 });
 
 test("UI names every fail-closed state and remains keyboard/mobile bounded", async () => {

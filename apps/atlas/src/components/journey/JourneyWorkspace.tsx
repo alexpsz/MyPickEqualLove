@@ -345,6 +345,9 @@ export function JourneyWorkspace() {
                     busy={busy}
                     current={document}
                     locale={locale}
+                    onRestoreCommitted={(restoredRead) => {
+                      acceptAuthoritativeRead(restoredRead, null, false);
+                    }}
                   />
 
                   {document !== null ? (

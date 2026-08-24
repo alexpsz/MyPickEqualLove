@@ -421,6 +421,32 @@
   font-weight: 750;
 }
 
+.summaryRow {
+  display: contents;
+}
+
+.restoreReview {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+  border-top: 1px solid #e0e4ec;
+  padding-top: 1rem;
+}
+
+.restoreReview > h3,
+.restoreReview > p {
+  margin: 0;
+}
+
+.restoreReview > p {
+  color: #525d74;
+  line-height: 1.55;
+}
+
+.restoreReload {
+  margin-top: 0.75rem;
+}
+
 .fileInput {
   width: 100%;
   min-height: 2.75rem;

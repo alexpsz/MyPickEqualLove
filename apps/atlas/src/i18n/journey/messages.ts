@@ -87,6 +87,8 @@ const en = {
     "Export a complete Atlas-only JSON backup. Imports replace the whole Journey only after a dry run and a second confirmation.",
   exportBackup: "Export backup",
   importBackup: "Choose backup file",
+  importLimitHint:
+    "JSON only. Files larger than {bytes} bytes are rejected before they are read.",
   backupExported: "Backup downloaded.",
   backupEmpty: "There is no Journey data to export.",
   importOversize:
@@ -95,6 +97,8 @@ const en = {
   importFuture:
     "The backup uses future schema version {version}. No apply plan was created.",
   importInvalid: "The backup is invalid: {error}. No apply plan was created.",
+  importIneligible:
+    "The canonical replacement needs {required} storage units and exceeds the authoritative Atlas limit of {limit}. Nothing was applied.",
   importCapacity:
     "The replacement needs {required} bytes, but the repository-owned capacity check allows {available}. Nothing was applied.",
   estimateUnavailable:
@@ -104,6 +108,11 @@ const en = {
     "Atlas is waiting for the repository-owned replacement-capacity check. Export remains available; no import file will be read or applied.",
   restoreUnexpected:
     "The restore operation stopped unexpectedly: {error}. The plan was discarded; reload stored data before retrying.",
+  restoreReading: "Reading and validating the selected backup…",
+  restoreApplying: "Applying the confirmed replacement and verifying it…",
+  restoreStaleTitle: "Restore session invalidated",
+  restoreStaleBody:
+    "Journey data changed while this restore was open. The plan was discarded and cannot be reused. Reload stored data before retrying.",
   dryRunTitle: "Whole-replace dry run",
   dryRunBody:
     "Review every count below. Existing records not present in the backup will be deleted.",
@@ -115,6 +124,11 @@ const en = {
   updated: "Updated",
   removed: "Deleted",
   unchanged: "Unchanged",
+  restoreEligibilityTitle: "Static replacement eligibility passed",
+  restoreEligibilityBody:
+    "The canonical replacement needs {bytes} storage units. Actual browser storage capacity is unknown and will be determined only by the confirmed apply transaction.",
+  restoreReplaceWarning:
+    "This is a whole replacement, not a merge. Confirming may delete current records that are absent from the backup.",
   confirmRestore: "Confirm whole replacement",
   discardRestore: "Discard import plan",
   restoreApplied: "Backup restored after readback verification.",
@@ -213,12 +227,15 @@ const zhCN: JourneyMessages = {
     "导出完整的 Atlas 专用 JSON。导入先显示整体替换摘要，并要求再次确认。",
   exportBackup: "导出备份",
   importBackup: "选择备份文件",
+  importLimitHint: "仅支持 JSON。超过 {bytes} 字节的文件会在读取前被拒绝。",
   backupExported: "备份已下载。",
   backupEmpty: "当前没有可导出的旅程数据。",
   importOversize: "文件超过 Atlas 导入硬上限，尚未读取文件内容。",
   importCorrupt: "备份不是有效 JSON，未创建 apply plan。",
   importFuture: "备份使用未来 schema 版本 {version}，未创建 apply plan。",
   importInvalid: "备份无效：{error}。未创建 apply plan。",
+  importIneligible:
+    "规范化替换需要 {required} 个存储单位，超过 Atlas 的权威上限 {limit}。未应用任何数据。",
   importCapacity:
     "替换需要 {required} 字节，但仓储层容量检查仅允许 {available} 字节。未应用任何数据。",
   estimateUnavailable: "仓储层的替换容量检查不可用，因此不能安全继续导入。",
@@ -227,6 +244,11 @@ const zhCN: JourneyMessages = {
     "Atlas 正在等待由仓储层提供的替换容量检查。仍可导出；不会读取或应用导入文件。",
   restoreUnexpected:
     "恢复操作意外停止：{error}。计划已丢弃，请重新读取存储数据后再试。",
+  restoreReading: "正在读取并严格校验所选备份…",
+  restoreApplying: "正在应用已确认的整体替换并进行回读校验…",
+  restoreStaleTitle: "恢复会话已失效",
+  restoreStaleBody:
+    "恢复期间旅程数据发生了变化。计划已丢弃且不能重复使用，请重新读取存储数据后再试。",
   dryRunTitle: "整体替换预检",
   dryRunBody: "请核对以下数量。备份中不存在的现有记录将被删除。",
   journeys: "旅程",
@@ -237,6 +259,11 @@ const zhCN: JourneyMessages = {
   updated: "更新",
   removed: "删除",
   unchanged: "不变",
+  restoreEligibilityTitle: "静态替换资格检查已通过",
+  restoreEligibilityBody:
+    "规范化替换需要 {bytes} 个存储单位。浏览器实际存储容量仍是未知值，只会在用户确认后的实际应用事务中确定。",
+  restoreReplaceWarning:
+    "这是整体替换而不是合并。确认后，备份中不存在的当前记录可能被删除。",
   confirmRestore: "确认整体替换",
   discardRestore: "放弃导入计划",
   restoreApplied: "备份已恢复，并通过回读校验。",
@@ -335,6 +362,8 @@ const ja: JourneyMessages = {
     "Atlas 専用 JSON を完全に書き出します。読み込みは差分確認と再確認の後、Journey 全体を置換します。",
   exportBackup: "バックアップを書き出す",
   importBackup: "バックアップファイルを選択",
+  importLimitHint:
+    "JSON のみ。{bytes} バイトを超えるファイルは読み込み前に拒否されます。",
   backupExported: "バックアップをダウンロードしました。",
   backupEmpty: "書き出せる Journey データがありません。",
   importOversize:
@@ -345,6 +374,8 @@ const ja: JourneyMessages = {
     "バックアップは将来の schema バージョン {version} です。apply plan は作成されませんでした。",
   importInvalid:
     "バックアップが無効です：{error}。apply plan は作成されませんでした。",
+  importIneligible:
+    "正規化した置換には {required} ストレージ単位が必要で、Atlas の権威ある上限 {limit} を超えています。適用していません。",
   importCapacity:
     "置換には {required} バイト必要ですが、リポジトリの容量チェックでは {available} バイトまでです。適用していません。",
   estimateUnavailable:
@@ -354,6 +385,11 @@ const ja: JourneyMessages = {
     "リポジトリが提供する置換容量チェックを待っています。書き出しは利用できますが、読み込みファイルは読み取りも適用もしません。",
   restoreUnexpected:
     "復元処理が予期せず停止しました：{error}。プランは破棄されました。保存データを再読込してからやり直してください。",
+  restoreReading: "選択したバックアップを読み込み、厳密に検証しています…",
+  restoreApplying: "確定した全体置換を適用し、再読込検証しています…",
+  restoreStaleTitle: "復元セッションは無効になりました",
+  restoreStaleBody:
+    "復元中に Journey データが変わりました。プランは破棄され再利用できません。保存データを再読込してからやり直してください。",
   dryRunTitle: "全体置換の事前確認",
   dryRunBody:
     "以下の件数を確認してください。バックアップにない既存記録は削除されます。",
@@ -365,6 +401,11 @@ const ja: JourneyMessages = {
   updated: "更新",
   removed: "削除",
   unchanged: "変更なし",
+  restoreEligibilityTitle: "静的な置換資格チェックに合格しました",
+  restoreEligibilityBody:
+    "正規化した置換には {bytes} ストレージ単位が必要です。ブラウザの実際の保存容量は不明で、確認後の適用トランザクションでのみ判定されます。",
+  restoreReplaceWarning:
+    "これはマージではなく全体置換です。確定すると、バックアップにない現在の記録が削除される場合があります。",
   confirmRestore: "全体置換を確定",
   discardRestore: "復元プランを破棄",
   restoreApplied: "バックアップを復元し、再読込検証に合格しました。",
@@ -465,6 +506,8 @@ const ko: JourneyMessages = {
     "Atlas 전용 전체 JSON을 내보냅니다. 가져오기는 사전 검토와 재확인 후 여정 전체를 교체합니다.",
   exportBackup: "백업 내보내기",
   importBackup: "백업 파일 선택",
+  importLimitHint:
+    "JSON만 지원합니다. {bytes}바이트를 넘는 파일은 읽기 전에 거부됩니다.",
   backupExported: "백업을 다운로드했습니다.",
   backupEmpty: "내보낼 여정 데이터가 없습니다.",
   importOversize: "파일이 Atlas 가져오기 상한보다 커서 내용을 읽지 않았습니다.",
@@ -474,6 +517,8 @@ const ko: JourneyMessages = {
     "백업이 미래 schema 버전 {version}을 사용합니다. apply plan을 만들지 않았습니다.",
   importInvalid:
     "백업이 유효하지 않습니다: {error}. apply plan을 만들지 않았습니다.",
+  importIneligible:
+    "정규화된 교체에는 {required} 저장 단위가 필요하며 Atlas의 권위 있는 상한 {limit}을 초과합니다. 아무것도 적용하지 않았습니다.",
   importCapacity:
     "교체에 {required}바이트가 필요하지만 저장소 계층 용량 검사는 {available}바이트만 허용합니다. 적용하지 않았습니다.",
   estimateUnavailable:
@@ -483,6 +528,11 @@ const ko: JourneyMessages = {
     "저장소 계층이 제공할 교체 용량 검사를 기다리고 있습니다. 내보내기는 가능하지만 가져오기 파일은 읽거나 적용하지 않습니다.",
   restoreUnexpected:
     "복원이 예기치 않게 중단되었습니다: {error}. 계획을 폐기했으니 저장 데이터를 다시 읽은 뒤 재시도하세요.",
+  restoreReading: "선택한 백업을 읽고 엄격하게 검증하는 중…",
+  restoreApplying: "확인한 전체 교체를 적용하고 다시 읽어 검증하는 중…",
+  restoreStaleTitle: "복원 세션이 무효화되었습니다",
+  restoreStaleBody:
+    "복원 중 여정 데이터가 변경되었습니다. 계획을 폐기해 다시 사용할 수 없습니다. 저장 데이터를 다시 읽은 뒤 재시도하세요.",
   dryRunTitle: "전체 교체 사전 검토",
   dryRunBody: "아래 개수를 확인하세요. 백업에 없는 기존 기록은 삭제됩니다.",
   journeys: "여정",
@@ -493,6 +543,11 @@ const ko: JourneyMessages = {
   updated: "업데이트",
   removed: "삭제",
   unchanged: "변경 없음",
+  restoreEligibilityTitle: "정적 교체 자격 검사를 통과했습니다",
+  restoreEligibilityBody:
+    "정규화된 교체에는 {bytes} 저장 단위가 필요합니다. 브라우저의 실제 저장 용량은 알 수 없으며 확인 후 실제 적용 트랜잭션에서만 결정됩니다.",
+  restoreReplaceWarning:
+    "병합이 아닌 전체 교체입니다. 확인하면 백업에 없는 현재 기록이 삭제될 수 있습니다.",
   confirmRestore: "전체 교체 확인",
   discardRestore: "가져오기 계획 취소",
   restoreApplied: "백업을 복원했고 다시 읽기 검증을 통과했습니다.",

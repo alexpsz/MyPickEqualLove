@@ -1,12 +1,335 @@
 "use client";
 
-import { useState } from "react";
-import { encodeAtlasBackup } from "../../backup/backup-codec.js";
-import type { JourneyDocumentV1 } from "../../contracts/journey-document.js";
-import { journeyMessage } from "../../i18n/journey/messages.js";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type MouseEvent,
+} from "react";
+import {
+  ATLAS_BACKUP_MAX_BYTES,
+  dryRunAtlasBackupRestore,
+  encodeAtlasBackup,
+  type AtlasBackupDryRunResult,
+} from "../../backup/backup-codec.js";
+import type {
+  JourneyDocumentReadResult,
+  JourneyDocumentV1,
+} from "../../contracts/journey-document.js";
+import { expectedJourneyRevision } from "../../features/journey/journey-controller.js";
+import {
+  journeyMessage,
+  type JourneyMessageKey,
+} from "../../i18n/journey/messages.js";
 import type { JourneyLocale } from "../../i18n/journey/translate.js";
-import { TextNotice } from "./JourneyAlerts.js";
+import type { JourneyReplaceApplyPlan } from "../../ports/restore-plan.js";
+import {
+  createBrowserJourneyRepository,
+  type JourneyReplaceEligibilityInput,
+  type JourneyReplaceEligibilityResult,
+  type JourneyReplacePlanApplyResult,
+} from "../../storage/journey-storage.js";
+import { JourneyFeedbackAlert, TextNotice } from "./JourneyAlerts.js";
 import styles from "./journey-ui.module.css";
+
+type ReadyDryRun = Extract<
+  AtlasBackupDryRunResult,
+  { readonly status: "ready" }
+>;
+
+type RestoreFeedback =
+  | {
+      readonly status: "oversize" | "corrupt" | "invalid" | "capacity-failed";
+      readonly error?: string;
+      readonly required?: number;
+    }
+  | {
+      readonly status: "future-version";
+      readonly version: number;
+    }
+  | {
+      readonly status: "ineligible";
+      readonly required: number;
+    }
+  | {
+      readonly status: "eligibility-error" | "unexpected";
+      readonly error: string;
+    }
+  | { readonly status: "stale" }
+  | {
+      readonly status: "apply-result";
+      readonly result: JourneyReplacePlanApplyResult;
+    }
+  | { readonly status: "applied" };
+
+export interface JourneyBackupFile {
+  readonly size: number;
+  text(): Promise<string>;
+}
+
+export interface JourneyBackupWorkflowRepository {
+  read(): Promise<JourneyDocumentReadResult>;
+  preflightReplaceEligibility(
+    input: JourneyReplaceEligibilityInput,
+  ): Promise<JourneyReplaceEligibilityResult>;
+  applyReplacePlan(
+    plan: JourneyReplaceApplyPlan,
+  ): Promise<JourneyReplacePlanApplyResult>;
+}
+
+interface RestoreSession {
+  readonly binding: string;
+  readonly dryRun: ReadyDryRun;
+  readonly eligibility: Extract<
+    JourneyReplaceEligibilityResult,
+    { readonly status: "eligible" }
+  >;
+}
+
+export type JourneyBackupWorkflowState =
+  | {
+      readonly status: "idle";
+      readonly feedback: RestoreFeedback | null;
+      readonly session: null;
+    }
+  | {
+      readonly status: "reading" | "applying";
+      readonly feedback: null;
+      readonly session: null;
+    }
+  | {
+      readonly status: "review";
+      readonly feedback: null;
+      readonly session: RestoreSession;
+    };
+
+export interface JourneyBackupWorkflowDependencies {
+  readonly getCurrent: () => JourneyDocumentV1 | null;
+  readonly getRepository: () => JourneyBackupWorkflowRepository;
+  readonly now: () => string;
+  readonly onCommittedRead: (
+    read: Extract<JourneyDocumentReadResult, { readonly status: "valid" }>,
+  ) => void;
+  readonly onStateChange: (state: JourneyBackupWorkflowState) => void;
+  readonly onFocusRequest: () => void;
+}
+
+const IDLE_RESTORE_STATE: JourneyBackupWorkflowState = {
+  status: "idle",
+  feedback: null,
+  session: null,
+};
+
+function documentBinding(document: JourneyDocumentV1 | null) {
+  return document === null
+    ? "absent"
+    : `${document.revision}:${document.updatedAt}:${JSON.stringify(document)}`;
+}
+
+function describeError(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function feedbackForDryRun(
+  result: Exclude<AtlasBackupDryRunResult, ReadyDryRun>,
+): RestoreFeedback | null {
+  if (result.status === "cancelled") return null;
+  if (result.status === "oversize") return { status: "oversize" };
+  if (result.status === "corrupt") return { status: "corrupt" };
+  if (result.status === "future-version") {
+    return { status: "future-version", version: result.version };
+  }
+  if (result.status === "capacity-failed") {
+    return {
+      status: "capacity-failed",
+      required: result.replacementByteLength,
+    };
+  }
+  return {
+    status: "invalid",
+    error: `${result.issue.path}: ${result.issue.message}`,
+  };
+}
+
+function rereadMatchesCommitted(
+  read: JourneyDocumentReadResult,
+  result: Extract<
+    JourneyReplacePlanApplyResult,
+    { readonly status: "committed" }
+  >,
+): read is Extract<JourneyDocumentReadResult, { readonly status: "valid" }> {
+  return (
+    read.status === "valid" &&
+    JSON.stringify(read.value) === JSON.stringify(result.readback.value)
+  );
+}
+
+/**
+ * One-shot restore workflow used by the UI and its behavior tests. P2 creates
+ * the pure plan; P1 alone decides whether it is eligible and applies it.
+ */
+export function createJourneyBackupWorkflow(
+  dependencies: JourneyBackupWorkflowDependencies,
+) {
+  let active = true;
+  let operation = 0;
+  let state = IDLE_RESTORE_STATE;
+
+  function publish(next: JourneyBackupWorkflowState) {
+    state = next;
+    if (active) dependencies.onStateChange(next);
+  }
+
+  function settle(feedback: RestoreFeedback | null, focus = true) {
+    publish({ status: "idle", feedback, session: null });
+    if (focus && active) dependencies.onFocusRequest();
+  }
+
+  function beginPicker() {
+    operation += 1;
+    publish(IDLE_RESTORE_STATE);
+  }
+
+  async function selectFile(file: JourneyBackupFile | null) {
+    const ticket = ++operation;
+    publish({ status: "reading", feedback: null, session: null });
+    if (file === null) {
+      settle(null, false);
+      return;
+    }
+    if (file.size > ATLAS_BACKUP_MAX_BYTES) {
+      settle({ status: "oversize" });
+      return;
+    }
+
+    const current = dependencies.getCurrent();
+    const binding = documentBinding(current);
+    try {
+      const raw = await file.text();
+      if (
+        !active ||
+        ticket !== operation ||
+        binding !== documentBinding(dependencies.getCurrent())
+      ) {
+        return;
+      }
+      const dryRun = dryRunAtlasBackupRestore({
+        import: {
+          status: "selected",
+          raw,
+          limits: { maximumBytes: ATLAS_BACKUP_MAX_BYTES },
+        },
+        current,
+        now: dependencies.now(),
+        transaction: {
+          expectedRevision: expectedJourneyRevision(current),
+          availableBytes: ATLAS_BACKUP_MAX_BYTES,
+        },
+      });
+      if (dryRun.status !== "ready") {
+        settle(feedbackForDryRun(dryRun));
+        return;
+      }
+
+      const eligibility = await dependencies
+        .getRepository()
+        .preflightReplaceEligibility({ plan: dryRun.applyPlan });
+      if (
+        !active ||
+        ticket !== operation ||
+        binding !== documentBinding(dependencies.getCurrent())
+      ) {
+        return;
+      }
+      if (eligibility.status === "eligible") {
+        publish({
+          status: "review",
+          feedback: null,
+          session: { binding, dryRun, eligibility },
+        });
+        return;
+      }
+      if (eligibility.status === "ineligible") {
+        settle({
+          status: "ineligible",
+          required: eligibility.requiredStorageUnits,
+        });
+        return;
+      }
+      settle({ status: "eligibility-error", error: eligibility.error });
+    } catch (error) {
+      if (active && ticket === operation) {
+        settle({ status: "unexpected", error: describeError(error) });
+      }
+    }
+  }
+
+  function discard() {
+    operation += 1;
+    settle(null);
+  }
+
+  function invalidateForCurrentChange() {
+    const hadActiveRestore = state.status !== "idle";
+    operation += 1;
+    settle(hadActiveRestore ? { status: "stale" } : null, hadActiveRestore);
+  }
+
+  async function apply() {
+    if (!active || state.status !== "review") return "ignored" as const;
+    const session = state.session;
+    const ticket = ++operation;
+    publish({ status: "applying", feedback: null, session: null });
+    if (session.binding !== documentBinding(dependencies.getCurrent())) {
+      settle({ status: "stale" });
+      return "rejected" as const;
+    }
+
+    try {
+      const result = await dependencies
+        .getRepository()
+        .applyReplacePlan(session.dryRun.applyPlan);
+      if (!active || ticket !== operation) return "ignored" as const;
+      if (result.status !== "committed") {
+        settle({ status: "apply-result", result });
+        return "rejected" as const;
+      }
+      const reread = await dependencies.getRepository().read();
+      if (!active || ticket !== operation) return "ignored" as const;
+      if (!rereadMatchesCommitted(reread, result)) {
+        settle({
+          status: "unexpected",
+          error: `authoritative reread returned ${reread.status}`,
+        });
+        return "rejected" as const;
+      }
+      dependencies.onCommittedRead(reread);
+      settle({ status: "applied" });
+      return "applied" as const;
+    } catch (error) {
+      if (active && ticket === operation) {
+        settle({ status: "unexpected", error: describeError(error) });
+      }
+      return "rejected" as const;
+    }
+  }
+
+  function dispose() {
+    active = false;
+    operation += 1;
+    state = IDLE_RESTORE_STATE;
+  }
+
+  return {
+    apply,
+    beginPicker,
+    discard,
+    dispose,
+    invalidateForCurrentChange,
+    selectFile,
+  };
+}
 
 type BackupFeedback =
   | { readonly status: "exported" }
@@ -50,21 +373,198 @@ function BackupNotice({
   );
 }
 
+function RestoreNotice({
+  feedback,
+  locale,
+}: {
+  readonly feedback: RestoreFeedback | null;
+  readonly locale: JourneyLocale;
+}) {
+  if (feedback === null) return null;
+  if (feedback.status === "apply-result") {
+    return (
+      <JourneyFeedbackAlert
+        feedback={{ kind: "mutation", result: feedback.result }}
+        locale={locale}
+      />
+    );
+  }
+  if (feedback.status === "stale") {
+    return (
+      <TextNotice
+        body="restoreStaleBody"
+        locale={locale}
+        title="restoreStaleTitle"
+        tone="warning"
+      />
+    );
+  }
+  if (feedback.status === "applied") {
+    return <TextNotice locale={locale} title="restoreApplied" tone="success" />;
+  }
+  if (feedback.status === "oversize") {
+    return <TextNotice locale={locale} title="importOversize" tone="error" />;
+  }
+  if (feedback.status === "corrupt") {
+    return <TextNotice locale={locale} title="importCorrupt" tone="error" />;
+  }
+  if (feedback.status === "future-version") {
+    return (
+      <TextNotice
+        locale={locale}
+        title="importFuture"
+        tone="error"
+        values={{ version: feedback.version }}
+      />
+    );
+  }
+  if (feedback.status === "ineligible") {
+    return (
+      <TextNotice
+        locale={locale}
+        title="importIneligible"
+        tone="error"
+        values={{
+          limit: ATLAS_BACKUP_MAX_BYTES,
+          required: feedback.required,
+        }}
+      />
+    );
+  }
+  if (feedback.status === "capacity-failed") {
+    return (
+      <TextNotice
+        locale={locale}
+        title="importIneligible"
+        tone="error"
+        values={{
+          limit: ATLAS_BACKUP_MAX_BYTES,
+          required: feedback.required ?? 0,
+        }}
+      />
+    );
+  }
+  const error = feedback.error ?? journeyMessage(locale, "estimateUnavailable");
+  return (
+    <TextNotice
+      locale={locale}
+      title={
+        feedback.status === "unexpected" ? "restoreUnexpected" : "importInvalid"
+      }
+      tone="error"
+      values={{ error }}
+    />
+  );
+}
+
+function SummaryCard({
+  locale,
+  title,
+  summary,
+}: {
+  readonly locale: JourneyLocale;
+  readonly title: JourneyMessageKey;
+  readonly summary: ReadyDryRun["applyPlan"]["summary"]["journeys"];
+}) {
+  const rows = [
+    ["before", summary.before],
+    ["after", summary.after],
+    ["added", summary.added],
+    ["updated", summary.updated],
+    ["removed", summary.deleted],
+    ["unchanged", summary.unchanged],
+  ] as const;
+  return (
+    <section className={styles.summaryCard}>
+      <h3>{journeyMessage(locale, title)}</h3>
+      <dl>
+        {rows.map(([key, value]) => (
+          <div className={styles.summaryRow} key={key}>
+            <dt>{journeyMessage(locale, key)}</dt>
+            <dd>{value}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  );
+}
+
 export function JourneyBackupPanel({
   locale,
   current,
   busy,
+  onRestoreCommitted,
 }: {
   readonly locale: JourneyLocale;
   readonly current: JourneyDocumentV1 | null;
   readonly busy: boolean;
+  readonly onRestoreCommitted: (
+    read: Extract<JourneyDocumentReadResult, { readonly status: "valid" }>,
+  ) => void;
 }) {
-  const [feedback, setFeedback] = useState<BackupFeedback | null>(null);
+  const [backupFeedback, setBackupFeedback] = useState<BackupFeedback | null>(
+    null,
+  );
+  const [restoreState, setRestoreState] =
+    useState<JourneyBackupWorkflowState>(IDLE_RESTORE_STATE);
+  const currentRef = useRef(current);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const confirmRef = useRef<HTMLButtonElement>(null);
+  const repositoryRef = useRef<JourneyBackupWorkflowRepository | null>(null);
+  const onRestoreCommittedRef = useRef(onRestoreCommitted);
+  const workflowRef = useRef<ReturnType<
+    typeof createJourneyBackupWorkflow
+  > | null>(null);
+  currentRef.current = current;
+  onRestoreCommittedRef.current = onRestoreCommitted;
+
+  if (workflowRef.current === null) {
+    workflowRef.current = createJourneyBackupWorkflow({
+      getCurrent: () => currentRef.current,
+      getRepository: () => {
+        repositoryRef.current ??= createBrowserJourneyRepository();
+        return repositoryRef.current;
+      },
+      now: () => new Date().toISOString(),
+      onCommittedRead: (read) => onRestoreCommittedRef.current(read),
+      onStateChange: setRestoreState,
+      onFocusRequest: () => {
+        requestAnimationFrame(() => fileInputRef.current?.focus());
+      },
+    });
+  }
+  const workflow = workflowRef.current;
+  const currentBinding = documentBinding(current);
+  const previousBindingRef = useRef(currentBinding);
+
+  useEffect(() => {
+    if (previousBindingRef.current !== currentBinding) {
+      previousBindingRef.current = currentBinding;
+      if (fileInputRef.current !== null) fileInputRef.current.value = "";
+      if (restoreState.feedback?.status !== "applied") {
+        workflow.invalidateForCurrentChange();
+      }
+    }
+  }, [currentBinding, restoreState.feedback, workflow]);
+
+  useEffect(() => {
+    if (restoreState.status === "review") {
+      confirmRef.current?.focus();
+    }
+  }, [restoreState.status]);
+
+  useEffect(
+    () => () => {
+      if (fileInputRef.current !== null) fileInputRef.current.value = "";
+      workflow.dispose();
+    },
+    [workflow],
+  );
 
   function handleExport() {
-    setFeedback(null);
+    setBackupFeedback(null);
     if (current === null) {
-      setFeedback({ status: "empty" });
+      setBackupFeedback({ status: "empty" });
       return;
     }
     try {
@@ -73,14 +573,30 @@ export function JourneyBackupPanel({
         encodeAtlasBackup({ exportedAt, journey: current }),
         exportedAt,
       );
-      setFeedback({ status: "exported" });
+      setBackupFeedback({ status: "exported" });
     } catch (error) {
-      setFeedback({
-        status: "invalid",
-        error: error instanceof Error ? error.message : String(error),
-      });
+      setBackupFeedback({ status: "invalid", error: describeError(error) });
     }
   }
+
+  function handlePickerClick(event: MouseEvent<HTMLInputElement>) {
+    event.currentTarget.value = "";
+    workflow.beginPicker();
+  }
+
+  function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.currentTarget.files?.[0] ?? null;
+    event.currentTarget.value = "";
+    void workflow.selectFile(file);
+  }
+
+  const restoreBusy =
+    restoreState.status === "reading" || restoreState.status === "applying";
+  const needsReload =
+    restoreState.status === "idle" &&
+    (restoreState.feedback?.status === "apply-result" ||
+      restoreState.feedback?.status === "unexpected" ||
+      restoreState.feedback?.status === "stale");
 
   return (
     <section className={styles.panel}>
@@ -98,27 +614,106 @@ export function JourneyBackupPanel({
         </button>
       </div>
       <div className={styles.spacer} />
-      <TextNotice
-        body="restoreCapacityPendingBody"
-        locale={locale}
-        title="restoreCapacityPendingTitle"
-        tone="warning"
-      />
       <label className={styles.field}>
         <span>{journeyMessage(locale, "importBackup")}</span>
         <input
           accept="application/json,.json"
-          aria-describedby="journey-restore-capacity-pending"
+          aria-describedby="journey-restore-limit"
           className={styles.fileInput}
-          disabled
+          disabled={busy || restoreBusy}
+          onChange={handleFileChange}
+          onClick={handlePickerClick}
+          ref={fileInputRef}
           type="file"
         />
       </label>
-      <p className={styles.fieldHint} id="journey-restore-capacity-pending">
-        {journeyMessage(locale, "restoreCapacityPendingBody")}
+      <p className={styles.fieldHint} id="journey-restore-limit">
+        {journeyMessage(locale, "importLimitHint", {
+          bytes: ATLAS_BACKUP_MAX_BYTES,
+        })}
       </p>
       <div className={styles.spacer} />
-      <BackupNotice feedback={feedback} locale={locale} />
+      <BackupNotice feedback={backupFeedback} locale={locale} />
+      {restoreState.status === "idle" ? (
+        <RestoreNotice feedback={restoreState.feedback} locale={locale} />
+      ) : null}
+      {needsReload ? (
+        <div className={styles.restoreReload}>
+          <button
+            className={styles.buttonSecondary}
+            onClick={() => window.location.reload()}
+            type="button"
+          >
+            {journeyMessage(locale, "reload")}
+          </button>
+        </div>
+      ) : null}
+      {restoreState.status === "reading" ? (
+        <p aria-live="polite" className={styles.fieldHint} role="status">
+          {journeyMessage(locale, "restoreReading")}
+        </p>
+      ) : null}
+      {restoreState.status === "review" ? (
+        <section
+          aria-labelledby="journey-restore-review-title"
+          className={styles.restoreReview}
+        >
+          <h3 id="journey-restore-review-title">
+            {journeyMessage(locale, "dryRunTitle")}
+          </h3>
+          <p>{journeyMessage(locale, "dryRunBody")}</p>
+          <div className={styles.summaryGrid}>
+            <SummaryCard
+              locale={locale}
+              summary={restoreState.session.dryRun.applyPlan.summary.journeys}
+              title="journeys"
+            />
+            <SummaryCard
+              locale={locale}
+              summary={
+                restoreState.session.dryRun.applyPlan.summary.experienceEntries
+              }
+              title="experiences"
+            />
+          </div>
+          <TextNotice
+            body="restoreEligibilityBody"
+            locale={locale}
+            title="restoreEligibilityTitle"
+            tone="warning"
+            values={{
+              bytes: restoreState.session.eligibility.requiredStorageUnits,
+            }}
+          />
+          <div className={styles.confirmation}>
+            <p>{journeyMessage(locale, "restoreReplaceWarning")}</p>
+            <div className={styles.actionRow}>
+              <button
+                className={styles.buttonDanger}
+                disabled={busy}
+                onClick={() => void workflow.apply()}
+                ref={confirmRef}
+                type="button"
+              >
+                {journeyMessage(locale, "confirmRestore")}
+              </button>
+              <button
+                className={styles.buttonQuiet}
+                disabled={busy}
+                onClick={workflow.discard}
+                type="button"
+              >
+                {journeyMessage(locale, "discardRestore")}
+              </button>
+            </div>
+          </div>
+        </section>
+      ) : null}
+      {restoreState.status === "applying" ? (
+        <p aria-live="polite" className={styles.fieldHint} role="status">
+          {journeyMessage(locale, "restoreApplying")}
+        </p>
+      ) : null}
     </section>
   );
 }
