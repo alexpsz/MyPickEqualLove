@@ -14,6 +14,7 @@ import {
   inspectStaticExport,
   verifyStaticExport,
 } from "./verify-static-export.mjs";
+import { validateRepositoryPath } from "../../../scripts/check-repository-boundary.mjs";
 
 const SCRIPT_DIRECTORY = path.dirname(fileURLToPath(import.meta.url));
 const ATLAS_ROOT = path.resolve(SCRIPT_DIRECTORY, "..");
@@ -58,6 +59,29 @@ function withExportFixture(run) {
   }
 }
 
+function writeExportFixtureFile(directory, relativePath, content = "") {
+  const filePath = path.join(directory, ...relativePath.split("/"));
+  mkdirSync(path.dirname(filePath), { recursive: true });
+  writeFileSync(filePath, content);
+}
+
+function assertExportRejected(mutateFixture, expectedViolation) {
+  withExportFixture((directory) => {
+    mutateFixture(directory);
+
+    const inspection = inspectStaticExport(directory);
+    assert.deepEqual(inspection.violations, [expectedViolation]);
+    assert.throws(
+      () => verifyStaticExport(directory),
+      (error) => {
+        assert.ok(error instanceof Error);
+        assert.ok(error.message.includes(expectedViolation));
+        return true;
+      },
+    );
+  });
+}
+
 test("Atlas is a private workspace with independent quality commands", () => {
   const repositoryPackage = readJson(
     path.join(REPOSITORY_ROOT, "package.json"),
@@ -98,29 +122,101 @@ test("Atlas keeps its static-export contract local", () => {
   assert.ok(rootTsconfig.exclude.includes("apps/atlas"));
 });
 
-test("the verifier accepts the isolated Foundation export", () => {
+test("the repository boundary rejects local-only paths at any depth", () => {
+  for (const allowedPath of [
+    ".env.example",
+    ".gitignore",
+    "apps/atlas/src/app/page.tsx",
+  ]) {
+    assert.deepEqual(validateRepositoryPath(allowedPath), [], allowedPath);
+  }
+
+  const rejectedPaths = [
+    ["apps/other/src/app/page.tsx", "not public-allowlisted"],
+    ["apps/atlas/notes/Agent.MD", "workflow basename"],
+    ["apps/atlas/notes/AGENTS.md", "workflow basename"],
+    ["apps/atlas/notes/ClaUdE.mD", "workflow basename"],
+    ["apps/atlas/notes/LIVE-IMPLEMENTATION-PLAN.MD", "workflow basename"],
+    ["apps\\atlas\\src\\.AgEnTs\\private.txt", ".agents/"],
+    ["apps/atlas/src/.ClAuDe/private.txt", ".claude/"],
+    ["apps/atlas/src/.CoDeX/private.txt", ".codex/"],
+    ["apps/atlas/src/.InTeRnAl/private.txt", ".internal/"],
+    ["apps/atlas/src/InTeRnAl/private.txt", "internal/"],
+    ["apps/atlas/src/MeMoRy/private.txt", "memory/"],
+    ["apps/atlas/src/MeMoRiEs/private.txt", "memories/"],
+    ["apps/atlas/src/.VeRcEl/private.txt", ".vercel/"],
+    ["apps/atlas/src/.WrAnGlEr/private.txt", ".wrangler/"],
+    ["apps/atlas/.ENV", "environment files are local-only"],
+    ["apps/atlas/config/.Env.Local", "environment files are local-only"],
+    ["apps/atlas/.env.example", "environment files are local-only"],
+  ];
+
+  for (const [repositoryPath, expectedReason] of rejectedPaths) {
+    const violations = validateRepositoryPath(repositoryPath);
+    assert.equal(violations.length, 1, repositoryPath);
+    assert.ok(
+      violations[0].includes(expectedReason),
+      `${repositoryPath}: ${violations[0]}`,
+    );
+  }
+});
+
+test("the verifier accepts only the exact Foundation fallback routes", () => {
   withExportFixture((directory) => {
-    assert.doesNotThrow(() => verifyStaticExport(directory));
+    const result = verifyStaticExport(directory);
+    assert.deepEqual(
+      result.files.filter((file) =>
+        ["404.html", "404/index.html", "_not-found/index.html"].includes(file),
+      ),
+      ["404.html", "404/index.html", "_not-found/index.html"],
+    );
   });
 });
 
-test("the verifier rejects foreign routes and service workers", () => {
-  withExportFixture((directory) => {
-    mkdirSync(path.join(directory, "songs"), { recursive: true });
-    writeFileSync(path.join(directory, "songs", "index.html"), "foreign route");
-    writeFileSync(
-      path.join(directory, "sw.js"),
-      "self.addEventListener('fetch', () => {});",
-    );
+test("the verifier throws for foreign/index.html", () => {
+  assertExportRejected(
+    (directory) =>
+      writeExportFixtureFile(directory, "foreign/index.html", "foreign route"),
+    "unexpected Foundation route found: foreign/index.html",
+  );
+});
 
-    const result = inspectStaticExport(directory);
-    assert.ok(
-      result.violations.some((violation) =>
-        violation.includes("songs/index.html"),
+test("the verifier throws for 404/foreign/index.html", () => {
+  assertExportRejected(
+    (directory) =>
+      writeExportFixtureFile(
+        directory,
+        "404/foreign/index.html",
+        "foreign route",
       ),
-    );
-    assert.ok(
-      result.violations.some((violation) => violation.includes("sw.js")),
-    );
-  });
+    "unexpected Foundation route found: 404/foreign/index.html",
+  );
+});
+
+test("the verifier throws for a covers segment without a route violation", () => {
+  assertExportRejected(
+    (directory) =>
+      writeExportFixtureFile(directory, "covers/cover.txt", "foreign cover"),
+    "foreign MyPick output segment found: covers/cover.txt",
+  );
+});
+
+test("the verifier throws for a manifest without another violation", () => {
+  assertExportRejected(
+    (directory) =>
+      writeExportFixtureFile(directory, "manifest.webmanifest", "{}"),
+    "Atlas must not emit manifest.webmanifest",
+  );
+});
+
+test("the verifier throws for a service worker without another violation", () => {
+  assertExportRejected(
+    (directory) =>
+      writeExportFixtureFile(
+        directory,
+        "sw.js",
+        "self.addEventListener('fetch', () => {});",
+      ),
+    "Atlas must not emit sw.js",
+  );
 });

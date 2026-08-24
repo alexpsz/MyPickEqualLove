@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
-import { extname } from "node:path";
 import { readFileSync } from "node:fs";
+import { extname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const ALLOWED_ROOT_FILES = new Set([
   ".env.example",
@@ -38,23 +39,34 @@ const ALLOWED_PUBLIC_DOCS = new Set([
   "docs/equal-love-mypicks-preview.png",
 ]);
 
-const BLOCKED_EXACT_PATHS = new Set([
+const BLOCKED_BASENAMES = new Set([
   "agent.md",
-  "AGENTS.md",
-  "CLAUDE.md",
-  "docs/live-implementation-plan.md",
+  "agents.md",
+  "claude.md",
+  "live-implementation-plan.md",
 ]);
 
-const BLOCKED_PREFIXES = [
-  ".agents/",
-  ".claude/",
-  ".codex/",
-  ".internal/",
-  "docs/internal/",
-  "internal/",
-  "memory/",
-  "memories/",
-];
+const BLOCKED_DIRECTORY_SEGMENTS = new Set([
+  ".agents",
+  ".claude",
+  ".codex",
+  ".internal",
+  "internal",
+  "memory",
+  "memories",
+  ".vercel",
+  ".wrangler",
+]);
+
+const NORMALIZED_ALLOWED_ROOT_FILES = new Set(
+  [...ALLOWED_ROOT_FILES].map((path) => path.toLowerCase()),
+);
+const NORMALIZED_ALLOWED_ROOT_DIRECTORIES = new Set(
+  [...ALLOWED_ROOT_DIRECTORIES].map((path) => path.toLowerCase()),
+);
+const NORMALIZED_ALLOWED_PUBLIC_DOCS = new Set(
+  [...ALLOWED_PUBLIC_DOCS].map((path) => path.toLowerCase()),
+);
 
 const PUBLIC_TEXT_EXTENSIONS = new Set([".md", ".mdx", ".txt"]);
 const LOCAL_PATH_PATTERNS = [
@@ -102,53 +114,84 @@ function stagedPaths() {
   );
 }
 
-function validatePath(path, violations) {
-  if (BLOCKED_EXACT_PATHS.has(path)) {
-    violations.push(`${path}: local-only workflow file must never be tracked`);
-    return;
+function normalizeRepositoryPath(path) {
+  return path.replaceAll("\\", "/").replace(/^\.\/+/, "");
+}
+
+export function validateRepositoryPath(repositoryPath) {
+  const path = normalizeRepositoryPath(repositoryPath);
+  const normalizedPath = path.toLowerCase();
+  const segments = normalizedPath.split("/");
+  const basename = segments.at(-1) ?? "";
+  const directorySegments = segments.slice(0, -1);
+  const violations = [];
+
+  if (BLOCKED_BASENAMES.has(basename)) {
+    violations.push(
+      `${path}: local-only workflow basename must never be tracked`,
+    );
+    return violations;
   }
 
-  const blockedPrefix = BLOCKED_PREFIXES.find((prefix) =>
-    path.startsWith(prefix),
+  const blockedDirectorySegment = directorySegments.find((segment) =>
+    BLOCKED_DIRECTORY_SEGMENTS.has(segment),
   );
-  if (blockedPrefix) {
-    violations.push(`${path}: path is inside local-only ${blockedPrefix}`);
-    return;
+  if (blockedDirectorySegment) {
+    violations.push(
+      `${path}: path contains local-only directory ${blockedDirectorySegment}/`,
+    );
+    return violations;
+  }
+
+  const isEnvironmentFile = basename === ".env" || basename.startsWith(".env.");
+  if (isEnvironmentFile && normalizedPath !== ".env.example") {
+    violations.push(
+      `${path}: environment files are local-only except root .env.example`,
+    );
+    return violations;
   }
 
   if (/(^|\/)[^/]+ 2\.[^/]+$/.test(path)) {
     violations.push(`${path}: looks like an accidental copy-suffix file`);
   }
 
-  if (path.startsWith("docs/") && !ALLOWED_PUBLIC_DOCS.has(path)) {
+  if (
+    normalizedPath.startsWith("docs/") &&
+    !NORMALIZED_ALLOWED_PUBLIC_DOCS.has(normalizedPath)
+  ) {
     violations.push(
       `${path}: docs/ is public-only and uses an explicit allowlist`,
     );
-    return;
+    return violations;
   }
 
-  const [root] = path.split("/", 1);
-  if (!path.includes("/")) {
-    if (!ALLOWED_ROOT_FILES.has(path)) {
+  const [root] = normalizedPath.split("/", 1);
+  if (!normalizedPath.includes("/")) {
+    if (!NORMALIZED_ALLOWED_ROOT_FILES.has(normalizedPath)) {
       violations.push(
         `${path}: root file is not in the public repository allowlist`,
       );
     }
   } else if (
-    !ALLOWED_ROOT_DIRECTORIES.has(root) &&
-    !ALLOWED_APP_PREFIXES.some((prefix) => path.startsWith(prefix))
+    !NORMALIZED_ALLOWED_ROOT_DIRECTORIES.has(root) &&
+    !ALLOWED_APP_PREFIXES.some((prefix) => normalizedPath.startsWith(prefix))
   ) {
     violations.push(
       `${path}: top-level directory ${root}/ is not public-allowlisted`,
     );
   }
+
+  return violations;
 }
 
 function validatePublicText(path, staged, violations) {
+  const normalizedPath = normalizeRepositoryPath(path).toLowerCase();
   const isRootDocument =
-    !path.includes("/") && PUBLIC_TEXT_EXTENSIONS.has(extname(path));
+    !normalizedPath.includes("/") &&
+    PUBLIC_TEXT_EXTENSIONS.has(extname(normalizedPath));
   const isDocsDocument =
-    path.startsWith("docs/") && PUBLIC_TEXT_EXTENSIONS.has(extname(path));
+    normalizedPath.startsWith("docs/") &&
+    PUBLIC_TEXT_EXTENSIONS.has(extname(normalizedPath));
 
   if (!isRootDocument && !isDocsDocument) {
     return;
@@ -170,26 +213,33 @@ function validatePublicText(path, staged, violations) {
   }
 }
 
-const staged = new Set(stagedPaths());
-const candidates = [...new Set([...trackedPaths(), ...staged])].sort();
-const violations = [];
+function runRepositoryBoundaryCheck() {
+  const staged = new Set(stagedPaths());
+  const candidates = [...new Set([...trackedPaths(), ...staged])].sort();
+  const violations = [];
 
-for (const path of candidates) {
-  validatePath(path, violations);
-  validatePublicText(path, staged, violations);
-}
-
-if (violations.length > 0) {
-  console.error("Public repository boundary check failed:\n");
-  for (const violation of violations) {
-    console.error(`- ${violation}`);
+  for (const path of candidates) {
+    violations.push(...validateRepositoryPath(path));
+    validatePublicText(path, staged, violations);
   }
-  console.error(
-    "\nKeep internal records under ignored memory/ and update the explicit public allowlist only after review.",
+
+  if (violations.length > 0) {
+    console.error("Public repository boundary check failed:\n");
+    for (const violation of violations) {
+      console.error(`- ${violation}`);
+    }
+    console.error(
+      "\nKeep internal records under ignored memory/ and update the explicit public allowlist only after review.",
+    );
+    process.exit(1);
+  }
+
+  console.log(
+    `Public repository boundary check passed (${candidates.length} tracked/staged paths).`,
   );
-  process.exit(1);
 }
 
-console.log(
-  `Public repository boundary check passed (${candidates.length} tracked/staged paths).`,
-);
+const invokedPath = process.argv[1] ? resolve(process.argv[1]) : null;
+if (invokedPath === fileURLToPath(import.meta.url)) {
+  runRepositoryBoundaryCheck();
+}

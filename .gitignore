@@ -25,6 +25,23 @@
 /docs/internal/
 /docs/live-implementation-plan.md
 
+# Atlas local-only workflow files (defense in depth)
+/apps/atlas/**/agent.md
+/apps/atlas/**/AGENTS.md
+/apps/atlas/**/CLAUDE.md
+/apps/atlas/**/live-implementation-plan.md
+/apps/atlas/**/.agents/
+/apps/atlas/**/.claude/
+/apps/atlas/**/.codex/
+/apps/atlas/**/.internal/
+/apps/atlas/**/internal/
+/apps/atlas/**/memory/
+/apps/atlas/**/memories/
+/apps/atlas/**/.vercel/
+/apps/atlas/**/.wrangler/
+/apps/atlas/**/.env
+/apps/atlas/**/.env.*
+
 # Local environment and provider state
 /.env
 /.env.*
