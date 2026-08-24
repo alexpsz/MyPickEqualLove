@@ -58,6 +58,7 @@ const storageModule = await load("storage/journey-storage.js");
 
 const { ATLAS_JOURNEY_STORAGE_KEY_V1, LocalStorageJourneyRepository } =
   storageModule;
+const CAPACITY_PROBE_KEY = "atlas:journey-capacity-probe:v1";
 
 function namedError(name, message) {
   const error = new Error(message);
@@ -67,7 +68,8 @@ function namedError(name, message) {
 
 class TestStorage {
   constructor(raw = null) {
-    this.raw = raw;
+    this.values = new Map();
+    if (raw !== null) this.values.set(ATLAS_JOURNEY_STORAGE_KEY_V1, raw);
   }
 
   getQueue = [];
@@ -77,42 +79,62 @@ class TestStorage {
   setCalls = [];
   removeCalls = [];
 
+  get raw() {
+    return this.valueFor(ATLAS_JOURNEY_STORAGE_KEY_V1);
+  }
+
+  set raw(value) {
+    this.setValue(ATLAS_JOURNEY_STORAGE_KEY_V1, value);
+  }
+
+  valueFor(key) {
+    return this.values.get(key) ?? null;
+  }
+
+  setValue(key, value) {
+    if (value === null) {
+      this.values.delete(key);
+    } else {
+      this.values.set(key, value);
+    }
+  }
+
   getItem(key) {
     this.getCalls.push(key);
-    if (this.getQueue.length === 0) return this.raw;
+    if (this.getQueue.length === 0) return this.valueFor(key);
     const step = this.getQueue.shift();
     if (step instanceof Error) throw step;
-    return typeof step === "function" ? step(this) : step;
+    return typeof step === "function" ? step(this, key) : step;
   }
 
   setItem(key, value) {
     this.setCalls.push({ key, value });
     if (this.setQueue.length === 0) {
-      this.raw = value;
+      this.setValue(key, value);
       return;
     }
     const step = this.setQueue.shift();
     if (step instanceof Error) throw step;
     if (typeof step === "function") {
-      step(this, value);
+      step(this, value, key);
       return;
     }
-    this.raw = value;
+    this.setValue(key, value);
   }
 
   removeItem(key) {
     this.removeCalls.push(key);
     if (this.removeQueue.length === 0) {
-      this.raw = null;
+      this.setValue(key, null);
       return;
     }
     const step = this.removeQueue.shift();
     if (step instanceof Error) throw step;
     if (typeof step === "function") {
-      step(this);
+      step(this, key);
       return;
     }
-    this.raw = null;
+    this.setValue(key, null);
   }
 }
 
@@ -143,6 +165,42 @@ function validDocument(revision = 0, title = "My local event") {
   };
 }
 
+function oversizedValidDocument(revision = 1) {
+  const timestamp = "2026-08-25T00:00:00.000Z";
+  return {
+    schemaVersion: 1,
+    revision,
+    updatedAt: timestamp,
+    journeys: Array.from({ length: 850 }, (_, index) => ({
+      id: `journey-${index}`,
+      subject: {
+        kind: "local-custom-event",
+        localId: `local-event-${index}`,
+        fallback: {
+          title: `Local event ${index}`,
+          date: "2026-08-25",
+          venueName: "Local venue",
+        },
+      },
+      intent: "planned",
+      experienceEntries: [
+        {
+          id: `entry-${index}`,
+          mode: "archive",
+          occurredAt: timestamp,
+          memo: "x".repeat(10_000),
+          highlights: [],
+          songRefs: [],
+          createdAt: timestamp,
+          updatedAt: timestamp,
+        },
+      ],
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    })),
+  };
+}
+
 function validatedWrite(expectedRevision, next) {
   const result = repositoryContract.validateCompareAndWriteJourneyInput({
     expectedRevision,
@@ -159,6 +217,25 @@ function validatedReplace(expectedRevision, replacement) {
   });
   assert.equal(result.ok, true);
   return result.value;
+}
+
+function readyReplacePlan(
+  current = validDocument(0),
+  replacement = validDocument(1),
+) {
+  const result = restore.createRestorePlan({
+    status: "valid",
+    raw: JSON.stringify(replacement),
+    expectedRevision: { state: "present", revision: current.revision },
+    current,
+    replacement,
+  });
+  assert.equal(result.status, "ready");
+  return result.applyPlan;
+}
+
+function capacityInput(plan, maximumReplacementBytes = 1_000_000) {
+  return { plan, maximumReplacementBytes };
 }
 
 test("exports one versioned Atlas-only storage key", async () => {
@@ -640,6 +717,192 @@ test("invalid replace apply plan is rejected before storage access", async () =>
   assert.equal(result.reason, "non-consecutive-revision");
   assert.equal(storage.getCalls.length, 0);
   assert.equal(storage.setCalls.length, 0);
+});
+
+test("replacement capacity probe writes an equal-length private placeholder and cleans it", async () => {
+  const current = validDocument(0);
+  const replacement = validDocument(1, "PRIVATE-REPLACEMENT-SENTINEL");
+  const plan = readyReplacePlan(current, replacement);
+  const durableRaw = ` ${JSON.stringify(current)}\r\n`;
+  const storage = new TestStorage(durableRaw);
+  const repository = new LocalStorageJourneyRepository(storage);
+  const result = await repository.preflightReplaceCapacity(capacityInput(plan));
+
+  assert.equal(result.status, "ready");
+  assert.equal(result.applyPlan, plan);
+  assert.equal(result.requiredStorageUnits, JSON.stringify(replacement).length);
+  assert.equal(
+    result.replacementByteLength,
+    new TextEncoder().encode(JSON.stringify(replacement)).byteLength,
+  );
+  assert.equal(storage.setCalls.length, 1);
+  assert.equal(storage.setCalls[0].key, CAPACITY_PROBE_KEY);
+  assert.equal(storage.setCalls[0].value.length, result.requiredStorageUnits);
+  assert.notEqual(storage.setCalls[0].value, JSON.stringify(replacement));
+  assert.doesNotMatch(
+    storage.setCalls[0].value,
+    /PRIVATE-REPLACEMENT-SENTINEL/,
+  );
+  assert.deepEqual(storage.removeCalls, [CAPACITY_PROBE_KEY]);
+  assert.equal(storage.valueFor(CAPACITY_PROBE_KEY), null);
+  assert.equal(storage.raw, durableRaw);
+  assert.equal(
+    storage.setCalls.some((call) => call.key === ATLAS_JOURNEY_STORAGE_KEY_V1),
+    false,
+  );
+
+  storage.getQueue.push(namedError("SecurityError", "durable read blocked"));
+  const durableReadFailure = await repository.read();
+  assert.equal(durableReadFailure.status, "read-failed");
+  assert.equal(durableReadFailure.raw, null);
+});
+
+test("quota failure after a partial probe write cleans the probe and never reports ready", async () => {
+  const durableRaw = JSON.stringify(validDocument(0));
+  const storage = new TestStorage(durableRaw);
+  storage.setQueue.push((target, value, key) => {
+    target.setValue(key, value);
+    throw namedError("QuotaExceededError", "probe quota full");
+  });
+  const repository = new LocalStorageJourneyRepository(storage);
+  const result = await repository.preflightReplaceCapacity(
+    capacityInput(readyReplacePlan()),
+  );
+
+  assert.equal(result.status, "capacity-failed");
+  assert.equal(result.applyPlan, null);
+  assert.equal(result.reason, "probe-quota-exceeded");
+  assert.equal(storage.valueFor(CAPACITY_PROBE_KEY), null);
+  assert.deepEqual(storage.removeCalls, [CAPACITY_PROBE_KEY]);
+  assert.equal(storage.raw, durableRaw);
+});
+
+test("probe cleanup removal failure returns unavailable and never ready", async () => {
+  const durableRaw = JSON.stringify(validDocument(0));
+  const storage = new TestStorage(durableRaw);
+  storage.removeQueue.push(namedError("SecurityError", "probe cleanup denied"));
+  const repository = new LocalStorageJourneyRepository(storage);
+  const result = await repository.preflightReplaceCapacity(
+    capacityInput(readyReplacePlan()),
+  );
+
+  assert.equal(result.status, "unavailable");
+  assert.equal(result.applyPlan, null);
+  assert.equal(result.stage, "probe-cleanup");
+  assert.match(result.error, /probe cleanup denied/);
+  assert.notEqual(storage.valueFor(CAPACITY_PROBE_KEY), null);
+  assert.equal(storage.raw, durableRaw);
+});
+
+test("an existing probe residue is preserved and blocks capacity readiness", async () => {
+  const durableRaw = JSON.stringify(validDocument(0));
+  const storage = new TestStorage(durableRaw);
+  storage.setValue(CAPACITY_PROBE_KEY, "existing-or-concurrent-probe");
+  const repository = new LocalStorageJourneyRepository(storage);
+  const result = await repository.preflightReplaceCapacity(
+    capacityInput(readyReplacePlan()),
+  );
+
+  assert.equal(result.status, "unavailable");
+  assert.equal(result.stage, "probe-occupied");
+  assert.equal(result.applyPlan, null);
+  assert.equal(
+    storage.valueFor(CAPACITY_PROBE_KEY),
+    "existing-or-concurrent-probe",
+  );
+  assert.equal(storage.setCalls.length, 0);
+  assert.equal(storage.removeCalls.length, 0);
+  assert.equal(storage.raw, durableRaw);
+});
+
+test("probe read exceptions fail closed without touching durable state", async () => {
+  const durableRaw = JSON.stringify(validDocument(0));
+  const storage = new TestStorage(durableRaw);
+  storage.getQueue.push(namedError("SecurityError", "probe read denied"));
+  const repository = new LocalStorageJourneyRepository(storage);
+  const result = await repository.preflightReplaceCapacity(
+    capacityInput(readyReplacePlan()),
+  );
+
+  assert.equal(result.status, "unavailable");
+  assert.equal(result.stage, "probe-read");
+  assert.equal(result.applyPlan, null);
+  assert.equal(storage.setCalls.length, 0);
+  assert.equal(storage.removeCalls.length, 0);
+  assert.equal(storage.raw, durableRaw);
+});
+
+test("replacement byte-limit overflow and invalid plans never probe storage", async () => {
+  const replacement = validDocument(1, "Capacity boundary");
+  const plan = readyReplacePlan(validDocument(0), replacement);
+  const replacementBytes = new TextEncoder().encode(
+    JSON.stringify(replacement),
+  ).byteLength;
+  const capacityStorage = new TestStorage(JSON.stringify(validDocument(0)));
+  const capacityRepository = new LocalStorageJourneyRepository(capacityStorage);
+  const overLimit = await capacityRepository.preflightReplaceCapacity(
+    capacityInput(plan, replacementBytes - 1),
+  );
+  assert.equal(overLimit.status, "capacity-failed");
+  assert.equal(overLimit.reason, "replacement-exceeds-authorized-limit");
+  assert.equal(overLimit.applyPlan, null);
+  assert.equal(capacityStorage.getCalls.length, 0);
+  assert.equal(capacityStorage.setCalls.length, 0);
+
+  const invalidStorage = new TestStorage(JSON.stringify(validDocument(0)));
+  const invalidRepository = new LocalStorageJourneyRepository(invalidStorage);
+  const invalidPlan = {
+    ...plan,
+    replacement: validDocument(3, "Skipped revision"),
+  };
+  const invalid = await invalidRepository.preflightReplaceCapacity(
+    capacityInput(invalidPlan),
+  );
+  assert.equal(invalid.status, "unavailable");
+  assert.equal(invalid.stage, "invalid-plan");
+  assert.equal(invalid.applyPlan, null);
+  assert.equal(invalidStorage.getCalls.length, 0);
+  assert.equal(invalidStorage.setCalls.length, 0);
+});
+
+test("the fixed probe allocation hard limit rejects oversized validated plans before allocation", async () => {
+  const replacement = oversizedValidDocument();
+  assert.equal(JSON.stringify(replacement).length > 8 * 1024 * 1024, true);
+  const plan = readyReplacePlan(validDocument(0), replacement);
+  const storage = new TestStorage(JSON.stringify(validDocument(0)));
+  const repository = new LocalStorageJourneyRepository(storage);
+  const result = await repository.preflightReplaceCapacity(
+    capacityInput(plan, Number.MAX_SAFE_INTEGER),
+  );
+
+  assert.equal(result.status, "capacity-failed");
+  assert.equal(result.reason, "replacement-exceeds-probe-hard-limit");
+  assert.equal(result.replacementByteLength, null);
+  assert.equal(result.requiredStorageUnits > 8 * 1024 * 1024, true);
+  assert.equal(result.applyPlan, null);
+  assert.equal(storage.getCalls.length, 0);
+  assert.equal(storage.setCalls.length, 0);
+  assert.equal(storage.removeCalls.length, 0);
+});
+
+test("a concurrent probe replacement is preserved and cannot report ready", async () => {
+  const durableRaw = JSON.stringify(validDocument(0));
+  const storage = new TestStorage(durableRaw);
+  storage.getQueue.push(null, (target, key) => {
+    target.setValue(key, "external-probe-value");
+    return "external-probe-value";
+  });
+  const repository = new LocalStorageJourneyRepository(storage);
+  const result = await repository.preflightReplaceCapacity(
+    capacityInput(readyReplacePlan()),
+  );
+
+  assert.equal(result.status, "unavailable");
+  assert.equal(result.stage, "probe-readback");
+  assert.equal(result.applyPlan, null);
+  assert.equal(storage.valueFor(CAPACITY_PROBE_KEY), "external-probe-value");
+  assert.equal(storage.removeCalls.length, 0);
+  assert.equal(storage.raw, durableRaw);
 });
 
 test("storage events reread only the exact Atlas key in the same storage area", async () => {

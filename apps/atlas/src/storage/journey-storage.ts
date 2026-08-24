@@ -54,7 +54,53 @@ export type JourneyReplacePlanApplyResult =
       readonly expectedNextRevision: number | null;
     };
 
+export interface JourneyReplacementCapacityPreflightInput {
+  readonly plan: JourneyReplaceApplyPlan;
+  /** Supplied from the backup codec's single authoritative import limit. */
+  readonly maximumReplacementBytes: number;
+}
+
+export type JourneyReplacementCapacityPreflightResult =
+  | {
+      readonly status: "ready";
+      readonly applyPlan: JourneyReplaceApplyPlan;
+      readonly replacementByteLength: number;
+      readonly requiredStorageUnits: number;
+    }
+  | {
+      readonly status: "capacity-failed";
+      readonly applyPlan: null;
+      readonly reason:
+        | "replacement-exceeds-authorized-limit"
+        | "replacement-exceeds-probe-hard-limit"
+        | "probe-quota-exceeded";
+      readonly replacementByteLength: number | null;
+      readonly requiredStorageUnits: number;
+      readonly error: string;
+    }
+  | {
+      readonly status: "unavailable";
+      readonly applyPlan: null;
+      readonly stage:
+        | "invalid-input"
+        | "invalid-plan"
+        | "measurement"
+        | "probe-in-use"
+        | "probe-read"
+        | "probe-occupied"
+        | "probe-token"
+        | "probe-write"
+        | "probe-readback"
+        | "probe-cleanup";
+      readonly replacementByteLength: number | null;
+      readonly requiredStorageUnits: number | null;
+      readonly error: string;
+    };
+
 type StorageProvider = () => JourneyStorageLike;
+
+const ATLAS_JOURNEY_CAPACITY_PROBE_KEY_V1 = "atlas:journey-capacity-probe:v1";
+const CAPACITY_PROBE_MAX_STORAGE_UNITS = 8 * 1024 * 1024;
 
 function describeError(error: unknown) {
   if (error instanceof Error) {
@@ -63,6 +109,34 @@ function describeError(error: unknown) {
       : error.message;
   }
   return String(error);
+}
+
+function isQuotaExceededError(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "name" in error &&
+    error.name === "QuotaExceededError"
+  );
+}
+
+function unavailableCapacity(
+  stage: Extract<
+    JourneyReplacementCapacityPreflightResult,
+    { readonly status: "unavailable" }
+  >["stage"],
+  error: string,
+  replacementByteLength: number | null = null,
+  requiredStorageUnits: number | null = null,
+): JourneyReplacementCapacityPreflightResult {
+  return {
+    status: "unavailable",
+    applyPlan: null,
+    stage,
+    replacementByteLength,
+    requiredStorageUnits,
+    error,
+  };
 }
 
 function rawFromRead(result: JourneyDocumentReadResult): string | null {
@@ -142,6 +216,7 @@ function readFailure(
 export class LocalStorageJourneyRepository implements JourneyRepository {
   readonly #storageProvider: StorageProvider;
   #lastObservedRaw: string | null = null;
+  #capacityProbeActive = false;
 
   constructor(storage: JourneyStorageLike | StorageProvider) {
     this.#storageProvider =
@@ -189,6 +264,88 @@ export class LocalStorageJourneyRepository implements JourneyRepository {
       };
     }
     return this.replace(validated.value);
+  }
+
+  async preflightReplaceCapacity(
+    input: JourneyReplacementCapacityPreflightInput,
+  ): Promise<JourneyReplacementCapacityPreflightResult> {
+    if (
+      !Number.isSafeInteger(input.maximumReplacementBytes) ||
+      input.maximumReplacementBytes <= 0
+    ) {
+      return unavailableCapacity(
+        "invalid-input",
+        "maximumReplacementBytes must be a positive integer",
+      );
+    }
+    if (input.plan.kind !== "replace-journey-document") {
+      return unavailableCapacity(
+        "invalid-plan",
+        "replacement capacity requires a Journey replace apply plan",
+      );
+    }
+    const validated = validateReplaceJourneyInput({
+      expectedRevision: input.plan.expectedRevision,
+      replacement: input.plan.replacement,
+    });
+    if (!validated.ok) {
+      return unavailableCapacity(
+        "invalid-plan",
+        `replacement plan revision is invalid: ${validated.reason}`,
+      );
+    }
+
+    let prepared: ReturnType<typeof prepareDocument>;
+    let replacementByteLength: number;
+    let requiredStorageUnits: number;
+    try {
+      prepared = prepareDocument(validated.value.replacement);
+      requiredStorageUnits = prepared.raw.length;
+      if (requiredStorageUnits > CAPACITY_PROBE_MAX_STORAGE_UNITS) {
+        return {
+          status: "capacity-failed",
+          applyPlan: null,
+          reason: "replacement-exceeds-probe-hard-limit",
+          replacementByteLength: null,
+          requiredStorageUnits,
+          error:
+            "canonical Journey replacement exceeds the probe allocation limit",
+        };
+      }
+      replacementByteLength = new TextEncoder().encode(prepared.raw).byteLength;
+    } catch (error) {
+      return unavailableCapacity("measurement", describeError(error));
+    }
+    if (replacementByteLength > input.maximumReplacementBytes) {
+      return {
+        status: "capacity-failed",
+        applyPlan: null,
+        reason: "replacement-exceeds-authorized-limit",
+        replacementByteLength,
+        requiredStorageUnits,
+        error:
+          "canonical Journey replacement exceeds the caller's authoritative byte limit",
+      };
+    }
+    if (this.#capacityProbeActive) {
+      return unavailableCapacity(
+        "probe-in-use",
+        "another replacement capacity probe is already active",
+        replacementByteLength,
+        requiredStorageUnits,
+      );
+    }
+
+    this.#capacityProbeActive = true;
+    try {
+      return this.#runReplacementCapacityProbe(
+        input.plan,
+        replacementByteLength,
+        requiredStorageUnits,
+      );
+    } finally {
+      this.#capacityProbeActive = false;
+    }
   }
 
   async deleteAll(
@@ -250,6 +407,168 @@ export class LocalStorageJourneyRepository implements JourneyRepository {
       reason: event.key === null ? "storage-cleared" : "journey-key",
       read: await this.read(),
     };
+  }
+
+  #runReplacementCapacityProbe(
+    plan: JourneyReplaceApplyPlan,
+    replacementByteLength: number,
+    requiredStorageUnits: number,
+  ): JourneyReplacementCapacityPreflightResult {
+    let storage: JourneyStorageLike;
+    try {
+      storage = this.#storageProvider();
+      const existing = storage.getItem(ATLAS_JOURNEY_CAPACITY_PROBE_KEY_V1);
+      if (existing !== null) {
+        return unavailableCapacity(
+          "probe-occupied",
+          "replacement capacity probe key already contains a value",
+          replacementByteLength,
+          requiredStorageUnits,
+        );
+      }
+    } catch (error) {
+      return unavailableCapacity(
+        "probe-read",
+        describeError(error),
+        replacementByteLength,
+        requiredStorageUnits,
+      );
+    }
+
+    let probeValue: string;
+    try {
+      const token = globalThis.crypto.randomUUID();
+      const seed = `atlas-capacity-probe:${token}:`;
+      probeValue = seed
+        .repeat(Math.ceil(requiredStorageUnits / seed.length))
+        .slice(0, requiredStorageUnits);
+    } catch (error) {
+      return unavailableCapacity(
+        "probe-token",
+        describeError(error),
+        replacementByteLength,
+        requiredStorageUnits,
+      );
+    }
+
+    try {
+      storage.setItem(ATLAS_JOURNEY_CAPACITY_PROBE_KEY_V1, probeValue);
+    } catch (error) {
+      const cleanup = this.#cleanupCapacityProbe(storage, probeValue, true);
+      if (!cleanup.ok) {
+        return unavailableCapacity(
+          "probe-cleanup",
+          cleanup.error,
+          replacementByteLength,
+          requiredStorageUnits,
+        );
+      }
+      return isQuotaExceededError(error)
+        ? {
+            status: "capacity-failed",
+            applyPlan: null,
+            reason: "probe-quota-exceeded",
+            replacementByteLength,
+            requiredStorageUnits,
+            error: describeError(error),
+          }
+        : unavailableCapacity(
+            "probe-write",
+            describeError(error),
+            replacementByteLength,
+            requiredStorageUnits,
+          );
+    }
+
+    let readback: string | null;
+    try {
+      readback = storage.getItem(ATLAS_JOURNEY_CAPACITY_PROBE_KEY_V1);
+    } catch (error) {
+      const cleanup = this.#cleanupCapacityProbe(storage, probeValue, false);
+      return unavailableCapacity(
+        cleanup.ok ? "probe-readback" : "probe-cleanup",
+        cleanup.ok ? describeError(error) : cleanup.error,
+        replacementByteLength,
+        requiredStorageUnits,
+      );
+    }
+    if (readback !== probeValue) {
+      return unavailableCapacity(
+        "probe-readback",
+        "replacement capacity probe was replaced or removed concurrently",
+        replacementByteLength,
+        requiredStorageUnits,
+      );
+    }
+
+    const cleanup = this.#cleanupCapacityProbe(storage, probeValue, false);
+    if (!cleanup.ok) {
+      return unavailableCapacity(
+        "probe-cleanup",
+        cleanup.error,
+        replacementByteLength,
+        requiredStorageUnits,
+      );
+    }
+    return {
+      status: "ready",
+      applyPlan: plan,
+      replacementByteLength,
+      requiredStorageUnits,
+    };
+  }
+
+  #cleanupCapacityProbe(
+    storage: JourneyStorageLike,
+    probeValue: string,
+    allowMissing: boolean,
+  ): { readonly ok: true } | { readonly ok: false; readonly error: string } {
+    let current: string | null;
+    try {
+      current = storage.getItem(ATLAS_JOURNEY_CAPACITY_PROBE_KEY_V1);
+    } catch (error) {
+      return {
+        ok: false,
+        error: `capacity probe cleanup could not read ownership: ${describeError(error)}`,
+      };
+    }
+    if (current === null) {
+      return allowMissing
+        ? { ok: true }
+        : {
+            ok: false,
+            error: "capacity probe disappeared before cleanup",
+          };
+    }
+    if (current !== probeValue) {
+      return {
+        ok: false,
+        error:
+          "capacity probe cleanup refused to remove a concurrent or external value",
+      };
+    }
+
+    try {
+      storage.removeItem(ATLAS_JOURNEY_CAPACITY_PROBE_KEY_V1);
+    } catch (error) {
+      return {
+        ok: false,
+        error: `capacity probe cleanup failed: ${describeError(error)}`,
+      };
+    }
+    try {
+      return storage.getItem(ATLAS_JOURNEY_CAPACITY_PROBE_KEY_V1) === null
+        ? { ok: true }
+        : {
+            ok: false,
+            error: "capacity probe cleanup did not leave the probe key absent",
+          };
+    } catch (error) {
+      return {
+        ok: false,
+        error: `capacity probe cleanup readback failed: ${describeError(error)}`,
+      };
+    }
   }
 
   async #writeDocument(
