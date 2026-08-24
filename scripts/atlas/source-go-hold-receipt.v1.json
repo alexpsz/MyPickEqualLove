@@ -34,6 +34,7 @@
       "sha256": "6d1d74a3996f60a3612401c3aa9dc0bd8a506153f0f084e429890ab1352d3f3b"
     }
   ],
+  "evidenceFiles": [],
   "seeds": [
     {
       "siteId": "equal-love",
@@ -55,15 +56,9 @@
           "gap": "No repository evidence explicitly approves these sources for an Atlas public seed."
         },
         "claimLevelEvidence": {
-          "status": "GO",
-          "evidenceRefs": [
-            "src/projects/equal-love/live-experiences.json#/0/eventEvidence",
-            "src/projects/equal-love/live-experiences.json#/0/performances/0",
-            "src/projects/equal-love/live-experiences.json#/0/performances/1",
-            "src/projects/equal-love/live-experiences.json#/1/eventEvidence",
-            "src/projects/equal-love/songs.json"
-          ],
-          "gap": null
+          "status": "HOLD",
+          "evidenceRefs": [],
+          "gap": "The two Kokuritsu setlists start at source order 2 but have no structured excludedEntries for source order 1."
         },
         "temporalVerification": {
           "status": "HOLD",
@@ -110,18 +105,15 @@
           "status": "GO",
           "evidenceRefs": [
             "src/projects/nearly-equal-joy/live-experiences.json#/0/eventEvidence",
-            "src/projects/nearly-equal-joy/live-experiences.json#/0/performances/0/provenance",
-            "src/projects/nearly-equal-joy/live-experiences.json#/0/performances/1/provenance",
-            "src/projects/nearly-equal-joy/songs.json"
+            "src/projects/nearly-equal-joy/live-experiences.json#/0/performances/0",
+            "src/projects/nearly-equal-joy/live-experiences.json#/0/performances/1",
+            "src/projects/nearly-equal-joy/songs.json#"
           ],
           "gap": null
         },
         "temporalVerification": {
           "status": "HOLD",
-          "evidenceRefs": [
-            "src/projects/nearly-equal-joy/live-experiences.json#/0/performances/0/provenance/reviewedAt",
-            "src/projects/nearly-equal-joy/live-experiences.json#/0/performances/1/provenance/reviewedAt"
-          ],
+          "evidenceRefs": [],
           "gap": "Performance review dates exist, but the seed has no complete event-level asOf and lastVerifiedAt metadata."
         },
         "timezoneAndLifecycle": {
@@ -164,18 +156,15 @@
           "status": "GO",
           "evidenceRefs": [
             "src/projects/not-equal-me/live-experiences.json#/0/eventEvidence",
-            "src/projects/not-equal-me/live-experiences.json#/0/performances/0/provenance",
-            "src/projects/not-equal-me/live-experiences.json#/0/performances/1/provenance",
-            "src/projects/not-equal-me/songs.json"
+            "src/projects/not-equal-me/live-experiences.json#/0/performances/0",
+            "src/projects/not-equal-me/live-experiences.json#/0/performances/1",
+            "src/projects/not-equal-me/songs.json#"
           ],
           "gap": null
         },
         "temporalVerification": {
           "status": "HOLD",
-          "evidenceRefs": [
-            "src/projects/not-equal-me/live-experiences.json#/0/performances/0/provenance/reviewedAt",
-            "src/projects/not-equal-me/live-experiences.json#/0/performances/1/provenance/reviewedAt"
-          ],
+          "evidenceRefs": [],
           "gap": "Performance review dates exist, but the seed has no complete event-level asOf and lastVerifiedAt metadata."
         },
         "timezoneAndLifecycle": {

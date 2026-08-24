@@ -1,14 +1,27 @@
 import { createHash, randomUUID } from "node:crypto";
-import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
-import { dirname, isAbsolute, relative, resolve } from "node:path";
+import { execFile } from "node:child_process";
+import { createRequire } from "node:module";
+import {
+  mkdir,
+  readFile,
+  realpath,
+  rename,
+  unlink,
+  writeFile,
+} from "node:fs/promises";
+import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
+import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
+
+const require = createRequire(import.meta.url);
+const typescript = require("typescript");
+const execFileAsync = promisify(execFile);
 
 export const PUBLIC_SITE_IDS = [
   "equal-love",
   "nearly-equal-joy",
   "not-equal-me",
 ];
-
 export const GATE_NAMES = [
   "sourceUseBoundary",
   "claimLevelEvidence",
@@ -17,16 +30,50 @@ export const GATE_NAMES = [
   "refreshInvalidationWithdrawal",
   "maintenanceOwner",
 ];
+export const FIXED_SEEDS = [
+  {
+    siteId: "equal-love",
+    sourcePath: "src/projects/equal-love/live-experiences.json",
+    songsPath: "src/projects/equal-love/songs.json",
+    approvalPath:
+      "scripts/atlas/evidence/equal-love-public-seed-approval.v1.json",
+  },
+  {
+    siteId: "nearly-equal-joy",
+    sourcePath: "src/projects/nearly-equal-joy/live-experiences.json",
+    songsPath: "src/projects/nearly-equal-joy/songs.json",
+    approvalPath:
+      "scripts/atlas/evidence/nearly-equal-joy-public-seed-approval.v1.json",
+  },
+  {
+    siteId: "not-equal-me",
+    sourcePath: "src/projects/not-equal-me/live-experiences.json",
+    songsPath: "src/projects/not-equal-me/songs.json",
+    approvalPath:
+      "scripts/atlas/evidence/not-equal-me-public-seed-approval.v1.json",
+  },
+];
+export const FIXED_CONTRACT_PATHS = [
+  "apps/atlas/src/contracts/public-atlas-projection.ts",
+  "apps/atlas/src/contracts/identity.ts",
+  "apps/atlas/src/contracts/public-reference.ts",
+  "apps/atlas/src/contracts/strict.ts",
+  "apps/atlas/src/contracts/baseline-receipt.ts",
+];
+export const FIXED_ARTIFACT_PATH =
+  "apps/atlas/src/generated/public-atlas-projection.v1.json";
+export const FIXED_RECEIPT_PATH =
+  "scripts/atlas/source-go-hold-receipt.v1.json";
 
 const SCRIPT_DIRECTORY = dirname(fileURLToPath(import.meta.url));
 export const DEFAULT_REPOSITORY_ROOT = resolve(SCRIPT_DIRECTORY, "..", "..");
 export const DEFAULT_RECEIPT_PATH = resolve(
-  SCRIPT_DIRECTORY,
-  "source-go-hold-receipt.v1.json",
+  DEFAULT_REPOSITORY_ROOT,
+  FIXED_RECEIPT_PATH,
 );
 export const DEFAULT_ARTIFACT_PATH = resolve(
   DEFAULT_REPOSITORY_ROOT,
-  "apps/atlas/src/generated/public-atlas-projection.v1.json",
+  FIXED_ARTIFACT_PATH,
 );
 
 const LOCAL_ID_PATTERN = /^[a-z0-9]+(?:[-_][a-z0-9]+)*$/;
@@ -41,6 +88,7 @@ const LIFECYCLES = new Set([
   "completed",
   "unknown",
 ]);
+const c0ParserCache = new Map();
 
 function fail(path, message) {
   throw new Error(`${path}: ${message}`);
@@ -58,14 +106,14 @@ function array(value, path) {
   return value;
 }
 
-function string(value, path, { allowEmpty = false } = {}) {
-  if (typeof value !== "string" || (!allowEmpty && value.length === 0)) {
+function string(value, path) {
+  if (typeof value !== "string" || value.length === 0) {
     fail(path, "expected a non-empty string");
   }
   return value;
 }
 
-function integer(value, path, { min = Number.MIN_SAFE_INTEGER } = {}) {
+function integer(value, path, min = Number.MIN_SAFE_INTEGER) {
   if (!Number.isSafeInteger(value) || value < min) {
     fail(path, `expected an integer >= ${min}`);
   }
@@ -97,6 +145,12 @@ function allowedKeys(value, path, required, optional = []) {
   }
 }
 
+function enumValue(value, path, values) {
+  if (!values.has(value))
+    fail(path, `expected one of ${[...values].join(", ")}`);
+  return value;
+}
+
 function isoDate(value, path) {
   const parsed = string(value, path);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(parsed)) fail(path, "expected ISO date");
@@ -107,6 +161,15 @@ function isoDate(value, path) {
   ) {
     fail(path, "expected a real ISO date");
   }
+  return parsed;
+}
+
+function utcTimestamp(value, path) {
+  const parsed = string(value, path);
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(parsed)) {
+    fail(path, "expected an ISO UTC timestamp");
+  }
+  if (Number.isNaN(Date.parse(parsed))) fail(path, "expected a real timestamp");
   return parsed;
 }
 
@@ -132,12 +195,6 @@ function ianaTimezone(value, path) {
   return parsed;
 }
 
-function enumValue(value, path, values) {
-  if (!values.has(value))
-    fail(path, `expected one of ${[...values].join(", ")}`);
-  return value;
-}
-
 function uniqueStrings(value, path, parse = string) {
   const parsed = array(value, path).map((item, index) =>
     parse(item, `${path}[${index}]`),
@@ -147,17 +204,88 @@ function uniqueStrings(value, path, parse = string) {
   return parsed;
 }
 
-function safeRepositoryPath(root, repositoryPath, path) {
-  const value = string(repositoryPath, path);
-  if (isAbsolute(value) || value.includes("\\")) {
-    fail(path, "expected a forward-slash repository-relative path");
-  }
-  const target = resolve(root, value);
+function isOutside(root, target) {
   const fromRoot = relative(root, target);
-  if (fromRoot === "" || fromRoot === ".." || fromRoot.startsWith(`..\\`)) {
+  return (
+    fromRoot === ".." || fromRoot.startsWith(`..${sep}`) || isAbsolute(fromRoot)
+  );
+}
+
+export function safeRepositoryPath(root, repositoryPath, path = "$path") {
+  const value = string(repositoryPath, path);
+  if (isAbsolute(value) || /^[A-Za-z]:[\\/]/.test(value)) {
+    fail(path, "expected a repository-relative path");
+  }
+  if (value.split(/[\\/]+/).includes("..")) {
+    fail(path, "parent traversal is not allowed");
+  }
+  const resolvedRoot = resolve(root);
+  const target = resolve(resolvedRoot, value);
+  if (target === resolvedRoot || isOutside(resolvedRoot, target)) {
     fail(path, "path escapes or names the repository root");
   }
   return target;
+}
+
+async function containedRealpath(rootReal, target, path) {
+  let targetReal;
+  try {
+    targetReal = await realpath(target);
+  } catch (error) {
+    if (error?.code === "ENOENT") fail(path, "file is missing");
+    throw error;
+  }
+  if (targetReal === rootReal || isOutside(rootReal, targetReal)) {
+    fail(path, "realpath escapes the repository");
+  }
+  return targetReal;
+}
+
+async function readContainedFile(repositoryRoot, rootReal, repositoryPath) {
+  const target = safeRepositoryPath(
+    repositoryRoot,
+    repositoryPath,
+    repositoryPath,
+  );
+  const targetReal = await containedRealpath(rootReal, target, repositoryPath);
+  return readFile(targetReal);
+}
+
+async function validateExactReceiptPath(repositoryRoot, receiptPath) {
+  const expected = resolve(repositoryRoot, FIXED_RECEIPT_PATH);
+  if (resolve(receiptPath) !== expected) {
+    fail("receiptPath", `must be exactly ${expected}`);
+  }
+  const rootReal = await realpath(repositoryRoot);
+  await containedRealpath(rootReal, expected, FIXED_RECEIPT_PATH);
+  return { expected, rootReal };
+}
+
+async function nearestExistingRealpath(target) {
+  let candidate = target;
+  for (;;) {
+    try {
+      return await realpath(candidate);
+    } catch (error) {
+      if (error?.code !== "ENOENT") throw error;
+      const parent = dirname(candidate);
+      if (parent === candidate) throw error;
+      candidate = parent;
+    }
+  }
+}
+
+async function validateExactArtifactPath(repositoryRoot, artifactPath) {
+  const expected = resolve(repositoryRoot, FIXED_ARTIFACT_PATH);
+  if (resolve(artifactPath) !== expected) {
+    fail("artifactPath", `must be exactly ${expected}`);
+  }
+  const rootReal = await realpath(repositoryRoot);
+  const existingReal = await nearestExistingRealpath(expected);
+  if (existingReal === rootReal || isOutside(rootReal, existingReal)) {
+    fail("artifactPath", "realpath or parent realpath escapes the repository");
+  }
+  return { expected, rootReal };
 }
 
 export function canonicalize(value) {
@@ -205,13 +333,9 @@ function parseUtf8Json(bytes, path) {
 function validateCounts(value, path) {
   exactKeys(value, path, ["events", "performances", "setlistEntries"]);
   return {
-    events: integer(value.events, `${path}.events`, { min: 0 }),
-    performances: integer(value.performances, `${path}.performances`, {
-      min: 0,
-    }),
-    setlistEntries: integer(value.setlistEntries, `${path}.setlistEntries`, {
-      min: 0,
-    }),
+    events: integer(value.events, `${path}.events`, 0),
+    performances: integer(value.performances, `${path}.performances`, 0),
+    setlistEntries: integer(value.setlistEntries, `${path}.setlistEntries`, 0),
   };
 }
 
@@ -235,6 +359,34 @@ function validateGate(value, path) {
   return { status, evidenceRefs, gap };
 }
 
+function validateOrderedPathHashes(value, path, expectedPaths, allowSubset) {
+  const entries = array(value, path);
+  const observed = entries.map((entry, index) => {
+    const entryPath = `${path}[${index}]`;
+    exactKeys(entry, entryPath, ["path", "sha256"]);
+    safeRepositoryPath(
+      DEFAULT_REPOSITORY_ROOT,
+      entry.path,
+      `${entryPath}.path`,
+    );
+    if (!SHA256_PATTERN.test(entry.sha256))
+      fail(`${entryPath}.sha256`, "invalid SHA-256");
+    return entry.path;
+  });
+  const expected = allowSubset
+    ? expectedPaths.filter((candidate) => observed.includes(candidate))
+    : expectedPaths;
+  if (
+    observed.length !== expected.length ||
+    observed.some((entry, index) => entry !== expected[index])
+  ) {
+    fail(
+      path,
+      `paths must be the fixed ordered ${allowSubset ? "subset" : "allowlist"}`,
+    );
+  }
+}
+
 export function validateReceipt(
   value,
   repositoryRoot = DEFAULT_REPOSITORY_ROOT,
@@ -246,6 +398,7 @@ export function validateReceipt(
     "sourceRevisionAlgorithm",
     "historicalBaseline",
     "contractFiles",
+    "evidenceFiles",
     "seeds",
   ]);
   if (value.schemaVersion !== 1) fail("$receipt.schemaVersion", "expected 1");
@@ -261,17 +414,17 @@ export function validateReceipt(
       "unknown source revision algorithm",
     );
   }
-
   exactKeys(value.historicalBaseline, "$receipt.historicalBaseline", [
     "contractPath",
     "sourceCommit",
     "totals",
   ]);
-  safeRepositoryPath(
-    repositoryRoot,
-    value.historicalBaseline.contractPath,
-    "$receipt.historicalBaseline.contractPath",
-  );
+  if (value.historicalBaseline.contractPath !== FIXED_CONTRACT_PATHS.at(-1)) {
+    fail(
+      "$receipt.historicalBaseline.contractPath",
+      "unexpected baseline contract path",
+    );
+  }
   if (!/^[0-9a-f]{40}$/.test(value.historicalBaseline.sourceCommit)) {
     fail(
       "$receipt.historicalBaseline.sourceCommit",
@@ -282,33 +435,27 @@ export function validateReceipt(
     value.historicalBaseline.totals,
     "$receipt.historicalBaseline.totals",
   );
-
-  const contractFiles = array(value.contractFiles, "$receipt.contractFiles");
-  if (contractFiles.length === 0)
-    fail("$receipt.contractFiles", "cannot be empty");
-  const contractPaths = new Set();
-  contractFiles.forEach((entry, index) => {
-    const path = `$receipt.contractFiles[${index}]`;
-    exactKeys(entry, path, ["path", "sha256"]);
-    safeRepositoryPath(repositoryRoot, entry.path, `${path}.path`);
-    if (contractPaths.has(entry.path)) fail(`${path}.path`, "duplicate path");
-    contractPaths.add(entry.path);
-    if (!SHA256_PATTERN.test(entry.sha256))
-      fail(`${path}.sha256`, "invalid SHA-256");
-  });
-  if (!contractPaths.has(value.historicalBaseline.contractPath)) {
-    fail(
-      "$receipt.contractFiles",
-      "must include the historical baseline contract",
-    );
-  }
+  validateOrderedPathHashes(
+    value.contractFiles,
+    "$receipt.contractFiles",
+    FIXED_CONTRACT_PATHS,
+    false,
+  );
+  const approvalPaths = FIXED_SEEDS.map((seed) => seed.approvalPath);
+  validateOrderedPathHashes(
+    value.evidenceFiles,
+    "$receipt.evidenceFiles",
+    approvalPaths,
+    true,
+  );
 
   const seeds = array(value.seeds, "$receipt.seeds");
-  if (seeds.length !== PUBLIC_SITE_IDS.length) {
+  if (seeds.length !== FIXED_SEEDS.length) {
     fail("$receipt.seeds", "expected exactly three ordered public seeds");
   }
   seeds.forEach((seed, index) => {
     const path = `$receipt.seeds[${index}]`;
+    const fixed = FIXED_SEEDS[index];
     exactKeys(seed, path, [
       "siteId",
       "sourcePath",
@@ -320,11 +467,12 @@ export function validateReceipt(
       "withdrawalState",
       "gates",
     ]);
-    if (seed.siteId !== PUBLIC_SITE_IDS[index]) {
-      fail(`${path}.siteId`, `expected ${PUBLIC_SITE_IDS[index]}`);
-    }
-    safeRepositoryPath(repositoryRoot, seed.sourcePath, `${path}.sourcePath`);
-    safeRepositoryPath(repositoryRoot, seed.songsPath, `${path}.songsPath`);
+    if (seed.siteId !== fixed.siteId)
+      fail(`${path}.siteId`, `expected ${fixed.siteId}`);
+    if (seed.sourcePath !== fixed.sourcePath)
+      fail(`${path}.sourcePath`, "not the fixed source path");
+    if (seed.songsPath !== fixed.songsPath)
+      fail(`${path}.songsPath`, "not the fixed songs path");
     if (!SHA256_PATTERN.test(seed.sourceSha256))
       fail(`${path}.sourceSha256`, "invalid SHA-256");
     if (!SHA256_PATTERN.test(seed.songsSha256))
@@ -351,27 +499,44 @@ export function validateReceipt(
         `must be ${expectedDecision} for the recorded gates and withdrawal state`,
       );
     }
+    if (
+      seed.decision === "GO" &&
+      !value.evidenceFiles.some((entry) => entry.path === fixed.approvalPath)
+    ) {
+      fail(`${path}.decision`, "GO requires its fixed approval evidence file");
+    }
   });
+  for (const entry of [...value.contractFiles, ...value.evidenceFiles]) {
+    safeRepositoryPath(repositoryRoot, entry.path, entry.path);
+  }
   return value;
 }
 
 export function computeSourceRevision(receipt) {
-  const revisionInput = {
-    kind: "atlas-public-source-revision-v1",
-    schemaVersion: receipt.schemaVersion,
-    sourceCommit: receipt.sourceCommit,
-    historicalBaseline: receipt.historicalBaseline,
-    contractFiles: receipt.contractFiles,
-    seeds: receipt.seeds,
-  };
-  return `sha256:${sha256(canonicalUtf8(revisionInput))}`;
+  return `sha256:${sha256(
+    canonicalUtf8({
+      kind: "atlas-public-source-revision-v1",
+      schemaVersion: receipt.schemaVersion,
+      sourceCommit: receipt.sourceCommit,
+      historicalBaseline: receipt.historicalBaseline,
+      contractFiles: receipt.contractFiles,
+      evidenceFiles: receipt.evidenceFiles,
+      seeds: receipt.seeds,
+    }),
+  )}`;
 }
 
 function validateSourceUrls(value, path) {
   return uniqueStrings(value, path, httpsUrl);
 }
 
-function validatePublicAtlasEvidence(value, path) {
+function addDays(date, days) {
+  const value = new Date(`${date}T00:00:00.000Z`);
+  value.setUTCDate(value.getUTCDate() + days);
+  return value.toISOString().slice(0, 10);
+}
+
+function validatePublicAtlasEvidence(value, path, auditDate) {
   exactKeys(value, path, [
     "asOf",
     "lastVerifiedAt",
@@ -385,8 +550,13 @@ function validatePublicAtlasEvidence(value, path) {
     value.lastVerifiedAt,
     `${path}.lastVerifiedAt`,
   );
-  if (lastVerifiedAt > asOf)
-    fail(`${path}.lastVerifiedAt`, "cannot be after asOf");
+  if (asOf > lastVerifiedAt) fail(`${path}.asOf`, "must be <= lastVerifiedAt");
+  if (asOf > auditDate || lastVerifiedAt > auditDate) {
+    fail(
+      path,
+      `asOf and lastVerifiedAt cannot be after auditDate ${auditDate}`,
+    );
+  }
   const timezone = ianaTimezone(value.timezone, `${path}.timezone`);
   const lifecycle = enumValue(value.lifecycle, `${path}.lifecycle`, LIFECYCLES);
   exactKeys(value.refreshPolicy, `${path}.refreshPolicy`, [
@@ -395,31 +565,35 @@ function validatePublicAtlasEvidence(value, path) {
     "onInvalidation",
     "onWithdrawal",
   ]);
-  const refreshPolicy = {
-    refreshCadence: string(
-      value.refreshPolicy.refreshCadence,
-      `${path}.refreshPolicy.refreshCadence`,
-    ),
-    staleAfterDays: integer(
-      value.refreshPolicy.staleAfterDays,
-      `${path}.refreshPolicy.staleAfterDays`,
-      { min: 1 },
-    ),
-    onInvalidation: value.refreshPolicy.onInvalidation,
-    onWithdrawal: value.refreshPolicy.onWithdrawal,
-  };
-  if (refreshPolicy.onInvalidation !== "HOLD") {
-    fail(`${path}.refreshPolicy.onInvalidation`, "must fail closed as HOLD");
+  const staleAfterDays = integer(
+    value.refreshPolicy.staleAfterDays,
+    `${path}.refreshPolicy.staleAfterDays`,
+    1,
+  );
+  if (value.refreshPolicy.onInvalidation !== "HOLD") {
+    fail(`${path}.refreshPolicy.onInvalidation`, "must be HOLD");
   }
-  if (refreshPolicy.onWithdrawal !== "HOLD") {
-    fail(`${path}.refreshPolicy.onWithdrawal`, "must fail closed as HOLD");
+  if (value.refreshPolicy.onWithdrawal !== "HOLD") {
+    fail(`${path}.refreshPolicy.onWithdrawal`, "must be HOLD");
+  }
+  const expiryDate = addDays(lastVerifiedAt, staleAfterDays);
+  if (auditDate > expiryDate) {
+    fail(path, `stale after ${expiryDate}; auditDate is ${auditDate}`);
   }
   return {
     asOf,
     lastVerifiedAt,
     timezone,
     lifecycle,
-    refreshPolicy,
+    refreshPolicy: {
+      refreshCadence: string(
+        value.refreshPolicy.refreshCadence,
+        `${path}.refreshPolicy.refreshCadence`,
+      ),
+      staleAfterDays,
+      onInvalidation: "HOLD",
+      onWithdrawal: "HOLD",
+    },
     maintenanceOwner: string(
       value.maintenanceOwner,
       `${path}.maintenanceOwner`,
@@ -431,20 +605,21 @@ function validateSongs(value, path) {
   const songs = array(value, path);
   const byId = new Map();
   songs.forEach((song, index) => {
-    const songPath = `${path}[${index}]`;
-    const item = record(song, songPath);
-    const id = string(item.id, `${songPath}.id`);
-    if (!LOCAL_ID_PATTERN.test(id)) fail(`${songPath}.id`, "invalid local id");
-    if (byId.has(id)) fail(`${songPath}.id`, "duplicate song id");
-    const title = record(item.title, `${songPath}.title`);
-    const titleJa = string(title.ja, `${songPath}.title.ja`);
-    byId.set(id, { id, title: titleJa });
+    const itemPath = `${path}[${index}]`;
+    const item = record(song, itemPath);
+    const id = string(item.id, `${itemPath}.id`);
+    if (!LOCAL_ID_PATTERN.test(id)) fail(`${itemPath}.id`, "invalid local id");
+    if (byId.has(id)) fail(`${itemPath}.id`, "duplicate song id");
+    const title = record(item.title, `${itemPath}.title`);
+    byId.set(id, { id, title: string(title.ja, `${itemPath}.title.ja`) });
   });
   return byId;
 }
 
-function validateExcludedEntries(value, path) {
+function validateExcludedEntries(value, path, includedOrders) {
   if (value === undefined) return [];
+  const sourceOrders = new Set();
+  const beforeOrders = new Set();
   return array(value, path).map((entry, index) => {
     const itemPath = `${path}[${index}]`;
     const item = record(entry, itemPath);
@@ -457,28 +632,68 @@ function validateExcludedEntries(value, path) {
     httpsUrl(item.sourceUrl, `${itemPath}.sourceUrl`);
     string(item.label, `${itemPath}.label`);
     string(item.reason, `${itemPath}.reason`);
-    if (
-      item.sourceOrder === undefined &&
-      item.beforeSourceOrder === undefined
-    ) {
-      fail(itemPath, "expected sourceOrder or beforeSourceOrder");
+    const hasSourceOrder = Object.hasOwn(item, "sourceOrder");
+    const hasBeforeSourceOrder = Object.hasOwn(item, "beforeSourceOrder");
+    if (hasSourceOrder === hasBeforeSourceOrder) {
+      fail(
+        itemPath,
+        "must contain exactly one of sourceOrder or beforeSourceOrder",
+      );
     }
-    if (item.sourceOrder !== undefined)
-      integer(item.sourceOrder, `${itemPath}.sourceOrder`, { min: 1 });
-    if (item.beforeSourceOrder !== undefined) {
-      integer(item.beforeSourceOrder, `${itemPath}.beforeSourceOrder`, {
-        min: 1,
-      });
+    if (hasSourceOrder) {
+      const order = integer(item.sourceOrder, `${itemPath}.sourceOrder`, 1);
+      if (includedOrders.has(order) || sourceOrders.has(order)) {
+        fail(
+          `${itemPath}.sourceOrder`,
+          "conflicts with an included or excluded order",
+        );
+      }
+      sourceOrders.add(order);
+    } else {
+      const order = integer(
+        item.beforeSourceOrder,
+        `${itemPath}.beforeSourceOrder`,
+        1,
+      );
+      if (!includedOrders.has(order)) {
+        fail(`${itemPath}.beforeSourceOrder`, "must target an included order");
+      }
+      if (beforeOrders.has(order)) {
+        fail(`${itemPath}.beforeSourceOrder`, "duplicate excluded position");
+      }
+      beforeOrders.add(order);
     }
     return item;
   });
 }
 
-function validateLiveSource(value, seed, songs) {
+function coverageIssuesFor(performance, excluded) {
+  const included = new Set(performance.setlist.map((entry) => entry.order));
+  const numericExcluded = new Set(
+    excluded.flatMap((entry) =>
+      Object.hasOwn(entry, "sourceOrder") ? [entry.sourceOrder] : [],
+    ),
+  );
+  const numeric = [...included, ...numericExcluded];
+  const maximum = numeric.length === 0 ? 0 : Math.max(...numeric);
+  const missing = [];
+  for (let order = 1; order <= maximum; order += 1) {
+    if (!included.has(order) && !numericExcluded.has(order))
+      missing.push(order);
+  }
+  return missing.length === 0
+    ? []
+    : [
+        `setlist order gaps ${missing.join(", ")} lack structured excludedEntries`,
+      ];
+}
+
+function validateLiveSource(value, seed, songs, auditDate) {
   const path = seed.sourcePath;
   const events = array(value, path);
   const eventIds = new Set();
   const ownerNames = new Set();
+  const coverageIssues = [];
   let performanceCount = 0;
   let setlistEntryCount = 0;
 
@@ -538,7 +753,6 @@ function validateLiveSource(value, seed, songs) {
     array(event.slots, `${eventPath}.slots`);
     record(event.export, `${eventPath}.export`);
     record(event.share, `${eventPath}.share`);
-
     exactKeys(event.eventEvidence, `${eventPath}.eventEvidence`, [
       "dates",
       "verificationStatus",
@@ -551,10 +765,9 @@ function validateLiveSource(value, seed, songs) {
     ).map((date, index) =>
       isoDate(date, `${eventPath}.eventEvidence.dates[${index}]`),
     );
-    if (dates.length === 0)
-      fail(`${eventPath}.eventEvidence.dates`, "cannot be empty");
-    if (new Set(dates).size !== dates.length)
-      fail(`${eventPath}.eventEvidence.dates`, "duplicate date");
+    if (dates.length === 0 || new Set(dates).size !== dates.length) {
+      fail(`${eventPath}.eventEvidence.dates`, "must be non-empty and unique");
+    }
     for (let index = 1; index < dates.length; index += 1) {
       if (dates[index] <= dates[index - 1]) {
         fail(
@@ -577,20 +790,16 @@ function validateLiveSource(value, seed, songs) {
       `${eventPath}.eventEvidence.sourceNote`,
     );
 
-    if (seed.decision === "GO") {
-      if (event.publicAtlasEvidence === undefined) {
-        fail(`${eventPath}.publicAtlasEvidence`, "required for a GO seed");
-      }
-      const publicEvidence = validatePublicAtlasEvidence(
+    if (seed.decision === "GO" && event.publicAtlasEvidence === undefined) {
+      fail(`${eventPath}.publicAtlasEvidence`, "required for a GO seed");
+    }
+    if (event.publicAtlasEvidence !== undefined) {
+      const evidence = validatePublicAtlasEvidence(
         event.publicAtlasEvidence,
         `${eventPath}.publicAtlasEvidence`,
+        auditDate,
       );
-      ownerNames.add(publicEvidence.maintenanceOwner);
-    } else if (event.publicAtlasEvidence !== undefined) {
-      validatePublicAtlasEvidence(
-        event.publicAtlasEvidence,
-        `${eventPath}.publicAtlasEvidence`,
-      );
+      ownerNames.add(evidence.maintenanceOwner);
     }
 
     const performanceIds = new Set();
@@ -625,10 +834,10 @@ function validateLiveSource(value, seed, songs) {
         performance.date,
         `${performancePath}.date`,
       );
-      if (performanceDate < dates[0] || performanceDate > dates.at(-1)) {
+      if (!dates.includes(performanceDate)) {
         fail(
           `${performancePath}.date`,
-          "must fall within the parent Event date range",
+          "must be an exact member of parent eventEvidence.dates",
         );
       }
       enumValue(
@@ -641,17 +850,8 @@ function validateLiveSource(value, seed, songs) {
         `${performancePath}.sourceUrls`,
       );
       string(performance.sourceNote, `${performancePath}.sourceNote`);
-      if (performance.provenance !== undefined) {
-        const provenance = record(
-          performance.provenance,
-          `${performancePath}.provenance`,
-        );
-        validateExcludedEntries(
-          provenance.excludedEntries,
-          `${performancePath}.provenance.excludedEntries`,
-        );
-      }
       let previousOrder = 0;
+      const includedOrders = new Set();
       array(performance.setlist, `${performancePath}.setlist`).forEach(
         (entry, entryIndex) => {
           const entryPath = `${performancePath}.setlist[${entryIndex}]`;
@@ -661,34 +861,226 @@ function validateLiveSource(value, seed, songs) {
             ["order", "songId"],
             ["section", "versionNote"],
           );
-          const order = integer(entry.order, `${entryPath}.order`, { min: 1 });
+          const order = integer(entry.order, `${entryPath}.order`, 1);
           if (order <= previousOrder)
             fail(`${entryPath}.order`, "must be strictly increasing");
           previousOrder = order;
+          includedOrders.add(order);
           const songId = string(entry.songId, `${entryPath}.songId`);
           if (!songs.has(songId))
             fail(`${entryPath}.songId`, `unknown song id ${songId}`);
         },
       );
+      const provenance = performance.provenance;
+      const excluded = validateExcludedEntries(
+        provenance?.excludedEntries,
+        `${performancePath}.provenance.excludedEntries`,
+        includedOrders,
+      );
+      for (const issue of coverageIssuesFor(performance, excluded)) {
+        coverageIssues.push(`${event.id}/${performance.id}: ${issue}`);
+      }
       performanceCount += 1;
       setlistEntryCount += performance.setlist.length;
     });
   });
-
   if (seed.decision === "GO" && ownerNames.size !== 1) {
-    fail(
-      path,
-      "a GO seed must name exactly one maintenance owner across its Events",
-    );
+    fail(path, "a GO seed must name exactly one maintenance owner");
   }
   return {
     events,
+    coverageIssues,
     counts: {
       events: events.length,
       performances: performanceCount,
       setlistEntries: setlistEntryCount,
     },
   };
+}
+
+function validateApproval(value, fixed, auditDate, path) {
+  exactKeys(value, path, [
+    "schemaVersion",
+    "siteId",
+    "atlasPublicSeedApproval",
+    "approvedAt",
+    "maintenanceOwner",
+    "withdrawalState",
+  ]);
+  if (value.schemaVersion !== 1) fail(`${path}.schemaVersion`, "expected 1");
+  if (value.siteId !== fixed.siteId)
+    fail(`${path}.siteId`, `expected ${fixed.siteId}`);
+  if (value.atlasPublicSeedApproval !== "approved") {
+    fail(`${path}.atlasPublicSeedApproval`, "must explicitly be approved");
+  }
+  const approvedAt = utcTimestamp(value.approvedAt, `${path}.approvedAt`);
+  if (approvedAt.slice(0, 10) > auditDate) {
+    fail(`${path}.approvedAt`, `cannot be after auditDate ${auditDate}`);
+  }
+  return {
+    ...value,
+    maintenanceOwner: string(
+      value.maintenanceOwner,
+      `${path}.maintenanceOwner`,
+    ),
+    withdrawalState: enumValue(
+      value.withdrawalState,
+      `${path}.withdrawalState`,
+      new Set(["active", "withdrawn"]),
+    ),
+  };
+}
+
+function parseEvidenceRef(reference, path) {
+  const value = string(reference, path);
+  const hashIndex = value.indexOf("#");
+  if (hashIndex <= 0 || value.indexOf("#", hashIndex + 1) !== -1) {
+    fail(path, "expected repoPath#JSON-pointer");
+  }
+  const repositoryPath = value.slice(0, hashIndex);
+  const pointer = value.slice(hashIndex + 1);
+  if (pointer !== "" && !pointer.startsWith("/")) {
+    fail(path, "JSON pointer must be empty or start with /");
+  }
+  return { repositoryPath, pointer };
+}
+
+function resolveJsonPointer(document, pointer, path) {
+  if (pointer === "") return document;
+  let current = document;
+  for (const rawToken of pointer.slice(1).split("/")) {
+    if (/~(?:[^01]|$)/.test(rawToken))
+      fail(path, "invalid JSON pointer escape");
+    const token = rawToken.replaceAll("~1", "/").replaceAll("~0", "~");
+    if (Array.isArray(current)) {
+      if (!/^(?:0|[1-9]\d*)$/.test(token) || Number(token) >= current.length) {
+        fail(path, `array pointer segment ${token} does not exist`);
+      }
+      current = current[Number(token)];
+    } else if (
+      current !== null &&
+      typeof current === "object" &&
+      Object.hasOwn(current, token)
+    ) {
+      current = current[token];
+    } else {
+      fail(path, `pointer segment ${token} does not exist`);
+    }
+  }
+  return current;
+}
+
+function expectedGateRefs(fixed, source, gateName) {
+  const sourceRefs = [];
+  source.events.forEach((event, eventIndex) => {
+    const eventBase = `${fixed.sourcePath}#/${eventIndex}`;
+    if (gateName === "claimLevelEvidence") {
+      sourceRefs.push(`${eventBase}/eventEvidence`);
+      (event.performances ?? []).forEach((_performance, performanceIndex) => {
+        sourceRefs.push(`${eventBase}/performances/${performanceIndex}`);
+      });
+    }
+    if (gateName === "temporalVerification") {
+      sourceRefs.push(`${eventBase}/publicAtlasEvidence/asOf`);
+      sourceRefs.push(`${eventBase}/publicAtlasEvidence/lastVerifiedAt`);
+    }
+    if (gateName === "timezoneAndLifecycle") {
+      sourceRefs.push(`${eventBase}/publicAtlasEvidence/timezone`);
+      sourceRefs.push(`${eventBase}/publicAtlasEvidence/lifecycle`);
+    }
+    if (gateName === "refreshInvalidationWithdrawal") {
+      sourceRefs.push(`${eventBase}/publicAtlasEvidence/refreshPolicy`);
+    }
+    if (gateName === "maintenanceOwner") {
+      sourceRefs.push(`${eventBase}/publicAtlasEvidence/maintenanceOwner`);
+    }
+  });
+  if (gateName === "sourceUseBoundary") return [`${fixed.approvalPath}#`];
+  if (gateName === "claimLevelEvidence")
+    return [...sourceRefs, `${fixed.songsPath}#`];
+  if (gateName === "refreshInvalidationWithdrawal") {
+    return [...sourceRefs, `${fixed.approvalPath}#/withdrawalState`];
+  }
+  if (gateName === "maintenanceOwner") {
+    return [...sourceRefs, `${fixed.approvalPath}#/maintenanceOwner`];
+  }
+  return sourceRefs;
+}
+
+function sameOrderedStrings(left, right) {
+  return (
+    left.length === right.length &&
+    left.every((value, index) => value === right[index])
+  );
+}
+
+function validateGateEvidence(seedResult, fixed, documents) {
+  const { seed, source, approval } = seedResult;
+  const errors = [];
+  if (!source) return errors;
+  for (const gateName of GATE_NAMES) {
+    const gate = seed.gates[gateName];
+    const expected = expectedGateRefs(fixed, source, gateName);
+    for (const [index, reference] of gate.evidenceRefs.entries()) {
+      try {
+        const parsed = parseEvidenceRef(
+          reference,
+          `${seed.siteId}.${gateName}.evidenceRefs[${index}]`,
+        );
+        const document = documents.get(parsed.repositoryPath);
+        if (document === undefined)
+          fail(reference, "path is not an audited JSON document");
+        resolveJsonPointer(document, parsed.pointer, reference);
+        if (!expected.includes(reference)) {
+          fail(reference, `is not valid semantic evidence for ${gateName}`);
+        }
+      } catch (error) {
+        errors.push(`EVIDENCE_REF:${seed.siteId}:${gateName}:${error.message}`);
+      }
+    }
+    if (
+      gate.status === "GO" &&
+      !sameOrderedStrings(gate.evidenceRefs, expected)
+    ) {
+      errors.push(
+        `EVIDENCE_SET:${seed.siteId}:${gateName}:expected ${JSON.stringify(expected)}`,
+      );
+    }
+  }
+  if (
+    seed.gates.claimLevelEvidence.status === "GO" &&
+    source.coverageIssues.length > 0
+  ) {
+    errors.push(
+      `CLAIM_COVERAGE:${seed.siteId}:${source.coverageIssues.join(" | ")}`,
+    );
+  }
+  if (seed.decision === "GO") {
+    if (!approval) {
+      errors.push(`APPROVAL_MISSING:${seed.siteId}:${fixed.approvalPath}`);
+    } else {
+      const owners = new Set(
+        source.events.map(
+          (event) => event.publicAtlasEvidence?.maintenanceOwner,
+        ),
+      );
+      owners.delete(undefined);
+      if (owners.size !== 1 || !owners.has(approval.maintenanceOwner)) {
+        errors.push(
+          `APPROVAL_OWNER:${seed.siteId}:approval and source owner must match`,
+        );
+      }
+      if (seed.withdrawalState !== approval.withdrawalState) {
+        errors.push(
+          `APPROVAL_WITHDRAWAL:${seed.siteId}:receipt ${seed.withdrawalState}, approval ${approval.withdrawalState}`,
+        );
+      }
+      if (approval.withdrawalState !== "active") {
+        errors.push(`APPROVAL_WITHDRAWN:${seed.siteId}`);
+      }
+    }
+  }
+  return errors;
 }
 
 function sameCounts(left, right) {
@@ -699,104 +1091,191 @@ function sameCounts(left, right) {
   );
 }
 
-async function hashFile(path) {
-  const bytes = await readFile(path);
-  return { bytes, sha256: sha256(bytes) };
+async function git(repositoryRoot, args, encoding = "utf8") {
+  return execFileAsync("git", ["-c", "core.excludesFile=", ...args], {
+    cwd: repositoryRoot,
+    encoding,
+    maxBuffer: 16 * 1024 * 1024,
+  });
+}
+
+async function verifyGitCommit(repositoryRoot, commit) {
+  const result = await git(repositoryRoot, ["cat-file", "-t", commit]);
+  if (result.stdout.trim() !== "commit")
+    throw new Error("object is not a commit");
+}
+
+async function gitBlob(repositoryRoot, commit, repositoryPath) {
+  const result = await git(
+    repositoryRoot,
+    ["show", `${commit}:${repositoryPath}`],
+    "buffer",
+  );
+  return result.stdout;
+}
+
+function receiptFileBindings(receipt) {
+  return [
+    ...receipt.contractFiles.map((entry) => ({ ...entry, kind: "SCHEMA" })),
+    ...receipt.evidenceFiles.map((entry) => ({ ...entry, kind: "EVIDENCE" })),
+    ...receipt.seeds.flatMap((seed) => [
+      { path: seed.sourcePath, sha256: seed.sourceSha256, kind: "SOURCE" },
+      { path: seed.songsPath, sha256: seed.songsSha256, kind: "SOURCE" },
+    ]),
+  ];
 }
 
 export async function auditWorkspace({
   repositoryRoot = DEFAULT_REPOSITORY_ROOT,
-  receiptPath = DEFAULT_RECEIPT_PATH,
+  receiptPath = resolve(repositoryRoot, FIXED_RECEIPT_PATH),
+  auditDate = new Date().toISOString().slice(0, 10),
 } = {}) {
-  const receiptBytes = await readFile(receiptPath);
+  auditDate = isoDate(auditDate, "auditDate");
+  const { rootReal } = await validateExactReceiptPath(
+    repositoryRoot,
+    receiptPath,
+  );
+  const receiptBytes = await readContainedFile(
+    repositoryRoot,
+    rootReal,
+    FIXED_RECEIPT_PATH,
+  );
   const receipt = validateReceipt(
-    parseUtf8Json(receiptBytes, relative(repositoryRoot, receiptPath)),
+    parseUtf8Json(receiptBytes, FIXED_RECEIPT_PATH),
     repositoryRoot,
   );
   const errors = [];
-
-  for (const [index, contractFile] of receipt.contractFiles.entries()) {
+  const bytesByPath = new Map();
+  try {
+    await verifyGitCommit(repositoryRoot, receipt.sourceCommit);
+  } catch (error) {
+    errors.push(`GIT_COMMIT:${receipt.sourceCommit}:${error.message}`);
+  }
+  for (const binding of receiptFileBindings(receipt)) {
+    let current;
     try {
-      const path = safeRepositoryPath(
-        repositoryRoot,
-        contractFile.path,
-        `$receipt.contractFiles[${index}].path`,
-      );
-      const observed = await hashFile(path);
-      if (observed.sha256 !== contractFile.sha256) {
+      current = await readContainedFile(repositoryRoot, rootReal, binding.path);
+      bytesByPath.set(binding.path, current);
+      const currentHash = sha256(current);
+      if (currentHash !== binding.sha256) {
         errors.push(
-          `SCHEMA_DRIFT:${contractFile.path}:expected ${contractFile.sha256}, observed ${observed.sha256}`,
+          `${binding.kind}_DRIFT:${binding.path}:expected ${binding.sha256}, observed ${currentHash}`,
         );
       }
     } catch (error) {
-      errors.push(`SCHEMA_DRIFT:${contractFile.path}:${error.message}`);
+      errors.push(`${binding.kind}_MISSING:${binding.path}:${error.message}`);
+      continue;
+    }
+    try {
+      const committed = await gitBlob(
+        repositoryRoot,
+        receipt.sourceCommit,
+        binding.path,
+      );
+      if (!committed.equals(current)) {
+        errors.push(`GIT_BLOB_DRIFT:${receipt.sourceCommit}:${binding.path}`);
+      }
+      const committedHash = sha256(committed);
+      if (committedHash !== binding.sha256) {
+        errors.push(
+          `GIT_BLOB_HASH:${binding.path}:expected ${binding.sha256}, commit has ${committedHash}`,
+        );
+      }
+    } catch (error) {
+      errors.push(
+        `GIT_BLOB:${receipt.sourceCommit}:${binding.path}:${error.message}`,
+      );
+    }
+  }
+
+  const documents = new Map();
+  for (const seed of receipt.seeds) {
+    for (const path of [seed.sourcePath, seed.songsPath]) {
+      const bytes = bytesByPath.get(path);
+      if (bytes) {
+        try {
+          documents.set(path, parseUtf8Json(bytes, path));
+        } catch (error) {
+          errors.push(`SOURCE_SCHEMA:${path}:${error.message}`);
+        }
+      }
+    }
+  }
+  const approvals = new Map();
+  for (const evidenceFile of receipt.evidenceFiles) {
+    const bytes = bytesByPath.get(evidenceFile.path);
+    if (!bytes) continue;
+    try {
+      const fixed = FIXED_SEEDS.find(
+        (candidate) => candidate.approvalPath === evidenceFile.path,
+      );
+      const document = parseUtf8Json(bytes, evidenceFile.path);
+      documents.set(evidenceFile.path, document);
+      approvals.set(
+        fixed.siteId,
+        validateApproval(document, fixed, auditDate, evidenceFile.path),
+      );
+    } catch (error) {
+      errors.push(`APPROVAL_SCHEMA:${evidenceFile.path}:${error.message}`);
     }
   }
 
   const seedResults = [];
-  for (const seed of receipt.seeds) {
+  for (const [index, seed] of receipt.seeds.entries()) {
+    const fixed = FIXED_SEEDS[index];
     const seedErrors = [];
     let songs;
     let source;
     try {
-      const songsPath = safeRepositoryPath(
-        repositoryRoot,
-        seed.songsPath,
-        `${seed.siteId}.songsPath`,
-      );
-      const observed = await hashFile(songsPath);
-      if (observed.sha256 !== seed.songsSha256) {
-        seedErrors.push(
-          `SOURCE_DRIFT:${seed.songsPath}:expected ${seed.songsSha256}, observed ${observed.sha256}`,
-        );
-      }
-      songs = validateSongs(
-        parseUtf8Json(observed.bytes, seed.songsPath),
-        seed.songsPath,
-      );
+      const songsDocument = documents.get(seed.songsPath);
+      if (songsDocument === undefined)
+        throw new Error("songs document unavailable");
+      songs = validateSongs(songsDocument, seed.songsPath);
     } catch (error) {
       seedErrors.push(`SOURCE_SCHEMA:${seed.songsPath}:${error.message}`);
     }
     try {
-      const sourcePath = safeRepositoryPath(
-        repositoryRoot,
-        seed.sourcePath,
-        `${seed.siteId}.sourcePath`,
-      );
-      const observed = await hashFile(sourcePath);
-      if (observed.sha256 !== seed.sourceSha256) {
+      const sourceDocument = documents.get(seed.sourcePath);
+      if (sourceDocument === undefined)
+        throw new Error("live source unavailable");
+      if (!songs) throw new Error("songs validation failed");
+      source = validateLiveSource(sourceDocument, seed, songs, auditDate);
+      if (!sameCounts(source.counts, seed.baselineCounts)) {
         seedErrors.push(
-          `SOURCE_DRIFT:${seed.sourcePath}:expected ${seed.sourceSha256}, observed ${observed.sha256}`,
+          `BASELINE_DRIFT:${seed.siteId}:expected ${JSON.stringify(seed.baselineCounts)}, observed ${JSON.stringify(source.counts)}`,
         );
       }
-      if (songs) {
-        source = validateLiveSource(
-          parseUtf8Json(observed.bytes, seed.sourcePath),
-          seed,
-          songs,
+      if (source.coverageIssues.length > 0) {
+        seedErrors.push(
+          `COVERAGE_HOLD:${seed.siteId}:${source.coverageIssues.join(" | ")}`,
         );
-        if (!sameCounts(source.counts, seed.baselineCounts)) {
-          seedErrors.push(
-            `BASELINE_DRIFT:${seed.siteId}:expected ${JSON.stringify(seed.baselineCounts)}, observed ${JSON.stringify(source.counts)}`,
-          );
-        }
       }
     } catch (error) {
       seedErrors.push(`SOURCE_SCHEMA:${seed.sourcePath}:${error.message}`);
     }
-
-    const holdGaps = GATE_NAMES.flatMap((gateName) => {
-      const gate = seed.gates[gateName];
-      return gate.status === "HOLD" ? [`${gateName}: ${gate.gap}`] : [];
-    });
+    const result = {
+      seed,
+      songs,
+      source,
+      approval: approvals.get(seed.siteId),
+      errors: seedErrors,
+      holdGaps: GATE_NAMES.flatMap((name) =>
+        seed.gates[name].status === "HOLD"
+          ? [`${name}: ${seed.gates[name].gap}`]
+          : [],
+      ),
+    };
+    seedErrors.push(...validateGateEvidence(result, fixed, documents));
     if (seed.decision === "HOLD") {
-      seedErrors.push(`SEED_HOLD:${seed.siteId}:${holdGaps.join(" | ")}`);
+      seedErrors.push(
+        `SEED_HOLD:${seed.siteId}:${result.holdGaps.join(" | ")}`,
+      );
     }
     if (seed.withdrawalState !== "active") {
       seedErrors.push(`SEED_WITHDRAWAL:${seed.siteId}:${seed.withdrawalState}`);
     }
     errors.push(...seedErrors);
-    seedResults.push({ seed, songs, source, errors: seedErrors, holdGaps });
+    seedResults.push(result);
   }
 
   const totals = seedResults.reduce(
@@ -814,9 +1293,9 @@ export async function auditWorkspace({
       `BASELINE_DRIFT:totals:expected ${JSON.stringify(receipt.historicalBaseline.totals)}, observed ${JSON.stringify(totals)}`,
     );
   }
-
   return {
     ok: errors.length === 0,
+    auditDate,
     receipt,
     sourceRevision: computeSourceRevision(receipt),
     seedResults,
@@ -826,13 +1305,11 @@ export async function auditWorkspace({
 }
 
 function excludedItems(performance) {
-  const entries = performance.provenance?.excludedEntries ?? [];
-  return entries.map((entry) => ({
+  return (performance.provenance?.excludedEntries ?? []).map((entry) => ({
     kind: "setlist-entry",
-    sourceId:
-      entry.sourceOrder !== undefined
-        ? `source-order:${entry.sourceOrder}`
-        : `before-source-order:${entry.beforeSourceOrder}`,
+    sourceId: Object.hasOwn(entry, "sourceOrder")
+      ? `source-order:${entry.sourceOrder}`
+      : `before-source-order:${entry.beforeSourceOrder}`,
     reason: `${entry.label}: ${entry.reason}`,
   }));
 }
@@ -853,7 +1330,105 @@ export function artifactHash(projection) {
   return `sha256:${sha256(canonicalUtf8(payload))}`;
 }
 
-export function buildProjection(audit) {
+function transpile(source, fileName) {
+  return typescript.transpileModule(source, {
+    fileName,
+    compilerOptions: {
+      target: typescript.ScriptTarget.ES2022,
+      module: typescript.ModuleKind.ES2022,
+      verbatimModuleSyntax: true,
+    },
+  }).outputText;
+}
+
+function dataModule(source) {
+  return `data:text/javascript;base64,${Buffer.from(source, "utf8").toString("base64")}`;
+}
+
+function replaceImport(source, relativeImport, dataUrl) {
+  return source.replaceAll(
+    JSON.stringify(relativeImport),
+    JSON.stringify(dataUrl),
+  );
+}
+
+async function loadC0ProjectionParser(repositoryRoot) {
+  const rootReal = await realpath(repositoryRoot);
+  const sources = new Map();
+  for (const path of FIXED_CONTRACT_PATHS.slice(0, 4)) {
+    sources.set(
+      path,
+      new TextDecoder("utf-8", { fatal: true }).decode(
+        await readContainedFile(repositoryRoot, rootReal, path),
+      ),
+    );
+  }
+  const cacheKey = sha256(
+    Buffer.concat([...sources.values()].map((source) => Buffer.from(source))),
+  );
+  if (c0ParserCache.has(cacheKey)) return c0ParserCache.get(cacheKey);
+  const strictUrl = dataModule(
+    transpile(sources.get("apps/atlas/src/contracts/strict.ts"), "strict.ts"),
+  );
+  const identityUrl = dataModule(
+    replaceImport(
+      transpile(
+        sources.get("apps/atlas/src/contracts/identity.ts"),
+        "identity.ts",
+      ),
+      "./strict.js",
+      strictUrl,
+    ),
+  );
+  let publicReferenceSource = transpile(
+    sources.get("apps/atlas/src/contracts/public-reference.ts"),
+    "public-reference.ts",
+  );
+  publicReferenceSource = replaceImport(
+    publicReferenceSource,
+    "./identity.js",
+    identityUrl,
+  );
+  publicReferenceSource = replaceImport(
+    publicReferenceSource,
+    "./strict.js",
+    strictUrl,
+  );
+  const publicReferenceUrl = dataModule(publicReferenceSource);
+  let projectionSource = transpile(
+    sources.get("apps/atlas/src/contracts/public-atlas-projection.ts"),
+    "public-atlas-projection.ts",
+  );
+  projectionSource = replaceImport(
+    projectionSource,
+    "./identity.js",
+    identityUrl,
+  );
+  projectionSource = replaceImport(
+    projectionSource,
+    "./public-reference.js",
+    publicReferenceUrl,
+  );
+  projectionSource = replaceImport(projectionSource, "./strict.js", strictUrl);
+  const c0Module = await import(dataModule(projectionSource));
+  c0ParserCache.set(cacheKey, c0Module.parsePublicAtlasProjection);
+  return c0Module.parsePublicAtlasProjection;
+}
+
+async function assertC0Projection(raw, repositoryRoot, path) {
+  const parse = await loadC0ProjectionParser(repositoryRoot);
+  const result = parse(raw);
+  if (result.status !== "valid") {
+    const detail =
+      result.status === "invalid"
+        ? `${result.issue.path}: ${result.issue.message}`
+        : result.status;
+    fail(path, `C0 parser rejected projection (${detail})`);
+  }
+  return result.value;
+}
+
+export async function buildProjection(audit, repositoryRoot) {
   if (!audit.ok)
     throw new Error("cannot build a projection from a non-GO audit");
   const groups = audit.seedResults.map(({ seed, songs, source }) => ({
@@ -861,8 +1436,7 @@ export function buildProjection(audit) {
     siteId: seed.siteId,
     displayName: seed.siteId,
     events: source.events.map((event) => {
-      const groupName = seed.siteId;
-      const eventDates = event.eventEvidence.dates;
+      const dates = event.eventEvidence.dates;
       const publicEvidence = event.publicAtlasEvidence;
       const performances = (event.performances ?? []).map((performance) => {
         const excluded = excludedItems(performance);
@@ -873,22 +1447,19 @@ export function buildProjection(audit) {
           date: performance.date,
           timezone: publicEvidence.timezone,
           lifecycle: publicEvidence.lifecycle,
-          setlist: performance.setlist.map((entry) => {
-            const song = songs.get(entry.songId);
-            return {
-              order: entry.order,
-              songRef: {
-                entityId: `${seed.siteId}:song:${entry.songId}`,
-                sourceRevision: audit.sourceRevision,
-                fallback: {
-                  groupName,
-                  title: song.title,
-                  date: performance.date,
-                  venueName: event.venue,
-                },
+          setlist: performance.setlist.map((entry) => ({
+            order: entry.order,
+            songRef: {
+              entityId: `${seed.siteId}:song:${entry.songId}`,
+              sourceRevision: audit.sourceRevision,
+              fallback: {
+                groupName: seed.siteId,
+                title: songs.get(entry.songId).title,
+                date: performance.date,
+                venueName: event.venue,
               },
-            };
-          }),
+            },
+          })),
           ...commonEvidence(
             performance,
             performance.setlist.length,
@@ -901,7 +1472,7 @@ export function buildProjection(audit) {
         id: `${seed.siteId}:event:${event.id}`,
         displayName: event.eventName,
         venue: { displayName: event.venue },
-        dates: { start: eventDates[0], end: eventDates.at(-1) },
+        dates: { start: dates[0], end: dates.at(-1) },
         timezone: publicEvidence.timezone,
         lifecycle: publicEvidence.lifecycle,
         performances,
@@ -939,292 +1510,56 @@ export function buildProjection(audit) {
     groups,
   };
   projection.artifactHash = artifactHash(projection);
-  validateProjection(projection);
   const bytes = Buffer.from(
     `${JSON.stringify(canonicalize(projection), null, 2)}\n`,
     "utf8",
   );
+  await assertC0Projection(
+    bytes.toString("utf8"),
+    repositoryRoot,
+    "generated projection",
+  );
   return { projection, bytes };
 }
 
-function validateCoverage(value, path) {
-  exactKeys(value, path, ["included", "total"]);
-  const included = integer(value.included, `${path}.included`, { min: 0 });
-  const total = integer(value.total, `${path}.total`, { min: 0 });
-  if (included > total) fail(path, "included cannot exceed total");
-}
-
-function validateCommonProjectionEvidence(value, path) {
-  enumValue(
-    value.verificationStatus,
-    `${path}.verificationStatus`,
-    VERIFICATION_STATUSES,
+async function readExactArtifact(repositoryRoot, artifactPath) {
+  const { expected, rootReal } = await validateExactArtifactPath(
+    repositoryRoot,
+    artifactPath,
   );
-  validateSourceUrls(value.sourceUrls, `${path}.sourceUrls`);
-  validateCoverage(value.coverage, `${path}.coverage`);
-  array(value.excluded, `${path}.excluded`).forEach((item, index) => {
-    const itemPath = `${path}.excluded[${index}]`;
-    exactKeys(item, itemPath, ["kind", "sourceId", "reason"]);
-    enumValue(
-      item.kind,
-      `${itemPath}.kind`,
-      new Set(["event", "performance", "setlist-entry"]),
-    );
-    string(item.sourceId, `${itemPath}.sourceId`);
-    string(item.reason, `${itemPath}.reason`);
-  });
-  array(value.unresolved, `${path}.unresolved`).forEach((item, index) => {
-    const itemPath = `${path}.unresolved[${index}]`;
-    exactKeys(item, itemPath, ["kind", "sourceValue", "reason"]);
-    enumValue(
-      item.kind,
-      `${itemPath}.kind`,
-      new Set(["venue", "song", "source"]),
-    );
-    string(item.sourceValue, `${itemPath}.sourceValue`);
-    string(item.reason, `${itemPath}.reason`);
-  });
-}
-
-export function validateProjection(value, { verifyArtifactHash = true } = {}) {
-  exactKeys(value, "$projection", [
-    "schemaVersion",
-    "sourceCommit",
-    "sourceRevision",
-    "groupCounts",
-    "artifactHash",
-    "groups",
-  ]);
-  if (value.schemaVersion !== 1)
-    fail("$projection.schemaVersion", "expected 1");
-  if (!/^[0-9a-f]{40}$/.test(value.sourceCommit)) {
-    fail("$projection.sourceCommit", "expected a full lowercase Git SHA");
-  }
-  if (!/^sha256:[0-9a-f]{64}$/.test(value.sourceRevision)) {
-    fail(
-      "$projection.sourceRevision",
-      "expected deterministic SHA-256 revision",
-    );
-  }
-  if (!/^sha256:[0-9a-f]{64}$/.test(value.artifactHash)) {
-    fail("$projection.artifactHash", "expected SHA-256 artifact hash");
-  }
-  exactKeys(value.groupCounts, "$projection.groupCounts", PUBLIC_SITE_IDS);
-  const groups = array(value.groups, "$projection.groups");
-  if (groups.length !== PUBLIC_SITE_IDS.length)
-    fail("$projection.groups", "expected three groups");
-  const structuralIds = new Set();
-  groups.forEach((group, groupIndex) => {
-    const path = `$projection.groups[${groupIndex}]`;
-    exactKeys(group, path, ["id", "siteId", "displayName", "events"]);
-    const siteId = PUBLIC_SITE_IDS[groupIndex];
-    if (group.siteId !== siteId) fail(`${path}.siteId`, `expected ${siteId}`);
-    if (group.id !== `${siteId}:group:${siteId}`)
-      fail(`${path}.id`, "invalid namespaced group id");
-    string(group.displayName, `${path}.displayName`);
-    if (structuralIds.has(group.id))
-      fail(`${path}.id`, "duplicate structural id");
-    structuralIds.add(group.id);
-    let performances = 0;
-    let setlistEntries = 0;
-    const eventIds = new Set();
-    array(group.events, `${path}.events`).forEach((event, eventIndex) => {
-      const eventPath = `${path}.events[${eventIndex}]`;
-      exactKeys(event, eventPath, [
-        "id",
-        "displayName",
-        "venue",
-        "dates",
-        "timezone",
-        "lifecycle",
-        "performances",
-        "verificationStatus",
-        "sourceUrls",
-        "coverage",
-        "excluded",
-        "unresolved",
-      ]);
-      const eventPrefix = `${siteId}:event:`;
-      if (!event.id.startsWith(eventPrefix))
-        fail(`${eventPath}.id`, "invalid namespaced Event id");
-      const eventLocalId = event.id.slice(eventPrefix.length);
-      if (!LOCAL_ID_PATTERN.test(eventLocalId))
-        fail(`${eventPath}.id`, "invalid Event local id");
-      if (eventIds.has(event.id) || structuralIds.has(event.id))
-        fail(`${eventPath}.id`, "duplicate structural id");
-      eventIds.add(event.id);
-      structuralIds.add(event.id);
-      string(event.displayName, `${eventPath}.displayName`);
-      exactKeys(event.venue, `${eventPath}.venue`, ["displayName"]);
-      string(event.venue.displayName, `${eventPath}.venue.displayName`);
-      exactKeys(event.dates, `${eventPath}.dates`, ["start", "end"]);
-      const start = isoDate(event.dates.start, `${eventPath}.dates.start`);
-      const end = isoDate(event.dates.end, `${eventPath}.dates.end`);
-      if (end < start) fail(`${eventPath}.dates.end`, "cannot precede start");
-      const timezone = ianaTimezone(event.timezone, `${eventPath}.timezone`);
-      enumValue(event.lifecycle, `${eventPath}.lifecycle`, LIFECYCLES);
-      validateCommonProjectionEvidence(event, eventPath);
-      let previousPerformanceId;
-      array(event.performances, `${eventPath}.performances`).forEach(
-        (performance, performanceIndex) => {
-          const performancePath = `${eventPath}.performances[${performanceIndex}]`;
-          exactKeys(performance, performancePath, [
-            "id",
-            "displayName",
-            "venue",
-            "date",
-            "timezone",
-            "lifecycle",
-            "setlist",
-            "verificationStatus",
-            "sourceUrls",
-            "coverage",
-            "excluded",
-            "unresolved",
-          ]);
-          const prefix = `${siteId}:performance:${eventLocalId}:`;
-          if (!performance.id.startsWith(prefix))
-            fail(`${performancePath}.id`, "invalid parent namespace");
-          const localId = performance.id.slice(prefix.length);
-          if (!LOCAL_ID_PATTERN.test(localId))
-            fail(`${performancePath}.id`, "invalid Performance local id");
-          if (structuralIds.has(performance.id))
-            fail(`${performancePath}.id`, "duplicate structural id");
-          structuralIds.add(performance.id);
-          if (previousPerformanceId === performance.id)
-            fail(`${performancePath}.id`, "duplicate Performance id");
-          previousPerformanceId = performance.id;
-          string(performance.displayName, `${performancePath}.displayName`);
-          exactKeys(performance.venue, `${performancePath}.venue`, [
-            "displayName",
-          ]);
-          string(
-            performance.venue.displayName,
-            `${performancePath}.venue.displayName`,
-          );
-          const date = isoDate(performance.date, `${performancePath}.date`);
-          if (date < start || date > end)
-            fail(`${performancePath}.date`, "outside parent Event date range");
-          if (
-            ianaTimezone(
-              performance.timezone,
-              `${performancePath}.timezone`,
-            ) !== timezone
-          ) {
-            fail(
-              `${performancePath}.timezone`,
-              "must match parent Event timezone",
-            );
-          }
-          enumValue(
-            performance.lifecycle,
-            `${performancePath}.lifecycle`,
-            LIFECYCLES,
-          );
-          validateCommonProjectionEvidence(performance, performancePath);
-          let previousOrder = 0;
-          array(performance.setlist, `${performancePath}.setlist`).forEach(
-            (entry, entryIndex) => {
-              const entryPath = `${performancePath}.setlist[${entryIndex}]`;
-              exactKeys(entry, entryPath, ["order", "songRef"]);
-              const order = integer(entry.order, `${entryPath}.order`, {
-                min: 1,
-              });
-              if (order <= previousOrder)
-                fail(`${entryPath}.order`, "must be strictly increasing");
-              previousOrder = order;
-              exactKeys(entry.songRef, `${entryPath}.songRef`, [
-                "entityId",
-                "sourceRevision",
-                "fallback",
-              ]);
-              const songPrefix = `${siteId}:song:`;
-              if (!entry.songRef.entityId.startsWith(songPrefix)) {
-                fail(
-                  `${entryPath}.songRef.entityId`,
-                  "song namespace must match group",
-                );
-              }
-              if (
-                !LOCAL_ID_PATTERN.test(
-                  entry.songRef.entityId.slice(songPrefix.length),
-                )
-              ) {
-                fail(`${entryPath}.songRef.entityId`, "invalid song local id");
-              }
-              if (entry.songRef.sourceRevision !== value.sourceRevision) {
-                fail(
-                  `${entryPath}.songRef.sourceRevision`,
-                  "must match projection sourceRevision",
-                );
-              }
-              exactKeys(
-                entry.songRef.fallback,
-                `${entryPath}.songRef.fallback`,
-                ["groupName", "title", "date", "venueName"],
-              );
-              string(
-                entry.songRef.fallback.groupName,
-                `${entryPath}.songRef.fallback.groupName`,
-              );
-              string(
-                entry.songRef.fallback.title,
-                `${entryPath}.songRef.fallback.title`,
-              );
-              isoDate(
-                entry.songRef.fallback.date,
-                `${entryPath}.songRef.fallback.date`,
-              );
-              string(
-                entry.songRef.fallback.venueName,
-                `${entryPath}.songRef.fallback.venueName`,
-              );
-            },
-          );
-          performances += 1;
-          setlistEntries += performance.setlist.length;
-        },
-      );
-    });
-    const observed = {
-      events: group.events.length,
-      performances,
-      setlistEntries,
-    };
-    const supplied = value.groupCounts[siteId];
-    validateCounts(supplied, `$projection.groupCounts.${siteId}`);
-    if (!sameCounts(observed, supplied)) {
-      fail(
-        `$projection.groupCounts.${siteId}`,
-        "does not match projected group data",
-      );
-    }
-  });
-  if (verifyArtifactHash && artifactHash(value) !== value.artifactHash) {
-    fail(
-      "$projection.artifactHash",
-      "does not match canonical payload without artifactHash",
-    );
-  }
-  return value;
-}
-
-async function removeArtifact(artifactPath) {
   try {
-    await unlink(artifactPath);
-    return true;
+    const targetReal = await realpath(expected);
+    if (targetReal === rootReal || isOutside(rootReal, targetReal)) {
+      fail("artifactPath", "artifact realpath escapes the repository");
+    }
+    return await readFile(targetReal);
   } catch (error) {
-    if (error?.code === "ENOENT") return false;
+    if (error?.code === "ENOENT") return null;
     throw error;
   }
 }
 
-async function atomicWrite(artifactPath, bytes) {
-  await mkdir(dirname(artifactPath), { recursive: true });
-  const temporaryPath = `${artifactPath}.tmp-${process.pid}-${randomUUID()}`;
+async function removeExactArtifact(repositoryRoot, artifactPath) {
+  const existing = await readExactArtifact(repositoryRoot, artifactPath);
+  if (existing === null) return false;
+  await unlink(resolve(repositoryRoot, FIXED_ARTIFACT_PATH));
+  return true;
+}
+
+async function atomicWrite(repositoryRoot, artifactPath, bytes) {
+  const { expected, rootReal } = await validateExactArtifactPath(
+    repositoryRoot,
+    artifactPath,
+  );
+  await mkdir(dirname(expected), { recursive: true });
+  const parentReal = await realpath(dirname(expected));
+  if (parentReal === rootReal || isOutside(rootReal, parentReal)) {
+    fail("artifactPath", "generated directory realpath escapes the repository");
+  }
+  const temporaryPath = `${expected}.tmp-${process.pid}-${randomUUID()}`;
   try {
     await writeFile(temporaryPath, bytes, { flag: "wx" });
-    await rename(temporaryPath, artifactPath);
+    await rename(temporaryPath, expected);
   } catch (error) {
     try {
       await unlink(temporaryPath);
@@ -1236,12 +1571,28 @@ async function atomicWrite(artifactPath, bytes) {
 }
 
 export async function generateProjection(options = {}) {
-  const artifactPath = options.artifactPath ?? DEFAULT_ARTIFACT_PATH;
+  const repositoryRoot = options.repositoryRoot ?? DEFAULT_REPOSITORY_ROOT;
+  const artifactPath =
+    options.artifactPath ?? resolve(repositoryRoot, FIXED_ARTIFACT_PATH);
   let audit;
   try {
-    audit = await auditWorkspace(options);
+    await validateExactArtifactPath(repositoryRoot, artifactPath);
+  } catch (error) {
+    return {
+      ok: false,
+      status: "HOLD",
+      sourceRevision: null,
+      invalidated: false,
+      errors: [`ARTIFACT_PATH:${error.message}`],
+    };
+  }
+  try {
+    audit = await auditWorkspace({ ...options, repositoryRoot });
     if (!audit.ok) {
-      const invalidated = await removeArtifact(artifactPath);
+      const invalidated = await removeExactArtifact(
+        repositoryRoot,
+        artifactPath,
+      );
       return {
         ok: false,
         status: "HOLD",
@@ -1250,8 +1601,8 @@ export async function generateProjection(options = {}) {
         errors: audit.errors,
       };
     }
-    const generated = buildProjection(audit);
-    await atomicWrite(artifactPath, generated.bytes);
+    const generated = await buildProjection(audit, repositoryRoot);
+    await atomicWrite(repositoryRoot, artifactPath, generated.bytes);
     return {
       ok: true,
       status: "GO",
@@ -1264,7 +1615,7 @@ export async function generateProjection(options = {}) {
     let invalidated = false;
     let invalidationError;
     try {
-      invalidated = await removeArtifact(artifactPath);
+      invalidated = await removeExactArtifact(repositoryRoot, artifactPath);
     } catch (caught) {
       invalidationError = caught;
     }
@@ -1284,63 +1635,65 @@ export async function generateProjection(options = {}) {
 }
 
 export async function checkProjection(options = {}) {
-  const artifactPath = options.artifactPath ?? DEFAULT_ARTIFACT_PATH;
+  const repositoryRoot = options.repositoryRoot ?? DEFAULT_REPOSITORY_ROOT;
+  const artifactPath =
+    options.artifactPath ?? resolve(repositoryRoot, FIXED_ARTIFACT_PATH);
   try {
-    const audit = await auditWorkspace(options);
+    await validateExactArtifactPath(repositoryRoot, artifactPath);
+  } catch (error) {
+    return {
+      ok: false,
+      status: "HOLD",
+      sourceRevision: null,
+      errors: [`ARTIFACT_PATH:${error.message}`],
+    };
+  }
+  try {
+    const audit = await auditWorkspace({ ...options, repositoryRoot });
+    const actualBytes = await readExactArtifact(repositoryRoot, artifactPath);
     if (!audit.ok) {
-      let artifactPresent = false;
-      try {
-        await readFile(artifactPath);
-        artifactPresent = true;
-      } catch (error) {
-        if (error?.code !== "ENOENT") throw error;
-      }
       return {
         ok: false,
         status: "HOLD",
         sourceRevision: audit.sourceRevision,
         errors: [
           ...audit.errors,
-          ...(artifactPresent
+          ...(actualBytes
             ? ["ARTIFACT_NOT_PUBLISHABLE:source receipt is not GO"]
             : []),
         ],
       };
     }
-    const expected = buildProjection(audit);
-    let actualBytes;
-    try {
-      actualBytes = await readFile(artifactPath);
-    } catch (error) {
-      if (error?.code === "ENOENT") {
-        return {
-          ok: false,
-          status: "HOLD",
-          sourceRevision: audit.sourceRevision,
-          errors: [
-            "ARTIFACT_ABSENT:generate the projection from the approved sources",
-          ],
-        };
-      }
-      throw error;
+    const expected = await buildProjection(audit, repositoryRoot);
+    if (actualBytes === null) {
+      return {
+        ok: false,
+        status: "HOLD",
+        sourceRevision: audit.sourceRevision,
+        errors: [
+          "ARTIFACT_ABSENT:generate the projection from approved sources",
+        ],
+      };
     }
     const errors = [];
     let parsed;
     try {
-      parsed = parseUtf8Json(
-        actualBytes,
-        relative(
-          options.repositoryRoot ?? DEFAULT_REPOSITORY_ROOT,
-          artifactPath,
-        ),
+      parsed = await assertC0Projection(
+        actualBytes.toString("utf8"),
+        repositoryRoot,
+        FIXED_ARTIFACT_PATH,
       );
-      validateProjection(parsed);
+      if (artifactHash(parsed) !== parsed.artifactHash) {
+        errors.push(
+          "ARTIFACT_HASH:does not match canonical payload without artifactHash",
+        );
+      }
     } catch (error) {
       errors.push(`ARTIFACT_INVALID:${error.message}`);
     }
     if (!actualBytes.equals(expected.bytes)) {
       errors.push(
-        "ARTIFACT_DRIFT:generated bytes do not match the deterministic projection",
+        "ARTIFACT_DRIFT:generated bytes do not match deterministic projection",
       );
     }
     return {

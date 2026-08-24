@@ -1,46 +1,42 @@
 import assert from "node:assert/strict";
-import { createRequire } from "node:module";
+import { execFile } from "node:child_process";
 import {
   copyFile,
   mkdir,
   mkdtemp,
   readFile,
-  readdir,
   rm,
+  symlink,
+  unlink,
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import { pathToFileURL } from "node:url";
-import { after, test } from "node:test";
+import { test } from "node:test";
+import { promisify } from "node:util";
 
 import {
   DEFAULT_RECEIPT_PATH,
   DEFAULT_REPOSITORY_ROOT,
+  FIXED_ARTIFACT_PATH,
+  FIXED_CONTRACT_PATHS,
+  FIXED_RECEIPT_PATH,
+  FIXED_SEEDS,
   GATE_NAMES,
   artifactHash,
   auditWorkspace,
   canonicalUtf8,
   checkProjection,
   generateProjection,
+  safeRepositoryPath,
   sha256,
 } from "./public-event-projection.mjs";
 
-const require = createRequire(import.meta.url);
-const typescript = require("typescript");
-const temporaryRoots = [];
+const execFileAsync = promisify(execFile);
 
-after(async () => {
-  await Promise.all(
-    temporaryRoots.map((temporaryRoot) =>
-      rm(temporaryRoot, { recursive: true, force: true }),
-    ),
-  );
-});
-
-async function temporaryRoot(prefix) {
+async function temporaryRoot(t, prefix) {
   const root = await mkdtemp(join(tmpdir(), prefix));
-  temporaryRoots.push(root);
+  t.after(() => rm(root, { recursive: true, force: true }));
   return root;
 }
 
@@ -59,10 +55,29 @@ async function copyRepositoryFile(root, repositoryPath) {
   await copyFile(resolve(DEFAULT_REPOSITORY_ROOT, repositoryPath), target);
 }
 
-function publicEvidenceFor(event) {
+async function git(root, args) {
+  return execFileAsync("git", ["-c", "core.excludesFile=", ...args], {
+    cwd: root,
+    encoding: "utf8",
+    maxBuffer: 16 * 1024 * 1024,
+  });
+}
+
+function approvalFor(siteId) {
   return {
-    asOf: "2026-08-14",
-    lastVerifiedAt: "2026-08-14",
+    schemaVersion: 1,
+    siteId,
+    atlasPublicSeedApproval: "approved",
+    approvedAt: "2026-07-31T00:00:00.000Z",
+    maintenanceOwner: `fixture-${siteId}-owner`,
+    withdrawalState: "active",
+  };
+}
+
+function publicEvidenceFor(event, siteId) {
+  return {
+    asOf: "2026-07-31",
+    lastVerifiedAt: "2026-08-01",
     timezone: "Asia/Tokyo",
     lifecycle: event.id === "tokyo_dome_2027" ? "scheduled" : "completed",
     refreshPolicy: {
@@ -71,472 +86,613 @@ function publicEvidenceFor(event) {
       onInvalidation: "HOLD",
       onWithdrawal: "HOLD",
     },
-    maintenanceOwner: "fixture-atlas-evidence-owner",
+    maintenanceOwner: `fixture-${siteId}-owner`,
   };
 }
 
-function withoutPublicEvidence(events) {
-  return events.map((event) => {
-    const clone = structuredClone(event);
-    delete clone.publicAtlasEvidence;
-    return clone;
-  });
-}
-
-async function updateSeedHash(root, seed, field, repositoryPath) {
-  const bytes = await readFile(resolve(root, repositoryPath));
-  seed[field] = sha256(bytes);
-}
-
-async function createGoFixture() {
-  const root = await temporaryRoot("atlas-e1-go-");
-  const receipt = await readJson(DEFAULT_RECEIPT_PATH);
-  for (const contractFile of receipt.contractFiles) {
-    await copyRepositoryFile(root, contractFile.path);
+function addEqualLoveExclusions(events) {
+  for (const performance of events[0].performances) {
+    performance.provenance = {
+      excludedEntries: [
+        {
+          sourceUrl: performance.sourceUrls[0],
+          sourceOrder: 1,
+          label: "Overture",
+          reason: "non-catalog-intro",
+        },
+      ],
+    };
   }
-  const originalSources = new Map();
-  for (const seed of receipt.seeds) {
-    await copyRepositoryFile(root, seed.sourcePath);
-    await copyRepositoryFile(root, seed.songsPath);
-    const sourcePath = resolve(root, seed.sourcePath);
+}
+
+function gateRefs(fixed, events, gateName) {
+  const refs = [];
+  events.forEach((event, eventIndex) => {
+    const base = `${fixed.sourcePath}#/${eventIndex}`;
+    if (gateName === "claimLevelEvidence") {
+      refs.push(`${base}/eventEvidence`);
+      (event.performances ?? []).forEach((_performance, performanceIndex) => {
+        refs.push(`${base}/performances/${performanceIndex}`);
+      });
+    }
+    if (gateName === "temporalVerification") {
+      refs.push(`${base}/publicAtlasEvidence/asOf`);
+      refs.push(`${base}/publicAtlasEvidence/lastVerifiedAt`);
+    }
+    if (gateName === "timezoneAndLifecycle") {
+      refs.push(`${base}/publicAtlasEvidence/timezone`);
+      refs.push(`${base}/publicAtlasEvidence/lifecycle`);
+    }
+    if (gateName === "refreshInvalidationWithdrawal") {
+      refs.push(`${base}/publicAtlasEvidence/refreshPolicy`);
+    }
+    if (gateName === "maintenanceOwner") {
+      refs.push(`${base}/publicAtlasEvidence/maintenanceOwner`);
+    }
+  });
+  if (gateName === "sourceUseBoundary") return [`${fixed.approvalPath}#`];
+  if (gateName === "claimLevelEvidence")
+    return [...refs, `${fixed.songsPath}#`];
+  if (gateName === "refreshInvalidationWithdrawal") {
+    return [...refs, `${fixed.approvalPath}#/withdrawalState`];
+  }
+  if (gateName === "maintenanceOwner") {
+    return [...refs, `${fixed.approvalPath}#/maintenanceOwner`];
+  }
+  return refs;
+}
+
+async function updateReceiptHashes(fixture) {
+  fixture.receipt.sourceCommit = (
+    await git(fixture.root, ["rev-parse", "HEAD"])
+  ).stdout.trim();
+  for (const entry of fixture.receipt.contractFiles) {
+    entry.sha256 = sha256(await readFile(resolve(fixture.root, entry.path)));
+  }
+  for (const entry of fixture.receipt.evidenceFiles) {
+    entry.sha256 = sha256(await readFile(resolve(fixture.root, entry.path)));
+  }
+  for (const seed of fixture.receipt.seeds) {
+    seed.sourceSha256 = sha256(
+      await readFile(resolve(fixture.root, seed.sourcePath)),
+    );
+    seed.songsSha256 = sha256(
+      await readFile(resolve(fixture.root, seed.songsPath)),
+    );
+  }
+  await writeJson(fixture.receiptPath, fixture.receipt);
+}
+
+async function commitFixture(fixture, paths, message = "fixture update") {
+  await git(fixture.root, ["add", "--", ...paths]);
+  await git(fixture.root, ["commit", "-q", "-m", message]);
+  await updateReceiptHashes(fixture);
+}
+
+async function createGoFixture(t) {
+  const root = await temporaryRoot(t, "atlas-e1-go-");
+  await git(root, ["init", "-q"]);
+  await git(root, ["config", "user.name", "Atlas Fixture"]);
+  await git(root, ["config", "user.email", "atlas-fixture@example.invalid"]);
+  const receipt = await readJson(DEFAULT_RECEIPT_PATH);
+  const committedPaths = [];
+
+  for (const contractPath of FIXED_CONTRACT_PATHS) {
+    await copyRepositoryFile(root, contractPath);
+    committedPaths.push(contractPath);
+  }
+  receipt.evidenceFiles = [];
+  for (const [index, fixed] of FIXED_SEEDS.entries()) {
+    await copyRepositoryFile(root, fixed.sourcePath);
+    await copyRepositoryFile(root, fixed.songsPath);
+    const sourcePath = resolve(root, fixed.sourcePath);
     const events = await readJson(sourcePath);
-    originalSources.set(seed.siteId, structuredClone(events));
-    for (const event of events)
-      event.publicAtlasEvidence = publicEvidenceFor(event);
+    for (const event of events) {
+      event.publicAtlasEvidence = publicEvidenceFor(event, fixed.siteId);
+    }
+    if (fixed.siteId === "equal-love") addEqualLoveExclusions(events);
     await writeJson(sourcePath, events);
-    await updateSeedHash(root, seed, "sourceSha256", seed.sourcePath);
-    await updateSeedHash(root, seed, "songsSha256", seed.songsPath);
+
+    const approval = approvalFor(fixed.siteId);
+    await writeJson(resolve(root, fixed.approvalPath), approval);
+    receipt.evidenceFiles.push({
+      path: fixed.approvalPath,
+      sha256: "0".repeat(64),
+    });
+    const seed = receipt.seeds[index];
     seed.decision = "GO";
     seed.withdrawalState = "active";
     for (const gateName of GATE_NAMES) {
       seed.gates[gateName] = {
         status: "GO",
-        evidenceRefs: [`fixture/evidence/${seed.siteId}/${gateName}`],
+        evidenceRefs: gateRefs(fixed, events, gateName),
         gap: null,
       };
     }
+    committedPaths.push(fixed.sourcePath, fixed.songsPath, fixed.approvalPath);
   }
-  const receiptPath = resolve(
-    root,
-    "scripts/atlas/source-go-hold-receipt.v1.json",
-  );
-  await writeJson(receiptPath, receipt);
-  return {
+
+  await git(root, ["add", "--", ...committedPaths]);
+  await git(root, ["commit", "-q", "-m", "fixture evidence commit"]);
+  const receiptPath = resolve(root, FIXED_RECEIPT_PATH);
+  const fixture = {
     root,
     receipt,
     receiptPath,
-    artifactPath: resolve(
-      root,
-      "apps/atlas/src/generated/public-atlas-projection.v1.json",
-    ),
-    originalSources,
+    artifactPath: resolve(root, FIXED_ARTIFACT_PATH),
+    auditDate: "2026-08-15",
+  };
+  await updateReceiptHashes(fixture);
+  return fixture;
+}
+
+function options(fixture, overrides = {}) {
+  return {
+    repositoryRoot: fixture.root,
+    receiptPath: fixture.receiptPath,
+    artifactPath: fixture.artifactPath,
+    auditDate: fixture.auditDate,
+    ...overrides,
   };
 }
 
-async function rewriteReceipt(fixture, update) {
-  const receipt = await readJson(fixture.receiptPath);
-  update(receipt);
-  await writeJson(fixture.receiptPath, receipt);
-  fixture.receipt = receipt;
-}
-
-let c0ContractsPromise;
-async function loadC0Contracts() {
-  if (c0ContractsPromise) return c0ContractsPromise;
-  c0ContractsPromise = (async () => {
-    const compiledRoot = await temporaryRoot("atlas-e1-c0-");
-    const sourceRoot = resolve(
-      DEFAULT_REPOSITORY_ROOT,
-      "apps/atlas/src/contracts",
-    );
-    for (const fileName of await readdir(sourceRoot)) {
-      if (!fileName.endsWith(".ts")) continue;
-      const sourcePath = resolve(sourceRoot, fileName);
-      const outputPath = resolve(
-        compiledRoot,
-        fileName.replace(/\.ts$/, ".js"),
-      );
-      const source = await readFile(sourcePath, "utf8");
-      const output = typescript.transpileModule(source, {
-        fileName: sourcePath,
-        compilerOptions: {
-          target: typescript.ScriptTarget.ES2022,
-          module: typescript.ModuleKind.ES2022,
-          verbatimModuleSyntax: true,
-        },
-      }).outputText;
-      await writeFile(outputPath, output, "utf8");
-    }
-    return {
-      projection: await import(
-        pathToFileURL(resolve(compiledRoot, "public-atlas-projection.js")).href
-      ),
-      baseline: await import(
-        pathToFileURL(resolve(compiledRoot, "baseline-receipt.js")).href
-      ),
-    };
-  })();
-  return c0ContractsPromise;
-}
-
-test("production receipt matches the historical baseline and current facts, but every seed is HOLD", async () => {
-  const audit = await auditWorkspace();
+test("production audit binds the real baseline commit and remains a named three-seed HOLD", async () => {
+  const audit = await auditWorkspace({ auditDate: "2026-08-25" });
   assert.equal(audit.ok, false);
   assert.deepEqual(audit.totals, {
     events: 4,
     performances: 6,
     setlistEntries: 172,
   });
-  assert.match(audit.sourceRevision, /^sha256:[0-9a-f]{64}$/);
-  assert.equal(audit.sourceRevision, (await auditWorkspace()).sourceRevision);
   assert.equal(
-    audit.errors.some((error) => error.startsWith("SOURCE_DRIFT:")),
+    audit.errors.some((error) => error.startsWith("GIT_")),
     false,
   );
   assert.equal(
-    audit.errors.some((error) => error.startsWith("SCHEMA_DRIFT:")),
+    audit.errors.some((error) => error.startsWith("EVIDENCE_")),
     false,
+  );
+  assert.equal(
+    audit.errors.some((error) => error.startsWith("COVERAGE_HOLD:equal-love")),
+    true,
   );
   assert.deepEqual(
-    audit.seedResults.map(({ seed, source }) => ({
+    audit.seedResults.map(({ seed }) => ({
       siteId: seed.siteId,
       decision: seed.decision,
-      counts: source.counts,
-      eventIds: source.events.map((event) => event.id),
-      performanceIds: source.events.flatMap((event) =>
-        (event.performances ?? []).map(
-          (performance) => `${event.id}/${performance.id}`,
-        ),
-      ),
+      claimGate: seed.gates.claimLevelEvidence.status,
     })),
     [
-      {
-        siteId: "equal-love",
-        decision: "HOLD",
-        counts: { events: 2, performances: 2, setlistEntries: 60 },
-        eventIds: ["kokuritsu_2026", "tokyo_dome_2027"],
-        performanceIds: ["kokuritsu_2026/day1", "kokuritsu_2026/day2"],
-      },
-      {
-        siteId: "nearly-equal-joy",
-        decision: "HOLD",
-        counts: { events: 1, performances: 2, setlistEntries: 57 },
-        eventIds: ["joy_4th_anniversary_2026_afterglow"],
-        performanceIds: [
-          "joy_4th_anniversary_2026_afterglow/day",
-          "joy_4th_anniversary_2026_afterglow/night",
-        ],
-      },
-      {
-        siteId: "not-equal-me",
-        decision: "HOLD",
-        counts: { events: 1, performances: 2, setlistEntries: 55 },
-        eventIds: ["not_equal_me_7th_anniversary_2026_afterglow"],
-        performanceIds: [
-          "not_equal_me_7th_anniversary_2026_afterglow/day",
-          "not_equal_me_7th_anniversary_2026_afterglow/night",
-        ],
-      },
+      { siteId: "equal-love", decision: "HOLD", claimGate: "HOLD" },
+      { siteId: "nearly-equal-joy", decision: "HOLD", claimGate: "GO" },
+      { siteId: "not-equal-me", decision: "HOLD", claimGate: "GO" },
     ],
   );
-  const equalLoveTokyoDome = audit.seedResults[0].source.events.find(
-    (event) => event.id === "tokyo_dome_2027",
-  );
-  assert.equal("performances" in equalLoveTokyoDome, false);
-
-  const { baseline } = await loadC0Contracts();
   assert.equal(
-    baseline.ATLAS_C0_BASELINE_RECEIPT.sourceCommit,
-    audit.receipt.historicalBaseline.sourceCommit,
-  );
-  assert.deepEqual(
-    baseline.ATLAS_C0_BASELINE_RECEIPT.totals,
-    audit.receipt.historicalBaseline.totals,
-  );
-  assert.deepEqual(
-    baseline.ATLAS_C0_BASELINE_RECEIPT.sources.map((source) => ({
-      siteId: source.siteId,
-      sha256: source.sha256,
-      counts: {
-        events: source.eventCount,
-        performances: source.performanceCount,
-        setlistEntries: source.setlistEntryCount,
-      },
-    })),
-    audit.receipt.seeds.map((seed) => ({
-      siteId: seed.siteId,
-      sha256: seed.sourceSha256,
-      counts: seed.baselineCounts,
-    })),
+    audit.seedResults[0].source.events.find(
+      (event) => event.id === "tokyo_dome_2027",
+    ).performances,
+    undefined,
   );
 });
 
-test("GO fixture projects exact IDs/order/counts, namespaces day/night, and passes the C0 parser", async () => {
-  const fixture = await createGoFixture();
-  const result = await generateProjection({
-    repositoryRoot: fixture.root,
-    receiptPath: fixture.receiptPath,
-    artifactPath: fixture.artifactPath,
-  });
-  assert.equal(result.ok, true, result.errors?.join("\n"));
-  const bytes = await readFile(fixture.artifactPath);
-  const projection = JSON.parse(bytes);
+test("receipt paths are fixed ordered allowlists and traversal is platform-independent", async (t) => {
+  const root = await temporaryRoot(t, "atlas-e1-path-");
+  assert.throws(() => safeRepositoryPath(root, "../outside.json"), /traversal/);
+  assert.throws(
+    () => safeRepositoryPath(root, "..\\outside.json"),
+    /traversal/,
+  );
+
+  for (const mutate of [
+    (receipt) => {
+      receipt.seeds[0].sourcePath =
+        "src/projects/not-equal-me/live-experiences.json";
+    },
+    (receipt) => {
+      [receipt.contractFiles[0], receipt.contractFiles[1]] = [
+        receipt.contractFiles[1],
+        receipt.contractFiles[0],
+      ];
+    },
+    (receipt) => {
+      receipt.evidenceFiles[0].path = "scripts/atlas/evidence/other.json";
+    },
+  ]) {
+    const fixture = await createGoFixture(t);
+    mutate(fixture.receipt);
+    await writeJson(fixture.receiptPath, fixture.receipt);
+    await assert.rejects(auditWorkspace(options(fixture)), /fixed|allowlist/);
+  }
+});
+
+test("a true fixture Git commit and real approval records generate C0-valid deterministic coverage", async (t) => {
+  const fixture = await createGoFixture(t);
+  const firstResult = await generateProjection(options(fixture));
+  assert.equal(firstResult.ok, true, firstResult.errors?.join("\n"));
+  const first = await readFile(fixture.artifactPath);
+  const projection = JSON.parse(first);
   assert.deepEqual(projection.groupCounts, {
     "equal-love": { events: 2, performances: 2, setlistEntries: 60 },
     "nearly-equal-joy": { events: 1, performances: 2, setlistEntries: 57 },
     "not-equal-me": { events: 1, performances: 2, setlistEntries: 55 },
   });
-  assert.deepEqual(
-    projection.groups.map((group) => group.siteId),
-    ["equal-love", "nearly-equal-joy", "not-equal-me"],
-  );
-  assert.deepEqual(
-    projection.groups[0].events.map((event) => event.id),
-    ["equal-love:event:kokuritsu_2026", "equal-love:event:tokyo_dome_2027"],
-  );
-  assert.deepEqual(
-    projection.groups[0].events[0].performances.map(
-      (performance) => performance.id,
-    ),
-    [
-      "equal-love:performance:kokuritsu_2026:day1",
-      "equal-love:performance:kokuritsu_2026:day2",
-    ],
-  );
+  for (const performance of projection.groups[0].events[0].performances) {
+    assert.deepEqual(performance.coverage, { included: 30, total: 31 });
+    assert.equal(performance.excluded.length, 1);
+    assert.equal(performance.excluded[0].sourceId, "source-order:1");
+  }
   assert.deepEqual(projection.groups[0].events[1].performances, []);
-
-  const dayNightIds = projection.groups
-    .slice(1)
-    .flatMap((group) =>
-      group.events[0].performances.map((performance) => performance.id),
-    );
-  assert.equal(new Set(dayNightIds).size, 4);
-  assert.equal(
-    dayNightIds.some((id) => id.endsWith(":day")),
-    true,
-  );
-  assert.equal(
-    dayNightIds.some((id) => id.endsWith(":night")),
-    true,
-  );
-
-  for (const group of projection.groups) {
-    for (const event of group.events) {
-      for (const performance of event.performances) {
-        assert.equal(performance.timezone, event.timezone);
-        assert.ok(performance.date >= event.dates.start);
-        assert.ok(performance.date <= event.dates.end);
-        for (const entry of performance.setlist) {
-          assert.match(
-            entry.songRef.entityId,
-            new RegExp(`^${group.siteId}:song:`),
-          );
-          assert.equal(entry.songRef.sourceRevision, projection.sourceRevision);
-        }
-      }
-    }
-  }
-
-  const { projection: c0Projection } = await loadC0Contracts();
-  const parsed = c0Projection.parsePublicAtlasProjection(
-    bytes.toString("utf8"),
-  );
-  assert.equal(parsed.status, "valid", JSON.stringify(parsed));
-  assert.equal(
-    await checkProjection({
-      repositoryRoot: fixture.root,
-      receiptPath: fixture.receiptPath,
-      artifactPath: fixture.artifactPath,
-    }).then((check) => check.ok),
-    true,
-  );
-});
-
-test("GO fixture adds governance metadata only and repeat generation is byte-identical with a canonical hash", async () => {
-  const fixture = await createGoFixture();
-  for (const seed of fixture.receipt.seeds) {
-    const fixtureEvents = await readJson(
-      resolve(fixture.root, seed.sourcePath),
-    );
-    assert.deepEqual(
-      withoutPublicEvidence(fixtureEvents),
-      fixture.originalSources.get(seed.siteId),
-    );
-  }
-
-  const options = {
-    repositoryRoot: fixture.root,
-    receiptPath: fixture.receiptPath,
-    artifactPath: fixture.artifactPath,
-  };
-  assert.equal((await generateProjection(options)).ok, true);
-  const first = await readFile(fixture.artifactPath);
-  assert.equal((await generateProjection(options)).ok, true);
-  const second = await readFile(fixture.artifactPath);
-  assert.deepEqual(second, first);
-
-  const projection = JSON.parse(first);
+  assert.equal(artifactHash(projection), projection.artifactHash);
   const payload = structuredClone(projection);
   delete payload.artifactHash;
-  const expected = `sha256:${sha256(canonicalUtf8(payload))}`;
-  assert.equal(projection.artifactHash, expected);
-  assert.equal(artifactHash(projection), expected);
+  assert.equal(
+    projection.artifactHash,
+    `sha256:${sha256(canonicalUtf8(payload))}`,
+  );
+  assert.equal((await generateProjection(options(fixture))).ok, true);
+  assert.deepEqual(await readFile(fixture.artifactPath), first);
+  assert.equal((await checkProjection(options(fixture))).ok, true);
 });
 
-test("source byte drift is read-only in check and generate invalidates the stale artifact", async () => {
-  const fixture = await createGoFixture();
-  const options = {
-    repositoryRoot: fixture.root,
-    receiptPath: fixture.receiptPath,
-    artifactPath: fixture.artifactPath,
-  };
-  assert.equal((await generateProjection(options)).ok, true);
-  const artifactBefore = await readFile(fixture.artifactPath);
-  const sourcePath = resolve(fixture.root, fixture.receipt.seeds[0].sourcePath);
+test("wrong or missing Git commit and wrong blob/hash all fail closed", async (t) => {
+  const wrongCommit = await createGoFixture(t);
+  wrongCommit.receipt.sourceCommit = "0".repeat(40);
+  await writeJson(wrongCommit.receiptPath, wrongCommit.receipt);
+  const missingCommitAudit = await auditWorkspace(options(wrongCommit));
+  assert.equal(missingCommitAudit.ok, false);
+  assert.equal(
+    missingCommitAudit.errors.some((error) => error.startsWith("GIT_COMMIT:")),
+    true,
+  );
+
+  const wrongBlob = await createGoFixture(t);
+  const sourcePath = resolve(wrongBlob.root, FIXED_SEEDS[0].sourcePath);
   await writeFile(
     sourcePath,
     Buffer.concat([await readFile(sourcePath), Buffer.from(" \n")]),
   );
-
-  const check = await checkProjection(options);
-  assert.equal(check.ok, false);
+  wrongBlob.receipt.seeds[0].sourceSha256 = sha256(await readFile(sourcePath));
+  await writeJson(wrongBlob.receiptPath, wrongBlob.receipt);
+  const blobAudit = await auditWorkspace(options(wrongBlob));
   assert.equal(
-    check.errors.some((error) => error.startsWith("SOURCE_DRIFT:")),
+    blobAudit.errors.some((error) => error.startsWith("GIT_BLOB_DRIFT:")),
     true,
   );
-  assert.deepEqual(await readFile(fixture.artifactPath), artifactBefore);
 
-  const generate = await generateProjection(options);
-  assert.equal(generate.ok, false);
-  assert.equal(generate.invalidated, true);
-  await assert.rejects(readFile(fixture.artifactPath), { code: "ENOENT" });
-});
-
-test("C0 schema drift and source schema drift fail closed", async () => {
-  const contractFixture = await createGoFixture();
-  const contractPath = resolve(
-    contractFixture.root,
-    contractFixture.receipt.contractFiles[0].path,
+  const wrongHash = await createGoFixture(t);
+  wrongHash.receipt.seeds[0].sourceSha256 = "f".repeat(64);
+  await writeJson(wrongHash.receiptPath, wrongHash.receipt);
+  const hashAudit = await auditWorkspace(options(wrongHash));
+  assert.equal(
+    hashAudit.errors.some((error) => error.startsWith("SOURCE_DRIFT:")),
+    true,
   );
+  assert.equal(
+    hashAudit.errors.some((error) => error.startsWith("GIT_BLOB_HASH:")),
+    true,
+  );
+
+  const schemaDrift = await createGoFixture(t);
+  const contractPath = resolve(schemaDrift.root, FIXED_CONTRACT_PATHS[0]);
   await writeFile(
     contractPath,
     Buffer.concat([await readFile(contractPath), Buffer.from("\n")]),
   );
-  const contractCheck = await checkProjection({
-    repositoryRoot: contractFixture.root,
-    receiptPath: contractFixture.receiptPath,
-    artifactPath: contractFixture.artifactPath,
-  });
-  assert.equal(contractCheck.ok, false);
+  const schemaAudit = await auditWorkspace(options(schemaDrift));
   assert.equal(
-    contractCheck.errors.some((error) => error.startsWith("SCHEMA_DRIFT:")),
+    schemaAudit.errors.some((error) => error.startsWith("SCHEMA_DRIFT:")),
     true,
   );
-
-  const sourceFixture = await createGoFixture();
-  const seed = sourceFixture.receipt.seeds[0];
-  const sourcePath = resolve(sourceFixture.root, seed.sourcePath);
-  const events = await readJson(sourcePath);
-  events[0].performances[0].setlist[1].order =
-    events[0].performances[0].setlist[0].order;
-  await writeJson(sourcePath, events);
-  await rewriteReceipt(sourceFixture, (receipt) => {
-    receipt.seeds[0].sourceSha256 = sha256(
-      Buffer.from(`${JSON.stringify(events, null, 2)}\n`, "utf8"),
-    );
-  });
-  const sourceCheck = await checkProjection({
-    repositoryRoot: sourceFixture.root,
-    receiptPath: sourceFixture.receiptPath,
-    artifactPath: sourceFixture.artifactPath,
-  });
-  assert.equal(sourceCheck.ok, false);
   assert.equal(
-    sourceCheck.errors.some((error) => error.startsWith("SOURCE_SCHEMA:")),
+    schemaAudit.errors.some((error) => error.startsWith("GIT_BLOB_DRIFT:")),
     true,
   );
 });
 
-test("a hand-edited artifact fails both strict hash and deterministic byte checks", async () => {
-  const fixture = await createGoFixture();
-  const options = {
-    repositoryRoot: fixture.root,
-    receiptPath: fixture.receiptPath,
-    artifactPath: fixture.artifactPath,
-  };
-  assert.equal((await generateProjection(options)).ok, true);
-  const projection = await readJson(fixture.artifactPath);
-  projection.groups[0].events[0].displayName = "hand edited";
-  await writeJson(fixture.artifactPath, projection);
-  const check = await checkProjection(options);
-  assert.equal(check.ok, false);
+test("evidence refs resolve real JSON pointers with gate semantics and independent approval", async (t) => {
+  const missing = await createGoFixture(t);
+  await unlink(resolve(missing.root, FIXED_SEEDS[0].approvalPath));
+  const missingAudit = await auditWorkspace(options(missing));
   assert.equal(
-    check.errors.some((error) => error.startsWith("ARTIFACT_INVALID:")),
+    missingAudit.errors.some((error) => error.startsWith("EVIDENCE_MISSING:")),
     true,
   );
+
+  const circular = await createGoFixture(t);
+  circular.receipt.seeds[0].gates.sourceUseBoundary.evidenceRefs = [
+    `${FIXED_RECEIPT_PATH}#`,
+  ];
+  await writeJson(circular.receiptPath, circular.receipt);
+  const circularAudit = await auditWorkspace(options(circular));
   assert.equal(
-    check.errors.includes(
-      "ARTIFACT_DRIFT:generated bytes do not match the deterministic projection",
+    circularAudit.errors.some(
+      (error) =>
+        error.startsWith("EVIDENCE_REF:equal-love:sourceUseBoundary:") ||
+        error.startsWith("EVIDENCE_SET:equal-love:sourceUseBoundary:"),
+    ),
+    true,
+  );
+
+  const wrongGate = await createGoFixture(t);
+  wrongGate.receipt.seeds[0].gates.temporalVerification.evidenceRefs = [
+    `${FIXED_SEEDS[0].approvalPath}#/approvedAt`,
+  ];
+  await writeJson(wrongGate.receiptPath, wrongGate.receipt);
+  const wrongGateAudit = await auditWorkspace(options(wrongGate));
+  assert.equal(
+    wrongGateAudit.errors.some((error) =>
+      error.startsWith("EVIDENCE_REF:equal-love:temporalVerification:"),
     ),
     true,
   );
 });
 
-test("one HOLD seed or one withdrawn seed blocks all publication and leaves no artifact", async () => {
-  for (const mode of ["HOLD", "withdrawn"]) {
-    const fixture = await createGoFixture();
-    const options = {
-      repositoryRoot: fixture.root,
-      receiptPath: fixture.receiptPath,
-      artifactPath: fixture.artifactPath,
-    };
-    assert.equal((await generateProjection(options)).ok, true);
-    await rewriteReceipt(fixture, (receipt) => {
-      const seed = receipt.seeds[1];
-      seed.decision = "HOLD";
-      if (mode === "HOLD") {
-        seed.gates.sourceUseBoundary = {
-          status: "HOLD",
-          evidenceRefs: [],
-          gap: "Fixture approval was withdrawn.",
-        };
-      } else {
-        seed.withdrawalState = "withdrawn";
-      }
-    });
-    const check = await checkProjection(options);
-    assert.equal(check.ok, false);
-    assert.equal(
-      check.errors.some((error) =>
-        error.startsWith(
-          mode === "HOLD"
-            ? "SEED_HOLD:nearly-equal-joy"
-            : "SEED_WITHDRAWAL:nearly-equal-joy:withdrawn",
-        ),
-      ),
-      true,
-    );
-    assert.equal(
-      check.errors.includes(
-        "ARTIFACT_NOT_PUBLISHABLE:source receipt is not GO",
-      ),
-      true,
-    );
-    const generate = await generateProjection(options);
-    assert.equal(generate.ok, false);
-    assert.equal(generate.invalidated, true);
-    await assert.rejects(readFile(fixture.artifactPath), { code: "ENOENT" });
-  }
+test("approval site, withdrawal, and owner are committed evidence rather than receipt assertions", async (t) => {
+  const wrongSite = await createGoFixture(t);
+  const wrongSitePath = resolve(wrongSite.root, FIXED_SEEDS[0].approvalPath);
+  const wrongSiteApproval = await readJson(wrongSitePath);
+  wrongSiteApproval.siteId = "not-equal-me";
+  await writeJson(wrongSitePath, wrongSiteApproval);
+  await commitFixture(wrongSite, [FIXED_SEEDS[0].approvalPath]);
+  const wrongSiteAudit = await auditWorkspace(options(wrongSite));
+  assert.equal(
+    wrongSiteAudit.errors.some((error) => error.startsWith("APPROVAL_SCHEMA:")),
+    true,
+  );
+
+  const withdrawn = await createGoFixture(t);
+  const withdrawnPath = resolve(withdrawn.root, FIXED_SEEDS[1].approvalPath);
+  const withdrawnApproval = await readJson(withdrawnPath);
+  withdrawnApproval.withdrawalState = "withdrawn";
+  await writeJson(withdrawnPath, withdrawnApproval);
+  withdrawn.receipt.seeds[1].withdrawalState = "withdrawn";
+  withdrawn.receipt.seeds[1].decision = "HOLD";
+  await commitFixture(withdrawn, [FIXED_SEEDS[1].approvalPath]);
+  const withdrawnAudit = await auditWorkspace(options(withdrawn));
+  assert.equal(
+    withdrawnAudit.errors.some((error) =>
+      error.startsWith("SEED_WITHDRAWAL:nearly-equal-joy:withdrawn"),
+    ),
+    true,
+  );
+
+  const ownerMissing = await createGoFixture(t);
+  const ownerPath = resolve(ownerMissing.root, FIXED_SEEDS[2].approvalPath);
+  const ownerApproval = await readJson(ownerPath);
+  delete ownerApproval.maintenanceOwner;
+  await writeJson(ownerPath, ownerApproval);
+  await commitFixture(ownerMissing, [FIXED_SEEDS[2].approvalPath]);
+  const ownerAudit = await auditWorkspace(options(ownerMissing));
+  assert.equal(
+    ownerAudit.errors.some((error) => error.startsWith("APPROVAL_SCHEMA:")),
+    true,
+  );
 });
 
-test("production generate stays HOLD and does not leave a publishable artifact", async () => {
-  const artifactPath = resolve(
-    await temporaryRoot("atlas-e1-production-hold-"),
-    "public-atlas-projection.v1.json",
+test("freshness is GO before/on expiry and HOLD after expiry or for future evidence", async (t) => {
+  const fixture = await createGoFixture(t);
+  assert.equal(
+    (await auditWorkspace(options(fixture, { auditDate: "2026-08-30" }))).ok,
+    true,
   );
-  const result = await generateProjection({ artifactPath });
-  assert.equal(result.ok, false);
-  assert.equal(result.status, "HOLD");
-  assert.equal(result.invalidated, false);
-  await assert.rejects(readFile(artifactPath), { code: "ENOENT" });
+  assert.equal(
+    (await auditWorkspace(options(fixture, { auditDate: "2026-08-31" }))).ok,
+    true,
+  );
+  assert.equal(
+    (
+      await auditWorkspace(options(fixture, { auditDate: "2026-09-01" }))
+    ).errors.some((error) => error.includes("stale after 2026-08-31")),
+    true,
+  );
+  assert.equal(
+    (
+      await auditWorkspace(options(fixture, { auditDate: "2026-07-30" }))
+    ).errors.some((error) => error.includes("cannot be after auditDate")),
+    true,
+  );
+
+  const reversed = await createGoFixture(t);
+  const reversedPath = resolve(reversed.root, FIXED_SEEDS[0].sourcePath);
+  const reversedEvents = await readJson(reversedPath);
+  reversedEvents[0].publicAtlasEvidence.asOf = "2026-08-02";
+  await writeJson(reversedPath, reversedEvents);
+  await commitFixture(reversed, [FIXED_SEEDS[0].sourcePath]);
+  const reversedAudit = await auditWorkspace(options(reversed));
+  assert.equal(
+    reversedAudit.errors.some((error) =>
+      error.includes("must be <= lastVerifiedAt"),
+    ),
+    true,
+  );
+
+  assert.equal((await generateProjection(options(fixture))).ok, true);
+  const freshArtifact = await readFile(fixture.artifactPath);
+  const staleCheck = await checkProjection(
+    options(fixture, { auditDate: "2026-09-01" }),
+  );
+  assert.equal(staleCheck.ok, false);
+  assert.equal(
+    staleCheck.errors.some((error) => error.includes("stale after 2026-08-31")),
+    true,
+  );
+  assert.deepEqual(await readFile(fixture.artifactPath), freshArtifact);
+  const staleGenerate = await generateProjection(
+    options(fixture, { auditDate: "2026-09-01" }),
+  );
+  assert.equal(staleGenerate.ok, false);
+  assert.equal(staleGenerate.invalidated, true);
+  await assert.rejects(readFile(fixture.artifactPath), { code: "ENOENT" });
+});
+
+test("coverage and parent date closure reject gaps, conflicting exclusions, and in-range non-member dates", async (t) => {
+  const gap = await createGoFixture(t);
+  const gapPath = resolve(gap.root, FIXED_SEEDS[0].sourcePath);
+  const gapEvents = await readJson(gapPath);
+  delete gapEvents[0].performances[0].provenance;
+  await writeJson(gapPath, gapEvents);
+  await commitFixture(gap, [FIXED_SEEDS[0].sourcePath]);
+  const gapAudit = await auditWorkspace(options(gap));
+  assert.equal(
+    gapAudit.errors.some((error) =>
+      error.startsWith("COVERAGE_HOLD:equal-love"),
+    ),
+    true,
+  );
+
+  const conflict = await createGoFixture(t);
+  const conflictPath = resolve(conflict.root, FIXED_SEEDS[0].sourcePath);
+  const conflictEvents = await readJson(conflictPath);
+  conflictEvents[0].performances[0].provenance.excludedEntries[0].beforeSourceOrder = 2;
+  await writeJson(conflictPath, conflictEvents);
+  await commitFixture(conflict, [FIXED_SEEDS[0].sourcePath]);
+  const conflictAudit = await auditWorkspace(options(conflict));
+  assert.equal(
+    conflictAudit.errors.some((error) =>
+      error.includes("exactly one of sourceOrder or beforeSourceOrder"),
+    ),
+    true,
+  );
+
+  const duplicate = await createGoFixture(t);
+  const duplicatePath = resolve(duplicate.root, FIXED_SEEDS[0].sourcePath);
+  const duplicateEvents = await readJson(duplicatePath);
+  duplicateEvents[0].performances[0].provenance.excludedEntries.push({
+    ...duplicateEvents[0].performances[0].provenance.excludedEntries[0],
+  });
+  await writeJson(duplicatePath, duplicateEvents);
+  await commitFixture(duplicate, [FIXED_SEEDS[0].sourcePath]);
+  const duplicateAudit = await auditWorkspace(options(duplicate));
+  assert.equal(
+    duplicateAudit.errors.some((error) =>
+      error.includes("conflicts with an included or excluded order"),
+    ),
+    true,
+  );
+
+  const date = await createGoFixture(t);
+  const datePath = resolve(date.root, FIXED_SEEDS[0].sourcePath);
+  const dateEvents = await readJson(datePath);
+  dateEvents[0].eventEvidence.dates = ["2026-06-20", "2026-06-22"];
+  dateEvents[0].performances[1].date = "2026-06-21";
+  await writeJson(datePath, dateEvents);
+  await commitFixture(date, [FIXED_SEEDS[0].sourcePath]);
+  const dateAudit = await auditWorkspace(options(date));
+  assert.equal(
+    dateAudit.errors.some((error) =>
+      error.includes("exact member of parent eventEvidence.dates"),
+    ),
+    true,
+  );
+});
+
+test("realpath containment rejects a source symlink escape when the platform permits it", async (t) => {
+  const fixture = await createGoFixture(t);
+  const outside = await temporaryRoot(t, "atlas-e1-outside-");
+  const outsideFile = resolve(outside, "outside.json");
+  await writeFile(outsideFile, "[]\n", "utf8");
+  const sourcePath = resolve(fixture.root, FIXED_SEEDS[0].sourcePath);
+  await unlink(sourcePath);
+  try {
+    await symlink(outsideFile, sourcePath, "file");
+  } catch (error) {
+    if (["EPERM", "EACCES", "UNKNOWN"].includes(error?.code)) {
+      t.skip(`symlink creation unavailable: ${error.code}`);
+      return;
+    }
+    throw error;
+  }
+  const audit = await auditWorkspace(options(fixture));
+  assert.equal(
+    audit.errors.some((error) =>
+      error.includes("realpath escapes the repository"),
+    ),
+    true,
+  );
+});
+
+test("the actual C0 parser rejects whitespace-only text and credential-bearing public URLs", async (t) => {
+  const whitespace = await createGoFixture(t);
+  const whitespacePath = resolve(whitespace.root, FIXED_SEEDS[0].sourcePath);
+  const whitespaceEvents = await readJson(whitespacePath);
+  whitespaceEvents[0].eventName = "   ";
+  await writeJson(whitespacePath, whitespaceEvents);
+  await commitFixture(whitespace, [FIXED_SEEDS[0].sourcePath]);
+  const whitespaceGenerate = await generateProjection(options(whitespace));
+  assert.equal(whitespaceGenerate.ok, false);
+  assert.equal(
+    whitespaceGenerate.errors.some((error) =>
+      error.includes("C0 parser rejected"),
+    ),
+    true,
+  );
+
+  const credentials = await createGoFixture(t);
+  const credentialPath = resolve(credentials.root, FIXED_SEEDS[1].sourcePath);
+  const credentialEvents = await readJson(credentialPath);
+  credentialEvents[0].performances[0].sourceUrls[0] =
+    "https://user:password@example.com/source";
+  await writeJson(credentialPath, credentialEvents);
+  await commitFixture(credentials, [FIXED_SEEDS[1].sourcePath]);
+  const credentialGenerate = await generateProjection(options(credentials));
+  assert.equal(credentialGenerate.ok, false);
+  assert.equal(
+    credentialGenerate.errors.some((error) =>
+      error.includes("C0 parser rejected"),
+    ),
+    true,
+  );
+});
+
+test("artifactPath accepts only the exact generated path and never mutates arbitrary files", async (t) => {
+  const fixture = await createGoFixture(t);
+  const outsideRoot = await temporaryRoot(t, "atlas-e1-artifact-outside-");
+  const outsidePath = resolve(outsideRoot, "sentinel.json");
+  const internalPath = resolve(
+    fixture.root,
+    "apps/atlas/src/generated/other.json",
+  );
+  await writeFile(outsidePath, "outside sentinel", "utf8");
+  await mkdir(dirname(internalPath), { recursive: true });
+  await writeFile(internalPath, "internal sentinel", "utf8");
+  for (const artifactPath of [outsidePath, internalPath]) {
+    const generate = await generateProjection(
+      options(fixture, { artifactPath }),
+    );
+    assert.equal(generate.ok, false);
+    assert.equal(generate.errors[0].startsWith("ARTIFACT_PATH:"), true);
+    const check = await checkProjection(options(fixture, { artifactPath }));
+    assert.equal(check.ok, false);
+    assert.equal(check.errors[0].startsWith("ARTIFACT_PATH:"), true);
+  }
+  assert.equal(await readFile(outsidePath, "utf8"), "outside sentinel");
+  assert.equal(await readFile(internalPath, "utf8"), "internal sentinel");
+});
+
+test("check detects a hand edit and one receipt HOLD invalidates the exact artifact", async (t) => {
+  const fixture = await createGoFixture(t);
+  assert.equal((await generateProjection(options(fixture))).ok, true);
+  const projection = await readJson(fixture.artifactPath);
+  projection.groups[0].events[0].displayName = "hand edited";
+  await writeJson(fixture.artifactPath, projection);
+  const editedCheck = await checkProjection(options(fixture));
+  assert.equal(editedCheck.ok, false);
+  assert.equal(
+    editedCheck.errors.some((error) => error.startsWith("ARTIFACT_")),
+    true,
+  );
+
+  assert.equal((await generateProjection(options(fixture))).ok, true);
+  fixture.receipt.seeds[1].gates.sourceUseBoundary = {
+    status: "HOLD",
+    evidenceRefs: [],
+    gap: "Fixture approval is under review.",
+  };
+  fixture.receipt.seeds[1].decision = "HOLD";
+  await writeJson(fixture.receiptPath, fixture.receipt);
+  const holdGenerate = await generateProjection(options(fixture));
+  assert.equal(holdGenerate.ok, false);
+  assert.equal(holdGenerate.invalidated, true);
+  await assert.rejects(readFile(fixture.artifactPath), { code: "ENOENT" });
 });
