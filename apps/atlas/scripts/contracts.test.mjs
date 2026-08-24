@@ -61,6 +61,18 @@ const repository = await load("ports/journey-repository.js");
 const { ATLAS_C0_BASELINE_RECEIPT } = await load(
   "contracts/baseline-receipt.js",
 );
+const {
+  ATLAS_AUTHORITY_ID_GRAMMAR,
+  ATLAS_GOVERNANCE_PRINCIPAL_ID_GRAMMAR,
+  ATLAS_PUBLICATION_AUTHORITY_CONTRACT,
+  ATLAS_PUBLICATION_AUTHORITY_SCHEMA_VERSION,
+  ATLAS_PUBLICATION_AUTHORITY_SCOPE,
+  isAtlasAuthorityId,
+  isAtlasGovernancePrincipalId,
+  isConfiguredAtlasPublicationApprover,
+  isEligibleAtlasPublicationApprover,
+  parseAtlasPublicationAuthorityContract,
+} = await load("contracts/publication-authority.js");
 
 const sourceRevision = "atlas-projection-r1";
 const fallback = {
@@ -727,6 +739,102 @@ test("historical baseline receipt is fixed and internally consistent", () => {
   assert.ok(equalLove.eventLocalIds.includes("tokyo_dome_2027"));
   assert.equal(
     equalLove.performanceIds.some((id) => id.startsWith("tokyo_dome_2027/")),
+    false,
+  );
+});
+
+test("publication approver roster is canonical and deny-by-default", () => {
+  assert.equal(ATLAS_PUBLICATION_AUTHORITY_SCHEMA_VERSION, 1);
+  assert.equal(
+    ATLAS_PUBLICATION_AUTHORITY_SCOPE,
+    "atlas-public-seed-approval-authority-v1",
+  );
+  assert.match(ATLAS_AUTHORITY_ID_GRAMMAR, /lowercase ASCII/);
+  assert.match(ATLAS_GOVERNANCE_PRINCIPAL_ID_GRAMMAR, /lowercase ASCII/);
+  assert.deepEqual(ATLAS_PUBLICATION_AUTHORITY_CONTRACT, {
+    schemaVersion: 1,
+    scope: "atlas-public-seed-approval-authority-v1",
+    authorities: [],
+  });
+  assert.equal(
+    isConfiguredAtlasPublicationApprover(
+      "authority:seed-review",
+      "principal:reviewer",
+      "principal:maintainer",
+    ),
+    false,
+  );
+});
+
+test("publication approver eligibility rejects aliases, duplicates, and self-approval", () => {
+  const exactContract = {
+    schemaVersion: 1,
+    scope: "atlas-public-seed-approval-authority-v1",
+    authorities: [
+      {
+        authorityId: "authority:seed-review",
+        approverIds: ["principal:reviewer"],
+      },
+    ],
+  };
+
+  assert.equal(parseAtlasPublicationAuthorityContract(exactContract).ok, true);
+  assert.equal(isAtlasAuthorityId("authority:seed-review"), true);
+  assert.equal(isAtlasAuthorityId("Authority:seed-review"), false);
+  assert.equal(isAtlasGovernancePrincipalId("principal:reviewer"), true);
+  assert.equal(isAtlasGovernancePrincipalId("reviewer"), false);
+  assert.equal(isAtlasGovernancePrincipalId("principal:Réviewer"), false);
+  assert.equal(
+    isEligibleAtlasPublicationApprover(
+      exactContract,
+      "authority:seed-review",
+      "principal:reviewer",
+      "principal:maintainer",
+    ),
+    true,
+  );
+
+  for (const [authorityId, approverId, maintenanceOwnerId] of [
+    ["authority:unknown", "principal:reviewer", "principal:maintainer"],
+    ["authority:seed-review", "principal:unknown", "principal:maintainer"],
+    ["authority:seed-review", "principal:reviewer", "principal:reviewer"],
+    ["authority:seed-review", "reviewer", "principal:maintainer"],
+    ["authority:seed-review", "principal:reviewer", "maintainer"],
+  ]) {
+    assert.equal(
+      isEligibleAtlasPublicationApprover(
+        exactContract,
+        authorityId,
+        approverId,
+        maintenanceOwnerId,
+      ),
+      false,
+    );
+  }
+
+  const duplicateAuthority = structuredClone(exactContract);
+  duplicateAuthority.authorities.push(
+    structuredClone(exactContract.authorities[0]),
+  );
+  assert.equal(
+    parseAtlasPublicationAuthorityContract(duplicateAuthority).ok,
+    false,
+  );
+
+  const duplicateApprover = structuredClone(exactContract);
+  duplicateApprover.authorities[0].approverIds.push("principal:reviewer");
+  assert.equal(
+    parseAtlasPublicationAuthorityContract(duplicateApprover).ok,
+    false,
+  );
+
+  const duplicateAcrossAuthorities = structuredClone(exactContract);
+  duplicateAcrossAuthorities.authorities.push({
+    authorityId: "authority:second-review",
+    approverIds: ["principal:reviewer"],
+  });
+  assert.equal(
+    parseAtlasPublicationAuthorityContract(duplicateAcrossAuthorities).ok,
     false,
   );
 });
