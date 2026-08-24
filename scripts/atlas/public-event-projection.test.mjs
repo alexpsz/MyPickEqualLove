@@ -11,7 +11,7 @@ import {
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { test } from "node:test";
 import { promisify } from "node:util";
 
@@ -595,6 +595,67 @@ test("wrong or missing Git commit and wrong blob/hash all fail closed", async (t
     schemaAudit.errors.some((error) => error.startsWith("GIT_BLOB_DRIFT:")),
     true,
   );
+});
+
+test("unverified executable contract bytes never run top-level side effects", async (t) => {
+  const cases = [
+    {
+      name: "authority",
+      contractPath: FIXED_AUTHORITY_CONTRACT_PATH,
+      execute: (fixture) => auditWorkspace(options(fixture)),
+    },
+    {
+      name: "C0 baseline",
+      contractPath: FIXED_BASELINE_CONTRACT_PATH,
+      execute: (fixture) => auditWorkspace(options(fixture)),
+    },
+    {
+      name: "C0 projection parser",
+      contractPath: FIXED_CONTRACT_PATHS[0],
+      execute: (fixture) => generateProjection(options(fixture)),
+    },
+  ];
+
+  for (const testCase of cases) {
+    const fixture = await createGoFixture(t);
+    const sentinelPath = resolve(
+      fixture.root,
+      `${testCase.name.replaceAll(" ", "-")}-execution-sentinel.txt`,
+    );
+    const contractPath = resolve(fixture.root, testCase.contractPath);
+    const original = await readFile(contractPath, "utf8");
+    const sideEffect =
+      `import { writeFileSync as writeAtlasBindingSentinel } from "node:fs";\n` +
+      `writeAtlasBindingSentinel(${JSON.stringify(sentinelPath)}, "executed", "utf8");\n`;
+    await writeFile(contractPath, `${sideEffect}${original}`, "utf8");
+
+    const result = await testCase.execute(fixture);
+    assert.equal(result.ok, false);
+    assert.equal(
+      result.errors.some((error) =>
+        error.startsWith(`SCHEMA_DRIFT:${testCase.contractPath}:`),
+      ),
+      true,
+      `${testCase.name}: ${result.errors.join("\n")}`,
+    );
+    assert.equal(
+      result.errors.some((error) =>
+        error.startsWith(
+          `GIT_BLOB_DRIFT:${fixture.receipt.sourceCommit}:${testCase.contractPath}`,
+        ),
+      ),
+      true,
+      `${testCase.name}: ${result.errors.join("\n")}`,
+    );
+    assert.equal(
+      result.errors.includes(
+        "CONTRACT_EXECUTION_BLOCKED:not all fixed executable contract bindings are verified",
+      ),
+      true,
+      `${testCase.name}: ${result.errors.join("\n")}`,
+    );
+    await assert.rejects(readFile(sentinelPath), { code: "ENOENT" });
+  }
 });
 
 test("evidence refs resolve real JSON pointers with gate semantics and independent approval", async (t) => {
@@ -1308,10 +1369,84 @@ test("realpath containment rejects a source symlink escape when the platform per
   const audit = await auditWorkspace(options(fixture));
   assert.equal(
     audit.errors.some((error) =>
-      error.includes("realpath escapes the repository"),
+      error.includes("physical path component is a symbolic link or junction"),
     ),
     true,
   );
+});
+
+test("an internal same-byte source-file symlink cannot satisfy fixed input trust", async (t) => {
+  const fixture = await createGoFixture(t);
+  const sourcePath = resolve(fixture.root, FIXED_SEEDS[0].sourcePath);
+  const sourceBytes = await readFile(sourcePath);
+  const sentinelPath = resolve(fixture.root, "same-byte-source-sentinel.json");
+  await writeFile(sentinelPath, sourceBytes);
+  assert.equal(sha256(await readFile(sentinelPath)), sha256(sourceBytes));
+  await unlink(sourcePath);
+  await symlink(sentinelPath, sourcePath, "file");
+
+  const audit = await auditWorkspace(options(fixture));
+  assert.equal(audit.ok, false);
+  assert.equal(
+    audit.errors.some(
+      (error) =>
+        error.includes(FIXED_SEEDS[0].sourcePath) &&
+        error.includes(
+          "physical path component is a symbolic link or junction",
+        ),
+    ),
+    true,
+    audit.errors.join("\n"),
+  );
+  const generated = await generateProjection(options(fixture));
+  assert.equal(generated.ok, false);
+  await assert.rejects(readFile(fixture.artifactPath), { code: "ENOENT" });
+});
+
+test("an internal same-byte contract-directory junction cannot satisfy another fixed input path", async (t) => {
+  const fixture = await createGoFixture(t);
+  const contractsDirectory = resolve(fixture.root, "apps/atlas/src/contracts");
+  const sentinelDirectory = resolve(
+    fixture.root,
+    "same-byte-contract-directory-sentinel",
+  );
+  await mkdir(sentinelDirectory, { recursive: true });
+  for (const contractPath of FIXED_CONTRACT_PATHS) {
+    await copyFile(
+      resolve(fixture.root, contractPath),
+      resolve(sentinelDirectory, basename(contractPath)),
+    );
+  }
+  const representative = FIXED_CONTRACT_PATHS[0];
+  assert.equal(
+    sha256(await readFile(resolve(fixture.root, representative))),
+    sha256(
+      await readFile(resolve(sentinelDirectory, basename(representative))),
+    ),
+  );
+  await rm(contractsDirectory, { recursive: true });
+  await symlink(
+    sentinelDirectory,
+    contractsDirectory,
+    process.platform === "win32" ? "junction" : "dir",
+  );
+
+  const audit = await auditWorkspace(options(fixture));
+  assert.equal(audit.ok, false);
+  assert.equal(
+    audit.errors.some(
+      (error) =>
+        error.includes(representative) &&
+        error.includes(
+          "physical path component is a symbolic link or junction",
+        ),
+    ),
+    true,
+    audit.errors.join("\n"),
+  );
+  const checked = await checkProjection(options(fixture));
+  assert.equal(checked.ok, false);
+  await assert.rejects(readFile(fixture.artifactPath), { code: "ENOENT" });
 });
 
 test("the actual C0 parser rejects whitespace-only text and credential-bearing public URLs", async (t) => {

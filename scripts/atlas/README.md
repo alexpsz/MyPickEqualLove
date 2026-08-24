@@ -22,8 +22,16 @@ receipt paths are fixed allowlists. Its `sourceCommit` must be a real Git commit
 must be an ancestor of the audited `HEAD`,
 and every audited source, songs, C0 contract, and approval-evidence blob at that
 commit must be byte-identical to both the receipt hash and current file. Reads
-also verify realpath containment so a symlink or junction cannot escape the
-repository.
+validate every existing component from the repository root through each fixed
+receipt, source, songs, contract, or approval-evidence file with `lstat` and its
+expected `realpath`. A symlink, junction, or redirected component is rejected
+before reading even when it targets a same-byte file inside the repository.
+
+All fixed inputs are captured once, then their receipt hashes and Git blobs are
+verified before any repository TypeScript is transpiled or imported. The C0
+baseline, publication authority, and C0 projection parser consume only this
+verified in-memory byte snapshot; a failed executable-contract binding blocks
+all dynamic execution and no loader performs a second filesystem read.
 
 The generated artifact path has a stronger physical-chain rule: every existing
 component from the repository root through

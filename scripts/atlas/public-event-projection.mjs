@@ -253,28 +253,19 @@ export function safeRepositoryPath(root, repositoryPath, path = "$path") {
   return target;
 }
 
-async function containedRealpath(rootReal, target, path) {
-  let targetReal;
-  try {
-    targetReal = await realpath(target);
-  } catch (error) {
-    if (error?.code === "ENOENT") fail(path, "file is missing");
-    throw error;
-  }
-  if (targetReal === rootReal || isOutside(rootReal, targetReal)) {
-    fail(path, "realpath escapes the repository");
-  }
-  return targetReal;
-}
-
 async function readContainedFile(repositoryRoot, rootReal, repositoryPath) {
   const target = safeRepositoryPath(
     repositoryRoot,
     repositoryPath,
     repositoryPath,
   );
-  const targetReal = await containedRealpath(rootReal, target, repositoryPath);
-  return readFile(targetReal);
+  await validateFixedPhysicalChain(
+    repositoryRoot,
+    rootReal,
+    repositoryPath,
+    repositoryPath,
+  );
+  return readFile(target);
 }
 
 async function validateExactReceiptPath(repositoryRoot, receiptPath) {
@@ -283,7 +274,12 @@ async function validateExactReceiptPath(repositoryRoot, receiptPath) {
     fail("receiptPath", `must be exactly ${expected}`);
   }
   const rootReal = await realpath(repositoryRoot);
-  await containedRealpath(rootReal, expected, FIXED_RECEIPT_PATH);
+  await validateFixedPhysicalChain(
+    repositoryRoot,
+    rootReal,
+    FIXED_RECEIPT_PATH,
+    FIXED_RECEIPT_PATH,
+  );
   return { expected, rootReal };
 }
 
@@ -291,33 +287,50 @@ function samePhysicalPath(left, right) {
   return relative(left, right) === "" && relative(right, left) === "";
 }
 
-async function validateFixedArtifactChain(repositoryRoot, rootReal) {
+async function validateFixedPhysicalChain(
+  repositoryRoot,
+  rootReal,
+  repositoryPath,
+  path,
+  { allowMissing = false } = {},
+) {
   let lexicalPath = resolve(repositoryRoot);
   let expectedRealPath = rootReal;
-  for (const component of FIXED_ARTIFACT_PATH.split("/")) {
+  for (const component of repositoryPath.split(/[\\/]+/)) {
     lexicalPath = resolve(lexicalPath, component);
     expectedRealPath = resolve(expectedRealPath, component);
     let status;
     try {
       status = await lstat(lexicalPath);
     } catch (error) {
-      if (error?.code === "ENOENT") return;
+      if (error?.code === "ENOENT" && allowMissing) return;
+      if (error?.code === "ENOENT") fail(path, "file is missing");
       throw error;
     }
     if (status.isSymbolicLink()) {
       fail(
-        "artifactPath",
+        path,
         `physical path component is a symbolic link or junction: ${component}`,
       );
     }
     const actualRealPath = await realpath(lexicalPath);
     if (!samePhysicalPath(actualRealPath, expectedRealPath)) {
       fail(
-        "artifactPath",
+        path,
         `physical path component does not match its fixed repository location: ${component}`,
       );
     }
   }
+}
+
+async function validateFixedArtifactChain(repositoryRoot, rootReal) {
+  return validateFixedPhysicalChain(
+    repositoryRoot,
+    rootReal,
+    FIXED_ARTIFACT_PATH,
+    "artifactPath",
+    { allowMissing: true },
+  );
 }
 
 async function validateExactArtifactPath(repositoryRoot, artifactPath) {
@@ -1620,12 +1633,19 @@ async function isAncestor(repositoryRoot, ancestor, descendant) {
   }
 }
 
-async function auditHistoricalBaseline(repositoryRoot, receipt, headCommit) {
+async function auditHistoricalBaseline(
+  repositoryRoot,
+  receipt,
+  headCommit,
+  verifiedBytesByPath,
+) {
   const errors = [];
   let baseline;
   try {
     baseline = validateC0BaselineReceipt(
-      await loadC0BaselineReceipt(repositoryRoot),
+      await loadC0BaselineReceipt(
+        verifiedBytesByPath.get(FIXED_BASELINE_CONTRACT_PATH),
+      ),
     );
   } catch (error) {
     return [`HISTORICAL_SCHEMA:${error.message}`];
@@ -1673,7 +1693,6 @@ async function auditHistoricalBaseline(repositoryRoot, receipt, headCommit) {
       );
     }
   }
-  const rootReal = await realpath(repositoryRoot);
   for (const [index, expected] of baseline.sources.entries()) {
     const fixed = FIXED_SEEDS[index];
     let historicalSourceBytes;
@@ -1699,11 +1718,10 @@ async function auditHistoricalBaseline(repositoryRoot, receipt, headCommit) {
       continue;
     }
     try {
-      const currentSourceBytes = await readContainedFile(
-        repositoryRoot,
-        rootReal,
-        fixed.sourcePath,
-      );
+      const currentSourceBytes = verifiedBytesByPath.get(fixed.sourcePath);
+      if (!currentSourceBytes) {
+        fail(fixed.sourcePath, "verified source bytes are unavailable");
+      }
       const historicalSource = parseUtf8Json(
         historicalSourceBytes,
         `${baseline.sourceCommit}:${fixed.sourcePath}`,
@@ -1736,11 +1754,10 @@ async function auditHistoricalBaseline(repositoryRoot, receipt, headCommit) {
         baseline.sourceCommit,
         fixed.songsPath,
       );
-      const currentSongsBytes = await readContainedFile(
-        repositoryRoot,
-        rootReal,
-        fixed.songsPath,
-      );
+      const currentSongsBytes = verifiedBytesByPath.get(fixed.songsPath);
+      if (!currentSongsBytes) {
+        fail(fixed.songsPath, "verified songs bytes are unavailable");
+      }
       const songDifference = firstProtectedDifference(
         protectedReferencedSongs(
           parseUtf8Json(
@@ -1788,7 +1805,7 @@ export async function auditWorkspace({
     repositoryRoot,
   );
   const errors = [];
-  const bytesByPath = new Map();
+  const verifiedBytesByPath = new Map();
   let headCommit;
   try {
     headCommit = (
@@ -1810,18 +1827,14 @@ export async function auditWorkspace({
   } catch (error) {
     errors.push(`GIT_COMMIT:${receipt.sourceCommit}:${error.message}`);
   }
-  if (headCommit) {
-    errors.push(
-      ...(await auditHistoricalBaseline(repositoryRoot, receipt, headCommit)),
-    );
-  }
   for (const binding of receiptFileBindings(receipt)) {
     let current;
+    let bindingVerified = true;
     try {
       current = await readContainedFile(repositoryRoot, rootReal, binding.path);
-      bytesByPath.set(binding.path, current);
       const currentHash = sha256(current);
       if (currentHash !== binding.sha256) {
+        bindingVerified = false;
         errors.push(
           `${binding.kind}_DRIFT:${binding.path}:expected ${binding.sha256}, observed ${currentHash}`,
         );
@@ -1837,32 +1850,58 @@ export async function auditWorkspace({
         binding.path,
       );
       if (!committed.equals(current)) {
+        bindingVerified = false;
         errors.push(`GIT_BLOB_DRIFT:${receipt.sourceCommit}:${binding.path}`);
       }
       const committedHash = sha256(committed);
       if (committedHash !== binding.sha256) {
+        bindingVerified = false;
         errors.push(
           `GIT_BLOB_HASH:${binding.path}:expected ${binding.sha256}, commit has ${committedHash}`,
         );
       }
     } catch (error) {
+      bindingVerified = false;
       errors.push(
         `GIT_BLOB:${receipt.sourceCommit}:${binding.path}:${error.message}`,
       );
     }
+    if (bindingVerified) verifiedBytesByPath.set(binding.path, current);
   }
 
+  const executableContractsVerified = FIXED_CONTRACT_PATHS.every((path) =>
+    verifiedBytesByPath.has(path),
+  );
+  if (!executableContractsVerified) {
+    errors.push(
+      "CONTRACT_EXECUTION_BLOCKED:not all fixed executable contract bindings are verified",
+    );
+  }
+  if (headCommit && executableContractsVerified) {
+    errors.push(
+      ...(await auditHistoricalBaseline(
+        repositoryRoot,
+        receipt,
+        headCommit,
+        verifiedBytesByPath,
+      )),
+    );
+  }
   let authorityContract;
-  try {
-    authorityContract = await loadPublicationAuthorityContract(repositoryRoot);
-  } catch (error) {
-    errors.push(`AUTHORITY_CONTRACT:${error.message}`);
+  if (executableContractsVerified) {
+    try {
+      authorityContract = await loadPublicationAuthorityContract(
+        verifiedBytesByPath.get(FIXED_AUTHORITY_CONTRACT_PATH),
+      );
+    } catch (error) {
+      errors.push(`AUTHORITY_CONTRACT:${error.message}`);
+    }
   }
 
   const documents = new Map();
   for (const seed of receipt.seeds) {
     for (const path of [seed.sourcePath, seed.songsPath]) {
-      const bytes = bytesByPath.get(path);
+      const bytes = verifiedBytesByPath.get(path);
       if (bytes) {
         try {
           documents.set(path, parseUtf8Json(bytes, path));
@@ -1874,7 +1913,7 @@ export async function auditWorkspace({
   }
   const approvals = new Map();
   for (const evidenceFile of receipt.evidenceFiles) {
-    const bytes = bytesByPath.get(evidenceFile.path);
+    const bytes = verifiedBytesByPath.get(evidenceFile.path);
     if (!bytes) continue;
     try {
       const fixed = FIXED_SEEDS.find(
@@ -1989,6 +2028,7 @@ export async function auditWorkspace({
     seedResults,
     totals,
     errors,
+    verifiedBytesByPath,
   };
 }
 
@@ -2040,12 +2080,16 @@ function replaceImport(source, relativeImport, dataUrl) {
   );
 }
 
-async function loadC0BaselineReceipt(repositoryRoot) {
-  const rootReal = await realpath(repositoryRoot);
-  const path = "apps/atlas/src/contracts/baseline-receipt.ts";
-  const source = new TextDecoder("utf-8", { fatal: true }).decode(
-    await readContainedFile(repositoryRoot, rootReal, path),
-  );
+function verifiedContractSource(bytes, path) {
+  if (!Buffer.isBuffer(bytes)) {
+    fail(path, "verified in-memory contract bytes are unavailable");
+  }
+  return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+}
+
+async function loadC0BaselineReceipt(bytes) {
+  const path = FIXED_BASELINE_CONTRACT_PATH;
+  const source = verifiedContractSource(bytes, path);
   const cacheKey = sha256(Buffer.from(source, "utf8"));
   if (c0BaselineCache.has(cacheKey)) return c0BaselineCache.get(cacheKey);
   const c0Module = await import(dataModule(transpile(source, path)));
@@ -2054,15 +2098,8 @@ async function loadC0BaselineReceipt(repositoryRoot) {
   return baseline;
 }
 
-async function loadPublicationAuthorityContract(repositoryRoot) {
-  const rootReal = await realpath(repositoryRoot);
-  const source = new TextDecoder("utf-8", { fatal: true }).decode(
-    await readContainedFile(
-      repositoryRoot,
-      rootReal,
-      FIXED_AUTHORITY_CONTRACT_PATH,
-    ),
-  );
+async function loadPublicationAuthorityContract(bytes) {
+  const source = verifiedContractSource(bytes, FIXED_AUTHORITY_CONTRACT_PATH);
   const cacheKey = sha256(Buffer.from(source, "utf8"));
   if (authorityContractCache.has(cacheKey)) {
     return authorityContractCache.get(cacheKey);
@@ -2094,15 +2131,12 @@ async function loadPublicationAuthorityContract(repositoryRoot) {
   return authorityContract;
 }
 
-async function loadC0ProjectionParser(repositoryRoot) {
-  const rootReal = await realpath(repositoryRoot);
+async function loadC0ProjectionParser(verifiedBytesByPath) {
   const sources = new Map();
   for (const path of FIXED_CONTRACT_PATHS.slice(0, 4)) {
     sources.set(
       path,
-      new TextDecoder("utf-8", { fatal: true }).decode(
-        await readContainedFile(repositoryRoot, rootReal, path),
-      ),
+      verifiedContractSource(verifiedBytesByPath.get(path), path),
     );
   }
   const cacheKey = sha256(
@@ -2157,8 +2191,8 @@ async function loadC0ProjectionParser(repositoryRoot) {
   return c0Module.parsePublicAtlasProjection;
 }
 
-async function assertC0Projection(raw, repositoryRoot, path) {
-  const parse = await loadC0ProjectionParser(repositoryRoot);
+async function assertC0Projection(raw, verifiedBytesByPath, path) {
+  const parse = await loadC0ProjectionParser(verifiedBytesByPath);
   const result = parse(raw);
   if (result.status !== "valid") {
     const detail =
@@ -2170,7 +2204,7 @@ async function assertC0Projection(raw, repositoryRoot, path) {
   return result.value;
 }
 
-export async function buildProjection(audit, repositoryRoot) {
+export async function buildProjection(audit) {
   if (!audit.ok)
     throw new Error("cannot build a projection from a non-GO audit");
   const groups = audit.seedResults.map(({ seed, songs, source }) => ({
@@ -2258,7 +2292,7 @@ export async function buildProjection(audit, repositoryRoot) {
   );
   await assertC0Projection(
     bytes.toString("utf8"),
-    repositoryRoot,
+    audit.verifiedBytesByPath,
     "generated projection",
   );
   return { projection, bytes };
@@ -2345,7 +2379,7 @@ export async function generateProjection(options = {}) {
         errors: audit.errors,
       };
     }
-    const generated = await buildProjection(audit, repositoryRoot);
+    const generated = await buildProjection(audit);
     await atomicWrite(repositoryRoot, artifactPath, generated.bytes);
     return {
       ok: true,
@@ -2408,7 +2442,7 @@ export async function checkProjection(options = {}) {
         ],
       };
     }
-    const expected = await buildProjection(audit, repositoryRoot);
+    const expected = await buildProjection(audit);
     if (actualBytes === null) {
       return {
         ok: false,
@@ -2424,7 +2458,7 @@ export async function checkProjection(options = {}) {
     try {
       parsed = await assertC0Projection(
         actualBytes.toString("utf8"),
-        repositoryRoot,
+        audit.verifiedBytesByPath,
         FIXED_ARTIFACT_PATH,
       );
       if (artifactHash(parsed) !== parsed.artifactHash) {
