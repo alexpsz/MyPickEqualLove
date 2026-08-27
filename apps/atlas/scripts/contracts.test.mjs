@@ -814,7 +814,7 @@ test("historical baseline receipt is fixed and internally consistent", () => {
   );
 });
 
-test("publication approver roster is canonical and deny-by-default", () => {
+test("publication approver roster contains only the explicitly authorized signer", () => {
   assert.equal(ATLAS_PUBLICATION_AUTHORITY_SCHEMA_VERSION, 1);
   assert.equal(
     ATLAS_PUBLICATION_AUTHORITY_SCOPE,
@@ -825,13 +825,26 @@ test("publication approver roster is canonical and deny-by-default", () => {
   assert.deepEqual(ATLAS_PUBLICATION_AUTHORITY_CONTRACT, {
     schemaVersion: 1,
     scope: "atlas-public-seed-approval-authority-v1",
-    authorities: [],
+    authorities: [
+      {
+        authorityId: "authority:atlas-public-seed-review",
+        approverIds: ["principal:atlas-product-owner"],
+      },
+    ],
   });
   assert.equal(
     isConfiguredAtlasPublicationApprover(
-      "authority:seed-review",
-      "principal:reviewer",
-      "principal:maintainer",
+      "authority:atlas-public-seed-review",
+      "principal:atlas-product-owner",
+      "principal:mypick-data-maintainer",
+    ),
+    true,
+  );
+  assert.equal(
+    isConfiguredAtlasPublicationApprover(
+      "authority:atlas-public-seed-review",
+      "principal:mypick-data-maintainer",
+      "principal:atlas-product-owner",
     ),
     false,
   );

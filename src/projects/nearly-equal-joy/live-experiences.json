@@ -22,6 +22,19 @@
       ],
       "sourceNote": "Official event pages verify the event name, date, venue, and day/night performances. Sony Music Labels published the ordered setlist separately; performance provenance binds each context to that source."
     },
+    "publicAtlasEvidence": {
+      "asOf": "2026-08-14",
+      "lastVerifiedAt": "2026-08-14",
+      "timezone": "Asia/Tokyo",
+      "lifecycle": "completed",
+      "refreshPolicy": {
+        "refreshCadence": "on-source-change",
+        "staleAfterDays": 30,
+        "onInvalidation": "HOLD",
+        "onWithdrawal": "HOLD"
+      },
+      "maintenanceOwnerId": "principal:mypick-data-maintainer"
+    },
     "provenanceSchemaVersion": 1,
     "includeCombinedPerformance": true,
     "combinedPerformanceLabel": "昼・夜",

@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "siteId": "equal-love",
+  "scope": "atlas-public-seed-v1",
+  "sourcePath": "src/projects/equal-love/live-experiences.json",
+  "sourceSha256": "1367aad3a62d33e72e75c5f6d22cab5c6b49be1a07629663fa1939ef7f39a26b",
+  "songsPath": "src/projects/equal-love/songs.json",
+  "songsSha256": "060774dab39fe3fda230f866e1d132fcc31cda01dc62137fc98c040e0670b141",
+  "atlasPublicSeedApproval": "approved",
+  "approvalAuthorityId": "authority:atlas-public-seed-review",
+  "approverId": "principal:atlas-product-owner",
+  "approvedAt": "2026-08-27T12:29:23.950Z",
+  "maintenanceOwnerId": "principal:mypick-data-maintainer",
+  "withdrawalState": "active"
+}

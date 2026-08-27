@@ -148,20 +148,24 @@ export function isEligibleAtlasPublicationApprover(
   );
 }
 
-const EMPTY_AUTHORITIES = Object.freeze([]) as readonly [];
-
 /**
  * Coordinator-owned eligibility roster for public seed approval signers.
  *
  * Roster membership only makes a principal eligible to sign a separate E1
  * approval that is bound to an exact site, source, song catalog, and hash. It
- * never grants seed GO or permission to publish, merge, push, or deploy. This
- * deny-by-default roster may change only after a separate, explicit decision.
+ * never grants seed GO or permission to publish, merge, push, or deploy.
  */
 export const ATLAS_PUBLICATION_AUTHORITY_CONTRACT = Object.freeze({
   schemaVersion: ATLAS_PUBLICATION_AUTHORITY_SCHEMA_VERSION,
   scope: ATLAS_PUBLICATION_AUTHORITY_SCOPE,
-  authorities: EMPTY_AUTHORITIES,
+  authorities: Object.freeze([
+    Object.freeze({
+      authorityId: "authority:atlas-public-seed-review" as AtlasAuthorityId,
+      approverIds: Object.freeze([
+        "principal:atlas-product-owner" as AtlasGovernancePrincipalId,
+      ]),
+    }),
+  ]),
 }) satisfies AtlasPublicationAuthorityContractV1;
 
 export function isConfiguredAtlasPublicationApprover(
