@@ -358,7 +358,7 @@ export function MemoryPage() {
                 <option value="">{messages.candidatePlaceholder}</option>
                 {candidates.map((item, index) => (
                   <option key={index} value={index}>
-                    {`${item.event.groupName ?? messages.localGroupName} · ${item.event.eventName} · ${item.event.date}`}
+                    {`${item.event.groupName ?? messages.localGroupName} · ${item.event.eventName} · ${item.event.date} · ${messages.card.modes[item.mode]}`}
                   </option>
                 ))}
               </select>

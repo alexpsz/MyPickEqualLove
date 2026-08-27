@@ -114,6 +114,8 @@ const en = {
   dryRunTitle: "Whole-replace dry run",
   dryRunBody:
     "Review every count below. Existing records not present in the backup will be deleted.",
+  recoveryDryRunBody:
+    "Current records cannot be counted because the stored value is unreadable. The review shows only validated backup totals; confirming replaces that exact unreadable value.",
   journeys: "Journeys",
   experiences: "Experience entries",
   before: "Before",
@@ -133,6 +135,8 @@ const en = {
   deleteAll: "Delete all Journey data",
   deleteAllWarning:
     "This removes the complete Atlas Journey document from this browser. Export a backup first if you may need it.",
+  deleteUnreadableWarning:
+    "This removes the exact unreadable Atlas Journey value from this browser. It cannot be exported safely; continue only if you no longer need it.",
   confirmDeleteAll: "Confirm delete all",
   deleteAllDone: "All Journey data was deleted and absence was verified.",
   noAutomaticMerge:
@@ -247,6 +251,8 @@ const zhCN: JourneyMessages = {
     "恢复期间旅程数据发生了变化。计划已丢弃且不能重复使用，请重新读取存储数据后再试。",
   dryRunTitle: "整体替换预检",
   dryRunBody: "请核对以下数量。备份中不存在的现有记录将被删除。",
+  recoveryDryRunBody:
+    "当前存储值无法读取，因此不能可靠统计现有记录。下方只显示已验证备份的导入后数量；确认后将整体替换该精确原始值。",
   journeys: "旅程",
   experiences: "经历条目",
   before: "当前",
@@ -266,6 +272,8 @@ const zhCN: JourneyMessages = {
   deleteAll: "删除全部旅程数据",
   deleteAllWarning:
     "这会移除此浏览器中的完整 Atlas Journey 文档。如需保留，请先导出备份。",
+  deleteUnreadableWarning:
+    "这会删除此浏览器中无法读取的 Atlas Journey 原始值。该值无法安全导出；请仅在确认不再需要它时继续。",
   confirmDeleteAll: "确认全部删除",
   deleteAllDone: "全部旅程数据已删除，并确认存储中已不存在。",
   noAutomaticMerge: "Atlas 不会自动合并，也不会静默覆盖旅程数据。",
@@ -387,6 +395,8 @@ const ja: JourneyMessages = {
   dryRunTitle: "全体置換の事前確認",
   dryRunBody:
     "以下の件数を確認してください。バックアップにない既存記録は削除されます。",
+  recoveryDryRunBody:
+    "保存値を読み取れないため、現在の記録数は正確に算出できません。以下には検証済みバックアップの置換後件数だけを表示し、確認すると一致した元の値全体を置換します。",
   journeys: "Journey",
   experiences: "体験記録",
   before: "現在",
@@ -406,6 +416,8 @@ const ja: JourneyMessages = {
   deleteAll: "Journey データをすべて削除",
   deleteAllWarning:
     "このブラウザから Atlas Journey 文書全体を削除します。必要なら先にバックアップしてください。",
+  deleteUnreadableWarning:
+    "このブラウザから読み取れない Atlas Journey の元の値を削除します。安全に書き出せないため、不要であることを確認してから続行してください。",
   confirmDeleteAll: "すべて削除を確定",
   deleteAllDone:
     "Journey データをすべて削除し、保存値がないことを確認しました。",
@@ -527,6 +539,8 @@ const ko: JourneyMessages = {
     "복원 중 여정 데이터가 변경되었습니다. 계획을 폐기해 다시 사용할 수 없습니다. 저장 데이터를 다시 읽은 뒤 재시도하세요.",
   dryRunTitle: "전체 교체 사전 검토",
   dryRunBody: "아래 개수를 확인하세요. 백업에 없는 기존 기록은 삭제됩니다.",
+  recoveryDryRunBody:
+    "저장된 값을 읽을 수 없어 현재 기록 수를 정확히 계산할 수 없습니다. 아래에는 검증된 백업의 교체 후 개수만 표시되며, 확인하면 일치하는 원본 값 전체를 교체합니다.",
   journeys: "여정",
   experiences: "경험 기록",
   before: "현재",
@@ -546,6 +560,8 @@ const ko: JourneyMessages = {
   deleteAll: "모든 여정 데이터 삭제",
   deleteAllWarning:
     "이 브라우저에서 Atlas Journey 문서 전체를 삭제합니다. 필요하다면 먼저 백업하세요.",
+  deleteUnreadableWarning:
+    "이 브라우저에서 읽을 수 없는 Atlas Journey 원본 값을 삭제합니다. 안전하게 내보낼 수 없으므로 더 이상 필요하지 않을 때만 계속하세요.",
   confirmDeleteAll: "모두 삭제 확인",
   deleteAllDone: "모든 여정 데이터를 삭제했고 저장 값이 없음을 확인했습니다.",
   noAutomaticMerge:

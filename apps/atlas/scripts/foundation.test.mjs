@@ -124,6 +124,7 @@ test("Atlas is a private workspace with independent quality commands", () => {
     "typecheck",
     "test",
     "build",
+    "verify:quality",
     "verify:static-export",
     "verify",
   ]) {

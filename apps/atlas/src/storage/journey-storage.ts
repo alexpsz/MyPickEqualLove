@@ -8,20 +8,26 @@ import {
   utf8ByteLength,
 } from "../backup/backup-codec.js";
 import {
+  createOpaqueRecoverySummary,
   createRestoreSummary,
+  type JourneyRecoveryApplyPlan,
   type JourneyReplaceApplyPlan,
+  type JourneyRestoreApplyPlan,
+  type OpaqueRecoverySummary,
   type RestoreEntitySummary,
   type RestoreSummary,
 } from "../ports/restore-plan.js";
 import {
+  isJourneyStorageExpectation,
+  validateRecoverJourneyInput,
   validateReplaceJourneyInput,
   type DeleteAllJourneysInput,
   type JourneyDeleteMutationResult,
   type JourneyMutationConflict,
   type JourneyMutationFailure,
   type JourneyRepository,
-  type JourneyRevisionExpectation,
   type JourneyRollbackResult,
+  type JourneyStorageExpectation,
   type JourneyWriteMutationResult,
   type ValidatedCompareAndWriteJourneyInput,
   type ValidatedReplaceJourneyInput,
@@ -68,7 +74,7 @@ export type JourneyReplacePlanApplyResult =
     };
 
 export interface JourneyReplaceEligibilityInput {
-  readonly plan: JourneyReplaceApplyPlan;
+  readonly plan: JourneyRestoreApplyPlan;
 }
 
 export type JourneyReplaceEligibilityResult =
@@ -189,8 +195,33 @@ function isRestoreSummary(value: unknown): value is RestoreSummary {
   );
 }
 
+function isOpaqueRecoverySummary(
+  value: unknown,
+): value is OpaqueRecoverySummary {
+  if (
+    !isRecord(value) ||
+    !hasExactKeys(value, ["current", "replacement"]) ||
+    !isRecord(value.current) ||
+    !isRecord(value.replacement) ||
+    !hasExactKeys(value.current, ["status", "countsAvailable"]) ||
+    !hasExactKeys(value.replacement, ["journeys", "experienceEntries"])
+  ) {
+    return false;
+  }
+  return (
+    ["corrupt", "future-version", "invalid"].includes(
+      value.current.status as string,
+    ) &&
+    value.current.countsAvailable === false &&
+    [value.replacement.journeys, value.replacement.experienceEntries].every(
+      (count) =>
+        typeof count === "number" && Number.isInteger(count) && count >= 0,
+    )
+  );
+}
+
 type ReplacePlanValidationResult =
-  | { readonly ok: true; readonly plan: JourneyReplaceApplyPlan }
+  | { readonly ok: true; readonly plan: JourneyRestoreApplyPlan }
   | {
       readonly ok: false;
       readonly reason:
@@ -202,6 +233,42 @@ type ReplacePlanValidationResult =
     };
 
 function validateReplacePlanShape(value: unknown): ReplacePlanValidationResult {
+  if (isRecord(value) && value.kind === "recover-journey-document-from-raw") {
+    if (
+      !hasExactKeys(value, ["kind", "expectation", "replacement", "summary"]) ||
+      !isRecord(value.replacement) ||
+      !isOpaqueRecoverySummary(value.summary)
+    ) {
+      return {
+        ok: false,
+        reason: "invalid-shape",
+        expectedNextRevision: null,
+      };
+    }
+    const plan = value as unknown as JourneyRecoveryApplyPlan;
+    const validated = validateRecoverJourneyInput({
+      expectedRaw: plan.expectation,
+      replacement: plan.replacement,
+    });
+    if (!validated.ok) {
+      return {
+        ok: false,
+        reason: validated.reason,
+        expectedNextRevision: validated.expectedNextRevision,
+      };
+    }
+    if (
+      parseJourneyDocument(plan.expectation.raw).status !==
+      plan.expectation.status
+    ) {
+      return {
+        ok: false,
+        reason: "invalid-expected-revision",
+        expectedNextRevision: null,
+      };
+    }
+    return { ok: true, plan };
+  }
   if (
     !isRecord(value) ||
     !hasExactKeys(value, [
@@ -232,6 +299,15 @@ function validateReplacePlanShape(value: unknown): ReplacePlanValidationResult {
         reason: validated.reason,
         expectedNextRevision: validated.expectedNextRevision,
       };
+}
+
+function runtimeInputForPlan(plan: JourneyRestoreApplyPlan) {
+  return plan.kind === "replace-journey-document"
+    ? {
+        expectedRevision: plan.expectedRevision,
+        replacement: plan.replacement,
+      }
+    : { expectedRaw: plan.expectation, replacement: plan.replacement };
 }
 
 type CanonicalReplacementMeasurement =
@@ -269,11 +345,45 @@ function rawFromRead(result: JourneyDocumentReadResult): string | null {
 
 function actualMatchesExpectation(
   actual: JourneyDocumentReadResult,
-  expected: JourneyRevisionExpectation,
+  expected: JourneyStorageExpectation,
 ) {
-  return expected.state === "absent"
-    ? actual.status === "absent"
-    : actual.status === "valid" && actual.value.revision === expected.revision;
+  switch (expected.state) {
+    case "absent":
+      return actual.status === "absent";
+    case "present":
+      return (
+        actual.status === "valid" && actual.value.revision === expected.revision
+      );
+    case "unreadable":
+      return actual.status === expected.status && actual.raw === expected.raw;
+  }
+}
+
+function isRuntimeJourneyStorageExpectation(
+  value: unknown,
+): value is JourneyStorageExpectation {
+  if (!isJourneyStorageExpectation(value)) return false;
+  return (
+    value.state !== "unreadable" ||
+    parseJourneyDocument(value.raw).status === value.status
+  );
+}
+
+function snapshotJourneyStorageExpectation(
+  expectation: JourneyStorageExpectation,
+): JourneyStorageExpectation {
+  switch (expectation.state) {
+    case "absent":
+      return { state: "absent" };
+    case "present":
+      return { state: "present", revision: expectation.revision };
+    case "unreadable":
+      return {
+        state: "unreadable",
+        status: expectation.status,
+        raw: expectation.raw,
+      };
+  }
 }
 
 function canonicalDocumentJson(value: JourneyDocumentV1) {
@@ -308,7 +418,7 @@ type RuntimeReplaceValidationFailureReason =
 type RuntimeReplaceValidationResult =
   | {
       readonly ok: true;
-      readonly expectedRevision: JourneyRevisionExpectation;
+      readonly expectedRevision: JourneyStorageExpectation;
       readonly replacement: JourneyDocumentV1;
       readonly measurement: Extract<
         CanonicalReplacementMeasurement,
@@ -326,9 +436,13 @@ type RuntimeReplaceValidationResult =
 function validateRuntimeReplaceInput(
   value: unknown,
 ): RuntimeReplaceValidationResult {
+  const isRevisionReplace =
+    isRecord(value) && hasExactKeys(value, ["expectedRevision", "replacement"]);
+  const isOpaqueRecovery =
+    isRecord(value) && hasExactKeys(value, ["expectedRaw", "replacement"]);
   if (
     !isRecord(value) ||
-    !hasExactKeys(value, ["expectedRevision", "replacement"]) ||
+    (!isRevisionReplace && !isOpaqueRecovery) ||
     !isRecord(value.replacement)
   ) {
     return {
@@ -336,15 +450,22 @@ function validateRuntimeReplaceInput(
       reason: "invalid-shape",
       expectedNextRevision: null,
       error:
-        "Replace input must contain only an expectedRevision and Journey replacement",
+        "Replacement input must contain one exact expectation and Journey replacement",
       measurement: null,
     };
   }
 
-  const revision = validateReplaceJourneyInput({
-    expectedRevision: value.expectedRevision as JourneyRevisionExpectation,
-    replacement: value.replacement as unknown as JourneyDocumentV1,
-  });
+  const revision = isOpaqueRecovery
+    ? validateRecoverJourneyInput({
+        expectedRaw:
+          value.expectedRaw as JourneyRecoveryApplyPlan["expectation"],
+        replacement: value.replacement as unknown as JourneyDocumentV1,
+      })
+    : validateReplaceJourneyInput({
+        expectedRevision:
+          value.expectedRevision as JourneyReplaceApplyPlan["expectedRevision"],
+        replacement: value.replacement as unknown as JourneyDocumentV1,
+      });
   if (!revision.ok) {
     return {
       ok: false,
@@ -387,17 +508,39 @@ function validateRuntimeReplaceInput(
   }
   return {
     ok: true,
-    expectedRevision: revision.value.expectedRevision,
+    expectedRevision:
+      "expectedRaw" in revision.value
+        ? revision.value.expectedRaw
+        : revision.value.expectedRevision,
     replacement: prepared.value,
     measurement,
   };
 }
 
-function copyRestoreSummary(summary: RestoreSummary): RestoreSummary {
-  return {
-    journeys: { ...summary.journeys },
-    experienceEntries: { ...summary.experienceEntries },
-  };
+function copyRestoreSummary(
+  summary: RestoreSummary | OpaqueRecoverySummary,
+): RestoreSummary | OpaqueRecoverySummary {
+  return "current" in summary
+    ? {
+        current: { ...summary.current },
+        replacement: { ...summary.replacement },
+      }
+    : {
+        journeys: { ...summary.journeys },
+        experienceEntries: { ...summary.experienceEntries },
+      };
+}
+
+function opaqueRecoverySummaryMatches(
+  plan: JourneyRestoreApplyPlan,
+  replacement: JourneyDocumentV1,
+) {
+  if (plan.kind !== "recover-journey-document-from-raw") return true;
+  const canonical = createOpaqueRecoverySummary(
+    plan.expectation.status,
+    replacement,
+  );
+  return JSON.stringify(canonical) === JSON.stringify(plan.summary);
 }
 
 function readbackMatches(
@@ -415,7 +558,7 @@ function readbackMatches(
 }
 
 function conflict(
-  expectedRevision: JourneyRevisionExpectation,
+  expectedRevision: JourneyStorageExpectation,
   actual: JourneyDocumentReadResult,
 ): JourneyMutationConflict {
   return {
@@ -491,7 +634,7 @@ export class LocalStorageJourneyRepository implements JourneyRepository {
   }
 
   async applyReplacePlan(
-    plan: JourneyReplaceApplyPlan,
+    plan: JourneyRestoreApplyPlan,
   ): Promise<JourneyReplacePlanApplyResult> {
     const validated = validateReplacePlanShape(plan);
     if (!validated.ok) {
@@ -501,15 +644,23 @@ export class LocalStorageJourneyRepository implements JourneyRepository {
         expectedNextRevision: validated.expectedNextRevision,
       };
     }
-    const replacement = validateRuntimeReplaceInput({
-      expectedRevision: validated.plan.expectedRevision,
-      replacement: validated.plan.replacement,
-    });
+    const replacement = validateRuntimeReplaceInput(
+      runtimeInputForPlan(validated.plan),
+    );
     if (!replacement.ok) {
       return {
         status: "invalid-plan",
         reason: replacement.reason,
         expectedNextRevision: replacement.expectedNextRevision,
+      };
+    }
+    if (
+      !opaqueRecoverySummaryMatches(validated.plan, replacement.replacement)
+    ) {
+      return {
+        status: "invalid-plan",
+        reason: "invalid-shape",
+        expectedNextRevision: null,
       };
     }
     return this.#writeDocument(
@@ -538,10 +689,9 @@ export class LocalStorageJourneyRepository implements JourneyRepository {
         `replacement eligibility plan is invalid: ${validated.reason}`,
       );
     }
-    const replacement = validateRuntimeReplaceInput({
-      expectedRevision: validated.plan.expectedRevision,
-      replacement: validated.plan.replacement,
-    });
+    const replacement = validateRuntimeReplaceInput(
+      runtimeInputForPlan(validated.plan),
+    );
     if (!replacement.ok) {
       if (replacement.reason === "measurement-failed") {
         return {
@@ -567,6 +717,14 @@ export class LocalStorageJourneyRepository implements JourneyRepository {
       }
       return invalidEligibility("plan", replacement.error);
     }
+    if (
+      !opaqueRecoverySummaryMatches(validated.plan, replacement.replacement)
+    ) {
+      return invalidEligibility(
+        "plan",
+        "opaque recovery summary does not match the canonical replacement",
+      );
+    }
     return {
       status: "eligible",
       storageCapacity: "unknown",
@@ -578,12 +736,28 @@ export class LocalStorageJourneyRepository implements JourneyRepository {
   async deleteAll(
     input: DeleteAllJourneysInput,
   ): Promise<JourneyDeleteMutationResult> {
+    if (
+      !isRecord(input) ||
+      !hasExactKeys(input, ["expectedRevision"]) ||
+      !isRuntimeJourneyStorageExpectation(input.expectedRevision)
+    ) {
+      return {
+        status: "failure",
+        stage: "write",
+        rawBefore: null,
+        error: "Delete input must contain one exact valid Journey expectation",
+        rollback: { status: "not-required" },
+      };
+    }
+    const expectedRevision = snapshotJourneyStorageExpectation(
+      input.expectedRevision,
+    );
     const before = await this.read();
     if (before.status === "read-failed") {
       return readFailure(before);
     }
-    if (!actualMatchesExpectation(before, input.expectedRevision)) {
-      return conflict(input.expectedRevision, before);
+    if (!actualMatchesExpectation(before, expectedRevision)) {
+      return conflict(expectedRevision, before);
     }
 
     const rawBefore = rawFromRead(before);
@@ -637,26 +811,34 @@ export class LocalStorageJourneyRepository implements JourneyRepository {
   }
 
   async #writeDocument(
-    expectedRevision: JourneyRevisionExpectation,
+    expectedRevision: JourneyStorageExpectation,
     document: JourneyDocumentV1,
     options: {
       readonly enforceAuthoritativeReplacementLimit?: boolean;
-      readonly expectedRestoreSummary?: RestoreSummary;
+      readonly expectedRestoreSummary?: RestoreSummary | OpaqueRecoverySummary;
     } = {},
   ): Promise<JourneyWriteMutationResult> {
+    const expectedSnapshot =
+      snapshotJourneyStorageExpectation(expectedRevision);
     const before = await this.read();
     if (before.status === "read-failed") {
       return readFailure(before);
     }
-    if (!actualMatchesExpectation(before, expectedRevision)) {
-      return conflict(expectedRevision, before);
+    if (!actualMatchesExpectation(before, expectedSnapshot)) {
+      return conflict(expectedSnapshot, before);
     }
 
     const rawBefore = rawFromRead(before);
-    const revision = validateReplaceJourneyInput({
-      expectedRevision,
-      replacement: document,
-    });
+    const revision =
+      expectedSnapshot.state === "unreadable"
+        ? validateRecoverJourneyInput({
+            expectedRaw: expectedSnapshot,
+            replacement: document,
+          })
+        : validateReplaceJourneyInput({
+            expectedRevision: expectedSnapshot,
+            replacement: document,
+          });
     if (!revision.ok) {
       return {
         status: "failure",
@@ -693,10 +875,13 @@ export class LocalStorageJourneyRepository implements JourneyRepository {
       }
     }
     if (options.expectedRestoreSummary !== undefined) {
-      const actualSummary = createRestoreSummary(
-        before.status === "valid" ? before.value : null,
-        prepared.value,
-      );
+      const actualSummary =
+        expectedSnapshot.state === "unreadable"
+          ? createOpaqueRecoverySummary(expectedSnapshot.status, prepared.value)
+          : createRestoreSummary(
+              before.status === "valid" ? before.value : null,
+              prepared.value,
+            );
       if (
         JSON.stringify(actualSummary) !==
         JSON.stringify(options.expectedRestoreSummary)

@@ -12,13 +12,17 @@ import type { JourneyDocumentReadResult } from "../../contracts/journey-document
 import {
   bindJourneyInteraction,
   expectedJourneyRevision,
+  expectedJourneyStorage,
   nextJourneyInteractionGeneration,
   sortJourneysForTimeline,
   validateJourneyInteractionBinding,
   type JourneyInteractionBinding,
 } from "../../features/journey/journey-controller";
 import { journeyMessage } from "../../i18n/journey/messages";
-import { validateCompareAndWriteJourneyInput } from "../../ports/journey-repository";
+import {
+  validateCompareAndWriteJourneyInput,
+  type JourneyStorageExpectation,
+} from "../../ports/journey-repository";
 import {
   createBrowserJourneyRepository,
   type LocalStorageJourneyRepository,
@@ -36,6 +40,19 @@ import styles from "./journey-ui.module.css";
 
 function currentDocument(read: JourneyDocumentReadResult) {
   return read.status === "valid" ? read.value : null;
+}
+
+function isRecoverableUnreadable(read: JourneyDocumentReadResult) {
+  return (
+    read.status === "corrupt" ||
+    read.status === "future-version" ||
+    read.status === "invalid"
+  );
+}
+
+interface DeleteAllBinding {
+  readonly generation: number;
+  readonly expectedRevision: JourneyStorageExpectation;
 }
 
 function focusAfterRender(
@@ -61,7 +78,7 @@ export function JourneyWorkspace() {
     null,
   );
   const [deleteAllBinding, setDeleteAllBinding] =
-    useState<JourneyInteractionBinding | null>(null);
+    useState<DeleteAllBinding | null>(null);
 
   const focusWorkspace = useCallback(() => {
     focusAfterRender(headingRef, headingRef);
@@ -144,6 +161,15 @@ export function JourneyWorkspace() {
       : null;
   }
 
+  function currentDeleteAllBinding(): DeleteAllBinding | null {
+    const currentRead = readRef.current;
+    if (currentRead === null || currentRead.status === "absent") return null;
+    const expectedRevision = expectedJourneyStorage(currentRead);
+    return expectedRevision === null
+      ? null
+      : { generation: generationRef.current, expectedRevision };
+  }
+
   function rejectStaleInteraction() {
     setNeedsReload(true);
     setFeedback({ kind: "stale" });
@@ -206,19 +232,18 @@ export function JourneyWorkspace() {
     focusAfterRender(deleteAllButtonRef, headingRef);
   }
 
-  async function deleteAll(binding: JourneyInteractionBinding) {
+  async function deleteAll(binding: DeleteAllBinding) {
     const activeRepository = repositoryRef.current;
-    const currentRead = readRef.current;
-    const activeBinding = currentInteractionBinding();
-    if (
-      activeRepository === null ||
-      currentRead?.status !== "valid" ||
-      activeBinding === null
-    ) {
+    const activeBinding = currentDeleteAllBinding();
+    if (activeRepository === null || activeBinding === null) {
       closeDeleteAllConfirmation();
       return;
     }
-    if (!validateJourneyInteractionBinding(binding, activeBinding).ok) {
+    if (
+      binding.generation !== activeBinding.generation ||
+      JSON.stringify(binding.expectedRevision) !==
+        JSON.stringify(activeBinding.expectedRevision)
+    ) {
       rejectStaleInteraction();
       closeDeleteAllConfirmation();
       return;
@@ -228,7 +253,7 @@ export function JourneyWorkspace() {
     setFeedback(null);
     try {
       const result = await activeRepository.deleteAll({
-        expectedRevision: expectedJourneyRevision(currentRead.value),
+        expectedRevision: binding.expectedRevision,
       });
       if (result.status === "deleted") {
         acceptAuthoritativeRead(result.readback, null, false);
@@ -254,6 +279,18 @@ export function JourneyWorkspace() {
         const readBlocked =
           read !== null && read.status !== "absent" && read.status !== "valid";
         const writeBlocked = readBlocked || needsReload;
+        const recoverableUnreadable =
+          read !== null && isRecoverableUnreadable(read);
+        const storageActionsRead =
+          read !== null && read.status !== "read-failed" && !needsReload
+            ? read
+            : null;
+        const deleteAllAllowed =
+          storageActionsRead !== null &&
+          (storageActionsRead.status === "valid" || recoverableUnreadable);
+        const deleteWarning = recoverableUnreadable
+          ? "deleteUnreadableWarning"
+          : "deleteAllWarning";
 
         return (
           <>
@@ -342,49 +379,51 @@ export function JourneyWorkspace() {
                       </ol>
                     </>
                   )}
-
-                  <JourneyBackupPanel
-                    busy={busy}
-                    current={document}
-                    locale={locale}
-                    onRestoreCommitted={(restoredRead) => {
-                      acceptAuthoritativeRead(restoredRead, null, false);
-                    }}
-                  />
-
-                  {document !== null ? (
-                    <section className={styles.dangerZone}>
-                      <h2>{journeyMessage(locale, "deleteAll")}</h2>
-                      <p className={styles.lede}>
-                        {journeyMessage(locale, "deleteAllWarning")}
-                      </p>
-                      <div className={styles.spacer} />
-                      {deleteAllBinding !== null ? (
-                        <InlineConfirmation
-                          busy={busy}
-                          confirmLabel="confirmDeleteAll"
-                          locale={locale}
-                          message="deleteAllWarning"
-                          onCancel={closeDeleteAllConfirmation}
-                          onConfirm={() => void deleteAll(deleteAllBinding)}
-                        />
-                      ) : (
-                        <button
-                          className={styles.buttonDanger}
-                          disabled={busy}
-                          onClick={() => {
-                            const binding = currentInteractionBinding();
-                            if (binding !== null) setDeleteAllBinding(binding);
-                          }}
-                          ref={deleteAllButtonRef}
-                          type="button"
-                        >
-                          {journeyMessage(locale, "deleteAll")}
-                        </button>
-                      )}
-                    </section>
-                  ) : null}
                 </>
+              ) : null}
+
+              {storageActionsRead !== null ? (
+                <JourneyBackupPanel
+                  busy={busy}
+                  current={storageActionsRead}
+                  locale={locale}
+                  onRestoreCommitted={(restoredRead) => {
+                    acceptAuthoritativeRead(restoredRead, null, false);
+                  }}
+                />
+              ) : null}
+
+              {deleteAllAllowed ? (
+                <section className={styles.dangerZone}>
+                  <h2>{journeyMessage(locale, "deleteAll")}</h2>
+                  <p className={styles.lede}>
+                    {journeyMessage(locale, deleteWarning)}
+                  </p>
+                  <div className={styles.spacer} />
+                  {deleteAllBinding !== null ? (
+                    <InlineConfirmation
+                      busy={busy}
+                      confirmLabel="confirmDeleteAll"
+                      locale={locale}
+                      message={deleteWarning}
+                      onCancel={closeDeleteAllConfirmation}
+                      onConfirm={() => void deleteAll(deleteAllBinding)}
+                    />
+                  ) : (
+                    <button
+                      className={styles.buttonDanger}
+                      disabled={busy}
+                      onClick={() => {
+                        const binding = currentDeleteAllBinding();
+                        if (binding !== null) setDeleteAllBinding(binding);
+                      }}
+                      ref={deleteAllButtonRef}
+                      type="button"
+                    >
+                      {journeyMessage(locale, "deleteAll")}
+                    </button>
+                  )}
+                </section>
               ) : null}
             </div>
           </>

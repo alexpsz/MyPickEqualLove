@@ -1,4 +1,5 @@
 import {
+  parseJourneyDocument,
   parseJourneyDocumentValue,
   type JourneyDocumentV1,
 } from "../contracts/journey-document.js";
@@ -15,9 +16,9 @@ import {
 } from "../contracts/strict.js";
 import {
   createRestorePlan,
-  type JourneyReplaceApplyPlan,
+  type JourneyRestoreApplyPlan,
 } from "../ports/restore-plan.js";
-import type { JourneyRevisionExpectation } from "../ports/journey-repository.js";
+import type { JourneyStorageExpectation } from "../ports/journey-repository.js";
 
 export const ATLAS_BACKUP_PRODUCT_FAMILY_SITE_ID = "atlas" as const;
 export const ATLAS_BACKUP_SCHEMA_VERSION = 1 as const;
@@ -122,7 +123,7 @@ export type AtlasBackupPreflightFailure = Exclude<
 >;
 
 export interface AtlasBackupRestoreTransaction {
-  readonly expectedRevision: JourneyRevisionExpectation;
+  readonly expectedRevision: JourneyStorageExpectation;
   /** Capacity for the canonical Journey replacement, never the import envelope. */
   readonly availableBytes: number;
 }
@@ -141,7 +142,7 @@ export type AtlasBackupDryRunResult =
       readonly importByteLength: number;
       readonly replacementByteLength: number;
       readonly backup: AtlasBackupEnvelopeV1;
-      readonly applyPlan: JourneyReplaceApplyPlan;
+      readonly applyPlan: JourneyRestoreApplyPlan;
     }
   | (AtlasBackupPreflightFailure & { readonly applyPlan: null })
   | {
@@ -467,13 +468,35 @@ function parseRestoreTransaction(
   const state = expectLiteral(
     expectedRecord.state,
     "$.transaction.expectedRevision.state",
-    ["absent", "present"] as const,
+    ["absent", "present", "unreadable"] as const,
   );
   if (state === "absent") {
     expectExactKeys(expectedRecord, "$.transaction.expectedRevision", [
       "state",
     ]);
     return { expectedRevision: { state }, availableBytes };
+  }
+  if (state === "unreadable") {
+    expectExactKeys(expectedRecord, "$.transaction.expectedRevision", [
+      "state",
+      "status",
+      "raw",
+    ]);
+    return {
+      expectedRevision: {
+        state,
+        status: expectLiteral(
+          expectedRecord.status,
+          "$.transaction.expectedRevision.status",
+          ["corrupt", "future-version", "invalid"] as const,
+        ),
+        raw: expectString(
+          expectedRecord.raw,
+          "$.transaction.expectedRevision.raw",
+        ),
+      },
+      availableBytes,
+    };
   }
   expectExactKeys(expectedRecord, "$.transaction.expectedRevision", [
     "state",
@@ -540,16 +563,28 @@ export function dryRunAtlasBackupRestore(
       );
     }
     const transaction = parseRestoreTransaction(record.transaction);
-    const actualExpectedRevision: JourneyRevisionExpectation =
-      current === null
-        ? { state: "absent" }
-        : { state: "present", revision: current.revision };
+    const expectedRevision = transaction.expectedRevision;
+    if (expectedRevision.state === "unreadable") {
+      const parsedCurrent = parseJourneyDocument(expectedRevision.raw);
+      if (parsedCurrent.status !== expectedRevision.status) {
+        throw new ContractValidationError(
+          "$.transaction.expectedRevision",
+          "unreadable status does not match the exact raw Journey value",
+        );
+      }
+    }
+    const actualExpectedRevision: JourneyStorageExpectation =
+      expectedRevision.state === "unreadable"
+        ? expectedRevision
+        : current === null
+          ? { state: "absent" }
+          : { state: "present", revision: current.revision };
     const replacement = parseJourneyDocumentValue({
       schemaVersion: preflight.backup.journey.schemaVersion,
       revision:
-        actualExpectedRevision.state === "absent"
-          ? 0
-          : actualExpectedRevision.revision + 1,
+        actualExpectedRevision.state === "present"
+          ? actualExpectedRevision.revision + 1
+          : 0,
       updatedAt: now,
       journeys: preflight.backup.journey.journeys,
     });

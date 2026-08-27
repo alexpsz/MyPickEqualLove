@@ -7,6 +7,67 @@ export type JourneyRevisionExpectation =
   | { readonly state: "absent" }
   | { readonly state: "present"; readonly revision: number };
 
+export type JourneyUnreadableStatus = "corrupt" | "future-version" | "invalid";
+
+/**
+ * Whole-document recovery may replace or delete a value that cannot be parsed,
+ * but only while the exact raw value and its read classification still match.
+ */
+export type JourneyOpaqueRawExpectation = {
+  readonly state: "unreadable";
+  readonly status: JourneyUnreadableStatus;
+  readonly raw: string;
+};
+
+export type JourneyStorageExpectation =
+  | JourneyRevisionExpectation
+  | JourneyOpaqueRawExpectation;
+
+function hasExactOwnKeys(
+  value: Record<string, unknown>,
+  expectedKeys: readonly string[],
+) {
+  const actualKeys = Object.keys(value).sort();
+  const expected = [...expectedKeys].sort();
+  return (
+    actualKeys.length === expected.length &&
+    actualKeys.every((key, index) => key === expected[index])
+  );
+}
+
+export function isJourneyStorageExpectation(
+  value: unknown,
+): value is JourneyStorageExpectation {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return false;
+  }
+  const expectation = value as {
+    readonly state?: unknown;
+    readonly revision?: unknown;
+    readonly status?: unknown;
+    readonly raw?: unknown;
+  };
+  const record = value as Record<string, unknown>;
+  if (expectation.state === "absent") {
+    return hasExactOwnKeys(record, ["state"]);
+  }
+  if (expectation.state === "present") {
+    return (
+      hasExactOwnKeys(record, ["state", "revision"]) &&
+      Number.isInteger(expectation.revision) &&
+      (expectation.revision as number) >= 0
+    );
+  }
+  return (
+    expectation.state === "unreadable" &&
+    hasExactOwnKeys(record, ["state", "status", "raw"]) &&
+    ["corrupt", "future-version", "invalid"].includes(
+      expectation.status as string,
+    ) &&
+    typeof expectation.raw === "string"
+  );
+}
+
 export type JourneyRevisionTransitionResult =
   | { readonly ok: true; readonly nextRevision: number }
   | {
@@ -33,22 +94,47 @@ export function validateJourneyRevisionTransition(
       expectedNextRevision: null,
     };
   }
-  if (typeof expectedRevision !== "object" || expectedRevision === null) {
+  if (
+    !isJourneyStorageExpectation(expectedRevision) ||
+    expectedRevision.state === "unreadable"
+  ) {
     return {
       ok: false,
       reason: "invalid-expected-revision",
       expectedNextRevision: null,
     };
   }
-  const expected = expectedRevision as {
-    readonly state?: unknown;
-    readonly revision?: unknown;
-  };
-  if (expected.state === "absent") {
-    if (Object.keys(expectedRevision as Record<string, unknown>).length !== 1) {
+  if (expectedRevision.state === "absent") {
+    return nextRevision === 0
+      ? { ok: true, nextRevision }
+      : {
+          ok: false,
+          reason: "non-consecutive-revision",
+          expectedNextRevision: 0,
+        };
+  }
+  const expectedNextRevision = expectedRevision.revision + 1;
+  return nextRevision === expectedNextRevision
+    ? { ok: true, nextRevision }
+    : {
+        ok: false,
+        reason: "non-consecutive-revision",
+        expectedNextRevision,
+      };
+}
+
+export function validateJourneyOpaqueRecoveryTransition(
+  expectedRevision: unknown,
+  nextRevision: number,
+): JourneyRevisionTransitionResult {
+  if (
+    isJourneyStorageExpectation(expectedRevision) &&
+    expectedRevision.state === "unreadable"
+  ) {
+    if (!Number.isInteger(nextRevision) || nextRevision < 0) {
       return {
         ok: false,
-        reason: "invalid-expected-revision",
+        reason: "invalid-next-revision",
         expectedNextRevision: null,
       };
     }
@@ -60,26 +146,11 @@ export function validateJourneyRevisionTransition(
           expectedNextRevision: 0,
         };
   }
-  if (
-    expected.state !== "present" ||
-    Object.keys(expectedRevision as Record<string, unknown>).length !== 2 ||
-    !Number.isInteger(expected.revision) ||
-    (expected.revision as number) < 0
-  ) {
-    return {
-      ok: false,
-      reason: "invalid-expected-revision",
-      expectedNextRevision: null,
-    };
-  }
-  const expectedNextRevision = (expected.revision as number) + 1;
-  return nextRevision === expectedNextRevision
-    ? { ok: true, nextRevision }
-    : {
-        ok: false,
-        reason: "non-consecutive-revision",
-        expectedNextRevision,
-      };
+  return {
+    ok: false,
+    reason: "invalid-expected-revision",
+    expectedNextRevision: null,
+  };
 }
 
 export type JourneyRollbackResult =
@@ -93,7 +164,7 @@ export type JourneyRollbackResult =
 
 export type JourneyMutationConflict = {
   readonly status: "conflict";
-  readonly expectedRevision: JourneyRevisionExpectation;
+  readonly expectedRevision: JourneyStorageExpectation;
   readonly actual: JourneyDocumentReadResult;
   readonly rollback: { readonly status: "not-required" };
 };
@@ -135,6 +206,11 @@ export interface ReplaceJourneyInput {
   readonly replacement: JourneyDocumentV1;
 }
 
+export interface RecoverJourneyInput {
+  readonly expectedRaw: JourneyOpaqueRawExpectation;
+  readonly replacement: JourneyDocumentV1;
+}
+
 declare const validatedRevisionBrand: unique symbol;
 export type ValidatedCompareAndWriteJourneyInput =
   CompareAndWriteJourneyInput & {
@@ -142,6 +218,9 @@ export type ValidatedCompareAndWriteJourneyInput =
   };
 export type ValidatedReplaceJourneyInput = ReplaceJourneyInput & {
   readonly [validatedRevisionBrand]: "replace";
+};
+export type ValidatedRecoverJourneyInput = RecoverJourneyInput & {
+  readonly [validatedRevisionBrand]: "recover";
 };
 
 export type JourneyWriteInputValidationResult<T> =
@@ -172,8 +251,20 @@ export function validateReplaceJourneyInput(
     : transition;
 }
 
+export function validateRecoverJourneyInput(
+  input: RecoverJourneyInput,
+): JourneyWriteInputValidationResult<ValidatedRecoverJourneyInput> {
+  const transition = validateJourneyOpaqueRecoveryTransition(
+    input.expectedRaw,
+    input.replacement.revision,
+  );
+  return transition.ok
+    ? { ok: true, value: input as ValidatedRecoverJourneyInput }
+    : transition;
+}
+
 export interface DeleteAllJourneysInput {
-  readonly expectedRevision: JourneyRevisionExpectation;
+  readonly expectedRevision: JourneyStorageExpectation;
 }
 
 /**

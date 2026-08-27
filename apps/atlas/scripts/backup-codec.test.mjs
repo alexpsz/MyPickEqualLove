@@ -393,6 +393,90 @@ test("a restore to a present document rebases revision continuously", () => {
   assert.equal(result.applyPlan.replacement.revision, 8);
 });
 
+test("opaque recovery preserves exact raw, starts revision zero, and reports only replacement totals", () => {
+  const cases = [
+    { raw: " \n{\r\n", status: "corrupt" },
+    {
+      raw: JSON.stringify({ schemaVersion: 7 }),
+      status: "future-version",
+    },
+    {
+      raw: JSON.stringify({ schemaVersion: 1, unexpected: true }),
+      status: "invalid",
+    },
+  ];
+
+  for (const item of cases) {
+    const result = backup.dryRunAtlasBackupRestore(
+      dryRunInput({
+        current: null,
+        expectedRevision: {
+          state: "unreadable",
+          status: item.status,
+          raw: item.raw,
+        },
+      }),
+    );
+
+    assert.equal(result.status, "ready", item.status);
+    assert.equal(result.applyPlan.kind, "recover-journey-document-from-raw");
+    assert.deepEqual(result.applyPlan.expectation, {
+      state: "unreadable",
+      status: item.status,
+      raw: item.raw,
+    });
+    assert.equal(result.applyPlan.replacement.revision, 0);
+    assert.deepEqual(result.applyPlan.summary, {
+      current: { status: item.status, countsAvailable: false },
+      replacement: { journeys: 1, experienceEntries: 1 },
+    });
+    assert.equal("journeys" in result.applyPlan.summary, false);
+  }
+});
+
+test("opaque recovery rejects mismatched status, readable current, and malformed expectations", () => {
+  const corruptRaw = "{";
+  const mismatched = backup.dryRunAtlasBackupRestore(
+    dryRunInput({
+      current: null,
+      expectedRevision: {
+        state: "unreadable",
+        status: "invalid",
+        raw: corruptRaw,
+      },
+    }),
+  );
+  assert.equal(mismatched.status, "invalid");
+  assert.equal(mismatched.applyPlan, null);
+  assert.equal(mismatched.issue.path, "$.transaction.expectedRevision");
+
+  const readableCurrent = backup.dryRunAtlasBackupRestore(
+    dryRunInput({
+      expectedRevision: {
+        state: "unreadable",
+        status: "corrupt",
+        raw: corruptRaw,
+      },
+    }),
+  );
+  assert.equal(readableCurrent.status, "invalid");
+  assert.equal(readableCurrent.applyPlan, null);
+
+  const extraKey = backup.dryRunAtlasBackupRestore(
+    dryRunInput({
+      current: null,
+      expectedRevision: {
+        state: "unreadable",
+        status: "corrupt",
+        raw: corruptRaw,
+        force: true,
+      },
+    }),
+  );
+  assert.equal(extraKey.status, "invalid");
+  assert.equal(extraKey.applyPlan, null);
+});
+
 test("storage capacity is measured from the canonical replacement, not envelope overhead", () => {
   const prettyRaw = JSON.stringify(JSON.parse(encodedBackup()), null, 2);
   const raw = `${" ".repeat(1024 * 1024)}${prettyRaw}`;

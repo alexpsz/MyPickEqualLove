@@ -43,8 +43,5 @@ jobs:
       - name: Install discography test dependencies
         run: python -m pip install -r requirements-discography.txt
 
-      - name: Run deterministic quality gates
-        run: npm run verify
-
-      - name: Verify Atlas static app
-        run: npm run verify:atlas
+      - name: Run cumulative Q0 quality gate
+        run: npm run verify:q0

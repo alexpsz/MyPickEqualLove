@@ -72,7 +72,7 @@ export const MEMORY_MESSAGES: Readonly<Record<ShellLocale, MemoryMessages>> = {
       "数据保持原样。Atlas 不会用损坏、未来版本或读取失败的内容生成图片。",
     selectionTitle: "选择一条经历",
     selectionDescription:
-      "候选仅显示活动名称、组合与日期；私人 ID、memo、intent 和 revision 不会进入预览。",
+      "候选仅显示活动名称、组合、日期与参与方式；私人 ID、memo、intent 和 revision 不会进入预览。",
     candidateLabel: "本地 Journey 经历",
     candidatePlaceholder: "请选择一条经历",
     requiredTitle: "始终包含",
@@ -135,7 +135,7 @@ export const MEMORY_MESSAGES: Readonly<Record<ShellLocale, MemoryMessages>> = {
       "Your data is unchanged. Atlas will not render corrupt, future-version, or unreadable content.",
     selectionTitle: "Choose one experience",
     selectionDescription:
-      "Choices show only event, group, and date. Private IDs, memo, intent, and revision never enter the preview.",
+      "Choices show only event, group, date, and experience mode. Private IDs, memo, intent, and revision never enter the preview.",
     candidateLabel: "Local Journey experience",
     candidatePlaceholder: "Choose an experience",
     requiredTitle: "Always included",
@@ -205,7 +205,7 @@ export const MEMORY_MESSAGES: Readonly<Record<ShellLocale, MemoryMessages>> = {
       "データは変更されません。破損、将来版、読み取り失敗の内容から画像を作ることはありません。",
     selectionTitle: "体験を一つ選ぶ",
     selectionDescription:
-      "候補に表示するのはイベント、グループ、日付だけです。非公開 ID、memo、intent、revision はプレビューに入りません。",
+      "候補に表示するのはイベント、グループ、日付、体験方法だけです。非公開 ID、memo、intent、revision はプレビューに入りません。",
     candidateLabel: "ローカル Journey の体験",
     candidatePlaceholder: "体験を選択してください",
     requiredTitle: "常に含まれる項目",
@@ -276,7 +276,7 @@ export const MEMORY_MESSAGES: Readonly<Record<ShellLocale, MemoryMessages>> = {
       "데이터는 그대로 유지됩니다. 손상되었거나 미래 버전이거나 읽지 못한 내용으로 이미지를 만들지 않습니다.",
     selectionTitle: "경험 하나 선택",
     selectionDescription:
-      "후보에는 이벤트, 그룹, 날짜만 표시합니다. 비공개 ID, memo, intent, revision은 미리보기에 들어가지 않습니다.",
+      "후보에는 이벤트, 그룹, 날짜, 경험 방식을 표시합니다. 비공개 ID, memo, intent, revision은 미리보기에 들어가지 않습니다.",
     candidateLabel: "로컬 Journey 경험",
     candidatePlaceholder: "경험을 선택하세요",
     requiredTitle: "항상 포함",

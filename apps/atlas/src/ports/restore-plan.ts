@@ -1,7 +1,11 @@
 import type { JourneyDocumentV1 } from "../contracts/journey-document.js";
 import {
+  validateJourneyOpaqueRecoveryTransition,
   validateJourneyRevisionTransition,
+  type JourneyOpaqueRawExpectation,
   type JourneyRevisionExpectation,
+  type JourneyStorageExpectation,
+  type JourneyUnreadableStatus,
 } from "./journey-repository.js";
 
 export interface RestoreEntitySummary {
@@ -16,6 +20,17 @@ export interface RestoreEntitySummary {
 export interface RestoreSummary {
   readonly journeys: RestoreEntitySummary;
   readonly experienceEntries: RestoreEntitySummary;
+}
+
+export interface OpaqueRecoverySummary {
+  readonly current: {
+    readonly status: JourneyUnreadableStatus;
+    readonly countsAvailable: false;
+  };
+  readonly replacement: {
+    readonly journeys: number;
+    readonly experienceEntries: number;
+  };
 }
 
 export type RestorePlanInput =
@@ -40,7 +55,7 @@ export type RestorePlanInput =
   | {
       readonly status: "valid";
       readonly raw: string;
-      readonly expectedRevision: JourneyRevisionExpectation;
+      readonly expectedRevision: JourneyStorageExpectation;
       readonly current: JourneyDocumentV1 | null;
       readonly replacement: JourneyDocumentV1;
     };
@@ -52,8 +67,19 @@ export interface JourneyReplaceApplyPlan {
   readonly summary: RestoreSummary;
 }
 
+export interface JourneyRecoveryApplyPlan {
+  readonly kind: "recover-journey-document-from-raw";
+  readonly expectation: JourneyOpaqueRawExpectation;
+  readonly replacement: JourneyDocumentV1;
+  readonly summary: OpaqueRecoverySummary;
+}
+
+export type JourneyRestoreApplyPlan =
+  | JourneyReplaceApplyPlan
+  | JourneyRecoveryApplyPlan;
+
 export type RestorePlanResult =
-  | { readonly status: "ready"; readonly applyPlan: JourneyReplaceApplyPlan }
+  | { readonly status: "ready"; readonly applyPlan: JourneyRestoreApplyPlan }
   | {
       readonly status:
         | "cancelled"
@@ -128,13 +154,30 @@ export function createRestoreSummary(
   };
 }
 
+export function createOpaqueRecoverySummary(
+  status: JourneyUnreadableStatus,
+  replacement: JourneyDocumentV1,
+): OpaqueRecoverySummary {
+  return {
+    current: { status, countsAvailable: false },
+    replacement: {
+      journeys: replacement.journeys.length,
+      experienceEntries: replacement.journeys.reduce(
+        (count, journey) => count + journey.experienceEntries.length,
+        0,
+      ),
+    },
+  };
+}
+
 function currentMatchesExpectation(
   current: JourneyDocumentV1 | null,
-  expectedRevision: JourneyRevisionExpectation,
+  expectedRevision: JourneyStorageExpectation,
 ) {
-  return expectedRevision.state === "absent"
-    ? current === null
-    : current !== null && current.revision === expectedRevision.revision;
+  if (expectedRevision.state === "present") {
+    return current !== null && current.revision === expectedRevision.revision;
+  }
+  return current === null;
 }
 
 /** Pure planning boundary. It never reads or writes personal storage. */
@@ -151,15 +194,35 @@ export function createRestorePlan(input: RestorePlanInput): RestorePlanResult {
       reason: "current document does not match the expected revision state",
     };
   }
-  const revision = validateJourneyRevisionTransition(
-    input.expectedRevision,
-    input.replacement.revision,
-  );
+  const revision =
+    input.expectedRevision.state === "unreadable"
+      ? validateJourneyOpaqueRecoveryTransition(
+          input.expectedRevision,
+          input.replacement.revision,
+        )
+      : validateJourneyRevisionTransition(
+          input.expectedRevision,
+          input.replacement.revision,
+        );
   if (!revision.ok) {
     return {
       status: "invalid",
       applyPlan: null,
       reason: "replacement revision is not the next consecutive revision",
+    };
+  }
+  if (input.expectedRevision.state === "unreadable") {
+    return {
+      status: "ready",
+      applyPlan: {
+        kind: "recover-journey-document-from-raw",
+        expectation: input.expectedRevision,
+        replacement: input.replacement,
+        summary: createOpaqueRecoverySummary(
+          input.expectedRevision.status,
+          input.replacement,
+        ),
+      },
     };
   }
   return {

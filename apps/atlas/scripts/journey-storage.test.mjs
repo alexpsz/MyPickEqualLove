@@ -237,6 +237,23 @@ function readyReplacePlan(
   return result.applyPlan;
 }
 
+function readyRecoveryPlan(
+  raw,
+  status,
+  replacement = validDocument(0, "Recovered event"),
+) {
+  const result = restore.createRestorePlan({
+    status: "valid",
+    raw: JSON.stringify(replacement),
+    expectedRevision: { state: "unreadable", status, raw },
+    current: null,
+    replacement,
+  });
+  assert.equal(result.status, "ready");
+  assert.equal(result.applyPlan.kind, "recover-journey-document-from-raw");
+  return result.applyPlan;
+}
+
 function eligibilityInput(plan) {
   return { plan };
 }
@@ -687,6 +704,221 @@ test("P2 replace apply plan is executed through the repository transaction", asy
   const result = await repository.applyReplacePlan(plan.applyPlan);
   assert.equal(result.status, "committed");
   assert.deepEqual(result.readback.value, replacement);
+});
+
+test("opaque recovery applies only against the exact classified raw value", async () => {
+  const cases = [
+    [" \n{\r\n", "corrupt"],
+    [JSON.stringify({ schemaVersion: 8 }), "future-version"],
+    [JSON.stringify({ schemaVersion: 1, unexpected: true }), "invalid"],
+  ];
+
+  for (const [raw, status] of cases) {
+    const replacement = validDocument(0, `Recovered ${status}`);
+    const plan = readyRecoveryPlan(raw, status, replacement);
+    assert.deepEqual(plan.summary, {
+      current: { status, countsAvailable: false },
+      replacement: { journeys: 1, experienceEntries: 0 },
+    });
+    const storage = new TestStorage(raw);
+    const repository = new LocalStorageJourneyRepository(storage);
+    const result = await repository.applyReplacePlan(plan);
+    assert.equal(result.status, "committed", status);
+    assert.deepEqual(result.readback.value, replacement);
+    assert.equal(result.readback.value.revision, 0);
+    assert.equal(storage.setCalls.length, 1);
+  }
+});
+
+test("opaque recovery conflicts on any raw change and blocks fresh read failures", async () => {
+  const raw = "{";
+  const plan = readyRecoveryPlan(raw, "corrupt");
+  const changedStorage = new TestStorage(" { ");
+  const changedRepository = new LocalStorageJourneyRepository(changedStorage);
+  const conflict = await changedRepository.applyReplacePlan(plan);
+  assert.equal(conflict.status, "conflict");
+  assert.equal(changedStorage.setCalls.length, 0);
+  assert.equal(changedStorage.raw, " { ");
+
+  const failedReadStorage = new TestStorage(raw);
+  failedReadStorage.getQueue.push(namedError("SecurityError", "blocked"));
+  const failedReadRepository = new LocalStorageJourneyRepository(
+    failedReadStorage,
+  );
+  const failure = await failedReadRepository.applyReplacePlan(plan);
+  assert.equal(failure.status, "failure");
+  assert.equal(failure.stage, "read-before-write");
+  assert.equal(failedReadStorage.setCalls.length, 0);
+  assert.equal(failedReadStorage.raw, raw);
+});
+
+test("opaque recovery snapshots its exact expectation before the read await", async () => {
+  const reviewedRaw = "{";
+  const actualRaw = "[";
+  const plan = readyRecoveryPlan(reviewedRaw, "corrupt");
+  const storage = new TestStorage(actualRaw);
+  const repository = new LocalStorageJourneyRepository(storage);
+
+  const pending = repository.applyReplacePlan(plan);
+  plan.expectation.raw = actualRaw;
+  const result = await pending;
+
+  assert.equal(result.status, "conflict");
+  assert.equal(result.expectedRevision.raw, reviewedRaw);
+  assert.equal(storage.setCalls.length, 0);
+  assert.equal(storage.raw, actualRaw);
+});
+
+test("opaque recovery write failures restore the exact prior raw", async () => {
+  const raw = "  {\r\n";
+  const plan = readyRecoveryPlan(raw, "corrupt");
+  const storage = new TestStorage(raw);
+  storage.setQueue.push((target, value) => {
+    target.raw = value;
+    throw namedError("QuotaExceededError", "quota full");
+  });
+  const repository = new LocalStorageJourneyRepository(storage);
+  const result = await repository.applyReplacePlan(plan);
+
+  assert.equal(result.status, "failure");
+  assert.equal(result.stage, "write");
+  assert.deepEqual(result.rollback, { status: "restored", raw });
+  assert.equal(storage.raw, raw);
+});
+
+test("opaque recovery plan mutations are rejected before storage access", async () => {
+  const raw = "{";
+  const plan = readyRecoveryPlan(raw, "corrupt");
+  const mutated = structuredClone(plan);
+  mutated.expectation.status = "invalid";
+  const storage = new TestStorage(raw);
+  const repository = new LocalStorageJourneyRepository(storage);
+
+  const eligibility = await repository.preflightReplaceEligibility({
+    plan: mutated,
+  });
+  assert.equal(eligibility.status, "invalid");
+  const applied = await repository.applyReplacePlan(mutated);
+  assert.equal(applied.status, "invalid-plan");
+  assert.equal(storage.getCalls.length, 0);
+  assert.equal(storage.setCalls.length, 0);
+});
+
+test("opaque recovery summary mutations are rejected before storage access", async () => {
+  const raw = "{";
+  const plan = readyRecoveryPlan(raw, "corrupt");
+  const mutations = [
+    {
+      ...plan,
+      summary: {
+        ...plan.summary,
+        current: { ...plan.summary.current, status: "invalid" },
+      },
+    },
+    {
+      ...plan,
+      summary: {
+        ...plan.summary,
+        replacement: {
+          ...plan.summary.replacement,
+          journeys: plan.summary.replacement.journeys + 1,
+        },
+      },
+    },
+  ];
+
+  for (const mutated of mutations) {
+    const storage = new TestStorage(raw);
+    const repository = new LocalStorageJourneyRepository(storage);
+    const eligibility = await repository.preflightReplaceEligibility({
+      plan: mutated,
+    });
+    assert.equal(eligibility.status, "invalid");
+    const applied = await repository.applyReplacePlan(mutated);
+    assert.equal(applied.status, "invalid-plan");
+    assert.equal(storage.getCalls.length, 0);
+    assert.equal(storage.setCalls.length, 0);
+    assert.equal(storage.removeCalls.length, 0);
+  }
+});
+
+test("opaque delete uses exact raw CAS, absent readback, and rollback", async () => {
+  const raw = "{";
+  const expectedRevision = {
+    state: "unreadable",
+    status: "corrupt",
+    raw,
+  };
+  const storage = new TestStorage(raw);
+  const repository = new LocalStorageJourneyRepository(storage);
+  const deleted = await repository.deleteAll({ expectedRevision });
+  assert.equal(deleted.status, "deleted");
+  assert.equal(storage.raw, null);
+
+  const staleStorage = new TestStorage(" { ");
+  const staleRepository = new LocalStorageJourneyRepository(staleStorage);
+  const stale = await staleRepository.deleteAll({ expectedRevision });
+  assert.equal(stale.status, "conflict");
+  assert.equal(staleStorage.removeCalls.length, 0);
+
+  const rollbackStorage = new TestStorage(raw);
+  rollbackStorage.removeQueue.push((target) => {
+    target.raw = null;
+    throw namedError("SecurityError", "remove denied");
+  });
+  const rollbackRepository = new LocalStorageJourneyRepository(rollbackStorage);
+  const failure = await rollbackRepository.deleteAll({ expectedRevision });
+  assert.equal(failure.status, "failure");
+  assert.deepEqual(failure.rollback, { status: "restored", raw });
+  assert.equal(rollbackStorage.raw, raw);
+});
+
+test("delete-all rejects forged opaque expectations before storage access", async () => {
+  const validRaw = JSON.stringify(validDocument(4));
+  const forgedExpectations = [
+    { state: "unreadable", status: "valid", raw: validRaw },
+    { state: "unreadable", status: "corrupt", raw: validRaw },
+  ];
+
+  for (const expectedRevision of forgedExpectations) {
+    const storage = new TestStorage(validRaw);
+    let providerCalls = 0;
+    const repository = new LocalStorageJourneyRepository(() => {
+      providerCalls += 1;
+      return storage;
+    });
+    const result = await repository.deleteAll({ expectedRevision });
+    assert.equal(result.status, "failure");
+    assert.equal(result.stage, "write");
+    assert.match(result.error, /exact valid Journey expectation/);
+    assert.equal(providerCalls, 0);
+    assert.equal(storage.getCalls.length, 0);
+    assert.equal(storage.removeCalls.length, 0);
+    assert.equal(storage.raw, validRaw);
+  }
+});
+
+test("opaque delete snapshots its exact expectation before the read await", async () => {
+  const reviewedRaw = "{";
+  const actualRaw = "[";
+  const input = {
+    expectedRevision: {
+      state: "unreadable",
+      status: "corrupt",
+      raw: reviewedRaw,
+    },
+  };
+  const storage = new TestStorage(actualRaw);
+  const repository = new LocalStorageJourneyRepository(storage);
+
+  const pending = repository.deleteAll(input);
+  input.expectedRevision.raw = actualRaw;
+  const result = await pending;
+
+  assert.equal(result.status, "conflict");
+  assert.equal(result.expectedRevision.raw, reviewedRaw);
+  assert.equal(storage.removeCalls.length, 0);
+  assert.equal(storage.raw, actualRaw);
 });
 
 test("invalid replace apply plan is rejected before storage access", async () => {

@@ -268,6 +268,16 @@ function encodedReplacementBackup() {
   });
 }
 
+function readForDocument(document) {
+  return document === null
+    ? { status: "absent" }
+    : {
+        status: "valid",
+        raw: JSON.stringify(document),
+        value: document,
+      };
+}
+
 class WorkflowStorage {
   constructor(raw) {
     this.raw = raw;
@@ -298,23 +308,29 @@ class WorkflowStorage {
   }
 }
 
-function createRestoreHarness({ current = localJourney(), repository } = {}) {
-  let visibleDocument = current;
+function createRestoreHarness({
+  current = localJourney(),
+  currentRead = readForDocument(current),
+  repository,
+} = {}) {
+  let visibleRead = currentRead;
   let state = null;
   let focusRequests = 0;
   const committedReads = [];
   const activeRepository =
     repository ??
     new renderStorage.LocalStorageJourneyRepository(
-      new WorkflowStorage(current === null ? null : JSON.stringify(current)),
+      new WorkflowStorage(
+        currentRead.status === "absent" ? null : currentRead.raw,
+      ),
     );
   const workflow = createJourneyBackupWorkflow({
-    getCurrent: () => visibleDocument,
+    getCurrent: () => visibleRead,
     getRepository: () => activeRepository,
     now: () => "2026-08-25T04:00:00.000Z",
     onCommittedRead(read) {
       committedReads.push(read);
-      visibleDocument = read.value;
+      visibleRead = read;
     },
     onFocusRequest() {
       focusRequests += 1;
@@ -334,10 +350,13 @@ function createRestoreHarness({ current = localJourney(), repository } = {}) {
       return state;
     },
     get visibleDocument() {
-      return visibleDocument;
+      return visibleRead.status === "valid" ? visibleRead.value : null;
     },
     setVisibleDocument(next) {
-      visibleDocument = next;
+      visibleRead = readForDocument(next);
+    },
+    setVisibleRead(next) {
+      visibleRead = next;
     },
     cleanup() {
       disconnect();
@@ -1159,6 +1178,96 @@ test("eligible dry run is review-only until confirmation and successful handoff 
   assert.equal(harness.committedReads.length, 1);
 });
 
+test("opaque Journey recovery is review-only, count-honest, and raw-bound", async () => {
+  const cases = [
+    ["{", "corrupt"],
+    [JSON.stringify({ schemaVersion: 9 }), "future-version"],
+    [JSON.stringify({ schemaVersion: 1, unexpected: true }), "invalid"],
+  ];
+
+  for (const [raw, status] of cases) {
+    const storage = new WorkflowStorage(raw);
+    const repository = new renderStorage.LocalStorageJourneyRepository(storage);
+    const harness = createRestoreHarness({
+      current: null,
+      currentRead: {
+        status,
+        raw,
+        ...(status === "future-version" ? { version: 9 } : {}),
+      },
+      repository,
+    });
+
+    await harness.workflow.selectFile(backupFile(encodedReplacementBackup()));
+    assert.equal(harness.state.status, "review", status);
+    assert.equal(
+      harness.state.session.dryRun.applyPlan.kind,
+      "recover-journey-document-from-raw",
+    );
+    assert.deepEqual(harness.state.session.dryRun.applyPlan.summary, {
+      current: { status, countsAvailable: false },
+      replacement: { journeys: 1, experienceEntries: 0 },
+    });
+    assert.equal(storage.setCalls.length, 0);
+    assert.equal(await harness.workflow.apply(), "applied");
+    assert.equal(harness.visibleDocument.revision, 0);
+    assert.equal(harness.committedReads.length, 1);
+    harness.cleanup();
+  }
+
+  const raw = "{";
+  const staleStorage = new WorkflowStorage(raw);
+  const staleRepository = new renderStorage.LocalStorageJourneyRepository(
+    staleStorage,
+  );
+  const staleHarness = createRestoreHarness({
+    current: null,
+    currentRead: { status: "corrupt", raw },
+    repository: staleRepository,
+  });
+  await staleHarness.workflow.selectFile(
+    backupFile(encodedReplacementBackup()),
+  );
+  staleStorage.raw = " { ";
+  assert.equal(await staleHarness.workflow.apply(), "rejected");
+  assert.equal(staleHarness.state.feedback.status, "apply-result");
+  assert.equal(staleHarness.state.feedback.result.status, "conflict");
+  assert.equal(staleStorage.setCalls.length, 0);
+  assert.equal(staleHarness.committedReads.length, 0);
+});
+
+test("read-failed Journey state cannot stage recovery from diagnostic raw", async () => {
+  let preflightCalls = 0;
+  const repository = {
+    async read() {
+      throw new Error("read must not run");
+    },
+    async preflightReplaceEligibility() {
+      preflightCalls += 1;
+      throw new Error("preflight must not run");
+    },
+    async applyReplacePlan() {
+      throw new Error("apply must not run");
+    },
+  };
+  const harness = createRestoreHarness({
+    current: null,
+    currentRead: {
+      status: "read-failed",
+      raw: "{",
+      error: "SecurityError: blocked",
+    },
+    repository,
+  });
+  const file = backupFile(encodedReplacementBackup());
+  await harness.workflow.selectFile(file);
+  assert.equal(harness.state.status, "idle");
+  assert.equal(harness.state.feedback.status, "unexpected");
+  assert.equal(file.textCalls, 0);
+  assert.equal(preflightCalls, 0);
+  assert.equal(await harness.workflow.apply(), "ignored");
+});
+
 test("ineligible and stale restore plans fail closed without authoritative handoff", async () => {
   let applyCalls = 0;
   const ineligibleRepository = {
@@ -1322,6 +1431,9 @@ test("restore component uses authoritative P2/P1 gates and resets the real picke
   assert.match(source, /dryRunAtlasBackupRestore/);
   assert.match(source, /preflightReplaceEligibility/);
   assert.match(source, /applyReplacePlan/);
+  assert.match(source, /expectedJourneyStorage/);
+  assert.match(source, /recover-journey-document-from-raw/);
+  assert.match(source, /recoveryDryRunBody/);
   assert.match(source, /event\.currentTarget\.value = ""/);
   assert.match(source, /onRestoreCommitted/);
   assert.match(source, /const disconnect = workflow\.connect\(\)/);
@@ -1344,6 +1456,9 @@ test("restore component uses authoritative P2/P1 gates and resets the real picke
     workspace,
     /acceptAuthoritativeRead\(restoredRead, null, false\)/,
   );
+  assert.match(workspace, /isRecoverableUnreadable/);
+  assert.match(workspace, /read\.status !== "read-failed"/);
+  assert.match(workspace, /currentDeleteAllBinding/);
 });
 
 test("UI names every fail-closed state and remains keyboard/mobile bounded", async () => {
@@ -1358,6 +1473,8 @@ test("UI names every fail-closed state and remains keyboard/mobile bounded", asy
     "stageReadback",
     "rollbackRestored",
     "rollbackFailed",
+    "recoveryDryRunBody",
+    "deleteUnreadableWarning",
   ]) {
     assert.ok(english[key].length > 0, key);
   }

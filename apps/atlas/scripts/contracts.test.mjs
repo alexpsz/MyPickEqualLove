@@ -532,6 +532,77 @@ test("Journey revisions distinguish absent from revision 0 and advance once", ()
   }
 });
 
+test("opaque recovery is an exact raw-bound revision-zero exception", () => {
+  const replacement = validJourney();
+  replacement.revision = 0;
+  const expectedRaw = {
+    state: "unreadable",
+    status: "corrupt",
+    raw: " {",
+  };
+  assert.equal(
+    repository.validateRecoverJourneyInput({
+      expectedRaw,
+      replacement,
+    }).ok,
+    true,
+  );
+  assert.equal(
+    repository.validateReplaceJourneyInput({
+      expectedRevision: expectedRaw,
+      replacement,
+    }).ok,
+    false,
+    "ordinary whole replace must remain revision-bound",
+  );
+
+  for (const invalidExpectedRaw of [
+    { ...expectedRaw, extra: true },
+    { ...expectedRaw, status: "read-failed" },
+    { ...expectedRaw, raw: null },
+  ]) {
+    assert.equal(
+      repository.validateRecoverJourneyInput({
+        expectedRaw: invalidExpectedRaw,
+        replacement,
+      }).ok,
+      false,
+    );
+  }
+  const inheritedExpectedRaw = Object.assign(
+    Object.create({
+      state: "unreadable",
+      status: "corrupt",
+      raw: " {",
+    }),
+    { unrelatedA: 1, unrelatedB: 2, unrelatedC: 3 },
+  );
+  assert.equal(
+    repository.isJourneyStorageExpectation(inheritedExpectedRaw),
+    false,
+  );
+  assert.equal(
+    repository.validateRecoverJourneyInput({
+      expectedRaw: inheritedExpectedRaw,
+      replacement,
+    }).ok,
+    false,
+  );
+  const nonzero = structuredClone(replacement);
+  nonzero.revision = 1;
+  assert.deepEqual(
+    repository.validateRecoverJourneyInput({
+      expectedRaw,
+      replacement: nonzero,
+    }),
+    {
+      ok: false,
+      reason: "non-consecutive-revision",
+      expectedNextRevision: 0,
+    },
+  );
+});
+
 test("restore cancellation and every failed input produce no apply plan", () => {
   const blocked = [
     { status: "cancelled" },

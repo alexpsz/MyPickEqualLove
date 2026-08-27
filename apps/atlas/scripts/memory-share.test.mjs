@@ -493,6 +493,51 @@ test("C0 MemorySnapshot whitelist is exact and defaults to minimum disclosure", 
   );
 });
 
+test("same-event candidates are distinguished by localized mode without changing disclosure defaults", async () => {
+  const document = journeyDocument();
+  document.journeys[0].experienceEntries.push({
+    ...structuredClone(document.journeys[0].experienceEntries[0]),
+    id: "private-second-entry-id",
+    mode: "livestream",
+  });
+  const parsed = journeyContract.parseJourneyDocument(JSON.stringify(document));
+  assert.equal(parsed.status, "valid");
+  const projected = createMemorySourceCandidates(parsed);
+  assert.equal(projected.status, "ready");
+  assert.deepEqual(
+    projected.candidates.map((candidate) => candidate.mode),
+    ["in-person", "livestream"],
+  );
+
+  for (const candidate of projected.candidates) {
+    const hidden = createMemorySnapshot(
+      candidate,
+      disclosure(),
+      messages.localGroupName,
+    );
+    assert.equal(hidden.ok, true);
+    assert.equal(hidden.snapshot.selected.mode, null);
+
+    const disclosed = createMemorySnapshot(
+      candidate,
+      disclosure({ includeMode: true }),
+      messages.localGroupName,
+    );
+    assert.equal(disclosed.ok, true);
+    assert.deepEqual(disclosed.snapshot.selected.mode, {
+      consent: true,
+      value: candidate.mode,
+    });
+  }
+
+  const pageSource = await readFile(
+    join(sourceRoot, "components", "memory", "MemoryPage.tsx"),
+    "utf8",
+  );
+  assert.match(pageSource, /messages\.card\.modes\[item\.mode\]/);
+  assert.doesNotMatch(pageSource, /modeInPerson|modeLivestream|modeArchive/);
+});
+
 test("a real local custom event is projected without its local id or venue", () => {
   const document = journeyDocument();
   document.journeys[0].subject = {

@@ -13,17 +13,14 @@ import {
   encodeAtlasBackup,
   type AtlasBackupDryRunResult,
 } from "../../backup/backup-codec";
-import type {
-  JourneyDocumentReadResult,
-  JourneyDocumentV1,
-} from "../../contracts/journey-document";
-import { expectedJourneyRevision } from "../../features/journey/journey-controller";
+import type { JourneyDocumentReadResult } from "../../contracts/journey-document";
+import { expectedJourneyStorage } from "../../features/journey/journey-controller";
 import {
   journeyMessage,
   type JourneyMessageKey,
 } from "../../i18n/journey/messages";
 import type { JourneyLocale } from "../../i18n/journey/translate";
-import type { JourneyReplaceApplyPlan } from "../../ports/restore-plan";
+import type { JourneyRestoreApplyPlan } from "../../ports/restore-plan";
 import {
   createBrowserJourneyRepository,
   type JourneyReplaceEligibilityInput,
@@ -36,6 +33,10 @@ import styles from "./journey-ui.module.css";
 type ReadyDryRun = Extract<
   AtlasBackupDryRunResult,
   { readonly status: "ready" }
+>;
+type ReadyReplacePlan = Extract<
+  ReadyDryRun["applyPlan"],
+  { readonly kind: "replace-journey-document" }
 >;
 
 type RestoreFeedback =
@@ -74,7 +75,7 @@ export interface JourneyBackupWorkflowRepository {
     input: JourneyReplaceEligibilityInput,
   ): Promise<JourneyReplaceEligibilityResult>;
   applyReplacePlan(
-    plan: JourneyReplaceApplyPlan,
+    plan: JourneyRestoreApplyPlan,
   ): Promise<JourneyReplacePlanApplyResult>;
 }
 
@@ -109,7 +110,7 @@ export type JourneyBackupWorkflowState =
     };
 
 export interface JourneyBackupWorkflowDependencies {
-  readonly getCurrent: () => JourneyDocumentV1 | null;
+  readonly getCurrent: () => JourneyDocumentReadResult;
   readonly getRepository: () => JourneyBackupWorkflowRepository;
   readonly now: () => string;
   readonly onCommittedRead: RestoreCommittedHandler;
@@ -123,10 +124,12 @@ const IDLE_RESTORE_STATE: JourneyBackupWorkflowState = {
   session: null,
 };
 
-function documentBinding(document: JourneyDocumentV1 | null) {
-  return document === null
-    ? "absent"
-    : `${document.revision}:${document.updatedAt}:${JSON.stringify(document)}`;
+function documentBinding(read: JourneyDocumentReadResult) {
+  if (read.status === "absent") return "absent";
+  if (read.status === "read-failed") {
+    return `read-failed:${read.raw ?? ""}:${read.error}`;
+  }
+  return `${read.status}:${read.raw}`;
 }
 
 function describeError(error: unknown) {
@@ -237,8 +240,20 @@ export function createJourneyBackupWorkflow(
       return;
     }
 
-    const current = dependencies.getCurrent();
-    const binding = documentBinding(current);
+    const currentRead = dependencies.getCurrent();
+    const binding = documentBinding(currentRead);
+    const expectedRevision = expectedJourneyStorage(currentRead);
+    if (expectedRevision === null) {
+      settle(
+        {
+          status: "unexpected",
+          error: "Journey storage must be read successfully before recovery",
+        },
+        true,
+        connection,
+      );
+      return;
+    }
     try {
       const raw = await file.text();
       if (
@@ -253,10 +268,10 @@ export function createJourneyBackupWorkflow(
           raw,
           limits: { maximumBytes: ATLAS_BACKUP_MAX_BYTES },
         },
-        current,
+        current: currentRead.status === "valid" ? currentRead.value : null,
         now: dependencies.now(),
         transaction: {
-          expectedRevision: expectedJourneyRevision(current),
+          expectedRevision,
           availableBytes: ATLAS_BACKUP_MAX_BYTES,
         },
       });
@@ -396,7 +411,7 @@ function createJourneyBackupWorkflowBinding({
   onRestoreCommitted: initialOnRestoreCommitted,
   onStateChange,
 }: {
-  readonly current: JourneyDocumentV1 | null;
+  readonly current: JourneyDocumentReadResult;
   readonly onRestoreCommitted: RestoreCommittedHandler;
   readonly onStateChange: (state: JourneyBackupWorkflowState) => void;
 }) {
@@ -423,7 +438,7 @@ function createJourneyBackupWorkflowBinding({
       onRestoreCommitted: nextOnRestoreCommitted,
       onFocusRequest: nextOnFocusRequest,
     }: {
-      readonly current: JourneyDocumentV1 | null;
+      readonly current: JourneyDocumentReadResult;
       readonly onRestoreCommitted: RestoreCommittedHandler;
       readonly onFocusRequest: () => void;
     }) {
@@ -567,7 +582,7 @@ function SummaryCard({
 }: {
   readonly locale: JourneyLocale;
   readonly title: JourneyMessageKey;
-  readonly summary: ReadyDryRun["applyPlan"]["summary"]["journeys"];
+  readonly summary: ReadyReplacePlan["summary"]["journeys"];
 }) {
   const rows = [
     ["before", summary.before],
@@ -592,6 +607,28 @@ function SummaryCard({
   );
 }
 
+function RecoverySummaryCard({
+  locale,
+  title,
+  count,
+}: {
+  readonly locale: JourneyLocale;
+  readonly title: JourneyMessageKey;
+  readonly count: number;
+}) {
+  return (
+    <section className={styles.summaryCard}>
+      <h3>{journeyMessage(locale, title)}</h3>
+      <dl>
+        <div className={styles.summaryRow}>
+          <dt>{journeyMessage(locale, "after")}</dt>
+          <dd>{count}</dd>
+        </div>
+      </dl>
+    </section>
+  );
+}
+
 export function JourneyBackupPanel({
   locale,
   current,
@@ -599,7 +636,7 @@ export function JourneyBackupPanel({
   onRestoreCommitted,
 }: {
   readonly locale: JourneyLocale;
-  readonly current: JourneyDocumentV1 | null;
+  readonly current: JourneyDocumentReadResult;
   readonly busy: boolean;
   readonly onRestoreCommitted: RestoreCommittedHandler;
 }) {
@@ -658,14 +695,14 @@ export function JourneyBackupPanel({
 
   function handleExport() {
     setBackupFeedback(null);
-    if (current === null) {
+    if (current.status !== "valid") {
       setBackupFeedback({ status: "empty" });
       return;
     }
     try {
       const exportedAt = new Date().toISOString();
       downloadBackup(
-        encodeAtlasBackup({ exportedAt, journey: current }),
+        encodeAtlasBackup({ exportedAt, journey: current.value }),
         exportedAt,
       );
       setBackupFeedback({ status: "exported" });
@@ -701,7 +738,7 @@ export function JourneyBackupPanel({
       <div className={styles.actionRow}>
         <button
           className={styles.buttonSecondary}
-          disabled={busy || current === null}
+          disabled={busy || current.status !== "valid"}
           onClick={handleExport}
           type="button"
         >
@@ -756,20 +793,55 @@ export function JourneyBackupPanel({
           <h3 id="journey-restore-review-title">
             {journeyMessage(locale, "dryRunTitle")}
           </h3>
-          <p>{journeyMessage(locale, "dryRunBody")}</p>
+          <p>
+            {journeyMessage(
+              locale,
+              restoreState.session.dryRun.applyPlan.kind ===
+                "recover-journey-document-from-raw"
+                ? "recoveryDryRunBody"
+                : "dryRunBody",
+            )}
+          </p>
           <div className={styles.summaryGrid}>
-            <SummaryCard
-              locale={locale}
-              summary={restoreState.session.dryRun.applyPlan.summary.journeys}
-              title="journeys"
-            />
-            <SummaryCard
-              locale={locale}
-              summary={
-                restoreState.session.dryRun.applyPlan.summary.experienceEntries
-              }
-              title="experiences"
-            />
+            {restoreState.session.dryRun.applyPlan.kind ===
+            "recover-journey-document-from-raw" ? (
+              <>
+                <RecoverySummaryCard
+                  count={
+                    restoreState.session.dryRun.applyPlan.summary.replacement
+                      .journeys
+                  }
+                  locale={locale}
+                  title="journeys"
+                />
+                <RecoverySummaryCard
+                  count={
+                    restoreState.session.dryRun.applyPlan.summary.replacement
+                      .experienceEntries
+                  }
+                  locale={locale}
+                  title="experiences"
+                />
+              </>
+            ) : (
+              <>
+                <SummaryCard
+                  locale={locale}
+                  summary={
+                    restoreState.session.dryRun.applyPlan.summary.journeys
+                  }
+                  title="journeys"
+                />
+                <SummaryCard
+                  locale={locale}
+                  summary={
+                    restoreState.session.dryRun.applyPlan.summary
+                      .experienceEntries
+                  }
+                  title="experiences"
+                />
+              </>
+            )}
           </div>
           <TextNotice
             body="restoreEligibilityBody"

@@ -1,11 +1,15 @@
 import {
   parseJourneyDocumentValue,
   type ExperienceMode,
+  type JourneyDocumentReadResult,
   type JourneyDocumentV1,
   type JourneyIntent,
   type JourneyRecord,
 } from "../../contracts/journey-document";
-import type { JourneyRevisionExpectation } from "../../ports/journey-repository";
+import type {
+  JourneyRevisionExpectation,
+  JourneyStorageExpectation,
+} from "../../ports/journey-repository";
 
 export interface LocalCustomJourneyDraft {
   readonly journeyId: string;
@@ -191,6 +195,23 @@ export function expectedJourneyRevision(
   return current === null
     ? { state: "absent" }
     : { state: "present", revision: current.revision };
+}
+
+export function expectedJourneyStorage(
+  read: JourneyDocumentReadResult,
+): JourneyStorageExpectation | null {
+  if (read.status === "absent") return { state: "absent" };
+  if (read.status === "valid") {
+    return { state: "present", revision: read.value.revision };
+  }
+  if (
+    read.status === "corrupt" ||
+    read.status === "future-version" ||
+    read.status === "invalid"
+  ) {
+    return { state: "unreadable", status: read.status, raw: read.raw };
+  }
+  return null;
 }
 
 export function createLocalCustomJourney(
