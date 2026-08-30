@@ -3,13 +3,13 @@
   "siteId": "not-equal-me",
   "scope": "atlas-public-seed-v1",
   "sourcePath": "src/projects/not-equal-me/live-experiences.json",
-  "sourceSha256": "3a534040047c388fa522d7ce8c2fda06cee3fae1793bd100f53e3f5f068f2ebc",
+  "sourceSha256": "b99f7764e2429cbeb3e8c2d57d7248b41df9884c2c4e3a35d3cb05846589f7f6",
   "songsPath": "src/projects/not-equal-me/songs.json",
   "songsSha256": "f9b706462fd0f1fcfc700f4d1b9f6cc3fe3c6e303e39d50e6b9682603e582d82",
   "atlasPublicSeedApproval": "approved",
   "approvalAuthorityId": "authority:atlas-public-seed-review",
   "approverId": "principal:atlas-product-owner",
-  "approvedAt": "2026-08-27T12:29:23.950Z",
+  "approvedAt": "2026-08-30T11:42:54.086Z",
   "maintenanceOwnerId": "principal:mypick-data-maintainer",
   "withdrawalState": "active"
 }

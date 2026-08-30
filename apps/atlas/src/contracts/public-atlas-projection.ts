@@ -17,6 +17,7 @@ import {
   expectIanaTimezone,
   expectInteger,
   expectIsoDate,
+  expectIsoTimestamp,
   expectLiteral,
   expectPattern,
   expectRecord,
@@ -66,6 +67,7 @@ export interface ProjectionPerformance {
   readonly displayName: string;
   readonly venue: ProjectionVenueSnapshot;
   readonly date: string;
+  readonly startAt?: string;
   readonly timezone: string;
   readonly lifecycle: AtlasLifecycle;
   readonly setlist: readonly ProjectionSetlistEntry[];
@@ -288,20 +290,25 @@ function parsePerformance(
   eventTimezone: string,
 ): ProjectionPerformance {
   const record = expectRecord(value, path);
-  expectExactKeys(record, path, [
-    "id",
-    "displayName",
-    "venue",
-    "date",
-    "timezone",
-    "lifecycle",
-    "setlist",
-    "verificationStatus",
-    "sourceUrls",
-    "coverage",
-    "excluded",
-    "unresolved",
-  ]);
+  expectExactKeys(
+    record,
+    path,
+    [
+      "id",
+      "displayName",
+      "venue",
+      "date",
+      "timezone",
+      "lifecycle",
+      "setlist",
+      "verificationStatus",
+      "sourceUrls",
+      "coverage",
+      "excluded",
+      "unresolved",
+    ],
+    ["startAt"],
+  );
   const parsedId = requireNamespacedEntityId(
     record.id,
     `${path}.id`,
@@ -327,6 +334,27 @@ function parsePerformance(
       "performance timezone must match its parent Event timezone",
     );
   }
+  const startAt =
+    record.startAt === undefined
+      ? undefined
+      : expectIsoTimestamp(record.startAt, `${path}.startAt`);
+  if (startAt !== undefined) {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: eventTimezone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(Date.parse(startAt));
+    const values = Object.fromEntries(
+      parts.map(({ type, value }) => [type, value]),
+    );
+    if (`${values.year}-${values.month}-${values.day}` !== date) {
+      throw new ContractValidationError(
+        `${path}.startAt`,
+        "local date in parent Event timezone must match performance date",
+      );
+    }
+  }
   return {
     id: parsedId.id,
     displayName: expectString(record.displayName, `${path}.displayName`, {
@@ -334,6 +362,7 @@ function parsePerformance(
     }),
     venue: parseVenue(record.venue, `${path}.venue`),
     date,
+    ...(startAt === undefined ? {} : { startAt }),
     timezone,
     lifecycle: expectLiteral(record.lifecycle, `${path}.lifecycle`, LIFECYCLES),
     setlist: parseSetlist(

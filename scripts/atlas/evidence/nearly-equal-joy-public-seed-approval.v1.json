@@ -3,13 +3,13 @@
   "siteId": "nearly-equal-joy",
   "scope": "atlas-public-seed-v1",
   "sourcePath": "src/projects/nearly-equal-joy/live-experiences.json",
-  "sourceSha256": "35d1fb542b145af438ce7ec5a1b325a377601251da54d6c426deea8e99405ce2",
+  "sourceSha256": "fe38418c78d3da0b07e3fd053f9b8c44efddc98657bf4029f09e43a7926ea464",
   "songsPath": "src/projects/nearly-equal-joy/songs.json",
   "songsSha256": "737b6d68d3fb494304a261da55fda0711dd1105e1ef67387394271ace6a7efba",
   "atlasPublicSeedApproval": "approved",
   "approvalAuthorityId": "authority:atlas-public-seed-review",
   "approverId": "principal:atlas-product-owner",
-  "approvedAt": "2026-08-27T12:29:23.950Z",
+  "approvedAt": "2026-08-30T11:42:54.086Z",
   "maintenanceOwnerId": "principal:mypick-data-maintainer",
   "withdrawalState": "active"
 }

@@ -98,6 +98,7 @@
         "id": "day",
         "label": "昼公演",
         "date": "2026-03-13",
+        "startAt": "2026-03-13T03:30:00.000Z",
         "verificationStatus": "verified",
         "sourceUrls": [
           "https://prtimes.jp/main/html/rd/p/000004808.000013546.html",
@@ -219,6 +220,7 @@
         "id": "night",
         "label": "夜公演",
         "date": "2026-03-13",
+        "startAt": "2026-03-13T09:00:00.000Z",
         "verificationStatus": "verified",
         "sourceUrls": [
           "https://prtimes.jp/main/html/rd/p/000004808.000013546.html",

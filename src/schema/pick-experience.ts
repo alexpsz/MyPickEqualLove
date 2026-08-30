@@ -72,6 +72,7 @@ export interface LivePerformance {
   id: string;
   label: string;
   date: string;
+  startAt?: string;
   setlist: LiveSetlistEntry[];
   sourceUrls: string[];
   sourceNote?: string;

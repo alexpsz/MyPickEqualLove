@@ -221,6 +221,19 @@ function ianaTimezone(value, path) {
   return parsed;
 }
 
+function localIsoDateAtTimeZone(timestamp, timezone) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(Date.parse(timestamp));
+  const values = Object.fromEntries(
+    parts.map(({ type, value }) => [type, value]),
+  );
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
 function uniqueStrings(value, path, parse = string) {
   const parsed = array(value, path).map((item, index) =>
     parse(item, `${path}[${index}]`),
@@ -873,6 +886,7 @@ function validateLiveSource(value, seed, songs, auditDate, authorityContract) {
     if (seed.decision === "GO" && event.publicAtlasEvidence === undefined) {
       fail(`${eventPath}.publicAtlasEvidence`, "required for a GO seed");
     }
+    let eventTimezone;
     if (event.publicAtlasEvidence !== undefined) {
       const evidence = validatePublicAtlasEvidence(
         event.publicAtlasEvidence,
@@ -880,6 +894,7 @@ function validateLiveSource(value, seed, songs, auditDate, authorityContract) {
         auditDate,
         authorityContract,
       );
+      eventTimezone = evidence.timezone;
       ownerNames.add(evidence.maintenanceOwnerId);
     }
 
@@ -902,7 +917,7 @@ function validateLiveSource(value, seed, songs, auditDate, authorityContract) {
           "sourceNote",
           "setlist",
         ],
-        ["provenance"],
+        ["provenance", "startAt"],
       );
       const performanceId = string(performance.id, `${performancePath}.id`);
       if (!LOCAL_ID_PATTERN.test(performanceId))
@@ -920,6 +935,32 @@ function validateLiveSource(value, seed, songs, auditDate, authorityContract) {
           `${performancePath}.date`,
           "must be an exact member of parent eventEvidence.dates",
         );
+      }
+      if (performance.startAt !== undefined) {
+        const startAt = utcTimestamp(
+          performance.startAt,
+          `${performancePath}.startAt`,
+        );
+        if (new Date(Date.parse(startAt)).toISOString() !== startAt) {
+          fail(
+            `${performancePath}.startAt`,
+            "must be a canonical UTC timestamp with milliseconds",
+          );
+        }
+        if (eventTimezone === undefined) {
+          fail(
+            `${performancePath}.startAt`,
+            "requires parent publicAtlasEvidence timezone",
+          );
+        }
+        if (
+          localIsoDateAtTimeZone(startAt, eventTimezone) !== performanceDate
+        ) {
+          fail(
+            `${performancePath}.startAt`,
+            "local date in parent timezone must match performance date",
+          );
+        }
       }
       enumValue(
         performance.verificationStatus,
@@ -1517,6 +1558,7 @@ function protectedLiveSourceProjection(document, path) {
       (performance, performanceIndex) => {
         const performancePath = `${eventPath}.performances[${performanceIndex}]`;
         const performanceItem = record(performance, performancePath);
+        delete performanceItem.startAt;
         if (performanceItem.provenance === undefined) return;
         const provenance = record(
           performanceItem.provenance,
@@ -2244,6 +2286,9 @@ export async function buildProjection(audit) {
           displayName: performance.label,
           venue: { displayName: event.venue },
           date: performance.date,
+          ...(performance.startAt === undefined
+            ? {}
+            : { startAt: performance.startAt }),
           timezone: publicEvidence.timezone,
           lifecycle: publicEvidence.lifecycle,
           setlist: performance.setlist.map((entry) => ({

@@ -95,6 +95,7 @@
         "id": "day1",
         "label": "DAY 1",
         "date": "2026-06-20",
+        "startAt": "2026-06-20T08:30:00.000Z",
         "verificationStatus": "verified",
         "sourceUrls": [
           "https://x.com/equal_love_12/status/2068677833850057105?s=46",
@@ -148,6 +149,7 @@
         "id": "day2",
         "label": "DAY 2",
         "date": "2026-06-21",
+        "startAt": "2026-06-21T08:30:00.000Z",
         "verificationStatus": "verified",
         "sourceUrls": [
           "https://x.com/equal_love_12/status/2068677833850057105?s=46",

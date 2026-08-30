@@ -98,6 +98,7 @@
         "id": "day",
         "label": "昼公演",
         "date": "2026-02-23",
+        "startAt": "2026-02-23T03:30:00.000Z",
         "verificationStatus": "verified",
         "sourceUrls": [
           "https://news.kingrecords.co.jp/2026/02/51176/",
@@ -195,6 +196,7 @@
         "id": "night",
         "label": "夜公演",
         "date": "2026-02-23",
+        "startAt": "2026-02-23T09:30:00.000Z",
         "verificationStatus": "verified",
         "sourceUrls": [
           "https://news.kingrecords.co.jp/2026/02/51176/",

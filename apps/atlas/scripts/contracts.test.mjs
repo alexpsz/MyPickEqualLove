@@ -126,6 +126,7 @@ function validProjection() {
               displayName: "Day",
               venue: { displayName: "Venue" },
               date: "2026-06-20",
+              startAt: "2026-06-20T08:30:00.000Z",
               timezone: "Asia/Tokyo",
               lifecycle: "completed",
               setlist: [
@@ -374,6 +375,8 @@ test("Projection enforces parent Event date and timezone on performances", () =>
 
   const endBoundary = validProjection();
   endBoundary.groups[0].events[0].performances[0].date = "2026-06-21";
+  endBoundary.groups[0].events[0].performances[0].startAt =
+    "2026-06-21T08:30:00.000Z";
   assert.equal(
     projection.parsePublicAtlasProjection(JSON.stringify(endBoundary)).status,
     "valid",
@@ -394,6 +397,51 @@ test("Projection enforces parent Event date and timezone on performances", () =>
   );
   assert.equal(timezoneResult.status, "invalid");
   assert.match(timezoneResult.issue.path, /\.timezone$/);
+});
+
+test("Projection accepts only trusted canonical performance start times", () => {
+  const canonical = validProjection();
+  const canonicalResult = projection.parsePublicAtlasProjection(
+    JSON.stringify(canonical),
+  );
+  assert.equal(canonicalResult.status, "valid");
+  assert.equal(
+    canonicalResult.value.groups[0].events[0].performances[0].startAt,
+    "2026-06-20T08:30:00.000Z",
+  );
+
+  const missing = validProjection();
+  delete missing.groups[0].events[0].performances[0].startAt;
+  const missingResult = projection.parsePublicAtlasProjection(
+    JSON.stringify(missing),
+  );
+  assert.equal(missingResult.status, "valid");
+  assert.equal(
+    Object.hasOwn(
+      missingResult.value.groups[0].events[0].performances[0],
+      "startAt",
+    ),
+    false,
+  );
+
+  for (const startAt of ["2026-06-20T08:30:00Z", 0]) {
+    const invalid = validProjection();
+    invalid.groups[0].events[0].performances[0].startAt = startAt;
+    const result = projection.parsePublicAtlasProjection(
+      JSON.stringify(invalid),
+    );
+    assert.equal(result.status, "invalid");
+    assert.match(result.issue.path, /\.startAt$/);
+  }
+
+  const localDateMismatch = validProjection();
+  localDateMismatch.groups[0].events[0].performances[0].startAt =
+    "2026-06-19T14:30:00.000Z";
+  const mismatchResult = projection.parsePublicAtlasProjection(
+    JSON.stringify(localDateMismatch),
+  );
+  assert.equal(mismatchResult.status, "invalid");
+  assert.match(mismatchResult.issue.path, /\.startAt$/);
 });
 
 test("Journey read states are distinct and preserve failing raw strings", async () => {
