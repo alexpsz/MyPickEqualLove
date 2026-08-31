@@ -3879,17 +3879,17 @@
       "ja": "=LOVE",
       "romaji": "=LOVE"
     },
-    "releaseId": "2026-08-04-koi-hajimemashita-single",
+    "releaseId": "2026-08-26-koi-hajimemashita-cd-blu-ray-type-a",
     "releaseTitle": {
-      "ja": "恋、はじめました。 - Single",
-      "romaji": "koi , hajimemashita . - Single"
+      "ja": "恋、はじめました。[CD+Blu-ray/Type A]",
+      "romaji": "koi , hajimemashita . [CD+Blu-ray/Type A ]"
     },
-    "releaseType": "digital",
-    "releaseDate": "2026-08-04",
+    "releaseType": "single",
+    "releaseDate": "2026-08-26",
     "trackNo": 1,
     "trackType": "title",
     "coverUrl": "/covers/equal-love/koi-hajimemashita.jpg",
-    "coverSourceUrl": "https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/4c/e8/31/4ce831bc-d6ef-bd1d-ecb4-1768b26bffe3/4547366839838.jpg/1200x1200bb.jpg",
+    "coverSourceUrl": "https://aop-emtg-jp.s3.amazonaws.com/prod/public/equallove/contents/information/1d404703e7f88ff29a22d8a24666caed.jpg",
     "memberIds": [
       "otani-emiri",
       "oba-hana",
@@ -3902,8 +3902,8 @@
       "morohashi-sana",
       "yamamoto-anna"
     ],
-    "tags": ["2026", "digital", "title"],
-    "officialUrl": "https://music.apple.com/jp/album/%E6%81%8B-%E3%81%AF%E3%81%98%E3%82%81%E3%81%BE%E3%81%97%E3%81%9F-single/6792630528",
+    "tags": ["2026", "single", "title"],
+    "officialUrl": "https://equal-love.jp/news/detail/11815",
     "credits": {
       "lyricist": {
         "ja": "指原莉乃",
