@@ -20,8 +20,12 @@ source bytes, pinned C0 contract bytes, strict source shape, counts, dates,
 timezone/lifecycle metadata, and song references all pass in memory. The
 receipt paths are fixed allowlists. Its `sourceCommit` must be a real Git commit,
 must be an ancestor of the audited `HEAD`,
-and every audited source, songs, C0 contract, and approval-evidence blob at that
-commit must be byte-identical to both the receipt hash and current file. Reads
+and every audited Event source, C0 contract, and approval-evidence blob at that
+commit must be byte-identical to both the receipt hash and current file. Each
+song catalog is instead bound through a canonical projection of only the
+currently referenced `{ id, titleJa }` records, checked against both the current
+file and the receipt commit. Unreferenced songs, catalog order, and unconsumed
+release metadata therefore do not require a new Atlas approval. Reads
 validate every existing component from the repository root through each fixed
 receipt, source, songs, contract, or approval-evidence file with `lstat` and its
 expected `realpath`. A symlink, junction, or redirected component is rejected
@@ -30,7 +34,8 @@ before reading even when it targets a same-byte file inside the repository.
 All fixed inputs are captured once. The receipt source commit must exist and be
 an ancestor of readable `HEAD`; every receipt binding must pass physical-path,
 hash, and Git-blob checks; and every fixed JSON input must parse before any
-repository TypeScript is transpiled or imported. The C0 baseline, publication
+repository TypeScript is transpiled or imported. Every referenced-song
+projection must also match before contract execution. The C0 baseline, publication
 authority, and C0 projection parser consume only this verified in-memory byte
 snapshot, and no loader performs a second filesystem read.
 
@@ -51,8 +56,8 @@ preserving array order and every protected fact. Only the exact
 `Event.publicAtlasEvidence` and
 `Performance.provenance.excludedEntries` evidence paths are removed from both
 sides. Event/Performance identity, labels, dates, venue, membership/order,
-setlist order/song IDs, and all fields and catalog order of referenced song
-records remain protected; a first-difference path is reported on drift.
+setlist order/song IDs, and the ID/Japanese title of every referenced song
+remain protected; a first-difference path is reported on drift.
 CI integration therefore needs complete Git history (`checkout` with
 `fetch-depth: 0`, or an explicit fetch of every receipt commit); this E1 package
 does not change the shared workflow.
@@ -65,17 +70,18 @@ commands accept only the exact repository-relative generated-artifact path; an
 arbitrary caller path is never read, removed, or written.
 
 The current receipt is GO for all three bounded seeds. Each approval is bound
-to an exact source blob, song catalog, configured authority, maintenance owner,
-and active withdrawal state. Any later HOLD, withdrawal, staleness, or source
-drift invalidates the generated projection.
+to an exact source blob, the minimal referenced-song projection, configured
+authority, maintenance owner, and active withdrawal state. Any later HOLD,
+withdrawal, staleness, source drift, or referenced-song ID/title drift
+invalidates the generated projection.
 
 ## Deterministic revisions and hash
 
 `sourceRevision` is `sha256:` plus the SHA-256 of canonical UTF-8 JSON for the
 versioned receipt input: source commit, historical baseline, ordered C0 contract
-hashes, and ordered seed decisions/source hashes/song hashes. Canonical JSON
-sorts object keys recursively and preserves array order. It contains no clock
-value.
+hashes, and ordered seed decisions/source hashes/referenced-song projection
+hashes. Canonical JSON sorts object keys recursively and preserves array order.
+It contains no clock value.
 
 `artifactHash` is `sha256:` plus the SHA-256 of the projection's canonical UTF-8
 payload after removing `artifactHash`. The stored artifact is the recursively
@@ -110,7 +116,8 @@ A receipt GO must cite exact, resolving `repoPath#JSON-pointer` references for
 every gate. Source-use approval can only point to the seed's fixed independent
 approval record under `scripts/atlas/evidence/`; that versioned record binds the
 fixed site and `atlas-public-seed-v1` scope, exact source and songs paths and
-SHA-256 hashes, `approvalAuthorityId`, explicit `approverId`,
+the source SHA-256 plus referenced-song projection SHA-256,
+`approvalAuthorityId`, explicit `approverId`,
 `maintenanceOwnerId`, approval time, and active/withdrawn status. The approver
 must be a member of the coordinator-owned
 `ATLAS_PUBLICATION_AUTHORITY_CONTRACT`, as decided only by its exported
@@ -119,9 +126,10 @@ owner. The authority contract itself is a fixed receipt/hash/Git-blob binding,
 and neither receipt nor approval can supply a substitute roster. The production
 roster contains only the explicitly authorized Atlas product-owner role. An
 approval is also included in the receipt evidence-file hashes and source Git commit, so an old
-approval cannot authorize revised source bytes. Adding real approval or
-metadata requires a reviewed repository evidence change; the projector never
-infers permission from route publication or verification status.
+approval cannot authorize revised source bytes or a changed referenced-song
+projection. Adding real approval or public-source metadata requires a reviewed
+repository evidence change; the projector never infers permission from route
+publication or verification status.
 
 Projection shape validation is performed by the actual pinned C0
 `parsePublicAtlasProjection` implementation, loaded with the repository's

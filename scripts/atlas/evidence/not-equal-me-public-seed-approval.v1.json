@@ -5,11 +5,11 @@
   "sourcePath": "src/projects/not-equal-me/live-experiences.json",
   "sourceSha256": "b99f7764e2429cbeb3e8c2d57d7248b41df9884c2c4e3a35d3cb05846589f7f6",
   "songsPath": "src/projects/not-equal-me/songs.json",
-  "songsSha256": "f9b706462fd0f1fcfc700f4d1b9f6cc3fe3c6e303e39d50e6b9682603e582d82",
+  "referencedSongProjectionSha256": "067b3e2c32f03f61d47453861837c675d2215f75e309d77f870b935aae3eecf8",
   "atlasPublicSeedApproval": "approved",
   "approvalAuthorityId": "authority:atlas-public-seed-review",
   "approverId": "principal:atlas-product-owner",
-  "approvedAt": "2026-08-30T11:42:54.086Z",
+  "approvedAt": "2026-08-31T16:13:42.873Z",
   "maintenanceOwnerId": "principal:mypick-data-maintainer",
   "withdrawalState": "active"
 }

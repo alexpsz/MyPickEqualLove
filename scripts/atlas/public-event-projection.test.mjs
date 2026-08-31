@@ -30,6 +30,7 @@ import {
   canonicalUtf8,
   checkProjection,
   generateProjection,
+  referencedSongProjectionSha256,
   safeRepositoryPath,
   sha256,
 } from "./public-event-projection.mjs";
@@ -80,6 +81,16 @@ async function copyRepositoryFile(root, repositoryPath) {
   await copyFile(resolve(DEFAULT_REPOSITORY_ROOT, repositoryPath), target);
 }
 
+async function referencedSongHash(root, fixed) {
+  return referencedSongProjectionSha256({
+    siteId: fixed.siteId,
+    sourceDocument: await readJson(resolve(root, fixed.sourcePath)),
+    songsDocument: await readJson(resolve(root, fixed.songsPath)),
+    sourcePath: fixed.sourcePath,
+    songsPath: fixed.songsPath,
+  });
+}
+
 async function git(root, args) {
   return execFileAsync("git", ["-c", "core.excludesFile=", ...args], {
     cwd: root,
@@ -88,7 +99,7 @@ async function git(root, args) {
   });
 }
 
-function approvalFor(fixed, sourceSha256, songsSha256) {
+function approvalFor(fixed, sourceSha256, referencedSongProjectionSha256Value) {
   return {
     schemaVersion: 1,
     siteId: fixed.siteId,
@@ -96,7 +107,7 @@ function approvalFor(fixed, sourceSha256, songsSha256) {
     sourcePath: fixed.sourcePath,
     sourceSha256,
     songsPath: fixed.songsPath,
-    songsSha256,
+    referencedSongProjectionSha256: referencedSongProjectionSha256Value,
     atlasPublicSeedApproval: "approved",
     approvalAuthorityId: FIXTURE_AUTHORITY_ID,
     approverId: FIXTURE_APPROVER_ID,
@@ -284,7 +295,10 @@ function gateRefs(fixed, events, gateName) {
   return refs;
 }
 
-async function updateReceiptHashes(fixture) {
+async function updateReceiptHashes(
+  fixture,
+  { skipReferencedSongProjectionSiteIds = new Set() } = {},
+) {
   fixture.receipt.sourceCommit = (
     await git(fixture.root, ["rev-parse", "HEAD"])
   ).stdout.trim();
@@ -295,12 +309,17 @@ async function updateReceiptHashes(fixture) {
     entry.sha256 = sha256(await readFile(resolve(fixture.root, entry.path)));
   }
   for (const seed of fixture.receipt.seeds) {
+    const fixed = FIXED_SEEDS.find(({ siteId }) => siteId === seed.siteId);
     seed.sourceSha256 = sha256(
       await readFile(resolve(fixture.root, seed.sourcePath)),
     );
-    seed.songsSha256 = sha256(
-      await readFile(resolve(fixture.root, seed.songsPath)),
-    );
+    delete seed.songsSha256;
+    if (!skipReferencedSongProjectionSiteIds.has(seed.siteId)) {
+      seed.referencedSongProjectionSha256 = await referencedSongHash(
+        fixture.root,
+        fixed,
+      );
+    }
   }
   await writeJson(fixture.receiptPath, fixture.receipt);
 }
@@ -314,8 +333,10 @@ async function syncApprovalBindings(fixture) {
       await readFile(resolve(fixture.root, fixed.sourcePath)),
     );
     approval.songsPath = fixed.songsPath;
-    approval.songsSha256 = sha256(
-      await readFile(resolve(fixture.root, fixed.songsPath)),
+    delete approval.songsSha256;
+    approval.referencedSongProjectionSha256 = await referencedSongHash(
+      fixture.root,
+      fixed,
     );
     approval.scope = "atlas-public-seed-v1";
     await writeJson(approvalPath, approval);
@@ -393,10 +414,10 @@ async function createGoFixture(
     const sourceSha256 = sha256(
       await readFile(resolve(root, fixed.sourcePath)),
     );
-    const songsSha256 = sha256(await readFile(resolve(root, fixed.songsPath)));
+    const referencedSongsSha256 = await referencedSongHash(root, fixed);
     await writeJson(
       resolve(root, fixed.approvalPath),
-      approvalFor(fixed, sourceSha256, songsSha256),
+      approvalFor(fixed, sourceSha256, referencedSongsSha256),
     );
     receipt.evidenceFiles.push({
       path: fixed.approvalPath,
@@ -548,6 +569,14 @@ test("receipt paths are fixed ordered allowlists and traversal is platform-indep
     await writeJson(fixture.receiptPath, fixture.receipt);
     await assert.rejects(auditWorkspace(options(fixture)), /fixed|allowlist/);
   }
+
+  const legacy = await createGoFixture(t);
+  legacy.receipt.seeds[0].songsSha256 = "0".repeat(64);
+  await writeJson(legacy.receiptPath, legacy.receipt);
+  await assert.rejects(
+    auditWorkspace(options(legacy)),
+    /expected exact keys.*songsSha256/,
+  );
 });
 
 test("a true fixture Git commit and real approval records generate C0-valid deterministic coverage", async (t) => {
@@ -578,6 +607,54 @@ test("a true fixture Git commit and real approval records generate C0-valid dete
   assert.equal((await generateProjection(options(fixture))).ok, true);
   assert.deepEqual(await readFile(fixture.artifactPath), first);
   assert.equal((await checkProjection(options(fixture))).ok, true);
+});
+
+test("unconsumed catalog changes do not require a new Atlas public-seed approval", async (t) => {
+  const fixture = await createGoFixture(t);
+  const fixed = FIXED_SEEDS[0];
+  const beforeAudit = await auditWorkspace(options(fixture));
+  assert.equal(beforeAudit.ok, true, beforeAudit.errors.join("\n"));
+  assert.equal((await generateProjection(options(fixture))).ok, true);
+  const beforeArtifact = await readFile(fixture.artifactPath);
+
+  const events = await readJson(resolve(fixture.root, fixed.sourcePath));
+  const referencedIds = new Set(
+    events
+      .flatMap(({ performances = [] }) => performances)
+      .flatMap(({ setlist = [] }) => setlist)
+      .map(({ songId }) => songId),
+  );
+  const songsPath = resolve(fixture.root, fixed.songsPath);
+  const songs = await readJson(songsPath);
+  const referencedSong = songs.find(({ id }) => referencedIds.has(id));
+  const unrelatedSong = songs.find(({ id }) => !referencedIds.has(id));
+  assert.ok(referencedSong, "fixture must contain a referenced song");
+  assert.ok(unrelatedSong, "fixture must contain an unrelated song");
+
+  referencedSong.releaseDate = "2099-01-01";
+  unrelatedSong.releaseDate = "2099-01-02";
+  const addedSong = structuredClone(unrelatedSong);
+  addedSong.id = "fixture-unreferenced-addition";
+  addedSong.title.ja = "Fixture unreferenced addition";
+  if (Object.hasOwn(addedSong, "canonicalPath")) {
+    addedSong.canonicalPath = "/songs/fixture-unreferenced-addition/";
+  }
+  songs.push(addedSong);
+  songs.reverse();
+  await writeJson(songsPath, songs);
+  await git(fixture.root, ["add", "--", fixed.songsPath]);
+  await git(fixture.root, [
+    "commit",
+    "-q",
+    "-m",
+    "fixture unrelated catalog evolution",
+  ]);
+
+  const afterAudit = await auditWorkspace(options(fixture));
+  assert.equal(afterAudit.ok, true, afterAudit.errors.join("\n"));
+  assert.equal(afterAudit.sourceRevision, beforeAudit.sourceRevision);
+  assert.equal((await generateProjection(options(fixture))).ok, true);
+  assert.deepEqual(await readFile(fixture.artifactPath), beforeArtifact);
 });
 
 test("wrong or missing Git commit and wrong blob/hash all fail closed", async (t) => {
@@ -721,6 +798,23 @@ test("dynamic contract execution waits for every source/evidence binding and JSO
       expectedError: "EVIDENCE_DRIFT:",
     },
     {
+      name: "referenced song projection drift",
+      mutate: async (fixture) => {
+        const fixed = FIXED_SEEDS[0];
+        const events = await readJson(resolve(fixture.root, fixed.sourcePath));
+        const referencedId = events
+          .flatMap(({ performances = [] }) => performances)
+          .flatMap(({ setlist = [] }) => setlist)[0].songId;
+        const path = resolve(fixture.root, fixed.songsPath);
+        const songs = await readJson(path);
+        const song = songs.find(({ id }) => id === referencedId);
+        assert.ok(song, `fixture song ${referencedId} must exist`);
+        song.title.ja = `${song.title.ja} drift`;
+        await writeJson(path, songs);
+      },
+      expectedError: "REFERENCED_SONG_PROJECTION_DRIFT:",
+    },
+    {
       name: "source JSON parse failure",
       mutate: async (fixture) => {
         const repositoryPath = FIXED_SEEDS[0].sourcePath;
@@ -732,7 +826,9 @@ test("dynamic contract execution waits for every source/evidence binding and JSO
           "-m",
           "fixture malformed fixed JSON",
         ]);
-        await updateReceiptHashes(fixture);
+        await updateReceiptHashes(fixture, {
+          skipReferencedSongProjectionSiteIds: new Set([FIXED_SEEDS[0].siteId]),
+        });
       },
       expectedError: `SOURCE_SCHEMA:${FIXED_SEEDS[0].sourcePath}:`,
     },
@@ -1023,7 +1119,14 @@ test("approval scope and exact source/song identity cannot be replayed or mismat
       "songs path",
       (approval) => (approval.songsPath = FIXED_SEEDS[1].songsPath),
     ],
-    ["songs hash", (approval) => (approval.songsSha256 = "e".repeat(64))],
+    [
+      "referenced song projection hash",
+      (approval) => (approval.referencedSongProjectionSha256 = "e".repeat(64)),
+    ],
+    [
+      "legacy full songs hash",
+      (approval) => (approval.songsSha256 = "e".repeat(64)),
+    ],
     ["scope", (approval) => (approval.scope = "atlas-public-seed-v2")],
     [
       "unknown authority",
@@ -1228,13 +1331,13 @@ test("count-preserving protected fact drift is compared field-by-field against h
       },
     },
     {
-      name: "referenced song canonicalPath",
+      name: "referenced song title",
       repositoryPath: fixed.songsPath,
       mutate: (songs) => {
         const referencedId = "nearly-equal-joy";
         const song = songs.find(({ id }) => id === referencedId);
         assert.ok(song, `fixture song ${referencedId} must exist`);
-        song.canonicalPath = "/songs/changed-fixture-path/";
+        song.title.ja = "Changed fixture title";
       },
     },
   ];

@@ -5,11 +5,11 @@
   "sourcePath": "src/projects/equal-love/live-experiences.json",
   "sourceSha256": "141c7ec0a53ff7f770b4f97ab977080c545e483502a3f10bfb739a7c8e462ccf",
   "songsPath": "src/projects/equal-love/songs.json",
-  "songsSha256": "060774dab39fe3fda230f866e1d132fcc31cda01dc62137fc98c040e0670b141",
+  "referencedSongProjectionSha256": "bc1d79be6a3f74afab6ab1766f3d5ebf0b015227201c72317e7b5911f08e2a06",
   "atlasPublicSeedApproval": "approved",
   "approvalAuthorityId": "authority:atlas-public-seed-review",
   "approverId": "principal:atlas-product-owner",
-  "approvedAt": "2026-08-30T11:42:54.086Z",
+  "approvedAt": "2026-08-31T16:13:42.873Z",
   "maintenanceOwnerId": "principal:mypick-data-maintainer",
   "withdrawalState": "active"
 }

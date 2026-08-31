@@ -529,7 +529,7 @@ export function validateReceipt(
       "sourcePath",
       "sourceSha256",
       "songsPath",
-      "songsSha256",
+      "referencedSongProjectionSha256",
       "baselineCounts",
       "decision",
       "withdrawalState",
@@ -543,8 +543,9 @@ export function validateReceipt(
       fail(`${path}.songsPath`, "not the fixed songs path");
     if (!SHA256_PATTERN.test(seed.sourceSha256))
       fail(`${path}.sourceSha256`, "invalid SHA-256");
-    if (!SHA256_PATTERN.test(seed.songsSha256))
-      fail(`${path}.songsSha256`, "invalid SHA-256");
+    if (!SHA256_PATTERN.test(seed.referencedSongProjectionSha256)) {
+      fail(`${path}.referencedSongProjectionSha256`, "invalid SHA-256");
+    }
     validateCounts(seed.baselineCounts, `${path}.baselineCounts`);
     enumValue(seed.decision, `${path}.decision`, new Set(["GO", "HOLD"]));
     enumValue(
@@ -1035,7 +1036,7 @@ function validateApproval(
     "sourcePath",
     "sourceSha256",
     "songsPath",
-    "songsSha256",
+    "referencedSongProjectionSha256",
     "atlasPublicSeedApproval",
     "approvalAuthorityId",
     "approverId",
@@ -1068,10 +1069,14 @@ function validateApproval(
     fail(`${path}.songsPath`, "must match the fixed seed songsPath");
   }
   if (
-    value.songsSha256 !== seed.songsSha256 ||
-    !SHA256_PATTERN.test(value.songsSha256)
+    value.referencedSongProjectionSha256 !==
+      seed.referencedSongProjectionSha256 ||
+    !SHA256_PATTERN.test(value.referencedSongProjectionSha256)
   ) {
-    fail(`${path}.songsSha256`, "must match the seed songs hash");
+    fail(
+      `${path}.referencedSongProjectionSha256`,
+      "must match the seed referenced-song projection hash",
+    );
   }
   if (value.atlasPublicSeedApproval !== "approved") {
     fail(`${path}.atlasPublicSeedApproval`, "must explicitly be approved");
@@ -1334,10 +1339,11 @@ function receiptFileBindings(receipt) {
   return [
     ...receipt.contractFiles.map((entry) => ({ ...entry, kind: "SCHEMA" })),
     ...receipt.evidenceFiles.map((entry) => ({ ...entry, kind: "EVIDENCE" })),
-    ...receipt.seeds.flatMap((seed) => [
-      { path: seed.sourcePath, sha256: seed.sourceSha256, kind: "SOURCE" },
-      { path: seed.songsPath, sha256: seed.songsSha256, kind: "SOURCE" },
-    ]),
+    ...receipt.seeds.map((seed) => ({
+      path: seed.sourcePath,
+      sha256: seed.sourceSha256,
+      kind: "SOURCE",
+    })),
   ];
 }
 
@@ -1613,12 +1619,40 @@ function protectedReferencedSongs(document, referencedIds, path) {
     if (found.has(id))
       fail(`${path}[${index}].id`, "duplicate referenced song");
     found.add(id);
-    projection.push(structuredClone(item));
+    const title = record(item.title, `${path}[${index}].title`);
+    projection.push({
+      id,
+      titleJa: string(title.ja, `${path}[${index}].title.ja`),
+    });
   });
   for (const id of referencedIds) {
     if (!found.has(id)) fail(path, `referenced song ${id} is missing`);
   }
-  return projection;
+  return projection.sort((left, right) =>
+    left.id < right.id ? -1 : left.id > right.id ? 1 : 0,
+  );
+}
+
+export function referencedSongProjection({
+  siteId,
+  sourceDocument,
+  songsDocument,
+  sourcePath = "$source",
+  songsPath = "$songs",
+}) {
+  if (!PUBLIC_SITE_IDS.includes(siteId)) {
+    fail("siteId", "expected a fixed public site id");
+  }
+  const referencedIds = referencedSongIds(sourceDocument, sourcePath);
+  return {
+    kind: "atlas-referenced-song-projection-v1",
+    siteId,
+    songs: protectedReferencedSongs(songsDocument, referencedIds, songsPath),
+  };
+}
+
+export function referencedSongProjectionSha256(input) {
+  return sha256(canonicalUtf8(referencedSongProjection(input)));
 }
 
 function firstProtectedDifference(left, right, path = "$") {
@@ -1947,14 +1981,89 @@ export async function auditWorkspace({
     }
   }
 
+  let allReferencedSongBindingsVerified = true;
+  for (const seed of receipt.seeds) {
+    const sourceDocument = documents.get(seed.sourcePath);
+    if (sourceDocument === undefined) {
+      allReferencedSongBindingsVerified = false;
+      continue;
+    }
+    let currentBytes;
+    let currentDocument;
+    let bindingVerified = true;
+    try {
+      currentBytes = await readContainedFile(
+        repositoryRoot,
+        rootReal,
+        seed.songsPath,
+      );
+      currentDocument = parseUtf8Json(currentBytes, seed.songsPath);
+      const currentHash = referencedSongProjectionSha256({
+        siteId: seed.siteId,
+        sourceDocument,
+        songsDocument: currentDocument,
+        sourcePath: seed.sourcePath,
+        songsPath: seed.songsPath,
+      });
+      if (currentHash !== seed.referencedSongProjectionSha256) {
+        bindingVerified = false;
+        errors.push(
+          `REFERENCED_SONG_PROJECTION_DRIFT:${seed.siteId}:expected ${seed.referencedSongProjectionSha256}, observed ${currentHash}`,
+        );
+      }
+    } catch (error) {
+      bindingVerified = false;
+      errors.push(
+        `REFERENCED_SONG_PROJECTION_SCHEMA:${seed.siteId}:${seed.songsPath}:${error.message}`,
+      );
+    }
+    try {
+      const committedBytes = await gitBlob(
+        repositoryRoot,
+        receipt.sourceCommit,
+        seed.songsPath,
+      );
+      const committedHash = referencedSongProjectionSha256({
+        siteId: seed.siteId,
+        sourceDocument,
+        songsDocument: parseUtf8Json(
+          committedBytes,
+          `${receipt.sourceCommit}:${seed.songsPath}`,
+        ),
+        sourcePath: seed.sourcePath,
+        songsPath: `${receipt.sourceCommit}:${seed.songsPath}`,
+      });
+      if (committedHash !== seed.referencedSongProjectionSha256) {
+        bindingVerified = false;
+        errors.push(
+          `GIT_REFERENCED_SONG_PROJECTION_DRIFT:${receipt.sourceCommit}:${seed.siteId}:expected ${seed.referencedSongProjectionSha256}, observed ${committedHash}`,
+        );
+      }
+    } catch (error) {
+      bindingVerified = false;
+      errors.push(
+        `GIT_REFERENCED_SONG_PROJECTION:${receipt.sourceCommit}:${seed.siteId}:${error.message}`,
+      );
+    }
+    if (bindingVerified) {
+      verifiedBytesByPath.set(seed.songsPath, currentBytes);
+      documents.set(seed.songsPath, currentDocument);
+    } else {
+      allReferencedSongBindingsVerified = false;
+    }
+  }
+
   const allReceiptBindingsVerified = bindings.every((binding) =>
     verifiedBytesByPath.has(binding.path),
   );
   const contractExecutionReady =
-    sourceCommitTrusted && allReceiptBindingsVerified && fixedJsonInputsParsed;
+    sourceCommitTrusted &&
+    allReceiptBindingsVerified &&
+    fixedJsonInputsParsed &&
+    allReferencedSongBindingsVerified;
   if (!contractExecutionReady) {
     errors.push(
-      "CONTRACT_EXECUTION_BLOCKED:source commit trust, all fixed receipt bindings, and JSON parse prerequisites are required",
+      "CONTRACT_EXECUTION_BLOCKED:source commit trust, all fixed receipt bindings, referenced-song projections, and JSON parse prerequisites are required",
     );
   }
   if (contractExecutionReady) {
