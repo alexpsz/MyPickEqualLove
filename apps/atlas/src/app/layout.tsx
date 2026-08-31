@@ -9,7 +9,8 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Atlas | My Journey",
-  description: "A private, local-first home for your personal Journey.",
+  description:
+    "Discover approved real events, keep a local Journey, and make a Memory.",
   robots: {
     index: false,
     follow: false,
@@ -23,7 +24,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html data-locale="en" lang="en" suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{ __html: SHELL_THEME_BOOTSTRAP_SCRIPT }}

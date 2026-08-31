@@ -11,6 +11,7 @@ import {
 } from "./strict.js";
 
 export const MEMORY_SNAPSHOT_SCHEMA_VERSION = 1 as const;
+export const MEMORY_NICKNAME_MAX_LENGTH = 32 as const;
 
 export interface MemoryPublicEventSnapshot {
   readonly groupName: string;
@@ -33,6 +34,7 @@ export interface MemorySnapshotV1 {
   readonly schemaVersion: typeof MEMORY_SNAPSHOT_SCHEMA_VERSION;
   readonly event: MemoryPublicEventSnapshot;
   readonly selected: {
+    readonly nickname: ExplicitMemoryField<string> | null;
     readonly mode: ExplicitMemoryField<ExperienceMode> | null;
     readonly highlights: readonly ExplicitMemoryField<string>[];
     readonly songs: readonly ExplicitMemoryField<MemorySongSnapshot>[];
@@ -45,6 +47,10 @@ export type MemorySnapshotParseResult =
   | { readonly ok: false; readonly issue: ContractIssue };
 
 const EXPERIENCE_MODES = ["in-person", "livestream", "archive"] as const;
+
+export function normalizeMemoryNickname(value: string) {
+  return value.trim().split(/\s+/).join(" ");
+}
 
 function parseExplicit<T>(
   value: unknown,
@@ -100,6 +106,7 @@ export function parseMemorySnapshotValue(value: unknown): MemorySnapshotV1 {
   expectExactKeys(record, "$", ["schemaVersion", "event", "selected"]);
   const selectedRecord = expectRecord(record.selected, "$.selected");
   expectExactKeys(selectedRecord, "$.selected", [
+    "nickname",
     "mode",
     "highlights",
     "songs",
@@ -111,6 +118,21 @@ export function parseMemorySnapshotValue(value: unknown): MemorySnapshotV1 {
     ]),
     event: parseEvent(record.event, "$.event"),
     selected: {
+      nickname:
+        selectedRecord.nickname === null
+          ? null
+          : parseExplicit(
+              selectedRecord.nickname,
+              "$.selected.nickname",
+              (nickname, path) => {
+                const parsedNickname = expectString(nickname, path, {
+                  max: MEMORY_NICKNAME_MAX_LENGTH,
+                });
+                return expectLiteral(parsedNickname, path, [
+                  normalizeMemoryNickname(parsedNickname),
+                ]);
+              },
+            ),
       mode:
         selectedRecord.mode === null
           ? null

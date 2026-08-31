@@ -114,6 +114,7 @@ await Promise.all([
   compileRenderModule("components/journey/InlineConfirmation.tsx"),
   compileRenderModule("components/journey/JourneyAlerts.tsx"),
   compileRenderModule("components/journey/JourneyBackupPanel.tsx"),
+  compileRenderModule("components/journey/JourneyFormControls.tsx"),
   compileRenderModule("components/journey/JourneyPageFrame.tsx"),
   compileRenderModule("components/journey/JourneyRecordCard.tsx"),
   compileRenderModule("components/journey/JourneyWorkspace.tsx"),
@@ -137,8 +138,9 @@ exports.__setShellLocale = (nextLocale) => { locale = nextLocale; };
 exports.ShellProvider = ({ children }) => children;
 exports.useShell = () => ({
   locale,
+  localePreference: locale,
   messages: SHELL_MESSAGES[locale],
-  setLocale: () => {},
+  setLocalePreference: () => {},
   theme: "light",
   toggleTheme: () => {},
 });
@@ -175,10 +177,10 @@ await writeFile(
 );
 
 require.extensions[".css"] = (module) => {
-  module.exports = new Proxy(
-    {},
-    { get: (_target, property) => String(property) },
-  );
+  module.exports = {
+    __esModule: true,
+    default: new Proxy({}, { get: (_target, property) => String(property) }),
+  };
 };
 
 const renderShellContext = require(
@@ -200,6 +202,13 @@ const renderBackup = require(join(renderRoot, "backup/backup-codec.js"));
 const renderStorage = require(join(renderRoot, "storage/journey-storage.js"));
 const { createJourneyBackupWorkflow } = require(
   join(renderRoot, "components/journey/JourneyBackupPanel.js"),
+);
+const {
+  JourneyNativeSelect: RenderJourneyNativeSelect,
+  JourneyNativeTemporalInput: RenderJourneyNativeTemporalInput,
+} = require(join(renderRoot, "components/journey/JourneyFormControls.js"));
+const { JourneyRecordCard: RenderJourneyRecordCard } = require(
+  join(renderRoot, "components/journey/JourneyRecordCard.js"),
 );
 
 const controller = await import(
@@ -225,6 +234,40 @@ function localJourney({
     intent,
     now,
   });
+}
+
+function publicEventReference({
+  entityId = "equal-love:event:stadium-live",
+  sourceRevision = "source-revision-one",
+  title = "Stadium Live",
+} = {}) {
+  return {
+    entityId,
+    sourceRevision,
+    fallback: {
+      groupName: "＝LOVE",
+      title,
+      date: "2026-06-20",
+      venueName: "National Stadium",
+    },
+  };
+}
+
+function publicSongReference({
+  entityId = "equal-love:song:anthem",
+  sourceRevision = "source-revision-one",
+  title = "Anthem",
+} = {}) {
+  return {
+    entityId,
+    sourceRevision,
+    fallback: {
+      groupName: "＝LOVE",
+      title,
+      date: null,
+      venueName: null,
+    },
+  };
 }
 
 function replacementJourney() {
@@ -400,6 +443,165 @@ test("creates an exact C0 local Journey at absent revision zero", () => {
     state: "present",
     revision: 0,
   });
+});
+
+test("public Journey recording is pure, idempotent, and rejects stale relinking", () => {
+  const reference = publicEventReference();
+  const created = controller.recordPublicJourney(null, {
+    journeyId: "journey-public",
+    reference,
+    now: "2026-08-25T01:00:00.000Z",
+  });
+  assert.equal(created.status, "created");
+  assert.equal(created.document.revision, 0);
+  assert.deepEqual(created.document.journeys[0], {
+    id: "journey-public",
+    subject: { kind: "public-reference", reference },
+    intent: null,
+    experienceEntries: [],
+    createdAt: "2026-08-25T01:00:00.000Z",
+    updatedAt: "2026-08-25T01:00:00.000Z",
+  });
+
+  const existing = controller.recordPublicJourney(created.document, {
+    journeyId: "journey-duplicate-must-not-be-used",
+    reference: publicEventReference({ title: "Changed caller fallback" }),
+    now: "2026-08-25T01:01:00.000Z",
+  });
+  assert.equal(existing.status, "existing");
+  assert.equal(existing.journeyId, "journey-public");
+  assert.strictEqual(existing.document, created.document);
+
+  const stale = controller.recordPublicJourney(created.document, {
+    journeyId: "journey-stale-must-not-be-used",
+    reference: publicEventReference({
+      sourceRevision: "source-revision-two",
+    }),
+    now: "2026-08-25T01:02:00.000Z",
+  });
+  assert.equal(stale.status, "stale-reference");
+  assert.equal(stale.journeyId, "journey-public");
+  assert.strictEqual(stale.document, created.document);
+
+  const performance = controller.recordPublicJourney(created.document, {
+    journeyId: "journey-performance",
+    reference: publicEventReference({
+      entityId: "equal-love:performance:stadium-live:day-one",
+      title: "Day 1",
+    }),
+    now: "2026-08-25T01:03:00.000Z",
+  });
+  assert.equal(performance.status, "created");
+  assert.equal(performance.document.revision, 1);
+  assert.equal(performance.document.journeys.length, 2);
+  assert.equal(
+    journeyContract.parseJourneyDocument(JSON.stringify(performance.document))
+      .status,
+    "valid",
+  );
+});
+
+test("public subjects keep canonical title, date, and venue immutable", () => {
+  const created = controller.recordPublicJourney(null, {
+    journeyId: "journey-public",
+    reference: publicEventReference(),
+    now: "2026-08-25T01:00:00.000Z",
+  });
+  assert.throws(
+    () =>
+      controller.updateLocalCustomSubject(created.document, "journey-public", {
+        title: "Caller rewrite",
+        date: "2027-01-01",
+        venueName: "Caller venue",
+        now: "2026-08-25T01:01:00.000Z",
+      }),
+    /Public Journey subjects cannot be edited locally/,
+  );
+  assert.deepEqual(
+    created.document.journeys[0].subject.reference,
+    publicEventReference(),
+  );
+});
+
+test("experience song references are strict, ordered, deduplicated, and preserved", () => {
+  const first = publicSongReference();
+  const duplicate = publicSongReference({ title: "Caller duplicate" });
+  const second = publicSongReference({
+    entityId: "equal-love:song:encore",
+    title: "Encore",
+  });
+  let document = controller.addJourneyExperienceEntry(
+    localJourney(),
+    "journey-alpha",
+    {
+      entryId: "entry-song-selection",
+      mode: "in-person",
+      occurredAt: "2026-08-25T02:00:00.000Z",
+      memo: "",
+      highlights: [],
+      songRefs: [first, duplicate, second],
+      now: "2026-08-25T02:00:00.000Z",
+    },
+  );
+  assert.deepEqual(document.journeys[0].experienceEntries[0].songRefs, [
+    first,
+    second,
+  ]);
+
+  document = controller.updateJourneyExperienceEntry(
+    document,
+    "journey-alpha",
+    "entry-song-selection",
+    {
+      mode: "archive",
+      occurredAt: "2026-08-25T02:30:00.000Z",
+      memo: "edited without a song selector",
+      highlights: ["Encore"],
+      now: "2026-08-25T02:30:00.000Z",
+    },
+  );
+  assert.deepEqual(document.journeys[0].experienceEntries[0].songRefs, [
+    first,
+    second,
+  ]);
+
+  assert.throws(
+    () =>
+      controller.updateJourneyExperienceEntry(
+        document,
+        "journey-alpha",
+        "entry-song-selection",
+        {
+          mode: "archive",
+          occurredAt: "2026-08-25T03:00:00.000Z",
+          memo: "",
+          highlights: [],
+          songRefs: [
+            first,
+            publicSongReference({ sourceRevision: "source-revision-two" }),
+          ],
+          now: "2026-08-25T03:00:00.000Z",
+        },
+      ),
+    /multiple source revisions/,
+  );
+  assert.throws(
+    () =>
+      controller.addJourneyExperienceEntry(document, "journey-alpha", {
+        entryId: "entry-invalid-song",
+        mode: "in-person",
+        occurredAt: "2026-08-25T03:00:00.000Z",
+        memo: "",
+        highlights: [],
+        songRefs: [
+          publicSongReference({
+            entityId: "equal-love:performance:stadium-live:day-one",
+          }),
+        ],
+        now: "2026-08-25T03:00:00.000Z",
+      }),
+    /expected namespaced song id/,
+  );
 });
 
 test("one Journey retains intent while three experience modes coexist", () => {
@@ -657,11 +859,13 @@ test("both private routes compose one executable Atlas shell and follow its loca
   const routeCases = [
     {
       Component: RenderJourneyPage,
+      currentCount: 1,
       pathname: "/journey/",
       titleKey: "journeyTitle",
     },
     {
       Component: RenderLocalEventPage,
+      currentCount: 0,
       pathname: "/local-event/",
       titleKey: "localEventTitle",
     },
@@ -682,10 +886,11 @@ test("both private routes compose one executable Atlas shell and follow its loca
       assert.equal(countRenderedTag(markup, "main"), 1, routeCase.pathname);
       assert.equal(countRenderedTag(markup, "header"), 1, routeCase.pathname);
       assert.equal(countRenderedTag(markup, "nav"), 1, routeCase.pathname);
-      assert.equal(countRenderedTag(markup, "select"), 1, routeCase.pathname);
+      assert.equal(countRenderedTag(markup, "select"), 0, routeCase.pathname);
+      assert.ok(markup.includes('aria-haspopup="menu"'), routeCase.pathname);
       assert.equal(
         [...markup.matchAll(/aria-current="page"/g)].length,
-        1,
+        routeCase.currentCount,
         routeCase.pathname,
       );
       assert.ok(markup.includes('id="atlas-main"'), routeCase.pathname);
@@ -697,7 +902,244 @@ test("both private routes compose one executable Atlas shell and follow its loca
   }
 });
 
-test("Journey exposes a native localized link to the static Memory route", () => {
+test("Journey form controls retain native semantics with one visual wrapper", async () => {
+  const selectMarkup = renderToStaticMarkup(
+    createElement(
+      RenderJourneyNativeSelect,
+      { defaultValue: "in-person", name: "mode" },
+      createElement("option", { value: "in-person" }, "In person"),
+      createElement("option", { value: "archive" }, "Archive"),
+    ),
+  );
+  assert.match(selectMarkup, /<select\b/);
+  assert.match(selectMarkup, /name="mode"/);
+  assert.equal(countRenderedTag(selectMarkup, "option"), 2);
+  assert.doesNotMatch(selectMarkup, /role="listbox"/);
+  assert.match(selectMarkup, /<svg\b[^>]*aria-hidden="true"/);
+
+  const temporalMarkup = new Map();
+  for (const type of ["date", "datetime-local"]) {
+    const inputMarkup = renderToStaticMarkup(
+      createElement(RenderJourneyNativeTemporalInput, {
+        name: "when",
+        type,
+      }),
+    );
+    temporalMarkup.set(type, inputMarkup);
+    assert.match(inputMarkup, new RegExp(`type="${type}"`));
+    assert.match(inputMarkup, /name="when"/);
+  }
+
+  const css = await readFile(
+    join(sourceRoot, "components/journey/journey-ui.module.css"),
+    "utf8",
+  );
+  const renderedClass = (markup, tagName) => {
+    const match = markup.match(
+      new RegExp(`<${tagName}\\b[^>]*class="([^"]+)"`),
+    );
+    assert.ok(match, `${tagName} must render its CSS-module class`);
+    return match[1].split(/\s+/)[0];
+  };
+  const directRuleBodies = (className) =>
+    [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+      .filter((match) =>
+        match[1]
+          .split(",")
+          .some((selector) => selector.trim() === `.${className}`),
+      )
+      .map((match) => match[2])
+      .join("\n");
+  const nativeRules = directRuleBodies(renderedClass(selectMarkup, "select"));
+  const dateTimeMarkup = temporalMarkup.get("datetime-local");
+  assert.ok(dateTimeMarkup);
+  const temporalRules = directRuleBodies(
+    renderedClass(dateTimeMarkup, "input"),
+  );
+  for (const [control, rules] of [
+    ["select", nativeRules],
+    ["datetime-local", temporalRules],
+  ]) {
+    assert.match(rules, /width:\s*100%/, `${control} owns its width`);
+    assert.match(
+      rules,
+      /min-height:\s*2\.75rem/,
+      `${control} owns its 44px minimum height`,
+    );
+    assert.match(
+      rules,
+      /border-radius:\s*var\(--atlas-radius-sm\)/,
+      `${control} owns its 12px radius`,
+    );
+    assert.match(
+      rules,
+      /border:\s*1px solid var\(--atlas-border-strong\)/,
+      `${control} owns its border`,
+    );
+    assert.match(
+      rules,
+      /background:\s*var\(--atlas-surface\)/,
+      `${control} owns its surface`,
+    );
+    assert.match(rules, /padding:\s*0\.6rem 0\.7rem/);
+  }
+  assert.match(nativeRules, /appearance:\s*none/);
+  assert.doesNotMatch(css, /\.field \.nativeControl/);
+  assert.match(css, /\.selectCaret[\s\S]*?pointer-events: none/);
+  assert.match(css, /::-webkit-calendar-picker-indicator/);
+  assert.match(css, /outline: 3px solid var\(--atlas-focus\)/);
+});
+
+test("manual events are visibly secondary to the event catalog", async () => {
+  const workspace = await readFile(
+    join(sourceRoot, "components/journey/JourneyWorkspace.tsx"),
+    "utf8",
+  );
+  const localCreator = await readFile(
+    join(sourceRoot, "components/journey/LocalEventCreator.tsx"),
+    "utf8",
+  );
+  assert.match(workspace, /className=\{styles\.button\} href="\/events\/"/);
+  assert.match(
+    workspace,
+    /className=\{styles\.buttonQuiet\}[\s\S]*?href="\/local-event\/"/,
+  );
+  assert.ok(
+    workspace.indexOf('href="/events/"') <
+      workspace.indexOf('href="/local-event/"'),
+  );
+  assert.match(
+    localCreator,
+    /<Link className=\{styles\.buttonSecondary\} href="\/events\/"/,
+  );
+  assert.match(localCreator, /styles\.formPanel/);
+  assert.doesNotMatch(localCreator, /noAutomaticMerge|\bHOLD\b/);
+
+  for (const locale of ["zh-CN", "en", "ja", "ko"]) {
+    const catalog = messages.JOURNEY_MESSAGES[locale];
+    assert.ok(catalog.browseEvents.length > 0);
+    assert.ok(catalog.createLocalEvent.length > 0);
+    assert.doesNotMatch(catalog.localEventIntro, /\bHOLD\b/i);
+    assert.doesNotMatch(
+      `${catalog.localEventIntro}\n${catalog.publicSubjectLocked}\n${catalog.backupIntro}`,
+      /schema|revision|contract|repository|apply plan|dry run|存储单位|合同|リビジョン|契約|리비전|계약/i,
+    );
+    assert.ok(catalog.dataTools.length > 0);
+    assert.ok(catalog.recordOptions.length > 0);
+  }
+});
+
+test("Journey keeps backup, restore, reset, and record deletion behind clear disclosures", async () => {
+  const workspace = await readFile(
+    join(sourceRoot, "components/journey/JourneyWorkspace.tsx"),
+    "utf8",
+  );
+  const recordCard = await readFile(
+    join(sourceRoot, "components/journey/JourneyRecordCard.tsx"),
+    "utf8",
+  );
+  const css = await readFile(
+    join(sourceRoot, "components/journey/journey-ui.module.css"),
+    "utf8",
+  );
+
+  assert.match(
+    workspace,
+    /<details[\s\S]*?styles\.toolsDisclosure[\s\S]*?dataTools[\s\S]*?<JourneyBackupPanel/,
+  );
+  assert.match(workspace, /timeline\.length > 0[\s\S]*?href="\/memory\/"/);
+  assert.match(
+    recordCard,
+    /<details[\s\S]*?styles\.dangerDisclosure[\s\S]*?recordOptions[\s\S]*?deleteJourney/,
+  );
+  assert.match(css, /\.toolsContent[\s\S]*?display:\s*grid/);
+  assert.match(css, /\.disclosure\[open\] > summary/);
+  assert.match(
+    recordCard,
+    /entry === undefined \? "" : localDateTimeValue\(entry\.occurredAt\)/,
+  );
+  assert.doesNotMatch(
+    recordCard,
+    /entry\?\.occurredAt\s*\?\?\s*new Date\(\)\.toISOString\(\)/,
+  );
+});
+
+test("public Journey cards expose no canonical subject editor", () => {
+  const created = controller.recordPublicJourney(null, {
+    journeyId: "journey-public-render",
+    reference: publicEventReference(),
+    now: "2026-08-25T01:00:00.000Z",
+  });
+  const markup = renderToStaticMarkup(
+    createElement(RenderJourneyRecordCard, {
+      busy: false,
+      documentRevision: created.document.revision,
+      interactionGeneration: 0,
+      locale: "en",
+      onFocusFallback() {},
+      async onMutate() {
+        return true;
+      },
+      record: created.document.journeys[0],
+    }),
+  );
+  assert.ok(markup.includes("Stadium Live"));
+  assert.ok(markup.includes("＝LOVE"));
+  assert.match(markup, /<h2[^>]*lang="ja"[^>]*>Stadium Live<\/h2>/);
+  assert.match(markup, /lang="ja"[^>]*>National Stadium<\/span>/);
+  assert.ok(markup.includes(messages.JOURNEY_MESSAGES.en.publicSubjectLocked));
+  assert.doesNotMatch(markup, /name="title"/);
+  assert.doesNotMatch(markup, /name="date"/);
+  assert.doesNotMatch(markup, /name="venue"/);
+  assert.match(markup, /name="intent"/);
+  assert.doesNotMatch(markup, /data-journey-status="attended"/);
+});
+
+test("Journey derives attended from experiences without persisting a new intent", () => {
+  const withoutExperience = localJourney({ intent: "planned" });
+  const withExperience = controller.addJourneyExperienceEntry(
+    withoutExperience,
+    "journey-alpha",
+    {
+      entryId: "entry-attended",
+      mode: "livestream",
+      occurredAt: "2026-08-25T02:00:00.000Z",
+      memo: "",
+      highlights: [],
+      now: "2026-08-25T02:01:00.000Z",
+    },
+  );
+  const record = withExperience.journeys[0];
+  assert.equal(record.intent, "planned");
+  assert.doesNotMatch(JSON.stringify(record), /"attended"\s*:/);
+
+  for (const locale of ["zh-CN", "en", "ja", "ko"]) {
+    const markup = renderToStaticMarkup(
+      createElement(RenderJourneyRecordCard, {
+        busy: false,
+        documentRevision: withExperience.revision,
+        interactionGeneration: 0,
+        locale,
+        onFocusFallback() {},
+        async onMutate() {
+          return true;
+        },
+        record,
+      }),
+    );
+    assert.match(markup, /data-journey-status="attended"/);
+    assert.ok(
+      markup.includes(messages.JOURNEY_MESSAGES[locale].intentAttended),
+    );
+    assert.doesNotMatch(markup, /name="intent"/);
+    assert.equal(
+      markup.includes(messages.JOURNEY_MESSAGES[locale].saveIntent),
+      false,
+    );
+  }
+});
+
+test("Journey keeps the static Memory route in the localized shell", () => {
   renderNavigation.__setPathname("/journey/");
 
   for (const locale of ["zh-CN", "en", "ja", "ko"]) {
@@ -709,15 +1151,10 @@ test("Journey exposes a native localized link to the static Memory route", () =>
         createElement(RenderJourneyPage),
       ),
     );
-    const memoryLink = markup.match(
-      /<a\b[^>]*href="\/memory\/"[^>]*>([^<]+)<\/a>/,
-    );
-
-    assert.ok(memoryLink, `${locale} Journey must link to /memory/`);
-    assert.equal(
-      memoryLink[1],
-      messages.JOURNEY_MESSAGES[locale].createMemory,
-      `${locale} Memory link needs a visible accessible label`,
+    assert.match(
+      markup,
+      /<a\b[^>]*href="\/memory\/"/,
+      `${locale} Journey shell must link to /memory/`,
     );
   }
 });

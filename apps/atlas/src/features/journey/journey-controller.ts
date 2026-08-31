@@ -6,6 +6,10 @@ import {
   type JourneyIntent,
   type JourneyRecord,
 } from "../../contracts/journey-document";
+import {
+  parsePublicReferenceValue,
+  type PublicEntityReference,
+} from "../../contracts/public-reference";
 import type {
   JourneyRevisionExpectation,
   JourneyStorageExpectation,
@@ -28,12 +32,31 @@ export interface LocalCustomSubjectDraft {
   readonly now: string;
 }
 
+export interface PublicJourneyDraft {
+  readonly journeyId: string;
+  readonly reference: PublicEntityReference<"event" | "performance">;
+  readonly now: string;
+}
+
+export type RecordPublicJourneyResult =
+  | {
+      readonly status: "created";
+      readonly document: JourneyDocumentV1;
+      readonly journeyId: string;
+    }
+  | {
+      readonly status: "existing" | "stale-reference";
+      readonly document: JourneyDocumentV1;
+      readonly journeyId: string;
+    };
+
 export interface ExperienceEntryDraft {
   readonly entryId: string;
   readonly mode: ExperienceMode;
   readonly occurredAt: string;
   readonly memo: string;
   readonly highlights: readonly string[];
+  readonly songRefs?: readonly PublicEntityReference<"song">[];
   readonly now: string;
 }
 
@@ -42,6 +65,7 @@ export interface ExperienceEntryUpdate {
   readonly occurredAt: string;
   readonly memo: string;
   readonly highlights: readonly string[];
+  readonly songRefs?: readonly PublicEntityReference<"song">[];
   readonly now: string;
 }
 
@@ -155,6 +179,30 @@ function normalizeHighlights(values: readonly string[]) {
   return [...new Set(normalized)];
 }
 
+function normalizeSongReferences(
+  values: readonly PublicEntityReference<"song">[],
+) {
+  const normalized: PublicEntityReference<"song">[] = [];
+  const revisionsByEntity = new Map<string, string>();
+  for (const [index, value] of values.entries()) {
+    const reference = parsePublicReferenceValue(value, `$.songRefs[${index}]`, [
+      "song",
+    ]);
+    const knownRevision = revisionsByEntity.get(reference.entityId);
+    if (
+      knownRevision !== undefined &&
+      knownRevision !== reference.sourceRevision
+    ) {
+      throw new Error("One song cannot use multiple source revisions");
+    }
+    if (knownRevision === undefined) {
+      revisionsByEntity.set(reference.entityId, reference.sourceRevision);
+      normalized.push(reference);
+    }
+  }
+  return normalized;
+}
+
 function nextDocument(
   current: JourneyDocumentV1 | null,
   journeys: readonly JourneyRecord[],
@@ -241,6 +289,50 @@ export function createLocalCustomJourney(
   );
 }
 
+export function recordPublicJourney(
+  current: JourneyDocumentV1 | null,
+  draft: PublicJourneyDraft,
+): RecordPublicJourneyResult {
+  const reference = parsePublicReferenceValue(draft.reference, "$.reference", [
+    "event",
+    "performance",
+  ]);
+  const existing = current?.journeys.find(
+    (journey) =>
+      journey.subject.kind === "public-reference" &&
+      journey.subject.reference.entityId === reference.entityId,
+  );
+  if (current !== null && existing !== undefined) {
+    return {
+      status:
+        existing.subject.kind === "public-reference" &&
+        existing.subject.reference.sourceRevision === reference.sourceRevision
+          ? "existing"
+          : "stale-reference",
+      document: current,
+      journeyId: existing.id,
+    };
+  }
+
+  const journey: JourneyRecord = {
+    id: draft.journeyId,
+    subject: { kind: "public-reference", reference },
+    intent: null,
+    experienceEntries: [],
+    createdAt: draft.now,
+    updatedAt: draft.now,
+  };
+  return {
+    status: "created",
+    document: nextDocument(
+      current,
+      [...(current?.journeys ?? []), journey],
+      draft.now,
+    ),
+    journeyId: draft.journeyId,
+  };
+}
+
 export function updateLocalCustomSubject(
   current: JourneyDocumentV1,
   journeyId: string,
@@ -302,7 +394,7 @@ export function addJourneyExperienceEntry(
           occurredAt: draft.occurredAt,
           memo: draft.memo.trim(),
           highlights: normalizeHighlights(draft.highlights),
-          songRefs: [],
+          songRefs: normalizeSongReferences(draft.songRefs ?? []),
           createdAt: draft.now,
           updatedAt: draft.now,
         },
@@ -339,6 +431,10 @@ export function updateJourneyExperienceEntry(
                 occurredAt: draft.occurredAt,
                 memo: draft.memo.trim(),
                 highlights: normalizeHighlights(draft.highlights),
+                songRefs:
+                  draft.songRefs === undefined
+                    ? entry.songRefs
+                    : normalizeSongReferences(draft.songRefs),
                 updatedAt: draft.now,
               }
             : entry,

@@ -1,0 +1,2570 @@
+{
+  "artifactHash": "sha256:91a549afda95ee68c6caa62b5878aeee777d677e284936fd62bdd1b7f1b24df8",
+  "groupCounts": {
+    "equal-love": {
+      "events": 2,
+      "performances": 2,
+      "setlistEntries": 60
+    },
+    "nearly-equal-joy": {
+      "events": 1,
+      "performances": 2,
+      "setlistEntries": 57
+    },
+    "not-equal-me": {
+      "events": 1,
+      "performances": 2,
+      "setlistEntries": 55
+    }
+  },
+  "groups": [
+    {
+      "displayName": "equal-love",
+      "events": [
+        {
+          "coverage": {
+            "included": 1,
+            "total": 1
+          },
+          "dates": {
+            "end": "2026-06-21",
+            "start": "2026-06-20"
+          },
+          "displayName": "＝LOVE STADIUM LIVE「Beyond \"KYUN\"♡」",
+          "excluded": [],
+          "id": "equal-love:event:kokuritsu_2026",
+          "lifecycle": "completed",
+          "performances": [
+            {
+              "coverage": {
+                "included": 30,
+                "total": 31
+              },
+              "date": "2026-06-20",
+              "displayName": "DAY 1",
+              "excluded": [
+                {
+                  "kind": "setlist-entry",
+                  "reason": "Overture: non-catalog-intro",
+                  "sourceId": "source-order:1"
+                }
+              ],
+              "id": "equal-love:performance:kokuritsu_2026:day1",
+              "lifecycle": "completed",
+              "setlist": [
+                {
+                  "order": 2,
+                  "songRef": {
+                    "entityId": "equal-love:song:tokubechu-shite",
+                    "fallback": {
+                      "date": "2026-06-20",
+                      "groupName": "equal-love",
+                      "title": "とくべチュ、して",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 3,
+                  "songRef": {
+                    "entityId": "equal-love:song:oh-darling",
+                    "fallback": {
+                      "date": "2026-06-20",
+                      "groupName": "equal-love",
+                      "title": "Oh!Darling",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 4,
+                  "songRef": {
+                    "entityId": "equal-love:song:natsumatope",
+                    "fallback": {
+                      "date": "2026-06-20",
+                      "groupName": "equal-love",
+                      "title": "ナツマトペ",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 5,
+                  "songRef": {
+                    "entityId": "equal-love:song:hiroinzu",
+                    "fallback": {
+                      "date": "2026-06-20",
+                      "groupName": "equal-love",
+                      "title": "ヒロインズ",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 6,
+                  "songRef": {
+                    "entityId": "equal-love:song:o-himesama-nishiteyo",
+                    "fallback": {
+                      "date": "2026-06-20",
+                      "groupName": "equal-love",
+                      "title": "お姫様にしてよ!",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 7,
+                  "songRef": {
+                    "entityId": "equal-love:song:be-selfish",
+                    "fallback": {
+                      "date": "2026-06-20",
+                      "groupName": "equal-love",
+                      "title": "Be Selfish",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 8,
+                  "songRef": {
+                    "entityId": "equal-love:song:bokura-no-seifuku-christmas",
+                    "fallback": {
+                      "date": "2026-06-20",
+                      "groupName": "equal-love",
+                      "title": "僕らの制服クリスマス",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 9,
+                  "songRef": {
+                    "entityId": "equal-love:song:love-song-ni-osowareru",
+                    "fallback": {
+                      "date": "2026-06-20",
+                      "groupName": "equal-love",
+                      "title": "ラブソングに襲われる",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 10,
+                  "songRef": {
+                    "entityId": "equal-love:song:want-you-want-you",
+                    "fallback": {
+                      "date": "2026-06-20",
+                      "groupName": "equal-love",
+                      "title": "Want you!Want you!",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 11,
+                  "songRef": {
+                    "entityId": "equal-love:song:queens",
+                    "fallback": {
+                      "date": "2026-06-20",
+                      "groupName": "equal-love",
+                      "title": "Queens",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 12,
+                  "songRef": {
+                    "entityId": "equal-love:song:mayonaka-maameido",
+                    "fallback": {
+                      "date": "2026-06-20",
+                      "groupName": "equal-love",
+                      "title": "真夜中マーメイド",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 13,
+                  "songRef": {
+                    "entityId": "equal-love:song:gekiyaku-chuudoku",
+                    "fallback": {
+                      "date": "2026-06-20",
+                      "groupName": "equal-love",
+                      "title": "劇薬中毒",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 14,
+                  "songRef": {
+                    "entityId": "equal-love:song:doraibu-deeto-tonai",
+                    "fallback": {
+                      "date": "2026-06-20",
+                      "groupName": "equal-love",
+                      "title": "ドライブ デート 都内",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 15,
+                  "songRef": {
+                    "entityId": "equal-love:song:shukipi",
+                    "fallback": {
+                      "date": "2026-06-20",
+                      "groupName": "equal-love",
+                      "title": "しゅきぴ",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 16,
+                  "songRef": {
+                    "entityId": "equal-love:song:ki-more-nichi-mezoforute",
+                    "fallback": {
+                      "date": "2026-06-20",
+                      "groupName": "equal-love",
+                      "title": "木漏れ日メゾフォルテ",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 17,
+                  "songRef": {
+                    "entityId": "equal-love:song:nakanaori-shuukuriimu",
+                    "fallback": {
+                      "date": "2026-06-20",
+                      "groupName": "equal-love",
+                      "title": "仲直りシュークリーム",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 18,
+                  "songRef": {
+                    "entityId": "equal-love:song:o-himesama-no-tsukurikata",
+                    "fallback": {
+                      "date": "2026-06-20",
+                      "groupName": "equal-love",
+                      "title": "お姫様の作り方",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 19,
+                  "songRef": {
+                    "entityId": "equal-love:song:choutokkyuu-tousou-naka",
+                    "fallback": {
+                      "date": "2026-06-20",
+                      "groupName": "equal-love",
+                      "title": "超特急逃走中",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 20,
+                  "songRef": {
+                    "entityId": "equal-love:song:naisho-banashi",
+                    "fallback": {
+                      "date": "2026-06-20",
+                      "groupName": "equal-love",
+                      "title": "内緒バナシ",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 21,
+                  "songRef": {
+                    "entityId": "equal-love:song:junkies",
+                    "fallback": {
+                      "date": "2026-06-20",
+                      "groupName": "equal-love",
+                      "title": "Junkies",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 22,
+                  "songRef": {
+                    "entityId": "equal-love:song:moratoriamu",
+                    "fallback": {
+                      "date": "2026-06-20",
+                      "groupName": "equal-love",
+                      "title": "モラトリアム",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 23,
+                  "songRef": {
+                    "entityId": "equal-love:song:seishun-subliminal",
+                    "fallback": {
+                      "date": "2026-06-20",
+                      "groupName": "equal-love",
+                      "title": "青春”サブリミナル”",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 24,
+                  "songRef": {
+                    "entityId": "equal-love:song:natsumatsuri-renbo-u",
+                    "fallback": {
+                      "date": "2026-06-20",
+                      "groupName": "equal-love",
+                      "title": "夏祭り恋慕う",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 25,
+                  "songRef": {
+                    "entityId": "equal-love:song:zettai-idol-yamenaide",
+                    "fallback": {
+                      "date": "2026-06-20",
+                      "groupName": "equal-love",
+                      "title": "絶対アイドル辞めないで",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 26,
+                  "songRef": {
+                    "entityId": "equal-love:song:love-song-ni-osowareru",
+                    "fallback": {
+                      "date": "2026-06-20",
+                      "groupName": "equal-love",
+                      "title": "ラブソングに襲われる",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 27,
+                  "songRef": {
+                    "entityId": "equal-love:song:umi-to-remonteii",
+                    "fallback": {
+                      "date": "2026-06-20",
+                      "groupName": "equal-love",
+                      "title": "海とレモンティー",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 28,
+                  "songRef": {
+                    "entityId": "equal-love:song:dakaratote",
+                    "fallback": {
+                      "date": "2026-06-20",
+                      "groupName": "equal-love",
+                      "title": "だからとて",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 29,
+                  "songRef": {
+                    "entityId": "equal-love:song:kono-sora-ga-trigger",
+                    "fallback": {
+                      "date": "2026-06-20",
+                      "groupName": "equal-love",
+                      "title": "この空がトリガー",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 30,
+                  "songRef": {
+                    "entityId": "equal-love:song:sagase-diamond-lily",
+                    "fallback": {
+                      "date": "2026-06-20",
+                      "groupName": "equal-love",
+                      "title": "探せ ダイヤモンドリリー",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 31,
+                  "songRef": {
+                    "entityId": "equal-love:song:equal-love",
+                    "fallback": {
+                      "date": "2026-06-20",
+                      "groupName": "equal-love",
+                      "title": "=LOVE",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                }
+              ],
+              "sourceUrls": [
+                "https://x.com/equal_love_12/status/2068677833850057105?s=46",
+                "https://music.apple.com/cn/playlist/love-stadium-live-beyond-kyun-day1/pl.u-b3b8Mv7iKorrg0W"
+              ],
+              "startAt": "2026-06-20T08:30:00.000Z",
+              "timezone": "Asia/Tokyo",
+              "unresolved": [],
+              "venue": {
+                "displayName": "国立競技場"
+              },
+              "verificationStatus": "verified"
+            },
+            {
+              "coverage": {
+                "included": 30,
+                "total": 31
+              },
+              "date": "2026-06-21",
+              "displayName": "DAY 2",
+              "excluded": [
+                {
+                  "kind": "setlist-entry",
+                  "reason": "Overture: non-catalog-intro",
+                  "sourceId": "source-order:1"
+                }
+              ],
+              "id": "equal-love:performance:kokuritsu_2026:day2",
+              "lifecycle": "completed",
+              "setlist": [
+                {
+                  "order": 2,
+                  "songRef": {
+                    "entityId": "equal-love:song:tokubechu-shite",
+                    "fallback": {
+                      "date": "2026-06-21",
+                      "groupName": "equal-love",
+                      "title": "とくべチュ、して",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 3,
+                  "songRef": {
+                    "entityId": "equal-love:song:oh-darling",
+                    "fallback": {
+                      "date": "2026-06-21",
+                      "groupName": "equal-love",
+                      "title": "Oh!Darling",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 4,
+                  "songRef": {
+                    "entityId": "equal-love:song:natsumatope",
+                    "fallback": {
+                      "date": "2026-06-21",
+                      "groupName": "equal-love",
+                      "title": "ナツマトペ",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 5,
+                  "songRef": {
+                    "entityId": "equal-love:song:hiroinzu",
+                    "fallback": {
+                      "date": "2026-06-21",
+                      "groupName": "equal-love",
+                      "title": "ヒロインズ",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 6,
+                  "songRef": {
+                    "entityId": "equal-love:song:o-himesama-nishiteyo",
+                    "fallback": {
+                      "date": "2026-06-21",
+                      "groupName": "equal-love",
+                      "title": "お姫様にしてよ!",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 7,
+                  "songRef": {
+                    "entityId": "equal-love:song:be-selfish",
+                    "fallback": {
+                      "date": "2026-06-21",
+                      "groupName": "equal-love",
+                      "title": "Be Selfish",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 8,
+                  "songRef": {
+                    "entityId": "equal-love:song:bokura-no-seifuku-christmas",
+                    "fallback": {
+                      "date": "2026-06-21",
+                      "groupName": "equal-love",
+                      "title": "僕らの制服クリスマス",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 9,
+                  "songRef": {
+                    "entityId": "equal-love:song:love-song-ni-osowareru",
+                    "fallback": {
+                      "date": "2026-06-21",
+                      "groupName": "equal-love",
+                      "title": "ラブソングに襲われる",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 10,
+                  "songRef": {
+                    "entityId": "equal-love:song:want-you-want-you",
+                    "fallback": {
+                      "date": "2026-06-21",
+                      "groupName": "equal-love",
+                      "title": "Want you!Want you!",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 11,
+                  "songRef": {
+                    "entityId": "equal-love:song:queens",
+                    "fallback": {
+                      "date": "2026-06-21",
+                      "groupName": "equal-love",
+                      "title": "Queens",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 12,
+                  "songRef": {
+                    "entityId": "equal-love:song:mayonaka-maameido",
+                    "fallback": {
+                      "date": "2026-06-21",
+                      "groupName": "equal-love",
+                      "title": "真夜中マーメイド",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 13,
+                  "songRef": {
+                    "entityId": "equal-love:song:gekiyaku-chuudoku",
+                    "fallback": {
+                      "date": "2026-06-21",
+                      "groupName": "equal-love",
+                      "title": "劇薬中毒",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 14,
+                  "songRef": {
+                    "entityId": "equal-love:song:doraibu-deeto-tonai",
+                    "fallback": {
+                      "date": "2026-06-21",
+                      "groupName": "equal-love",
+                      "title": "ドライブ デート 都内",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 15,
+                  "songRef": {
+                    "entityId": "equal-love:song:shukipi",
+                    "fallback": {
+                      "date": "2026-06-21",
+                      "groupName": "equal-love",
+                      "title": "しゅきぴ",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 16,
+                  "songRef": {
+                    "entityId": "equal-love:song:ki-more-nichi-mezoforute",
+                    "fallback": {
+                      "date": "2026-06-21",
+                      "groupName": "equal-love",
+                      "title": "木漏れ日メゾフォルテ",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 17,
+                  "songRef": {
+                    "entityId": "equal-love:song:nakanaori-shuukuriimu",
+                    "fallback": {
+                      "date": "2026-06-21",
+                      "groupName": "equal-love",
+                      "title": "仲直りシュークリーム",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 18,
+                  "songRef": {
+                    "entityId": "equal-love:song:o-himesama-no-tsukurikata",
+                    "fallback": {
+                      "date": "2026-06-21",
+                      "groupName": "equal-love",
+                      "title": "お姫様の作り方",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 19,
+                  "songRef": {
+                    "entityId": "equal-love:song:choutokkyuu-tousou-naka",
+                    "fallback": {
+                      "date": "2026-06-21",
+                      "groupName": "equal-love",
+                      "title": "超特急逃走中",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 20,
+                  "songRef": {
+                    "entityId": "equal-love:song:naisho-banashi",
+                    "fallback": {
+                      "date": "2026-06-21",
+                      "groupName": "equal-love",
+                      "title": "内緒バナシ",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 21,
+                  "songRef": {
+                    "entityId": "equal-love:song:junkies",
+                    "fallback": {
+                      "date": "2026-06-21",
+                      "groupName": "equal-love",
+                      "title": "Junkies",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 22,
+                  "songRef": {
+                    "entityId": "equal-love:song:moratoriamu",
+                    "fallback": {
+                      "date": "2026-06-21",
+                      "groupName": "equal-love",
+                      "title": "モラトリアム",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 23,
+                  "songRef": {
+                    "entityId": "equal-love:song:seishun-subliminal",
+                    "fallback": {
+                      "date": "2026-06-21",
+                      "groupName": "equal-love",
+                      "title": "青春”サブリミナル”",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 24,
+                  "songRef": {
+                    "entityId": "equal-love:song:natsumatsuri-renbo-u",
+                    "fallback": {
+                      "date": "2026-06-21",
+                      "groupName": "equal-love",
+                      "title": "夏祭り恋慕う",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 25,
+                  "songRef": {
+                    "entityId": "equal-love:song:zettai-idol-yamenaide",
+                    "fallback": {
+                      "date": "2026-06-21",
+                      "groupName": "equal-love",
+                      "title": "絶対アイドル辞めないで",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 26,
+                  "songRef": {
+                    "entityId": "equal-love:song:dakaratote",
+                    "fallback": {
+                      "date": "2026-06-21",
+                      "groupName": "equal-love",
+                      "title": "だからとて",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 27,
+                  "songRef": {
+                    "entityId": "equal-love:song:kono-sora-ga-trigger",
+                    "fallback": {
+                      "date": "2026-06-21",
+                      "groupName": "equal-love",
+                      "title": "この空がトリガー",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 28,
+                  "songRef": {
+                    "entityId": "equal-love:song:sagase-diamond-lily",
+                    "fallback": {
+                      "date": "2026-06-21",
+                      "groupName": "equal-love",
+                      "title": "探せ ダイヤモンドリリー",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 29,
+                  "songRef": {
+                    "entityId": "equal-love:song:egao-no-reshipi",
+                    "fallback": {
+                      "date": "2026-06-21",
+                      "groupName": "equal-love",
+                      "title": "笑顔のレシピ",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 30,
+                  "songRef": {
+                    "entityId": "equal-love:song:equal-love",
+                    "fallback": {
+                      "date": "2026-06-21",
+                      "groupName": "equal-love",
+                      "title": "=LOVE",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 31,
+                  "songRef": {
+                    "entityId": "equal-love:song:sutaato",
+                    "fallback": {
+                      "date": "2026-06-21",
+                      "groupName": "equal-love",
+                      "title": "スタート!",
+                      "venueName": "国立競技場"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                }
+              ],
+              "sourceUrls": [
+                "https://x.com/equal_love_12/status/2068677833850057105?s=46",
+                "https://music.apple.com/cn/playlist/love-stadium-live-beyond-kyun-day2/pl.u-RRbVY3VCmE99WZA"
+              ],
+              "startAt": "2026-06-21T08:30:00.000Z",
+              "timezone": "Asia/Tokyo",
+              "unresolved": [],
+              "venue": {
+                "displayName": "国立競技場"
+              },
+              "verificationStatus": "verified"
+            }
+          ],
+          "sourceUrls": [
+            "https://equal-love.jp/news/detail/11476",
+            "https://equal-love.jp/news/detail/11595"
+          ],
+          "timezone": "Asia/Tokyo",
+          "unresolved": [],
+          "venue": {
+            "displayName": "国立競技場"
+          },
+          "verificationStatus": "verified"
+        },
+        {
+          "coverage": {
+            "included": 1,
+            "total": 1
+          },
+          "dates": {
+            "end": "2027-01-20",
+            "start": "2027-01-19"
+          },
+          "displayName": "＝LOVE in TOKYO DOME",
+          "excluded": [],
+          "id": "equal-love:event:tokyo_dome_2027",
+          "lifecycle": "scheduled",
+          "performances": [],
+          "sourceUrls": [
+            "https://equal-love.jp/news/detail/11613"
+          ],
+          "timezone": "Asia/Tokyo",
+          "unresolved": [],
+          "venue": {
+            "displayName": "東京ドーム"
+          },
+          "verificationStatus": "verified"
+        }
+      ],
+      "id": "equal-love:group:equal-love",
+      "siteId": "equal-love"
+    },
+    {
+      "displayName": "nearly-equal-joy",
+      "events": [
+        {
+          "coverage": {
+            "included": 1,
+            "total": 1
+          },
+          "dates": {
+            "end": "2026-03-13",
+            "start": "2026-03-13"
+          },
+          "displayName": "≒JOY 4th ANNIVERSARY PREMIUM CONCERT",
+          "excluded": [],
+          "id": "nearly-equal-joy:event:joy_4th_anniversary_2026_afterglow",
+          "lifecycle": "completed",
+          "performances": [
+            {
+              "coverage": {
+                "included": 28,
+                "total": 29
+              },
+              "date": "2026-03-13",
+              "displayName": "昼公演",
+              "excluded": [
+                {
+                  "kind": "setlist-entry",
+                  "reason": "Overture: non-catalog-intro",
+                  "sourceId": "before-source-order:1"
+                }
+              ],
+              "id": "nearly-equal-joy:performance:joy_4th_anniversary_2026_afterglow:day",
+              "lifecycle": "completed",
+              "setlist": [
+                {
+                  "order": 1,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:nearly-equal-joy",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "≒JOY",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 2,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:kyou-mo-kun-no-yume-wo-mita-nda",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "今日も君の夢を見たんだ",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 3,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:suiitoshikkusuteiin",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "スイートシックスティーン",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 4,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:3-ke-gatsu",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "♡3ヶ月♡",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 5,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:taiikukan-disuko",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "体育館ディスコ",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 6,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:dadada-datte",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "だだだ、だって。",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 7,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:0120-o-tasuke-ya-san",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "0120お助け屋さん",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 8,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:nonfikushon",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "ノンフィクション",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 9,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:the-rock-is-you",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "The rock is you!",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 10,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:sono-saki-ha-iguzaruto",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "その先はイグザルト",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 11,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:ai-ga-itaka-tta",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "愛が痛かった",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 12,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:amagamigaaru-feat-dj-alice",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "アマガミガール feat. DJ ALICE",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 13,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:yumemi-ru-aidoru",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "夢見るアイドル",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 14,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:waratsu-te-furajiiru",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "笑って フラジール",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 15,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:mubou-nin",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "無謀人",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 16,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:chou-kodoku-raion",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "超孤独ライオン",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 17,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:niajoi-ondo",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "ニアジョイ音頭",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 18,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:piichiteii-to-piichipai",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "ピーチティーとピーチパイ",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 19,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:buruuhawairemon",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "ブルーハワイレモン",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 20,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:hatsukoi-shinderera",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "初恋シンデレラ",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 21,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:ima-gatsu-ha-michi-ru",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "いま、月は満ちる",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 22,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:denwabangou-oshie-te",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "電話番号教えて!",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 23,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:boku-tachino-uta",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "僕たちの歌",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 24,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:ima-koi-woshiteiru",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "今、恋をしている",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 25,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:oozora-byun-to",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "大空、ビュンと",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 26,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:nebagiba-iki-ro",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "ネバギバ!生きろ",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 27,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:denwabangou-oshie-te",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "電話番号教えて!",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 28,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:kitto-aoi",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "きっと、青い",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                }
+              ],
+              "sourceUrls": [
+                "https://prtimes.jp/main/html/rd/p/000004808.000013546.html",
+                "https://filtrjapan.lnk.to/nearly-equal-joy-budokanTA",
+                "https://ototoy.jp/news/129065"
+              ],
+              "startAt": "2026-03-13T03:30:00.000Z",
+              "timezone": "Asia/Tokyo",
+              "unresolved": [],
+              "venue": {
+                "displayName": "日本武道館"
+              },
+              "verificationStatus": "verified"
+            },
+            {
+              "coverage": {
+                "included": 29,
+                "total": 30
+              },
+              "date": "2026-03-13",
+              "displayName": "夜公演",
+              "excluded": [
+                {
+                  "kind": "setlist-entry",
+                  "reason": "Overture: non-catalog-intro",
+                  "sourceId": "before-source-order:1"
+                }
+              ],
+              "id": "nearly-equal-joy:performance:joy_4th_anniversary_2026_afterglow:night",
+              "lifecycle": "completed",
+              "setlist": [
+                {
+                  "order": 1,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:nearly-equal-joy",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "≒JOY",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 2,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:kyou-mo-kun-no-yume-wo-mita-nda",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "今日も君の夢を見たんだ",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 3,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:suiitoshikkusuteiin",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "スイートシックスティーン",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 4,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:3-ke-gatsu",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "♡3ヶ月♡",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 5,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:taiikukan-disuko",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "体育館ディスコ",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 6,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:dadada-datte",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "だだだ、だって。",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 7,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:0120-o-tasuke-ya-san",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "0120お助け屋さん",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 8,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:nonfikushon",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "ノンフィクション",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 9,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:the-rock-is-you",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "The rock is you!",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 10,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:sono-saki-ha-iguzaruto",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "その先はイグザルト",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 11,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:ai-ga-itaka-tta",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "愛が痛かった",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 12,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:amagamigaaru-feat-dj-alice",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "アマガミガール feat. DJ ALICE",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 13,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:yumemi-ru-aidoru",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "夢見るアイドル",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 14,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:waratsu-te-furajiiru",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "笑って フラジール",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 15,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:mubou-nin",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "無謀人",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 16,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:chou-kodoku-raion",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "超孤独ライオン",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 17,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:niajoi-ondo",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "ニアジョイ音頭",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 18,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:piichiteii-to-piichipai",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "ピーチティーとピーチパイ",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 19,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:buruuhawairemon",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "ブルーハワイレモン",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 20,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:hatsukoi-shinderera",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "初恋シンデレラ",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 21,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:ima-gatsu-ha-michi-ru",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "いま、月は満ちる",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 22,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:denwabangou-oshie-te",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "電話番号教えて!",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 23,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:boku-tachino-uta",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "僕たちの歌",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 24,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:ima-koi-woshiteiru",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "今、恋をしている",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 25,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:oozora-byun-to",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "大空、ビュンと",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 26,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:nebagiba-iki-ro",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "ネバギバ!生きろ",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 27,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:denwabangou-oshie-te",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "電話番号教えて!",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 28,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:kitto-aoi",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "きっと、青い",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 29,
+                  "songRef": {
+                    "entityId": "nearly-equal-joy:song:nearly-equal-joy",
+                    "fallback": {
+                      "date": "2026-03-13",
+                      "groupName": "nearly-equal-joy",
+                      "title": "≒JOY",
+                      "venueName": "日本武道館"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                }
+              ],
+              "sourceUrls": [
+                "https://prtimes.jp/main/html/rd/p/000004808.000013546.html",
+                "https://filtrjapan.lnk.to/nearly-equal-joy-budokanTA",
+                "https://ototoy.jp/news/129065"
+              ],
+              "startAt": "2026-03-13T09:00:00.000Z",
+              "timezone": "Asia/Tokyo",
+              "unresolved": [],
+              "venue": {
+                "displayName": "日本武道館"
+              },
+              "verificationStatus": "verified"
+            }
+          ],
+          "sourceUrls": [
+            "https://nearly-equal-joy.jp/feature/specialsite_4thanniversary",
+            "https://nearly-equal-joy.jp/news/detail/3157",
+            "https://nearly-equal-joy.jp/news/detail/3182"
+          ],
+          "timezone": "Asia/Tokyo",
+          "unresolved": [],
+          "venue": {
+            "displayName": "日本武道館"
+          },
+          "verificationStatus": "verified"
+        }
+      ],
+      "id": "nearly-equal-joy:group:nearly-equal-joy",
+      "siteId": "nearly-equal-joy"
+    },
+    {
+      "displayName": "not-equal-me",
+      "events": [
+        {
+          "coverage": {
+            "included": 1,
+            "total": 1
+          },
+          "dates": {
+            "end": "2026-02-23",
+            "start": "2026-02-23"
+          },
+          "displayName": "≠ME 7th ANNIVERSARY PREMIUM CONCERT",
+          "excluded": [],
+          "id": "not-equal-me:event:not_equal_me_7th_anniversary_2026_afterglow",
+          "lifecycle": "completed",
+          "performances": [
+            {
+              "coverage": {
+                "included": 27,
+                "total": 28
+              },
+              "date": "2026-02-23",
+              "displayName": "昼公演",
+              "excluded": [
+                {
+                  "kind": "setlist-entry",
+                  "reason": "Overture: non-catalog-intro",
+                  "sourceId": "source-order:1"
+                }
+              ],
+              "id": "not-equal-me:performance:not_equal_me_7th_anniversary_2026_afterglow:day",
+              "lifecycle": "completed",
+              "setlist": [
+                {
+                  "order": 2,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:haitateki-faitaa",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "排他的ファイター",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 3,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:tenshi-ha-doko-he",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "天使は何処へ",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 4,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:saikyou-no-rabusongu",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "最強のラブソング",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 5,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:hiroin-to-ookami",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "ヒロインとオオカミ",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 6,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:su-suki-janai",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "す、好きじゃない!",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 7,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:samaachokoreeto",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "サマーチョコレート",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 8,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:marcato",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "Marcato",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 9,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:deeto-zenya-rekuiemu",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "デート前夜レクイエム",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 10,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:kafe-rakuen",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "カフェ樂園",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 11,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:urutorareakissu",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "ウルトラレアキッス",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 12,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:kochira-happii-tankentai",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "こちらハッピー探検隊",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 13,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:mashumarofurooto",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "マシュマロフロート",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 14,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:konomamade-moomentari",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "このままでモーメンタリ",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 15,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:hatsukoi-kamubakku",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "初恋カムバック",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 16,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:momoiro-deibureiku",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "桃色デイブレイク",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 17,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:hanbunko-kurisumasu",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "はんぶんこクリスマス",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 18,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:mobunoderera",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "モブノデレラ",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 19,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:kamisama-no-iu-toori",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "神様の言うとーり!",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 20,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:kyunkawa-jinsei",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "きゅんかわ人生",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 21,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:hanikami-shooto",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "はにかみショート",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 22,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:mahoroba-asutarisuku",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "まほろばアスタリスク",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 23,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:rasutochansu-rasutodansu",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "ラストチャンス、ラストダンス",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 24,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:not-equal-me",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "≠ME",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 25,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:himitsu-inshidento",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "秘密インシデント",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 26,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:kun-no-oto-dattanda",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "君の音だったんだ",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 27,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:niji-ga-kaka-ru-shunkan",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "虹が架かる瞬間",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 28,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:kun-to-boku-no-uta",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "君と僕の歌",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                }
+              ],
+              "sourceUrls": [
+                "https://news.kingrecords.co.jp/2026/02/51176/",
+                "https://playlist.kingrecords.co.jp/?p=2804&post_type=playlist",
+                "https://ototoy.jp/news/128770"
+              ],
+              "startAt": "2026-02-23T03:30:00.000Z",
+              "timezone": "Asia/Tokyo",
+              "unresolved": [],
+              "venue": {
+                "displayName": "Ｋアリーナ横浜"
+              },
+              "verificationStatus": "verified"
+            },
+            {
+              "coverage": {
+                "included": 28,
+                "total": 29
+              },
+              "date": "2026-02-23",
+              "displayName": "夜公演",
+              "excluded": [
+                {
+                  "kind": "setlist-entry",
+                  "reason": "Overture: non-catalog-intro",
+                  "sourceId": "source-order:1"
+                }
+              ],
+              "id": "not-equal-me:performance:not_equal_me_7th_anniversary_2026_afterglow:night",
+              "lifecycle": "completed",
+              "setlist": [
+                {
+                  "order": 2,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:haitateki-faitaa",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "排他的ファイター",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 3,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:tenshi-ha-doko-he",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "天使は何処へ",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 4,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:saikyou-no-rabusongu",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "最強のラブソング",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 5,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:hiroin-to-ookami",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "ヒロインとオオカミ",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 6,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:su-suki-janai",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "す、好きじゃない!",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 7,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:hakumei-kousen",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "薄明光線",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 8,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:ofushorunitto",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "#おふしょるにっと",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 9,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:2-jihan-rokenroo",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "2時半ろけんろー",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 10,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:daremo-inai-mori-no-oku-de-ippon-no-ki-ga-taore-tara-oto-hasuruka",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "誰もいない森の奥で一本の木が倒れたら音はするか?",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 11,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:sou-waseburikko",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "想わせぶりっこ",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 12,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:teyuuka-mirutentte-nani",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "てゆーか、みるてんって何?",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 13,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:watashiakusento",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "ワタシアクセント",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 14,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:furoakiraa",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "フロアキラー",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 15,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:kun-ha-supaakuru",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "君はスパークル",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 16,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:kuuhaku-no-hana",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "空白の花",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 17,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:hanbunko-kurisumasu",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "はんぶんこクリスマス",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 18,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:mobunoderera",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "モブノデレラ",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 19,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:kamisama-no-iu-toori",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "神様の言うとーり!",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 20,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:kyunkawa-jinsei",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "きゅんかわ人生",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 21,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:hanikami-shooto",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "はにかみショート",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 22,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:mahoroba-asutarisuku",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "まほろばアスタリスク",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 23,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:rasutochansu-rasutodansu",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "ラストチャンス、ラストダンス",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 24,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:not-equal-me",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "≠ME",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 25,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:himitsu-inshidento",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "秘密インシデント",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 26,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:kun-no-oto-dattanda",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "君の音だったんだ",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 27,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:niji-ga-kaka-ru-shunkan",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "虹が架かる瞬間",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 28,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:kun-to-boku-no-uta",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "君と僕の歌",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                },
+                {
+                  "order": 29,
+                  "songRef": {
+                    "entityId": "not-equal-me:song:not-equal-me",
+                    "fallback": {
+                      "date": "2026-02-23",
+                      "groupName": "not-equal-me",
+                      "title": "≠ME",
+                      "venueName": "Ｋアリーナ横浜"
+                    },
+                    "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+                  }
+                }
+              ],
+              "sourceUrls": [
+                "https://news.kingrecords.co.jp/2026/02/51176/",
+                "https://playlist.kingrecords.co.jp/?p=2808&post_type=playlist",
+                "https://ototoy.jp/news/128770"
+              ],
+              "startAt": "2026-02-23T09:30:00.000Z",
+              "timezone": "Asia/Tokyo",
+              "unresolved": [],
+              "venue": {
+                "displayName": "Ｋアリーナ横浜"
+              },
+              "verificationStatus": "verified"
+            }
+          ],
+          "sourceUrls": [
+            "https://not-equal-me.jp/feature/specialsite_7thanniversary",
+            "https://not-equal-me.jp/news/detail/6885",
+            "https://not-equal-me.jp/schedule/detail/6886"
+          ],
+          "timezone": "Asia/Tokyo",
+          "unresolved": [],
+          "venue": {
+            "displayName": "Ｋアリーナ横浜"
+          },
+          "verificationStatus": "verified"
+        }
+      ],
+      "id": "not-equal-me:group:not-equal-me",
+      "siteId": "not-equal-me"
+    }
+  ],
+  "schemaVersion": 1,
+  "sourceCommit": "f939c9a17d5e58bab0c5a9440a7e768ac1af2ba8",
+  "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1"
+}

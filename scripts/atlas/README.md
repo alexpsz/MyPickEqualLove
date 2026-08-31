@@ -64,9 +64,10 @@ inputs, an absent artifact, a hand-edited artifact, or a C0 schema change. Both
 commands accept only the exact repository-relative generated-artifact path; an
 arbitrary caller path is never read, removed, or written.
 
-The current receipt is intentionally HOLD for all three seeds. Existing
-`published`, `verified`, coverage, and unresolved values do not approve Atlas
-publication. No public projection is valid while any one seed is HOLD.
+The current receipt is GO for all three bounded seeds. Each approval is bound
+to an exact source blob, song catalog, configured authority, maintenance owner,
+and active withdrawal state. Any later HOLD, withdrawal, staleness, or source
+drift invalidates the generated projection.
 
 ## Deterministic revisions and hash
 
@@ -116,8 +117,8 @@ must be a member of the coordinator-owned
 `isConfiguredAtlasPublicationApprover`; it must differ from the maintenance
 owner. The authority contract itself is a fixed receipt/hash/Git-blob binding,
 and neither receipt nor approval can supply a substitute roster. The production
-roster is intentionally empty, so production remains HOLD. An approval is also
-included in the receipt evidence-file hashes and source Git commit, so an old
+roster contains only the explicitly authorized Atlas product-owner role. An
+approval is also included in the receipt evidence-file hashes and source Git commit, so an old
 approval cannot authorize revised source bytes. Adding real approval or
 metadata requires a reviewed repository evidence change; the projector never
 infers permission from route publication or verification status.

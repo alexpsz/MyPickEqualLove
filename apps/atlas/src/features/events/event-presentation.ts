@@ -21,6 +21,7 @@ import type {
   PublicEntityReference,
   ReadableFallbackSnapshot,
 } from "../../contracts/public-reference.js";
+import { eventHref, performanceHref } from "./event-routes.js";
 
 export interface EventEvidenceViewModel {
   readonly verificationStatus: AtlasVerificationStatus;
@@ -38,12 +39,20 @@ export type EventRecordAction =
   | {
       readonly kind: "record-performance";
       readonly reference: PublicEntityReference<"performance">;
+      readonly officialStartAt: string | null;
+      readonly timezone: string;
     };
 
 export type EventRecordHandler = (action: EventRecordAction) => void;
 
 export interface ExactCanonicalSongLink {
   readonly entityId: NamespacedEntityId<"song">;
+  readonly sourceRevision: string;
+  readonly canonicalHref: string;
+}
+
+export interface ExactCanonicalEventLink {
+  readonly entityId: NamespacedEntityId<"event">;
   readonly sourceRevision: string;
   readonly canonicalHref: string;
 }
@@ -57,13 +66,18 @@ export type CanonicalSongSiteOrigins = Readonly<
 >;
 
 export interface EventPresentationOptions {
+  readonly canonicalEventLinks?: readonly ExactCanonicalEventLink[];
   readonly canonicalSongLinks?: readonly ExactCanonicalSongLink[];
   readonly canonicalSongSiteOrigins?: CanonicalSongSiteOrigins;
+  readonly groupNames?: Readonly<Partial<Record<PublicAtlasSiteId, string>>>;
+  readonly groupAccents?: Readonly<Partial<Record<PublicAtlasSiteId, string>>>;
 }
 
 export interface EventListItemViewModel {
   readonly eventId: NamespacedEntityId<"event">;
+  readonly siteId: PublicAtlasSiteId;
   readonly groupName: string;
+  readonly accentColor: string;
   readonly eventName: string;
   readonly venueName: string;
   readonly dateRange: string;
@@ -72,6 +86,8 @@ export interface EventListItemViewModel {
   readonly performanceCount: number;
   readonly isEventOnly: boolean;
   readonly evidence: EventEvidenceViewModel;
+  readonly detailHref: string;
+  readonly canonicalEventHref: string | null;
   readonly recordAction: EventRecordAction;
 }
 
@@ -84,6 +100,7 @@ export interface PerformanceSummaryViewModel {
   readonly lifecycle: AtlasLifecycle;
   readonly setlistCount: number;
   readonly evidence: EventEvidenceViewModel;
+  readonly detailHref: string;
   readonly recordAction: EventRecordAction;
 }
 
@@ -103,9 +120,36 @@ export interface PerformanceDetailViewModel extends PerformanceSummaryViewModel 
   readonly eventId: NamespacedEntityId<"event">;
   readonly eventName: string;
   readonly eventDateRange: string;
+  readonly eventDetailHref: string;
+  readonly canonicalEventHref: string | null;
   readonly isSetlistAvailable: boolean;
   readonly setlist: readonly SetlistSongViewModel[];
 }
+
+export type StaticPublicReferenceContext =
+  | {
+      readonly status: "resolved";
+      readonly sourceRevision: string;
+      readonly siteId: PublicAtlasSiteId;
+      readonly groupName: string;
+      readonly event: {
+        readonly id: NamespacedEntityId<"event">;
+        readonly name: string;
+        readonly dateRange: string;
+        readonly venueName: string;
+      };
+      readonly performance: {
+        readonly id: NamespacedEntityId<"performance">;
+        readonly name: string;
+        readonly date: string;
+        readonly venueName: string;
+      } | null;
+      readonly canonicalEventHref: string | null;
+    }
+  | {
+      readonly status: "stale" | "missing";
+      readonly reference: PublicEntityReference<"event" | "performance">;
+    };
 
 function dateRangeLabel(dates: ProjectionEvent["dates"]): string {
   return dates.start === dates.end
@@ -176,6 +220,8 @@ function performanceAction(
 ): EventRecordAction {
   return {
     kind: "record-performance",
+    officialStartAt: performance.startAt ?? null,
+    timezone: performance.timezone,
     reference: {
       entityId: performance.id,
       sourceRevision,
@@ -188,10 +234,14 @@ function mapEventSummary(
   group: ProjectionGroup,
   event: ProjectionEvent,
   sourceRevision: string,
+  options: EventPresentationOptions,
 ): EventListItemViewModel {
+  const groupName = options.groupNames?.[group.siteId] ?? group.displayName;
   return {
     eventId: event.id,
-    groupName: group.displayName,
+    siteId: group.siteId,
+    groupName,
+    accentColor: options.groupAccents?.[group.siteId] ?? "#b99b71",
     eventName: event.displayName,
     venueName: event.venue.displayName,
     dateRange: dateRangeLabel(event.dates),
@@ -200,7 +250,21 @@ function mapEventSummary(
     performanceCount: event.performances.length,
     isEventOnly: event.performances.length === 0,
     evidence: evidenceOf(event),
-    recordAction: eventAction(group, event, sourceRevision),
+    detailHref: eventHref(event.id),
+    canonicalEventHref: resolveExactCanonicalEventHref(
+      {
+        entityId: event.id,
+        sourceRevision,
+        fallback: eventFallback(groupName, event),
+      },
+      options.canonicalEventLinks,
+      options.canonicalSongSiteOrigins,
+    ),
+    recordAction: eventAction(
+      { ...group, displayName: groupName },
+      event,
+      sourceRevision,
+    ),
   };
 }
 
@@ -209,7 +273,9 @@ function mapPerformanceSummary(
   event: ProjectionEvent,
   performance: ProjectionPerformance,
   sourceRevision: string,
+  options: EventPresentationOptions,
 ): PerformanceSummaryViewModel {
+  const groupName = options.groupNames?.[group.siteId] ?? group.displayName;
   return {
     performanceId: performance.id,
     performanceName: performance.displayName,
@@ -219,7 +285,13 @@ function mapPerformanceSummary(
     lifecycle: performance.lifecycle,
     setlistCount: performance.setlist.length,
     evidence: evidenceOf(performance),
-    recordAction: performanceAction(group, event, performance, sourceRevision),
+    detailHref: performanceHref(performance.id),
+    recordAction: performanceAction(
+      { ...group, displayName: groupName },
+      event,
+      performance,
+      sourceRevision,
+    ),
   };
 }
 
@@ -299,6 +371,45 @@ export function resolveExactCanonicalSongHref(
   }
 }
 
+export function resolveExactCanonicalEventHref(
+  eventReference: PublicEntityReference<"event">,
+  canonicalEventLinks: readonly ExactCanonicalEventLink[] = [],
+  canonicalSiteOrigins?: CanonicalSongSiteOrigins,
+): string | null {
+  const parsedEventId = parseNamespacedEntityId(eventReference.entityId);
+  if (!parsedEventId.ok || parsedEventId.value.kind !== "event") return null;
+
+  const candidates = canonicalEventLinks.filter(
+    (candidate) => candidate.entityId === eventReference.entityId,
+  );
+  if (
+    candidates.length !== 1 ||
+    candidates[0].sourceRevision !== eventReference.sourceRevision
+  ) {
+    return null;
+  }
+
+  const trustedOrigin = parseTrustedSiteOrigin(
+    canonicalSiteOrigins?.[parsedEventId.value.siteId],
+  );
+  if (!trustedOrigin) return null;
+
+  try {
+    const url = new URL(candidates[0].canonicalHref);
+    return url.protocol === "https:" &&
+      url.username === "" &&
+      url.password === "" &&
+      url.search === "" &&
+      url.hash === "" &&
+      url.origin === trustedOrigin &&
+      /^\/live\/[a-z0-9]+(?:-[a-z0-9]+)*\/$/.test(url.pathname)
+      ? candidates[0].canonicalHref
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 function mapSetlistEntry(
   entry: ProjectionSetlistEntry,
   options: EventPresentationOptions,
@@ -352,10 +463,11 @@ function findPerformance(
 /** Maps only a C0-accepted projection; it never parses authoring data. */
 export function mapEventList(
   projection: PublicAtlasProjectionV1,
+  options: EventPresentationOptions = {},
 ): readonly EventListItemViewModel[] {
   return projection.groups.flatMap((group) =>
     group.events.map((event) =>
-      mapEventSummary(group, event, projection.sourceRevision),
+      mapEventSummary(group, event, projection.sourceRevision, options),
     ),
   );
 }
@@ -363,19 +475,26 @@ export function mapEventList(
 export function mapEventDetail(
   projection: PublicAtlasProjectionV1,
   eventId: NamespacedEntityId<"event">,
+  options: EventPresentationOptions = {},
 ): EventDetailViewModel | null {
   const found = findEvent(projection, eventId);
   if (!found) {
     return null;
   }
   return {
-    ...mapEventSummary(found.group, found.event, projection.sourceRevision),
+    ...mapEventSummary(
+      found.group,
+      found.event,
+      projection.sourceRevision,
+      options,
+    ),
     performances: found.event.performances.map((performance) =>
       mapPerformanceSummary(
         found.group,
         found.event,
         performance,
         projection.sourceRevision,
+        options,
       ),
     ),
   };
@@ -396,14 +515,98 @@ export function mapPerformanceDetail(
       found.event,
       found.performance,
       projection.sourceRevision,
+      options,
     ),
-    groupName: found.group.displayName,
+    groupName:
+      options.groupNames?.[found.group.siteId] ?? found.group.displayName,
     eventId: found.event.id,
     eventName: found.event.displayName,
     eventDateRange: dateRangeLabel(found.event.dates),
+    eventDetailHref: eventHref(found.event.id),
+    canonicalEventHref: resolveExactCanonicalEventHref(
+      {
+        entityId: found.event.id,
+        sourceRevision: projection.sourceRevision,
+        fallback: eventFallback(
+          options.groupNames?.[found.group.siteId] ?? found.group.displayName,
+          found.event,
+        ),
+      },
+      options.canonicalEventLinks,
+      options.canonicalSongSiteOrigins,
+    ),
     isSetlistAvailable: found.performance.setlist.length > 0,
     setlist: found.performance.setlist.map((entry) =>
       mapSetlistEntry(entry, options),
+    ),
+  };
+}
+
+/** Resolves saved public references against one accepted immutable projection. */
+export function resolveStaticPublicReference(
+  projection: PublicAtlasProjectionV1,
+  reference: PublicEntityReference<"event" | "performance">,
+  options: EventPresentationOptions = {},
+): StaticPublicReferenceContext {
+  if (reference.sourceRevision !== projection.sourceRevision) {
+    return { status: "stale", reference };
+  }
+
+  const parsed = parseNamespacedEntityId(reference.entityId);
+  if (
+    !parsed.ok ||
+    (parsed.value.kind !== "event" && parsed.value.kind !== "performance")
+  ) {
+    return { status: "missing", reference };
+  }
+
+  let found: {
+    readonly group: ProjectionGroup;
+    readonly event: ProjectionEvent;
+  };
+  let performance: ProjectionPerformance | null;
+  if (parsed.value.kind === "event") {
+    const eventResult = findEvent(projection, parsed.value.id);
+    if (!eventResult) return { status: "missing", reference };
+    found = eventResult;
+    performance = null;
+  } else {
+    const performanceResult = findPerformance(projection, parsed.value.id);
+    if (!performanceResult) return { status: "missing", reference };
+    found = performanceResult;
+    performance = performanceResult.performance;
+  }
+
+  const groupName =
+    options.groupNames?.[found.group.siteId] ?? found.group.displayName;
+  const eventReference: PublicEntityReference<"event"> = {
+    entityId: found.event.id,
+    sourceRevision: projection.sourceRevision,
+    fallback: eventFallback(groupName, found.event),
+  };
+  return {
+    status: "resolved",
+    sourceRevision: projection.sourceRevision,
+    siteId: found.group.siteId,
+    groupName,
+    event: {
+      id: found.event.id,
+      name: found.event.displayName,
+      dateRange: dateRangeLabel(found.event.dates),
+      venueName: found.event.venue.displayName,
+    },
+    performance: performance
+      ? {
+          id: performance.id,
+          name: performance.displayName,
+          date: performance.date,
+          venueName: performance.venue.displayName,
+        }
+      : null,
+    canonicalEventHref: resolveExactCanonicalEventHref(
+      eventReference,
+      options.canonicalEventLinks,
+      options.canonicalSongSiteOrigins,
     ),
   };
 }

@@ -66,6 +66,11 @@ async function compileDirectory(sourceDirectory) {
       .outputText.replaceAll(
         '"react/jsx-runtime"',
         JSON.stringify(reactJsxRuntimeUrl),
+      )
+      .replace(
+        /(from\s+["'](?:\.\.?\/)[^"']+)(["'])/g,
+        (match, specifier, quote) =>
+          /\.[cm]?js$/.test(specifier) ? match : `${specifier}.js${quote}`,
       );
     await writeFile(outputPath, output, "utf8");
   }
@@ -75,7 +80,9 @@ for (const sourceDirectory of [
   "components/events",
   "contracts",
   "features/events",
+  "features/journey",
   "i18n/events",
+  "ports",
 ]) {
   await compileDirectory(sourceDirectory);
 }
@@ -87,6 +94,8 @@ async function load(relativePath) {
 const identity = await load("contracts/identity.js");
 const projectionContract = await load("contracts/public-atlas-projection.js");
 const events = await load("features/events/event-presentation.js");
+const recordTime = await load("features/events/event-record-time.js");
+const recorder = await load("features/events/public-experience-recorder.js");
 const messages = await load("i18n/events/messages.js");
 const { EventsList } = await load("components/events/EventsList.js");
 const { EventDetail } = await load("components/events/EventDetail.js");
@@ -186,6 +195,7 @@ function acceptedProjectionFixture() {
             displayName: "Day",
             venue: { displayName: "Example Hall" },
             date: "2026-06-20",
+            startAt: "2026-06-20T08:30:00.000Z",
             timezone: "Asia/Tokyo",
             lifecycle: "completed",
             setlist: [
@@ -371,6 +381,92 @@ test("keeps a missing setlist empty and exposes its coverage and unresolved stat
   assert.deepEqual(detail.evidence.coverage, { included: 0, total: 1 });
   assert.equal(detail.evidence.unresolved.length, 1);
   assert.equal(detail.recordAction.kind, "record-performance");
+  assert.equal(detail.recordAction.officialStartAt, null);
+  assert.equal(detail.recordAction.timezone, "Asia/Tokyo");
+});
+
+test("uses official startAt only for in-person performance records", () => {
+  const projection = parsedFixture();
+  const { day, night } = findFixtureRecords(projection);
+  const dayAction = events.mapPerformanceDetail(
+    projection,
+    day.id,
+  ).recordAction;
+  const nightAction = events.mapPerformanceDetail(
+    projection,
+    night.id,
+  ).recordAction;
+
+  assert.equal(dayAction.kind, "record-performance");
+  assert.equal(dayAction.officialStartAt, "2026-06-20T08:30:00.000Z");
+  assert.equal(dayAction.timezone, "Asia/Tokyo");
+  assert.deepEqual(
+    recordTime.resolvePerformanceOccurredAt(dayAction, "in-person", ""),
+    {
+      status: "resolved",
+      occurredAt: "2026-06-20T08:30:00.000Z",
+      source: "official",
+    },
+  );
+  assert.deepEqual(
+    recordTime.resolvePerformanceOccurredAt(
+      dayAction,
+      "in-person",
+      "2030-01-01T00:00",
+    ),
+    {
+      status: "resolved",
+      occurredAt: "2026-06-20T08:30:00.000Z",
+      source: "official",
+    },
+  );
+
+  for (const mode of ["livestream", "archive"]) {
+    assert.deepEqual(
+      recordTime.resolvePerformanceOccurredAt(dayAction, mode, ""),
+      { status: "invalid-personal-time" },
+    );
+    const personalOccurredAt = "2026-06-20T12:00";
+    assert.deepEqual(
+      recordTime.resolvePerformanceOccurredAt(
+        dayAction,
+        mode,
+        personalOccurredAt,
+      ),
+      {
+        status: "resolved",
+        occurredAt: new Date(personalOccurredAt).toISOString(),
+        source: "personal",
+      },
+    );
+  }
+
+  assert.equal(nightAction.kind, "record-performance");
+  assert.deepEqual(
+    recordTime.resolvePerformanceOccurredAt(nightAction, "in-person", ""),
+    { status: "invalid-personal-time" },
+  );
+  assert.deepEqual(
+    recordTime.resolvePerformanceOccurredAt(
+      nightAction,
+      "in-person",
+      "not-a-time",
+    ),
+    { status: "invalid-personal-time" },
+  );
+  const explicitMissingStartAtTime = "2026-06-21T18:30";
+  assert.deepEqual(
+    recordTime.resolvePerformanceOccurredAt(
+      nightAction,
+      "in-person",
+      explicitMissingStartAtTime,
+    ),
+    {
+      status: "resolved",
+      occurredAt: new Date(explicitMissingStartAtTime).toISOString(),
+      source: "personal",
+    },
+  );
 });
 
 test("fails closed for canonical song links without one exact policy-bound mapping", () => {
@@ -449,6 +545,45 @@ test("fails closed for canonical song links without one exact policy-bound mappi
       canonicalSiteOrigins,
     ),
     null,
+  );
+});
+
+test("resolves an exact-revision Event reference for Memory and fails closed when stale", () => {
+  const projection = parsedFixture();
+  const { tokyoDome } = findFixtureRecords(projection);
+  const reference = events.mapEventDetail(projection, tokyoDome.id).recordAction
+    .reference;
+  const options = {
+    canonicalEventLinks: [
+      {
+        entityId: tokyoDome.id,
+        sourceRevision,
+        canonicalHref: "https://mypick.example/live/tokyo-dome-2027/",
+      },
+    ],
+    canonicalSongSiteOrigins: canonicalSiteOrigins,
+    groupNames: { "equal-love": "=LOVE" },
+  };
+  const resolved = events.resolveStaticPublicReference(
+    projection,
+    reference,
+    options,
+  );
+  assert.equal(resolved.status, "resolved");
+  assert.equal(resolved.groupName, "=LOVE");
+  assert.equal(resolved.event.name, "Tokyo Dome 2027");
+  assert.equal(resolved.performance, null);
+  assert.equal(
+    resolved.canonicalEventHref,
+    "https://mypick.example/live/tokyo-dome-2027/",
+  );
+  assert.equal(
+    events.resolveStaticPublicReference(
+      projection,
+      { ...reference, sourceRevision: "older-revision" },
+      options,
+    ).status,
+    "stale",
   );
 });
 
@@ -654,68 +789,266 @@ test("renders repeated accepted song references at distinct orders without key w
   );
 });
 
-test("holds all routes, generated artifacts, navigation, and persistence outside E2", async () => {
-  const appRoot = join(sourceRoot, "app");
-  const appTree = (await exists(appRoot)) ? await walkTree(appRoot) : [];
-  const routeSegments = new Set([
-    "event",
-    "events",
-    "performance",
-    "performances",
+test("wires static Event routes from strict generated artifacts and keeps one Journey writer", async () => {
+  for (const route of [
+    "app/events/page.tsx",
+    "app/events/[siteId]/[eventLocalId]/page.tsx",
+    "app/events/[siteId]/[eventLocalId]/[performanceLocalId]/page.tsx",
+  ]) {
+    assert.equal(await exists(join(sourceRoot, route)), true, route);
+  }
+  for (const artifact of [
+    "generated/public-atlas-projection.v1.json",
+    "generated/canonical-mypick-links.v1.json",
+  ]) {
+    assert.equal(await exists(join(sourceRoot, artifact)), true, artifact);
+  }
+
+  const reader = await readFile(
+    join(sourceRoot, "adapters/generated-public-projection-reader.ts"),
+    "utf8",
+  );
+  assert.match(reader, /parsePublicAtlasProjection/);
+  assert.doesNotMatch(reader, /live-experiences\.json/);
+
+  const canonicalLinks = await readFile(
+    join(sourceRoot, "config/canonical-mypick-links.ts"),
+    "utf8",
+  );
+  assert.doesNotMatch(
+    canonicalLinks,
+    /live-experiences\.json|projects\/registry|songRoutes|\bPROJECTS\b/,
+  );
+
+  const recordForm = await readFile(
+    join(sourceRoot, "components/events/EventRecordForm.tsx"),
+    "utf8",
+  );
+  assert.doesNotMatch(recordForm, /localStorage|sessionStorage/);
+  assert.match(recordForm, /createBrowserJourneyRepository/);
+  assert.match(recordForm, /recordPublicExperience/);
+  assert.match(recordForm, /recordPublicEventIntent/);
+
+  const recorder = await readFile(
+    join(sourceRoot, "features/events/public-experience-recorder.ts"),
+    "utf8",
+  );
+  assert.equal(
+    (recorder.match(/repository\.compareAndWrite/g) ?? []).length,
+    1,
+  );
+  assert.doesNotMatch(recorder, /localStorage|sessionStorage/);
+  assert.doesNotMatch(recorder, /\b(?:Mock|Demo)\b/);
+});
+
+test("performance recording owns its native-control geometry and keeps the moment optional", async () => {
+  const recordForm = await readFile(
+    join(sourceRoot, "components/events/EventRecordForm.tsx"),
+    "utf8",
+  );
+  const performancePage = await readFile(
+    join(sourceRoot, "components/events/PublicPerformancePage.tsx"),
+    "utf8",
+  );
+  const recordTimeSource = await readFile(
+    join(sourceRoot, "features/events/event-record-time.ts"),
+    "utf8",
+  );
+  const controlSource = await readFile(
+    join(sourceRoot, "components/journey/JourneyFormControls.tsx"),
+    "utf8",
+  );
+  const controlCss = await readFile(
+    join(sourceRoot, "components/journey/journey-ui.module.css"),
+    "utf8",
+  );
+  const globalCss = await readFile(join(sourceRoot, "app/globals.css"), "utf8");
+
+  const directRuleBodies = (className) =>
+    [...controlCss.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+      .filter((match) =>
+        match[1]
+          .split(",")
+          .some((selector) => selector.trim() === `.${className}`),
+      )
+      .map((match) => match[2])
+      .join("\n");
+
+  assert.match(controlSource, /styles\.nativeControl/);
+  assert.match(controlSource, /styles\.temporalControl/);
+  for (const className of ["nativeControl", "temporalControl"]) {
+    const rules = directRuleBodies(className);
+    assert.match(rules, /min-height:\s*2\.75rem/);
+    assert.match(rules, /border-radius:\s*var\(--atlas-radius-sm\)/);
+    assert.match(rules, /padding:\s*0\.6rem 0\.7rem/);
+    assert.match(rules, /background:\s*var\(--atlas-surface\)/);
+  }
+  assert.doesNotMatch(controlCss, /\.field \.nativeControl/);
+
+  assert.match(recordForm, /noValidate/);
+  assert.match(recordForm, /resolvePerformanceOccurredAt/);
+  assert.match(recordForm, /usesOfficialPerformanceStart/);
+  assert.match(recordForm, /<time dateTime=/);
+  assert.match(recordForm, /messages\.officialStartTimeHint/);
+  assert.match(
+    recordForm,
+    /onChange=\{\(event\) => \{[\s\S]*?setMode\([\s\S]*?setValidationError\(null\);[\s\S]*?\}\}/,
+  );
+  assert.match(recordTimeSource, /mode === "in-person"/);
+  assert.match(recordTimeSource, /action\.officialStartAt !== null/);
+  assert.match(recordTimeSource, /Number\.isNaN\(parsed\.getTime\(\)\)/);
+  assert.match(recordForm, /messages\.experienceTimeRequired/);
+  assert.match(recordForm, /messages\.highlightHint/);
+  assert.doesNotMatch(
+    recordForm,
+    /messages\.highlightRequired|validationError === "highlight"|setValidationError\("highlight"\)/,
+  );
+  const highlightField = recordForm.slice(
+    recordForm.indexOf('className="atlas-event-record__highlight"'),
+    recordForm.indexOf('className="atlas-event-record__songs"'),
+  );
+  assert.doesNotMatch(highlightField, /\brequired\b/);
+  assert.ok(
+    recordForm.indexOf('setStatus("saving")') >
+      recordForm.indexOf('setValidationError("experienceTime")'),
+  );
+  const optionalMomentLabels = {
+    "zh-CN": "最难忘的一刻（选填）",
+    en: "One standout moment (optional)",
+    ja: "心に残った瞬間（任意）",
+    ko: "기억에 남은 순간 (선택 사항)",
+  };
+  const officialTimeLabels = {
+    "zh-CN": ["官方开演时间", "现场记录将使用此场次的官方开演时间。"],
+    en: [
+      "Official start time",
+      "In-person records use this performance’s official start time.",
+    ],
+    ja: [
+      "公式開演時刻",
+      "現地参加の記録には、この公演の公式開演時刻を使用します。",
+    ],
+    ko: [
+      "공식 공연 시작 시간",
+      "현장 참여 기록에는 이 공연의 공식 시작 시간을 사용합니다.",
+    ],
+  };
+  for (const locale of messages.EVENTS_LOCALES) {
+    const catalog = messages.getEventsMessages(locale);
+    assert.ok(catalog.experienceTimeRequired.length > 0);
+    assert.equal(catalog.officialStartTime, officialTimeLabels[locale][0]);
+    assert.equal(catalog.officialStartTimeHint, officialTimeLabels[locale][1]);
+    assert.equal(catalog.highlight, optionalMomentLabels[locale]);
+    assert.ok(catalog.highlightHint.length > 0);
+    assert.notEqual(catalog.experienceTimeRequired, catalog.saveFailed);
+  }
+
+  assert.ok(
+    performancePage.indexOf("<EventRecordForm") <
+      performancePage.indexOf('<details className="atlas-events__setlist">'),
+  );
+  assert.match(
+    globalCss,
+    /\.atlas-events__record-hero h1\s*\{[\s\S]*?font-size:\s*clamp\(2rem,\s*5vw,\s*2\.75rem\)/,
+  );
+  assert.match(
+    globalCss,
+    /\.atlas-events__setlist summary,[\s\S]*?min-height:\s*2\.75rem/,
+  );
+  assert.match(
+    globalCss,
+    /\.atlas-events__primary\s*\{[\s\S]*?border-radius:\s*var\(--atlas-radius-sm\)/,
+  );
+});
+
+test("records a new public performance and its first experience in one CAS with no partial Journey", async () => {
+  const projection = parsedFixture();
+  const { day } = findFixtureRecords(projection);
+  const reference = events.mapPerformanceDetail(projection, day.id).recordAction
+    .reference;
+  const writes = [];
+  const repository = {
+    async read() {
+      return { status: "absent" };
+    },
+    async compareAndWrite(input) {
+      writes.push(input);
+      return {
+        status: "failure",
+        stage: "write",
+        rawBefore: null,
+        error: "quota",
+        rollback: { status: "not-required" },
+      };
+    },
+  };
+
+  const result = await recorder.recordPublicExperience(repository, {
+    reference,
+    journeyId: "public_performance_test",
+    entryId: "experience_test",
+    mode: "in-person",
+    occurredAt: "2026-06-20T09:30:00.000Z",
+    highlight: "The opening song",
+    songRefs: day.setlist.slice(0, 1).map((entry) => entry.songRef),
+    now: "2026-08-27T12:00:00.000Z",
+  });
+
+  assert.equal(result.status, "blocked");
+  assert.equal(result.reason, "write-failed");
+  assert.equal(writes.length, 1);
+  assert.deepEqual(writes[0].expectedRevision, { state: "absent" });
+  assert.equal(writes[0].next.revision, 0);
+  assert.equal(writes[0].next.journeys.length, 1);
+  assert.equal(writes[0].next.journeys[0].experienceEntries.length, 1);
+  assert.deepEqual(writes[0].next.journeys[0].experienceEntries[0].highlights, [
+    "The opening song",
   ]);
-  for (const appPath of appTree) {
-    const segments = relative(appRoot, appPath)
-      .split(/[\\/]/)
-      .filter(Boolean)
-      .map((segment) => segment.toLowerCase());
-    assert.equal(
-      segments.some((segment) => routeSegments.has(segment)),
-      false,
-      `App Router event/performance leakage: ${relative(sourceRoot, appPath)}`,
-    );
-  }
+});
 
-  const sourceTree = await walkTree(sourceRoot);
-  for (const sourcePath of sourceTree) {
-    const segments = relative(sourceRoot, sourcePath)
-      .split(/[\\/]/)
-      .filter(Boolean)
-      .map((segment) => segment.toLowerCase());
-    assert.equal(
-      segments.includes("generated"),
-      false,
-      `generated artifact leakage: ${relative(sourceRoot, sourcePath)}`,
-    );
-  }
+test("saves a blank optional moment as zero highlights with no empty string", async () => {
+  const projection = parsedFixture();
+  const { day } = findFixtureRecords(projection);
+  const reference = events.mapPerformanceDetail(projection, day.id).recordAction
+    .reference;
+  let committedDocument = null;
+  const repository = {
+    async read() {
+      return { status: "absent" };
+    },
+    async compareAndWrite(input) {
+      committedDocument = input.next;
+      return {
+        status: "committed",
+        readback: {
+          status: "valid",
+          raw: JSON.stringify(input.next),
+          value: input.next,
+        },
+      };
+    },
+  };
 
-  const e2Directories = [
-    join(sourceRoot, "components", "events"),
-    join(sourceRoot, "features", "events"),
-    join(sourceRoot, "i18n", "events"),
-  ];
-  const e2Files = (
-    await Promise.all(e2Directories.map((directory) => walkTree(directory)))
-  )
-    .flat()
-    .filter((filePath) => /\.tsx?$/.test(filePath));
-  const e2Source = (
-    await Promise.all(e2Files.map((filePath) => readFile(filePath, "utf8")))
-  ).join("\n");
+  const result = await recorder.recordPublicExperience(repository, {
+    reference,
+    journeyId: "public_performance_without_moment",
+    entryId: "experience_without_moment",
+    mode: "in-person",
+    occurredAt: "2026-06-20T09:30:00.000Z",
+    highlight: "  \n  ",
+    songRefs: [],
+    now: "2026-08-27T12:00:00.000Z",
+  });
 
-  assert.doesNotMatch(
-    e2Source,
-    /\b(?:localStorage|sessionStorage|JourneyRepository|journey-storage)\b/,
+  assert.equal(result.status, "saved");
+  assert.deepEqual(
+    committedDocument.journeys[0].experienceEntries[0].highlights,
+    [],
   );
-  assert.doesNotMatch(
-    e2Source,
-    /\b(?:parsePublicAtlasProjection|JSON\.parse)\b/,
+  assert.equal(
+    JSON.stringify(committedDocument).includes('"highlights":[""]'),
+    false,
   );
-  assert.doesNotMatch(e2Source, /(?:next\/link|next\/navigation|<nav\b)/i);
-  assert.doesNotMatch(
-    e2Source,
-    /(?:sitemap|robots|manifest|src\/generated|\/app\/(?:events?|performances?))/i,
-  );
-  assert.doesNotMatch(e2Source, /\b(?:Mock|Demo)\b/);
 });
 
 test("uses F0 token pairs and narrow-width-safe presentation contracts", async () => {

@@ -9,64 +9,96 @@ export function AtlasHome() {
   return (
     <div className="atlas-home" id="atlas-home">
       <section className="atlas-home__hero" aria-labelledby="atlas-home-title">
-        <p className="atlas-home__eyebrow">{messages.home.eyebrow}</p>
         <h1 id="atlas-home-title">{messages.home.title}</h1>
         <p className="atlas-home__intro">{messages.home.description}</p>
-        <a
-          aria-describedby="atlas-home-action-hint"
-          className="atlas-home__primary-action"
-          href={SHELL_ROUTES.localEvent}
-        >
-          {messages.home.primaryAction}
-          <span aria-hidden="true">→</span>
+        <div className="atlas-home__hero-actions">
+          <a className="atlas-home__primary-action" href={SHELL_ROUTES.events}>
+            {messages.home.primaryAction}
+            <HomeIcon name="arrow" />
+          </a>
+          <a
+            className="atlas-home__secondary-action"
+            href={SHELL_ROUTES.journey}
+          >
+            {messages.home.secondaryAction}
+            <HomeIcon name="arrow" />
+          </a>
+        </div>
+      </section>
+
+      <section
+        aria-label={messages.home.quickActionsLabel}
+        className="atlas-home__quick-actions"
+      >
+        <a className="atlas-home__quick-action" href={SHELL_ROUTES.journey}>
+          <span aria-hidden="true" className="atlas-home__quick-action-icon">
+            <HomeIcon name="journey" />
+          </span>
+          <span className="atlas-home__quick-action-copy">
+            <strong>{messages.home.journeyTitle}</strong>
+            <span>{messages.home.journeyDescription}</span>
+          </span>
+          <HomeIcon name="chevron" />
         </a>
-        <p className="atlas-home__action-hint" id="atlas-home-action-hint">
-          {messages.home.primaryActionHint}
-        </p>
-      </section>
-
-      <section
-        aria-labelledby="your-journey-title"
-        className="atlas-home__section"
-        id="your-journey"
-        tabIndex={-1}
-      >
-        <div className="atlas-home__section-heading">
-          <p>{messages.home.emptyStateLabel}</p>
-          <h2 id="your-journey-title">{messages.home.emptyStateTitle}</h2>
-        </div>
-        <div className="atlas-home__journey-card">
-          <span aria-hidden="true" className="atlas-home__journey-orbit" />
-          <p>{messages.home.emptyStateDescription}</p>
-        </div>
-      </section>
-
-      <section
-        aria-labelledby="local-custom-event-title"
-        className="atlas-home__section atlas-home__section--grid"
-        id="local-custom-event"
-        tabIndex={-1}
-      >
-        <article className="atlas-home__information-card">
-          <p className="atlas-home__card-kicker">Atlas</p>
-          <h2 id="local-custom-event-title">{messages.home.localEventTitle}</h2>
-          <p>{messages.home.localEventDescription}</p>
-          <div className="atlas-home__action-slot" role="status">
-            <strong>{messages.home.localEventAction}</strong>
-            <span>{messages.home.localEventStatus}</span>
-          </div>
-        </article>
-        <article className="atlas-home__information-card">
-          <p className="atlas-home__card-kicker">Atlas</p>
-          <h2>{messages.home.privacyTitle}</h2>
-          <p>{messages.home.privacyDescription}</p>
-        </article>
-        <article className="atlas-home__information-card atlas-home__information-card--quiet">
-          <p className="atlas-home__card-kicker">Atlas</p>
-          <h2>{messages.home.sourceStatusTitle}</h2>
-          <p>{messages.home.sourceStatusDescription}</p>
-        </article>
+        <a className="atlas-home__quick-action" href={SHELL_ROUTES.memory}>
+          <span aria-hidden="true" className="atlas-home__quick-action-icon">
+            <HomeIcon name="memory" />
+          </span>
+          <span className="atlas-home__quick-action-copy">
+            <strong>{messages.home.memoryTitle}</strong>
+            <span>{messages.home.memoryDescription}</span>
+          </span>
+          <HomeIcon name="chevron" />
+        </a>
+        <a className="atlas-home__quick-action" href={SHELL_ROUTES.localEvent}>
+          <span aria-hidden="true" className="atlas-home__quick-action-icon">
+            <HomeIcon name="events" />
+          </span>
+          <span className="atlas-home__quick-action-copy">
+            <strong>{messages.home.localEventTitle}</strong>
+            <span>{messages.home.localEventDescription}</span>
+          </span>
+          <HomeIcon name="chevron" />
+        </a>
       </section>
     </div>
+  );
+}
+
+function HomeIcon({
+  name,
+}: {
+  name: "arrow" | "chevron" | "events" | "journey" | "memory";
+}) {
+  return (
+    <svg
+      aria-hidden="true"
+      className="atlas-home__icon"
+      fill="none"
+      viewBox="0 0 24 24"
+    >
+      {name === "arrow" ? <path d="M5 12h14m-5-5 5 5-5 5" /> : null}
+      {name === "chevron" ? <path d="m9 6 6 6-6 6" /> : null}
+      {name === "events" ? (
+        <>
+          <path d="M5 7.5h14M7.5 4v7M16.5 4v7" />
+          <rect height="16" rx="2.5" width="18" x="3" y="5" />
+          <path d="M7 14h3M14 14h3M7 17.5h3" />
+        </>
+      ) : null}
+      {name === "journey" ? (
+        <>
+          <rect height="14" rx="2" width="16" x="4" y="6" />
+          <path d="M8 3v6M16 3v6M4 11h16M12 14v4M10 16h4" />
+        </>
+      ) : null}
+      {name === "memory" ? (
+        <>
+          <rect height="16" rx="2.5" width="18" x="3" y="4" />
+          <circle cx="8.5" cy="9" r="1.5" />
+          <path d="m5.5 17 4.5-4.5 3 3 2-2 3.5 3.5" />
+        </>
+      ) : null}
+    </svg>
   );
 }

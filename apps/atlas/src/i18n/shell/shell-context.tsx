@@ -13,18 +13,25 @@ import {
 import { SHELL_MESSAGES, type ShellLocale } from "./messages";
 import {
   DEFAULT_SHELL_PREFERENCES,
+  resolveShellLocale,
   resolveShellPreferences,
   SHELL_PREFERENCES_STORAGE_KEY,
+  type ShellLocalePreference,
   type ShellPreferences,
   type ShellTheme,
 } from "./shell-preferences";
 
-export type { ShellPreferences, ShellTheme } from "./shell-preferences";
+export type {
+  ShellLocalePreference,
+  ShellPreferences,
+  ShellTheme,
+} from "./shell-preferences";
 
 export interface ShellContextValue {
   locale: ShellLocale;
+  localePreference: ShellLocalePreference;
   messages: (typeof SHELL_MESSAGES)[ShellLocale];
-  setLocale: (locale: ShellLocale) => void;
+  setLocalePreference: (preference: ShellLocalePreference) => void;
   theme: ShellTheme;
   toggleTheme: () => void;
 }
@@ -92,21 +99,55 @@ export function ShellProvider({ children }: { children: ReactNode }) {
   );
   const [overrides, setOverrides] = useState<Partial<ShellPreferences>>({});
   const locale = overrides.locale ?? initialPreferences.locale;
+  const localePreference =
+    overrides.localePreference ?? initialPreferences.localePreference;
   const theme = overrides.theme ?? initialPreferences.theme;
 
   useEffect(() => {
     document.documentElement.lang = locale;
+    document.documentElement.dataset.locale = locale;
     document.documentElement.dataset.theme = theme;
     document.documentElement.style.colorScheme = theme;
   }, [locale, theme]);
 
+  useEffect(() => {
+    if (localePreference !== "auto") {
+      return;
+    }
+
+    const handleLanguageChange = () => {
+      const nextLocale = resolveShellLocale(
+        navigator.languages,
+        navigator.language,
+      );
+      const nextPreferences: ShellPreferences = {
+        locale: nextLocale,
+        localePreference: "auto",
+        theme,
+      };
+      setOverrides(nextPreferences);
+      persistPreferences(nextPreferences);
+    };
+
+    window.addEventListener("languagechange", handleLanguageChange);
+    return () => {
+      window.removeEventListener("languagechange", handleLanguageChange);
+    };
+  }, [localePreference, theme]);
+
   const value = useMemo<ShellContextValue>(
     () => ({
       locale,
+      localePreference,
       messages: SHELL_MESSAGES[locale],
-      setLocale: (nextLocale) => {
+      setLocalePreference: (nextPreference) => {
+        const nextLocale =
+          nextPreference === "auto"
+            ? resolveShellLocale(navigator.languages, navigator.language)
+            : nextPreference;
         const nextPreferences: ShellPreferences = {
           locale: nextLocale,
+          localePreference: nextPreference,
           theme,
         };
         setOverrides(nextPreferences);
@@ -116,13 +157,14 @@ export function ShellProvider({ children }: { children: ReactNode }) {
       toggleTheme: () => {
         const nextPreferences: ShellPreferences = {
           locale,
+          localePreference,
           theme: theme === "light" ? "dark" : "light",
         };
         setOverrides(nextPreferences);
         persistPreferences(nextPreferences);
       },
     }),
-    [locale, theme],
+    [locale, localePreference, theme],
   );
 
   return (

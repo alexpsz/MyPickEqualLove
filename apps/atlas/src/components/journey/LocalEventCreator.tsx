@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   useCallback,
   useEffect,
@@ -30,6 +31,10 @@ import {
   JourneyReadAlert,
   type JourneyOperationFeedback,
 } from "./JourneyAlerts";
+import {
+  JourneyNativeSelect,
+  JourneyNativeTemporalInput,
+} from "./JourneyFormControls";
 import { JourneyPageFrame } from "./JourneyPageFrame";
 import styles from "./journey-ui.module.css";
 
@@ -217,19 +222,17 @@ export function LocalEventCreator() {
       {(locale) => (
         <>
           <section className={styles.hero}>
-            <p className={styles.eyebrow}>
-              {journeyMessage(locale, "localOnly")}
-            </p>
             <h1 className={styles.title} ref={headingRef} tabIndex={-1}>
               {journeyMessage(locale, "localEventTitle")}
             </h1>
             <p className={styles.lede}>
               {journeyMessage(locale, "localEventIntro")}
             </p>
-            <p className={styles.privacyNote}>
-              <span className={styles.privacyDot} aria-hidden="true" />
-              <span>{journeyMessage(locale, "noAutomaticMerge")}</span>
-            </p>
+            <div className={styles.actionRow}>
+              <Link className={styles.buttonSecondary} href="/events/">
+                {journeyMessage(locale, "browseEvents")}
+              </Link>
+            </div>
           </section>
 
           <div className={styles.stack}>
@@ -252,7 +255,7 @@ export function LocalEventCreator() {
               </button>
             ) : null}
             {formBinding !== null && !needsReload ? (
-              <section className={styles.panel}>
+              <section className={`${styles.panel} ${styles.formPanel}`}>
                 <form
                   className={styles.form}
                   key={interactionGeneration}
@@ -260,14 +263,17 @@ export function LocalEventCreator() {
                 >
                   <label className={styles.field}>
                     <span>
-                      {journeyMessage(locale, "title")} ·{" "}
-                      {journeyMessage(locale, "required")}
+                      {journeyMessage(locale, "title")}
+                      <small className={styles.fieldRequirement}>
+                        {journeyMessage(locale, "required")}
+                      </small>
                     </span>
                     <input
                       autoComplete="off"
                       disabled={busy}
                       maxLength={256}
                       name="title"
+                      placeholder={journeyMessage(locale, "titlePlaceholder")}
                       required
                       type="text"
                     />
@@ -275,28 +281,41 @@ export function LocalEventCreator() {
                   <div className={styles.twoColumns}>
                     <label className={styles.field}>
                       <span>
-                        {journeyMessage(locale, "date")} ·{" "}
-                        {journeyMessage(locale, "optional")}
+                        {journeyMessage(locale, "date")}
+                        <small className={styles.fieldRequirement}>
+                          {journeyMessage(locale, "optional")}
+                        </small>
                       </span>
-                      <input disabled={busy} name="date" type="date" />
+                      <JourneyNativeTemporalInput
+                        disabled={busy}
+                        name="date"
+                        type="date"
+                      />
                     </label>
                     <label className={styles.field}>
                       <span>
-                        {journeyMessage(locale, "venue")} ·{" "}
-                        {journeyMessage(locale, "optional")}
+                        {journeyMessage(locale, "venue")}
+                        <small className={styles.fieldRequirement}>
+                          {journeyMessage(locale, "optional")}
+                        </small>
                       </span>
                       <input
                         autoComplete="off"
                         disabled={busy}
                         maxLength={256}
                         name="venue"
+                        placeholder={journeyMessage(locale, "venuePlaceholder")}
                         type="text"
                       />
                     </label>
                   </div>
                   <label className={styles.field}>
                     <span>{journeyMessage(locale, "intent")}</span>
-                    <select defaultValue="" disabled={busy} name="intent">
+                    <JourneyNativeSelect
+                      defaultValue=""
+                      disabled={busy}
+                      name="intent"
+                    >
                       <option value="">
                         {journeyMessage(locale, "intentNone")}
                       </option>
@@ -306,7 +325,7 @@ export function LocalEventCreator() {
                       <option value="planned">
                         {journeyMessage(locale, "intentPlanned")}
                       </option>
-                    </select>
+                    </JourneyNativeSelect>
                   </label>
                   <div className={styles.actionRow}>
                     <button

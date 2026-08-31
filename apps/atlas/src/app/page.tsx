@@ -1,5 +1,13 @@
-import { AtlasHome } from "@/features/home/atlas-home";
+import { GENERATED_PUBLIC_ATLAS_PROJECTION } from "@/adapters/generated-public-projection-reader";
+import { EventsIndexRoute } from "@/components/events/EventsRouteClient";
+import { eventPresentationOptions } from "@/config/canonical-mypick-links";
+import { mapEventList } from "@/features/events/event-presentation";
 
 export default function Home() {
-  return <AtlasHome />;
+  const projection = GENERATED_PUBLIC_ATLAS_PROJECTION;
+  return (
+    <EventsIndexRoute
+      events={mapEventList(projection, eventPresentationOptions(projection))}
+    />
+  );
 }

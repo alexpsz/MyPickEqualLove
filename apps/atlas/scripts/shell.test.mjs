@@ -215,12 +215,18 @@ test("the product-family adapter projects only the canonical URL-only facts", ()
 test("the shell preference resolver keeps locale and theme input bounded", () => {
   assert.deepEqual(
     preferences.parseShellPreferences('{"locale":"ja","theme":"dark"}'),
-    { locale: "ja", theme: "dark" },
+    { locale: "ja", localePreference: undefined, theme: "dark" },
   );
   assert.deepEqual(preferences.parseShellPreferences("not-json"), {});
   assert.deepEqual(
     preferences.parseShellPreferences('{"locale":"fr","theme":"neon"}'),
-    { locale: undefined, theme: undefined },
+    { locale: undefined, localePreference: undefined, theme: undefined },
+  );
+  assert.deepEqual(
+    preferences.parseShellPreferences(
+      '{"locale":"en","localePreference":"auto","theme":"light"}',
+    ),
+    { locale: "en", localePreference: "auto", theme: "light" },
   );
   assert.deepEqual(
     preferences.resolveShellPreferences({
@@ -228,7 +234,7 @@ test("the shell preference resolver keeps locale and theme input bounded", () =>
       prefersDark: true,
       storedValue: null,
     }),
-    { locale: "ko", theme: "dark" },
+    { locale: "ko", localePreference: "auto", theme: "dark" },
   );
   assert.deepEqual(
     preferences.resolveShellPreferences({
@@ -236,7 +242,16 @@ test("the shell preference resolver keeps locale and theme input bounded", () =>
       prefersDark: false,
       storedValue: '{"locale":"zh-CN","theme":"dark"}',
     }),
-    { locale: "zh-CN", theme: "dark" },
+    { locale: "zh-CN", localePreference: "zh-CN", theme: "dark" },
+  );
+  assert.deepEqual(
+    preferences.resolveShellPreferences({
+      browserLocales: ["ja-JP"],
+      prefersDark: false,
+      storedValue:
+        '{"locale":"zh-CN","localePreference":"auto","theme":"light"}',
+    }),
+    { locale: "ja", localePreference: "auto", theme: "light" },
   );
   assert.equal(
     preferences.resolveShellLocale(["en-US", "ja-JP"], undefined),
@@ -300,7 +315,7 @@ test("the pre-paint bootstrap renders as a native parser-blocking script and fai
   assert.deepEqual(malformedStorage.dataset, { theme: "dark" });
 });
 
-test("the four shell locales include skip-copy parity and language option tags", () => {
+test("the four shell locales use a custom radio menu rather than a native select", () => {
   const shell = readAtlasFile("src/components/shell/atlas-shell.tsx");
 
   assert.deepEqual(messages.SHELL_LOCALES, ["zh-CN", "en", "ja", "ko"]);
@@ -312,10 +327,14 @@ test("the four shell locales include skip-copy parity and language option tags",
     assert.ok(message.navigation.skipToMain.trim());
   }
 
-  assert.match(
-    shell,
-    /<option key=\{language\} lang=\{language\} value=\{language\}>/,
-  );
+  assert.match(shell, /role="menuitemradio"/);
+  assert.match(shell, /aria-haspopup="menu"/);
+  assert.match(shell, /LANGUAGE_OPTIONS/);
+  assert.match(shell, /event\.key !== "ArrowDown"/);
+  assert.match(shell, /event\.key === "Home"/);
+  assert.match(shell, /event\.key === "End"/);
+  assert.doesNotMatch(shell, /<select\b/);
+  assert.doesNotMatch(shell, /<option\b/);
 });
 
 test("the shell navigation targets the future static routes and marks only the current route", () => {
@@ -324,10 +343,27 @@ test("the shell navigation targets the future static routes and marks only the c
 
   assert.deepEqual(routes.SHELL_ROUTES, {
     home: "/",
+    events: "/events/",
     journey: "/journey/",
+    memory: "/memory/",
     localEvent: "/local-event/",
   });
   assert.equal(routes.isCurrentShellRoute("/", routes.SHELL_ROUTES.home), true);
+  assert.equal(
+    routes.isCurrentShellRoute("/events/", routes.SHELL_ROUTES.events),
+    true,
+  );
+  assert.equal(
+    routes.isCurrentShellRoute(
+      "/events/equal-love/tokyo-dome/",
+      routes.SHELL_ROUTES.events,
+    ),
+    true,
+  );
+  assert.equal(
+    routes.isCurrentShellRoute("/events/", routes.SHELL_ROUTES.home),
+    false,
+  );
   assert.equal(
     routes.isCurrentShellRoute("/journey", routes.SHELL_ROUTES.journey),
     true,
@@ -342,17 +378,12 @@ test("the shell navigation targets the future static routes and marks only the c
   );
   assert.match(shell, /usePathname/);
   assert.match(shell, /isCurrentShellRoute\(pathname, SHELL_ROUTES\.home\)/);
+  assert.match(shell, /isCurrentShellRoute\(pathname, SHELL_ROUTES\.events\)/);
   assert.match(shell, /isCurrentShellRoute\(pathname, SHELL_ROUTES\.journey\)/);
-  assert.match(
-    shell,
-    /isCurrentShellRoute\(pathname, SHELL_ROUTES\.localEvent\)/,
-  );
   assert.match(shell, /href=\{SHELL_ROUTES\.journey\}/);
-  assert.match(shell, /href=\{SHELL_ROUTES\.localEvent\}/);
   assert.match(home, /href=\{SHELL_ROUTES\.localEvent\}/);
   assert.doesNotMatch(shell, /aria-current="page"/);
-  assert.doesNotMatch(shell, /Events/);
-  assert.doesNotMatch(shell, /events/);
+  assert.doesNotMatch(shell, /SHELL_ROUTES\.localEvent/);
 });
 
 test("accent foregrounds retain contrast in light and dark default and hover states", () => {
@@ -383,12 +414,8 @@ test("accent foregrounds retain contrast in light and dark default and hover sta
   }
 
   assert.match(
-    extractCssRule(styles, ".atlas-shell__brand-mark"),
-    /color: var\(--atlas-on-accent\)/,
-  );
-  assert.match(
-    extractCssRule(styles, ".atlas-home__primary-action"),
-    /color: var\(--atlas-on-accent\)/,
+    styles,
+    /\.atlas-home__primary-action \{[\s\S]*?color: var\(--atlas-on-accent\)/,
   );
   assert.match(
     extractCssRule(styles, ".atlas-home__primary-action:hover"),
@@ -400,7 +427,7 @@ test("the shell keeps keyboard focus and compact layouts explicit", () => {
   const styles = readAtlasFile("src/app/globals.css");
 
   assert.match(styles, /:focus-visible/);
-  assert.match(styles, /@media \(max-width: 420px\)/);
+  assert.match(styles, /@media \(max-width: 520px\)/);
   assert.match(styles, /minmax\(0, 1fr\)/);
   assert.match(styles, /overflow-x: clip/);
 });

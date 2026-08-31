@@ -295,24 +295,19 @@ export function JourneyWorkspace() {
         return (
           <>
             <section className={styles.hero}>
-              <p className={styles.eyebrow}>
-                {journeyMessage(locale, "localOnly")}
-              </p>
               <h1 className={styles.title} ref={headingRef} tabIndex={-1}>
                 {journeyMessage(locale, "journeyTitle")}
               </h1>
               <p className={styles.lede}>
                 {journeyMessage(locale, "journeyIntro")}
               </p>
-              <p className={styles.privacyNote}>
-                <span className={styles.privacyDot} aria-hidden="true" />
-                <span>{journeyMessage(locale, "noAutomaticMerge")}</span>
-              </p>
-              <div className={styles.actionRow}>
-                <Link className={styles.buttonSecondary} href="/memory/">
-                  {journeyMessage(locale, "createMemory")}
-                </Link>
-              </div>
+              {timeline.length > 0 ? (
+                <div className={styles.actionRow}>
+                  <Link className={styles.buttonSecondary} href="/memory/">
+                    {journeyMessage(locale, "createMemory")}
+                  </Link>
+                </div>
+              ) : null}
             </section>
 
             <div className={styles.stack}>
@@ -348,15 +343,29 @@ export function JourneyWorkspace() {
                         {journeyMessage(locale, "emptyBody")}
                       </p>
                       <div className={styles.spacer} />
-                      <Link className={styles.button} href="/local-event/">
-                        {journeyMessage(locale, "createLocalEvent")}
-                      </Link>
+                      <div className={styles.actionRow}>
+                        <Link className={styles.button} href="/events/">
+                          {journeyMessage(locale, "browseEvents")}
+                        </Link>
+                        <Link
+                          className={styles.buttonQuiet}
+                          href="/local-event/"
+                        >
+                          {journeyMessage(locale, "createLocalEvent")}
+                        </Link>
+                      </div>
                     </section>
                   ) : (
                     <>
                       <div className={styles.actionRow}>
                         <Link
                           className={styles.buttonSecondary}
+                          href="/events/"
+                        >
+                          {journeyMessage(locale, "browseEvents")}
+                        </Link>
+                        <Link
+                          className={styles.buttonQuiet}
                           href="/local-event/"
                         >
                           {journeyMessage(locale, "createLocalEvent")}
@@ -382,48 +391,59 @@ export function JourneyWorkspace() {
                 </>
               ) : null}
 
-              {storageActionsRead !== null ? (
-                <JourneyBackupPanel
-                  busy={busy}
-                  current={storageActionsRead}
-                  locale={locale}
-                  onRestoreCommitted={(restoredRead) => {
-                    acceptAuthoritativeRead(restoredRead, null, false);
-                  }}
-                />
-              ) : null}
+              {storageActionsRead !== null || deleteAllAllowed ? (
+                <details
+                  className={`${styles.disclosure} ${styles.toolsDisclosure}`}
+                >
+                  <summary>{journeyMessage(locale, "dataTools")}</summary>
+                  <div className={styles.toolsContent}>
+                    {storageActionsRead !== null ? (
+                      <JourneyBackupPanel
+                        busy={busy}
+                        current={storageActionsRead}
+                        locale={locale}
+                        onRestoreCommitted={(restoredRead) => {
+                          acceptAuthoritativeRead(restoredRead, null, false);
+                        }}
+                      />
+                    ) : null}
 
-              {deleteAllAllowed ? (
-                <section className={styles.dangerZone}>
-                  <h2>{journeyMessage(locale, "deleteAll")}</h2>
-                  <p className={styles.lede}>
-                    {journeyMessage(locale, deleteWarning)}
-                  </p>
-                  <div className={styles.spacer} />
-                  {deleteAllBinding !== null ? (
-                    <InlineConfirmation
-                      busy={busy}
-                      confirmLabel="confirmDeleteAll"
-                      locale={locale}
-                      message={deleteWarning}
-                      onCancel={closeDeleteAllConfirmation}
-                      onConfirm={() => void deleteAll(deleteAllBinding)}
-                    />
-                  ) : (
-                    <button
-                      className={styles.buttonDanger}
-                      disabled={busy}
-                      onClick={() => {
-                        const binding = currentDeleteAllBinding();
-                        if (binding !== null) setDeleteAllBinding(binding);
-                      }}
-                      ref={deleteAllButtonRef}
-                      type="button"
-                    >
-                      {journeyMessage(locale, "deleteAll")}
-                    </button>
-                  )}
-                </section>
+                    {deleteAllAllowed ? (
+                      <section className={styles.dangerZone}>
+                        <h2>{journeyMessage(locale, "deleteAll")}</h2>
+                        <p className={styles.lede}>
+                          {journeyMessage(locale, deleteWarning)}
+                        </p>
+                        <div className={styles.spacer} />
+                        {deleteAllBinding !== null ? (
+                          <InlineConfirmation
+                            busy={busy}
+                            confirmLabel="confirmDeleteAll"
+                            locale={locale}
+                            message={deleteWarning}
+                            onCancel={closeDeleteAllConfirmation}
+                            onConfirm={() => void deleteAll(deleteAllBinding)}
+                          />
+                        ) : (
+                          <button
+                            className={styles.buttonDanger}
+                            disabled={busy}
+                            onClick={() => {
+                              const binding = currentDeleteAllBinding();
+                              if (binding !== null) {
+                                setDeleteAllBinding(binding);
+                              }
+                            }}
+                            ref={deleteAllButtonRef}
+                            type="button"
+                          >
+                            {journeyMessage(locale, "deleteAll")}
+                          </button>
+                        )}
+                      </section>
+                    ) : null}
+                  </div>
+                </details>
               ) : null}
             </div>
           </>

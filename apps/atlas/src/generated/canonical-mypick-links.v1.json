@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "sourceRevision": "sha256:ca06857c19c156e6fb6f1d19585fed1e5466b0ba9f02d26aa8e683a406bccaa1",
+  "songPathPrefix": "/songs/",
+  "events": {
+    "equal-love:event:kokuritsu_2026": "/live/kokuritsu-2026/",
+    "equal-love:event:tokyo_dome_2027": "/live/tokyo-dome-2027/",
+    "nearly-equal-joy:event:joy_4th_anniversary_2026_afterglow": "/live/joy-4th-anniversary-2026/",
+    "not-equal-me:event:not_equal_me_7th_anniversary_2026_afterglow": "/live/not-equal-me-7th-anniversary-2026/"
+  }
+}

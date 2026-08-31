@@ -6,19 +6,21 @@ export const MEMORY_CANVAS_HEIGHT = 630 as const;
 export const MEMORY_TEMPLATE_ID = "atlas-memory-v1" as const;
 
 const MEMORY_DETAIL_LINE_BUDGET = 13;
-const LEFT_COLUMN_X = 72;
-const LEFT_COLUMN_MAX_WIDTH = 405;
-const EVENT_START_Y = 118;
-const EVENT_LINE_HEIGHT = 58;
-const DATE_OFFSET_Y = 22;
+const LEFT_COLUMN_X = 64;
+const LEFT_COLUMN_MAX_WIDTH = 560;
+const EVENT_START_Y = 116;
+const EVENT_LINE_HEIGHT = 56;
+const DATE_OFFSET_Y = 24;
 const DATE_TEXT_HEIGHT = 24;
-const LEFT_CONTENT_BOTTOM = 526;
-const GROUP_FONT =
-  '700 24px Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif';
-const EVENT_FONT =
-  '700 48px Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif';
-const DATE_FONT =
-  '600 20px Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif';
+const NICKNAME_OFFSET_Y = 18;
+const NICKNAME_LINE_HEIGHT = 26;
+const LEFT_CONTENT_BOTTOM = 520;
+const SYSTEM_FONT_STACK =
+  'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+const GROUP_FONT = `700 22px ${SYSTEM_FONT_STACK}`;
+const EVENT_FONT = `700 48px ${SYSTEM_FONT_STACK}`;
+const DATE_FONT = `600 20px ${SYSTEM_FONT_STACK}`;
+const NICKNAME_FONT = `700 18px ${SYSTEM_FONT_STACK}`;
 
 export interface MemoryDrawSection {
   readonly label: string;
@@ -33,9 +35,9 @@ export interface MemoryDrawPlan {
   readonly eventName: string;
   readonly dateLabel: string;
   readonly date: string;
+  readonly nicknameLine: string | null;
   readonly sections: readonly MemoryDrawSection[];
   readonly noOptionalDetails: string;
-  readonly privacyLine: string;
 }
 
 export type MemoryDrawPlanResult =
@@ -136,9 +138,14 @@ export function createMemoryDrawPlan(
       eventName: snapshot.event.eventName,
       dateLabel: messages.card.dateLabel,
       date: snapshot.event.date,
+      nicknameLine:
+        snapshot.selected.nickname === null
+          ? null
+          : messages.card.nickname
+              .split("{name}")
+              .join(snapshot.selected.nickname.value),
       sections,
       noOptionalDetails: messages.card.noOptionalDetails,
-      privacyLine: messages.card.privacyLine,
     },
   };
 }
@@ -149,6 +156,10 @@ function measuredWidth(context: MemoryCanvasContext, value: string) {
     throw new Error("Canvas text measurement failed");
   }
   return width;
+}
+
+function brandLine(plan: MemoryDrawPlan) {
+  return `ATLAS × ${plan.groupName}`;
 }
 
 function wrapText(
@@ -196,6 +207,8 @@ interface RequiredLeftLayout {
   readonly eventBottom: number;
   readonly dateText: string;
   readonly dateY: number;
+  readonly nicknameLines: readonly string[];
+  readonly nicknameY: number | null;
 }
 
 function measureRequiredLeftLayout(
@@ -203,7 +216,7 @@ function measureRequiredLeftLayout(
   plan: MemoryDrawPlan,
 ): RequiredLeftLayout {
   context.font = GROUP_FONT;
-  if (measuredWidth(context, plan.groupName) > LEFT_COLUMN_MAX_WIDTH) {
+  if (measuredWidth(context, brandLine(plan)) > LEFT_COLUMN_MAX_WIDTH) {
     throw new Error("Memory group name exceeds the left column");
   }
 
@@ -228,7 +241,37 @@ function measureRequiredLeftLayout(
     throw new Error("Memory date exceeds the left column");
   }
 
-  return { eventLines, eventBottom, dateText, dateY };
+  const nicknameY =
+    plan.nicknameLine === null
+      ? null
+      : dateY + DATE_TEXT_HEIGHT + NICKNAME_OFFSET_Y;
+  const nicknameLines =
+    plan.nicknameLine === null
+      ? []
+      : (() => {
+          context.font = NICKNAME_FONT;
+          return wrapText(context, plan.nicknameLine, LEFT_COLUMN_MAX_WIDTH);
+        })();
+  if (
+    nicknameLines.length > 2 ||
+    nicknameLines.some(
+      (line) => measuredWidth(context, line) > LEFT_COLUMN_MAX_WIDTH,
+    ) ||
+    (nicknameY !== null &&
+      nicknameY + nicknameLines.length * NICKNAME_LINE_HEIGHT >
+        LEFT_CONTENT_BOTTOM)
+  ) {
+    throw new Error("Memory nickname exceeds the left column");
+  }
+
+  return {
+    eventLines,
+    eventBottom,
+    dateText,
+    dateY,
+    nicknameLines,
+    nicknameY,
+  };
 }
 
 function validateRequiredLeftLayout(
@@ -237,7 +280,7 @@ function validateRequiredLeftLayout(
   layout: RequiredLeftLayout,
 ) {
   context.font = GROUP_FONT;
-  if (measuredWidth(context, plan.groupName) > LEFT_COLUMN_MAX_WIDTH) {
+  if (measuredWidth(context, brandLine(plan)) > LEFT_COLUMN_MAX_WIDTH) {
     throw new Error("Memory group name changed beyond the left column");
   }
 
@@ -256,6 +299,20 @@ function validateRequiredLeftLayout(
     layout.dateY + DATE_TEXT_HEIGHT > LEFT_CONTENT_BOTTOM
   ) {
     throw new Error("Memory date changed beyond the left column");
+  }
+
+  if (layout.nicknameY !== null) {
+    context.font = NICKNAME_FONT;
+    if (
+      layout.nicknameLines.length > 2 ||
+      layout.nicknameLines.some(
+        (line) => measuredWidth(context, line) > LEFT_COLUMN_MAX_WIDTH,
+      ) ||
+      layout.nicknameY + layout.nicknameLines.length * NICKNAME_LINE_HEIGHT >
+        LEFT_CONTENT_BOTTOM
+    ) {
+      throw new Error("Memory nickname changed beyond the left column");
+    }
   }
 }
 
@@ -293,16 +350,16 @@ export function drawMemoryPlan(
   validateRequiredLeftLayout(context, plan, requiredLeftLayout);
 
   context.textBaseline = "top";
-  context.fillStyle = "#f4f8fc";
+  context.fillStyle = "#ff3f72";
   context.fillRect(0, 0, plan.width, plan.height);
-  context.fillStyle = "#3559c7";
-  context.fillRect(0, 0, 20, plan.height);
+  context.fillStyle = "#ffffff";
+  context.fillRect(4, 4, plan.width - 8, plan.height - 8);
 
-  context.fillStyle = "#3559c7";
+  context.fillStyle = "#ff2f68";
   context.font = GROUP_FONT;
-  context.fillText(plan.groupName, LEFT_COLUMN_X, 70);
+  context.fillText(brandLine(plan), LEFT_COLUMN_X, 54);
 
-  context.fillStyle = "#172033";
+  context.fillStyle = "#201c22";
   context.font = EVENT_FONT;
   const eventBottom = drawTextLines(
     context,
@@ -315,7 +372,7 @@ export function drawMemoryPlan(
     throw new Error("Memory event layout changed while drawing");
   }
 
-  context.fillStyle = "#53627a";
+  context.fillStyle = "#6e6670";
   context.font = DATE_FONT;
   context.fillText(
     requiredLeftLayout.dateText,
@@ -323,45 +380,49 @@ export function drawMemoryPlan(
     requiredLeftLayout.dateY,
   );
 
+  if (requiredLeftLayout.nicknameY !== null) {
+    context.fillStyle = "#6e6670";
+    context.font = NICKNAME_FONT;
+    drawTextLines(
+      context,
+      requiredLeftLayout.nicknameLines,
+      LEFT_COLUMN_X,
+      requiredLeftLayout.nicknameY,
+      NICKNAME_LINE_HEIGHT,
+    );
+  }
+
   validateRequiredLeftLayout(context, plan, requiredLeftLayout);
 
-  context.fillStyle = "#ffffff";
-  context.fillRect(525, 48, 615, 534);
+  context.fillStyle = "#eadfe3";
+  context.fillRect(676, 82, 1, 446);
 
-  let detailY = 80;
+  let detailY = 100;
   if (plan.sections.length === 0) {
-    context.fillStyle = "#53627a";
-    context.font =
-      '500 24px Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif';
-    drawWrappedText(context, plan.noOptionalDetails, 568, detailY, 520, 32);
+    context.fillStyle = "#6e6670";
+    context.font = `500 22px ${SYSTEM_FONT_STACK}`;
+    drawWrappedText(context, plan.noOptionalDetails, 724, detailY, 408, 31);
   } else {
     for (const section of plan.sections) {
-      context.fillStyle = "#3559c7";
-      context.font =
-        '700 17px Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif';
-      context.fillText(section.label.toUpperCase(), 568, detailY);
-      detailY += 28;
+      context.fillStyle = "#ff2f68";
+      context.font = `700 16px ${SYSTEM_FONT_STACK}`;
+      context.fillText(section.label.toUpperCase(), 724, detailY);
+      detailY += 26;
 
-      context.fillStyle = "#172033";
-      context.font =
-        '500 22px Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif';
+      context.fillStyle = "#201c22";
+      context.font = `500 21px ${SYSTEM_FONT_STACK}`;
       for (const value of section.values) {
-        detailY = drawWrappedText(context, value, 568, detailY, 520, 29);
-        detailY += 7;
+        detailY = drawWrappedText(context, value, 724, detailY, 408, 28);
+        detailY += 5;
       }
-      detailY += 13;
-      if (detailY > 530) {
+      detailY += 12;
+      if (detailY > 526) {
         throw new Error("Memory content exceeds the canvas");
       }
     }
   }
 
-  context.fillStyle = "#53627a";
-  context.font =
-    '500 17px Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif';
-  context.fillText(plan.privacyLine, 72, 558);
-  context.fillStyle = "#3559c7";
-  context.font =
-    '700 20px Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif';
-  context.fillText("ATLAS MEMORY", 955, 558);
+  context.fillStyle = "#ff2f68";
+  context.font = `700 19px ${SYSTEM_FONT_STACK}`;
+  context.fillText("ATLAS MEMORY", 984, 568);
 }

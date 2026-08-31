@@ -210,6 +210,7 @@ function validMemorySnapshot() {
       performanceName: "Day",
     },
     selected: {
+      nickname: { consent: true, value: "Atlas Fan" },
       mode: { consent: true, value: "in-person" },
       highlights: [{ consent: true, value: "Encore" }],
       songs: [
@@ -517,6 +518,29 @@ test("Memory snapshot accepts only enumerated public or consented fields", () =>
   const unconsented = validMemorySnapshot();
   unconsented.selected.mode = { consent: false, value: "in-person" };
   assert.equal(memory.parseMemorySnapshot(unconsented).ok, false);
+
+  const unconsentedNickname = validMemorySnapshot();
+  unconsentedNickname.selected.nickname = {
+    consent: false,
+    value: "Atlas Fan",
+  };
+  assert.equal(memory.parseMemorySnapshot(unconsentedNickname).ok, false);
+
+  for (const invalidNickname of [
+    "",
+    "   ",
+    " Atlas Fan",
+    "Atlas  Fan",
+    "x".repeat(memory.MEMORY_NICKNAME_MAX_LENGTH + 1),
+  ]) {
+    const candidate = validMemorySnapshot();
+    candidate.selected.nickname = { consent: true, value: invalidNickname };
+    assert.equal(
+      memory.parseMemorySnapshot(candidate).ok,
+      false,
+      JSON.stringify(invalidNickname),
+    );
+  }
 });
 
 test("Journey revisions distinguish absent from revision 0 and advance once", () => {

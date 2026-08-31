@@ -447,9 +447,9 @@ function options(fixture, overrides = {}) {
   };
 }
 
-test("production audit binds the real baseline commit and remains a named three-seed HOLD", async () => {
-  const audit = await auditWorkspace({ auditDate: "2026-08-25" });
-  assert.equal(audit.ok, false);
+test("production audit binds the approved baseline and returns a three-seed GO", async () => {
+  const audit = await auditWorkspace({ auditDate: "2026-08-30" });
+  assert.equal(audit.ok, true, audit.errors.join("\n"));
   assert.deepEqual(audit.totals, {
     events: 4,
     performances: 6,
@@ -463,10 +463,7 @@ test("production audit binds the real baseline commit and remains a named three-
     audit.errors.some((error) => error.startsWith("EVIDENCE_")),
     false,
   );
-  assert.equal(
-    audit.errors.some((error) => error.startsWith("COVERAGE_HOLD:equal-love")),
-    true,
-  );
+  assert.deepEqual(audit.errors, []);
   assert.deepEqual(
     audit.seedResults.map(({ seed }) => ({
       siteId: seed.siteId,
@@ -474,9 +471,9 @@ test("production audit binds the real baseline commit and remains a named three-
       claimGate: seed.gates.claimLevelEvidence.status,
     })),
     [
-      { siteId: "equal-love", decision: "HOLD", claimGate: "HOLD" },
-      { siteId: "nearly-equal-joy", decision: "HOLD", claimGate: "GO" },
-      { siteId: "not-equal-me", decision: "HOLD", claimGate: "GO" },
+      { siteId: "equal-love", decision: "GO", claimGate: "GO" },
+      { siteId: "nearly-equal-joy", decision: "GO", claimGate: "GO" },
+      { siteId: "not-equal-me", decision: "GO", claimGate: "GO" },
     ],
   );
   assert.equal(
@@ -484,6 +481,42 @@ test("production audit binds the real baseline commit and remains a named three-
       (event) => event.id === "tokyo_dome_2027",
     ).performances,
     undefined,
+  );
+  assert.deepEqual(
+    audit.seedResults.flatMap(({ seed, source }) =>
+      source.events.flatMap((event) =>
+        (event.performances ?? []).map((performance) => ({
+          id: `${seed.siteId}/${event.id}/${performance.id}`,
+          startAt: performance.startAt,
+        })),
+      ),
+    ),
+    [
+      {
+        id: "equal-love/kokuritsu_2026/day1",
+        startAt: "2026-06-20T08:30:00.000Z",
+      },
+      {
+        id: "equal-love/kokuritsu_2026/day2",
+        startAt: "2026-06-21T08:30:00.000Z",
+      },
+      {
+        id: "nearly-equal-joy/joy_4th_anniversary_2026_afterglow/day",
+        startAt: "2026-03-13T03:30:00.000Z",
+      },
+      {
+        id: "nearly-equal-joy/joy_4th_anniversary_2026_afterglow/night",
+        startAt: "2026-03-13T09:00:00.000Z",
+      },
+      {
+        id: "not-equal-me/not_equal_me_7th_anniversary_2026_afterglow/day",
+        startAt: "2026-02-23T03:30:00.000Z",
+      },
+      {
+        id: "not-equal-me/not_equal_me_7th_anniversary_2026_afterglow/night",
+        startAt: "2026-02-23T09:30:00.000Z",
+      },
+    ],
   );
 });
 
@@ -532,6 +565,7 @@ test("a true fixture Git commit and real approval records generate C0-valid dete
     assert.deepEqual(performance.coverage, { included: 30, total: 31 });
     assert.equal(performance.excluded.length, 1);
     assert.equal(performance.excluded[0].sourceId, "source-order:1");
+    assert.match(performance.startAt, /^2026-06-2[01]T08:30:00\.000Z$/);
   }
   assert.deepEqual(projection.groups[0].events[1].performances, []);
   assert.equal(artifactHash(projection), projection.artifactHash);
@@ -1177,8 +1211,12 @@ test("count-preserving protected fact drift is compared field-by-field against h
       repositoryPath: fixed.sourcePath,
       mutate: (events) => {
         events[0].eventEvidence.dates = ["2026-03-31"];
-        for (const performance of events[0].performances) {
+        for (const [index, performance] of events[0].performances.entries()) {
           performance.date = "2026-03-31";
+          performance.startAt =
+            index === 0
+              ? "2026-03-31T03:30:00.000Z"
+              : "2026-03-31T09:00:00.000Z";
         }
       },
     },

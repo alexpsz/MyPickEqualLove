@@ -25,6 +25,30 @@ import {
 
 const SCRIPT_DIRECTORY = path.dirname(fileURLToPath(import.meta.url));
 const VERIFIER_PATH = path.join(SCRIPT_DIRECTORY, "verify-static-export.mjs");
+const PUBLIC_PROJECTION = JSON.parse(
+  readFileSync(
+    path.resolve(
+      SCRIPT_DIRECTORY,
+      "../src/generated/public-atlas-projection.v1.json",
+    ),
+    "utf8",
+  ),
+);
+const EVENT_ROUTES = [
+  "events",
+  ...PUBLIC_PROJECTION.groups.flatMap((group) =>
+    group.events.flatMap((event) => {
+      const eventId = event.id.split(":")[2];
+      return [
+        `events/${group.siteId}/${eventId}`,
+        ...event.performances.map(
+          (performance) =>
+            `events/${group.siteId}/${eventId}/${performance.id.split(":")[3]}`,
+        ),
+      ];
+    }),
+  ),
+];
 const ISO = "2026-08-25T01:02:03.000Z";
 const PRODUCT_HTML = new Map([
   [
@@ -43,11 +67,19 @@ const PRODUCT_HTML = new Map([
     "memory/index.html",
     '<!doctype html><html><head><meta name="robots" content="noindex; nofollow; noarchive"></head><body>Memory memo intent evidence plan @mypick/atlas</body></html>',
   ],
+  ...EVENT_ROUTES.map((route) => [
+    `${route}/index.html`,
+    `<!doctype html><html><head><meta name="robots" content="noindex,nofollow,noarchive"></head><body>${route}</body></html>`,
+  ]),
 ]);
 const APP_ROUTE_MANIFEST = {
   "/_global-error/page": "/_global-error",
   "/_not-found/page": "/_not-found",
   "/page": "/",
+  "/events/page": "/events",
+  "/events/[siteId]/[eventLocalId]/page": "/events/[siteId]/[eventLocalId]",
+  "/events/[siteId]/[eventLocalId]/[performanceLocalId]/page":
+    "/events/[siteId]/[eventLocalId]/[performanceLocalId]",
   "/journey/page": "/journey",
   "/local-event/page": "/local-event",
   "/memory/page": "/memory",
@@ -57,11 +89,65 @@ const PUBLIC_ROUTES = [
   "/",
   "/_global-error",
   "/_not-found",
+  ...EVENT_ROUTES.map((route) => `/${route}`),
   "/journey",
   "/local-event",
   "/memory",
   "/robots.txt",
 ];
+const STATIC_PUBLIC_ROUTES = [
+  "/",
+  "/_global-error",
+  "/_not-found",
+  "/events",
+  "/journey",
+  "/local-event",
+  "/memory",
+  "/robots.txt",
+];
+const DYNAMIC_ROUTE_MANIFEST = [
+  {
+    page: "/events/[siteId]/[eventLocalId]",
+    regex: "^/events/([^/]+?)/([^/]+?)(?:/)?$",
+    routeKeys: {
+      nxtPsiteId: "nxtPsiteId",
+      nxtPeventLocalId: "nxtPeventLocalId",
+    },
+    namedRegex:
+      "^/events/(?<nxtPsiteId>[^/]+?)/(?<nxtPeventLocalId>[^/]+?)(?:/)?$",
+  },
+  {
+    page: "/events/[siteId]/[eventLocalId]/[performanceLocalId]",
+    regex: "^/events/([^/]+?)/([^/]+?)/([^/]+?)(?:/)?$",
+    routeKeys: {
+      nxtPsiteId: "nxtPsiteId",
+      nxtPeventLocalId: "nxtPeventLocalId",
+      nxtPperformanceLocalId: "nxtPperformanceLocalId",
+    },
+    namedRegex:
+      "^/events/(?<nxtPsiteId>[^/]+?)/(?<nxtPeventLocalId>[^/]+?)/(?<nxtPperformanceLocalId>[^/]+?)(?:/)?$",
+  },
+];
+const PRERENDER_DYNAMIC_ROUTES = {
+  "/events/[siteId]/[eventLocalId]": {
+    routeRegex: "^/events/([^/]+?)/([^/]+?)(?:/)?$",
+    dataRoute: "/events/[siteId]/[eventLocalId].rsc",
+    fallback: false,
+    fallbackRootParams: [],
+    fallbackRouteParams: [],
+    dataRouteRegex: "^/events/([^/]+?)/([^/]+?)\\.rsc$",
+    prefetchDataRoute: null,
+  },
+  "/events/[siteId]/[eventLocalId]/[performanceLocalId]": {
+    routeRegex: "^/events/([^/]+?)/([^/]+?)/([^/]+?)(?:/)?$",
+    dataRoute: "/events/[siteId]/[eventLocalId]/[performanceLocalId].rsc",
+    fallback: false,
+    fallbackRootParams: [],
+    fallbackRouteParams: [],
+    dataRouteRegex: "^/events/([^/]+?)/([^/]+?)/([^/]+?)\\.rsc$",
+    prefetchDataRoute: null,
+  },
+};
 
 function writeFixtureFile(root, relativePath, content = "") {
   const filePath = path.join(root, ...relativePath.split("/"));
@@ -74,15 +160,40 @@ function createValidFixture(atlasRoot) {
   const outputDirectory = path.join(atlasRoot, "out");
   const nextDirectory = path.join(atlasRoot, ".next");
 
+  writeFixtureFile(
+    atlasRoot,
+    "src/generated/public-atlas-projection.v1.json",
+    JSON.stringify(PUBLIC_PROJECTION),
+  );
+
   for (const [file, html] of PRODUCT_HTML) {
     writeFixtureFile(outputDirectory, file, html);
   }
-  for (const route of ["journey", "local-event", "memory"]) {
+  for (const route of ["journey", "local-event", "memory", "events"]) {
     writeFixtureFile(outputDirectory, `${route}/index.txt`, "route payload");
     writeFixtureFile(outputDirectory, `${route}/__next._tree.txt`, "tree");
     writeFixtureFile(
       outputDirectory,
       `${route}/__next.${route}/__PAGE__.txt`,
+      "page payload",
+    );
+  }
+  for (const route of EVENT_ROUTES.slice(1)) {
+    writeFixtureFile(outputDirectory, `${route}/index.txt`, "route payload");
+    writeFixtureFile(outputDirectory, `${route}/__next._tree.txt`, "tree");
+    writeFixtureFile(outputDirectory, `${route}/__next.events.txt`, "events");
+    const routeParameters = ["$d$siteId", "$d$eventLocalId"];
+    if (route.split("/").length === 4) {
+      routeParameters.push("$d$performanceLocalId");
+    }
+    let segmentPath = `${route}/__next.events`;
+    for (const parameter of routeParameters) {
+      segmentPath = `${segmentPath}/${parameter}`;
+      writeFixtureFile(outputDirectory, `${segmentPath}.txt`, "segment");
+    }
+    writeFixtureFile(
+      outputDirectory,
+      `${segmentPath}/__PAGE__.txt`,
       "page payload",
     );
   }
@@ -141,8 +252,8 @@ function createValidFixture(atlasRoot) {
     nextDirectory,
     "routes-manifest.json",
     JSON.stringify({
-      staticRoutes: PUBLIC_ROUTES.map((page) => ({ page })),
-      dynamicRoutes: [],
+      staticRoutes: STATIC_PUBLIC_ROUTES.map((page) => ({ page })),
+      dynamicRoutes: DYNAMIC_ROUTE_MANIFEST,
       dataRoutes: [],
     }),
   );
@@ -151,7 +262,7 @@ function createValidFixture(atlasRoot) {
     "prerender-manifest.json",
     JSON.stringify({
       routes: Object.fromEntries(PUBLIC_ROUTES.map((route) => [route, {}])),
-      dynamicRoutes: {},
+      dynamicRoutes: PRERENDER_DYNAMIC_ROUTES,
       notFoundRoutes: [],
     }),
   );
@@ -165,6 +276,11 @@ function createValidFixture(atlasRoot) {
     "server/app-paths-manifest.json",
     JSON.stringify({
       "/page": "app/page.js",
+      "/events/page": "app/events/page.js",
+      "/events/[siteId]/[eventLocalId]/page":
+        "app/events/[siteId]/[eventLocalId]/page.js",
+      "/events/[siteId]/[eventLocalId]/[performanceLocalId]/page":
+        "app/events/[siteId]/[eventLocalId]/[performanceLocalId]/page.js",
       "/journey/page": "app/journey/page.js",
       "/local-event/page": "app/local-event/page.js",
       "/memory/page": "app/memory/page.js",
@@ -172,6 +288,23 @@ function createValidFixture(atlasRoot) {
     }),
   );
   writeFixtureFile(nextDirectory, "server/app/page.js", "root page");
+  writeFixtureFile(nextDirectory, "server/app/events/page.js", "events page");
+  writeFixtureFile(nextDirectory, "server/app/events.html", "events html");
+  writeFixtureFile(
+    nextDirectory,
+    "server/app/events.segments/events/__PAGE__.segment.rsc",
+    "events segment",
+  );
+  writeFixtureFile(
+    nextDirectory,
+    "server/app/events/[siteId]/[eventLocalId]/page.js",
+    "event detail page",
+  );
+  writeFixtureFile(
+    nextDirectory,
+    "server/app/events/[siteId]/[eventLocalId]/[performanceLocalId]/page.js",
+    "performance detail page",
+  );
   writeFixtureFile(
     nextDirectory,
     "server/app/journey/page.js",
@@ -346,7 +479,7 @@ test("every personal HTML route and static assets are required", () => {
   });
 });
 
-test("only the four product HTML routes and fixed fallbacks are allowed", () => {
+test("only the expected product HTML routes and fixed fallbacks are allowed", () => {
   withFixture((fixture) => {
     writeFixtureFile(
       fixture.outputDirectory,
@@ -365,7 +498,6 @@ test("only the four product HTML routes and fixed fallbacks are allowed", () => 
 test("all foreign public route segments fail in out and .next", () => {
   for (const route of [
     "event",
-    "events",
     "performance",
     "performances",
     "songs",
@@ -513,33 +645,33 @@ test("sitemap routes are rejected from .next metadata and paths", () => {
   });
 });
 
-test("the four exact route manifests reject a residual fifth route", () => {
+test("the exact route manifests reject an unexpected route", () => {
   for (const [file, mutate, pattern] of [
     [
       "app-path-routes-manifest.json",
       (manifest) => {
-        manifest["/events/page"] = "/events";
+        manifest["/calendar/page"] = "/calendar";
       },
-      /unexpected route manifest entry: \/events\/page/,
+      /unexpected route manifest entry: \/calendar\/page/,
     ],
     [
       "server/app-paths-manifest.json",
       (manifest) => {
-        manifest["/events/page"] = "app/page.js";
+        manifest["/calendar/page"] = "app/calendar/page.js";
       },
-      /unexpected server app path entry: \/events\/page/,
+      /unexpected server app path entry: \/calendar\/page/,
     ],
     [
       "routes-manifest.json",
       (manifest) => {
-        manifest.staticRoutes.push({ page: "/events" });
+        manifest.staticRoutes.push({ page: "/calendar" });
       },
       /routes-manifest\.json static routes do not match/,
     ],
     [
       "prerender-manifest.json",
       (manifest) => {
-        manifest.routes["/events"] = {};
+        manifest.routes["/calendar"] = {};
       },
       /prerender-manifest\.json routes do not match/,
     ],
@@ -570,10 +702,36 @@ test("routes manifest rejects one duplicate replacing one omitted route", () => 
   });
 });
 
+test("dynamic route manifests require only the two closed static-param templates", () => {
+  withFixture((fixture) => {
+    const file = "routes-manifest.json";
+    const manifestPath = path.join(fixture.nextDirectory, file);
+    const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+    manifest.dynamicRoutes[0].routeKeys.nxtPsiteId = "wrong";
+    writeFixtureFile(fixture.nextDirectory, file, JSON.stringify(manifest));
+    assertViolation(
+      inspectFixture(fixture),
+      /dynamic route metadata is not exact/,
+    );
+  });
+
+  withFixture((fixture) => {
+    const file = "prerender-manifest.json";
+    const manifestPath = path.join(fixture.nextDirectory, file);
+    const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+    manifest.dynamicRoutes["/events/[siteId]/[eventLocalId]"].fallback = true;
+    writeFixtureFile(fixture.nextDirectory, file, JSON.stringify(manifest));
+    assertViolation(
+      inspectFixture(fixture),
+      /dynamic route is not a closed static-param route/,
+    );
+  });
+});
+
 test("build manifests restrict route keys when a route map is present", () => {
   for (const [file, pages] of [
-    ["build-manifest.json", { "/_app": [], "/events": [] }],
-    ["app-build-manifest.json", { "/page": [], "/events/page": [] }],
+    ["build-manifest.json", { "/_app": [], "/calendar": [] }],
+    ["app-build-manifest.json", { "/page": [], "/calendar/page": [] }],
   ]) {
     withFixture((fixture) => {
       writeFixtureFile(fixture.nextDirectory, file, JSON.stringify({ pages }));

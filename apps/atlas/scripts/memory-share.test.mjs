@@ -24,6 +24,32 @@ const compiledRoot = await mkdtemp(join(tmpdir(), "atlas-memory-share-"));
 const reactJsxRuntimeUrl = pathToFileURL(
   require.resolve("react/jsx-runtime"),
 ).href;
+const reactStubUrl = pathToFileURL(
+  join(compiledRoot, "react-test-stub.js"),
+).href;
+const stylesStubUrl = pathToFileURL(
+  join(compiledRoot, "styles-test-stub.js"),
+).href;
+
+await writeFile(
+  join(compiledRoot, "react-test-stub.js"),
+  [
+    "let nextId = 0;",
+    "export function useCallback(callback) { return callback; }",
+    "export function useEffect() {}",
+    "export function useId() { nextId += 1; return `test-id-${nextId}`; }",
+    "export function useMemo(factory) { return factory(); }",
+    "export function useRef(value) { return { current: value }; }",
+    "export function useState(value) { return [value, () => {}]; }",
+    "",
+  ].join("\n"),
+  "utf8",
+);
+await writeFile(
+  join(compiledRoot, "styles-test-stub.js"),
+  "export default {};\n",
+  "utf8",
+);
 
 after(async () => {
   await rm(compiledRoot, { recursive: true, force: true });
@@ -47,7 +73,9 @@ async function compileFile(relativePath) {
     .outputText.replaceAll(
       '"react/jsx-runtime"',
       JSON.stringify(reactJsxRuntimeUrl),
-    );
+    )
+    .replaceAll('"react"', JSON.stringify(reactStubUrl))
+    .replaceAll('"./memory-page.module.css"', JSON.stringify(stylesStubUrl));
   await writeFile(outputPath, output, "utf8");
 }
 
@@ -70,7 +98,14 @@ await compileDirectory("contracts");
 await compileFile("ports/memory-snapshot-input.ts");
 await compileDirectory("i18n/memory");
 await compileDirectory("share");
+await compileFile("components/memory/MemoryCandidatePicker.tsx");
 await compileFile("components/memory/MemoryPreview.tsx");
+await compileFile("components/memory/MemoryRouteClient.tsx");
+await writeFile(
+  join(compiledRoot, "components", "memory", "MemoryPage.js"),
+  "export function MemoryPage() { return null; }\n",
+  "utf8",
+);
 
 async function load(relativePath) {
   return import(pathToFileURL(join(compiledRoot, relativePath)).href);
@@ -83,8 +118,21 @@ const drawModule = await load("share/memory-draw-plan.js");
 const browserModule = await load("share/memory-browser.js");
 const { MEMORY_MESSAGES } = await load("i18n/memory/messages.js");
 const { MemoryPreview } = await load("components/memory/MemoryPreview.js");
+const {
+  MemoryCandidatePicker,
+  buildMemoryCandidatePickerOptions,
+  commitMemoryCandidatePickerOption,
+  resolveMemoryCandidatePickerKey,
+} = await load("components/memory/MemoryCandidatePicker.js");
+const { createMemoryContextResolver } = await load(
+  "components/memory/MemoryRouteClient.js",
+);
 
-const { createMemorySnapshot, createMemorySourceCandidates } = selectionModule;
+const {
+  createMemorySnapshot,
+  createMemorySourceCandidates,
+  MEMORY_SONG_LIMIT,
+} = selectionModule;
 const {
   createMemoryDrawPlan,
   drawMemoryPlan,
@@ -120,6 +168,7 @@ const visible = {
   group: "Visible Group",
   event: "Visible Event",
   date: "2026-08-25",
+  nickname: "VISIBLE_NICKNAME",
   selectedHighlight: "VISIBLE_SELECTED_HIGHLIGHT",
   unselectedHighlight: "PRIVATE_UNSELECTED_HIGHLIGHT",
   selectedSong: "VISIBLE_SELECTED_SONG",
@@ -220,6 +269,7 @@ function disclosure(overrides = {}) {
   return {
     includePerformanceName: false,
     includeMode: false,
+    nickname: "",
     highlightIndexes: [],
     songIndexes: [],
     includeSummary: false,
@@ -250,6 +300,7 @@ function whitelistedSnapshot({
   groupName = visible.group,
   highlights = [],
   mode = null,
+  nickname = null,
 } = {}) {
   return {
     schemaVersion: 1,
@@ -260,6 +311,7 @@ function whitelistedSnapshot({
       performanceName: null,
     },
     selected: {
+      nickname: nickname === null ? null : { consent: true, value: nickname },
       mode: mode === null ? null : { consent: true, value: mode },
       highlights: highlights.map((value) => ({ consent: true, value })),
       songs: [],
@@ -441,9 +493,11 @@ test("C0 MemorySnapshot whitelist is exact and defaults to minimum disclosure", 
   const candidate = oneCandidate();
   assert.deepEqual(Object.keys(candidate).sort(), [
     "event",
+    "exactMyPickHref",
     "highlights",
     "mode",
     "songs",
+    "venueName",
   ]);
   assert.deepEqual(Object.keys(candidate.event).sort(), [
     "date",
@@ -462,6 +516,7 @@ test("C0 MemorySnapshot whitelist is exact and defaults to minimum disclosure", 
       performanceName: null,
     },
     selected: {
+      nickname: null,
       mode: null,
       highlights: [],
       songs: [],
@@ -491,6 +546,61 @@ test("C0 MemorySnapshot whitelist is exact and defaults to minimum disclosure", 
     }).ok,
     false,
   );
+  assert.deepEqual(Object.keys(snapshot.selected).sort(), [
+    "highlights",
+    "mode",
+    "nickname",
+    "songs",
+    "summary",
+  ]);
+});
+
+test("a typed nickname is normalized and enters only the consented Memory plan", () => {
+  const hidden = snapshotFor(disclosure({ nickname: "   " }));
+  assert.equal(hidden.selected.nickname, null);
+  assert.equal(JSON.stringify(hidden).includes(visible.nickname), false);
+
+  const snapshot = snapshotFor(
+    disclosure({ nickname: `  ${visible.nickname}   FAN  ` }),
+  );
+  assert.deepEqual(snapshot.selected.nickname, {
+    consent: true,
+    value: `${visible.nickname} FAN`,
+  });
+
+  const planned = createMemoryDrawPlan(snapshot, messages);
+  assert.equal(planned.ok, true);
+  assert.equal(
+    planned.plan.nicknameLine,
+    `Selected by ${visible.nickname} FAN`,
+  );
+  const previewHtml = renderToStaticMarkup(
+    react.createElement(MemoryPreview, { plan: planned.plan }),
+  );
+  assert.ok(previewHtml.includes(`Selected by ${visible.nickname} FAN`));
+
+  const context = fakeCanvasContext();
+  drawMemoryPlan(context, planned.plan);
+  assert.ok(
+    context.drawnText.join(" ").includes(`Selected by ${visible.nickname} FAN`),
+  );
+});
+
+test("the maximum nickname stays within the two-line Memory card budget", () => {
+  const nickname = "推".repeat(snapshotContract.MEMORY_NICKNAME_MAX_LENGTH);
+  const planned = createMemoryDrawPlan(
+    whitelistedSnapshot({ nickname }),
+    messages,
+  );
+  assert.equal(planned.ok, true);
+
+  const context = fakeCanvasContext({
+    measureWidth: (text) => Array.from(text).length * 20,
+  });
+  assert.doesNotThrow(() => drawMemoryPlan(context, planned.plan));
+  const nicknameLines = context.drawnText.filter((text) => text.includes("推"));
+  assert.equal(nicknameLines.length, 2);
+  assert.equal(nicknameLines.join(""), `Selected by ${nickname}`);
 });
 
 test("same-event candidates are distinguished by localized mode without changing disclosure defaults", async () => {
@@ -530,12 +640,61 @@ test("same-event candidates are distinguished by localized mode without changing
     });
   }
 
+  const pickerSource = await readFile(
+    join(sourceRoot, "components", "memory", "MemoryCandidatePicker.tsx"),
+    "utf8",
+  );
+  assert.match(pickerSource, /messages\.card\.modes\[candidate\.mode\]/);
+  assert.doesNotMatch(pickerSource, /modeInPerson|modeLivestream|modeArchive/);
+});
+
+test("Memory reuses the Journey event group for song labels before snapshot and PNG", async () => {
+  const candidate = {
+    event: {
+      groupName: "=LOVE",
+      eventName: visible.event,
+      date: visible.date,
+      performanceName: null,
+    },
+    venueName: null,
+    mode: "in-person",
+    highlights: [],
+    songs: [{ groupName: "equal-love", title: visible.selectedSong }],
+    exactMyPickHref: null,
+  };
+  const displayCandidate = {
+    ...candidate,
+    songs: candidate.songs.map((song) => ({
+      ...song,
+      groupName: candidate.event.groupName ?? song.groupName,
+    })),
+  };
+  const built = createMemorySnapshot(
+    displayCandidate,
+    disclosure({ songIndexes: [0] }),
+    messages.localGroupName,
+  );
+  assert.equal(built.ok, true);
+  assert.equal(built.snapshot.event.groupName, "=LOVE");
+  assert.equal(built.snapshot.selected.songs[0].value.groupName, "=LOVE");
+  const planned = createMemoryDrawPlan(built.snapshot, messages);
+  assert.equal(planned.ok, true);
+  const previewHtml = renderToStaticMarkup(
+    react.createElement(MemoryPreview, { plan: planned.plan }),
+  );
+  assert.ok(previewHtml.includes(`=LOVE · ${visible.selectedSong}`));
+  assert.equal(previewHtml.includes("equal-love"), false);
+  assert.equal(JSON.stringify(planned.plan).includes("equal-love"), false);
+
   const pageSource = await readFile(
     join(sourceRoot, "components", "memory", "MemoryPage.tsx"),
     "utf8",
   );
-  assert.match(pageSource, /messages\.card\.modes\[item\.mode\]/);
-  assert.doesNotMatch(pageSource, /modeInPerson|modeLivestream|modeArchive/);
+  assert.match(
+    pageSource,
+    /groupName:\s*candidate\.event\.groupName\s*\?\?\s*song\.groupName/,
+  );
+  assert.match(pageSource, /createMemorySnapshot\([\s\S]*?displayCandidate/);
 });
 
 test("a real local custom event is projected without its local id or venue", () => {
@@ -559,6 +718,8 @@ test("a real local custom event is projected without its local id or venue", () 
     date: visible.date,
     performanceName: null,
   });
+  assert.equal(projected.candidates[0].venueName, null);
+  assert.equal(projected.candidates[0].exactMyPickHref, null);
 
   const built = createMemorySnapshot(
     projected.candidates[0],
@@ -577,9 +738,138 @@ test("a real local custom event is projected without its local id or venue", () 
   assert.equal(previewHtml.includes("PRIVATE_LOCAL_VENUE_TOKEN"), false);
 });
 
+test("resolved public context enriches the editor without expanding MemorySnapshot v1", () => {
+  const exactHref = "https://mypick.kozueginko.com/live/visible-event/";
+  const projected = createMemorySourceCandidates(
+    validJourneyReadWithUnknownFields(),
+    (requestedReference) => ({
+      status: "resolved",
+      context: {
+        reference: structuredClone(requestedReference),
+        groupName: "Visible Canonical Group",
+        eventName: "Visible Canonical Event",
+        performanceName: "Visible Evening Performance",
+        date: "2026-08-26",
+        venueName: "Visible Canonical Venue",
+        exactMyPickHref: exactHref,
+      },
+    }),
+  );
+  assert.equal(projected.status, "ready");
+  const candidate = projected.candidates[0];
+  assert.deepEqual(candidate.event, {
+    groupName: "Visible Canonical Group",
+    eventName: "Visible Canonical Event",
+    performanceName: "Visible Evening Performance",
+    date: "2026-08-26",
+  });
+  assert.equal(candidate.venueName, "Visible Canonical Venue");
+  assert.equal(candidate.exactMyPickHref, exactHref);
+
+  const built = createMemorySnapshot(
+    candidate,
+    disclosure({ includePerformanceName: true, songIndexes: [0] }),
+    messages.localGroupName,
+  );
+  assert.equal(built.ok, true);
+  const sharedText = JSON.stringify(built.snapshot);
+  assert.equal(sharedText.includes(exactHref), false);
+  assert.equal(sharedText.includes("Visible Canonical Venue"), false);
+  assert.equal(sharedText.includes(sensitive.eventId), false);
+  assert.equal(sharedText.includes(sensitive.sourceRevision), false);
+
+  const planned = createMemoryDrawPlan(built.snapshot, messages);
+  assert.equal(planned.ok, true);
+  const previewHtml = renderToStaticMarkup(
+    react.createElement(MemoryPreview, { plan: planned.plan }),
+  );
+  assert.equal(previewHtml.includes(exactHref), false);
+  assert.equal(previewHtml.includes("Visible Canonical Venue"), false);
+});
+
+test("stale, missing, mismatched, and unsafe public context never fabricate a MyPick link", () => {
+  const read = validJourneyReadWithUnknownFields();
+  const fallback = {
+    groupName: visible.group,
+    eventName: visible.event,
+    date: visible.date,
+    performanceName: null,
+  };
+  const unsafeHrefs = [
+    "http://mypick.kozueginko.com/live/visible-event/",
+    "https://mypick.kozueginko.com/live/visible-event/?private=1",
+    "https://mypick.kozueginko.com/live/visible-event/#private",
+    "https://mypick.kozueginko.com/not-live/visible-event/",
+  ];
+  const resolvers = [
+    () => ({ status: "stale" }),
+    () => ({ status: "missing" }),
+    (requestedReference) => ({
+      status: "resolved",
+      context: {
+        reference: {
+          ...structuredClone(requestedReference),
+          sourceRevision: "different-revision",
+        },
+        groupName: "Must Not Appear",
+        eventName: "Must Not Appear",
+        performanceName: "Must Not Appear",
+        date: "2026-08-26",
+        venueName: "Must Not Appear",
+        exactMyPickHref: "https://mypick.kozueginko.com/live/must-not-appear/",
+      },
+    }),
+    ...unsafeHrefs.map((unsafeHref) => (requestedReference) => ({
+      status: "resolved",
+      context: {
+        reference: structuredClone(requestedReference),
+        groupName: "Visible Canonical Group",
+        eventName: "Visible Canonical Event",
+        performanceName: null,
+        date: visible.date,
+        venueName: "Visible Venue",
+        exactMyPickHref: unsafeHref,
+      },
+    })),
+  ];
+
+  for (const resolvePublicContext of resolvers) {
+    const projected = createMemorySourceCandidates(read, resolvePublicContext);
+    assert.equal(projected.status, "ready");
+    assert.equal(projected.candidates[0].exactMyPickHref, null);
+    if (projected.candidates[0].event.eventName !== "Visible Canonical Event") {
+      assert.deepEqual(projected.candidates[0].event, fallback);
+      assert.equal(projected.candidates[0].venueName, null);
+    }
+  }
+});
+
+test("candidate projection keeps at most three saved songs in source order", () => {
+  const document = journeyDocument();
+  document.journeys[0].experienceEntries[0].songRefs = Array.from(
+    { length: 5 },
+    (_, index) =>
+      reference(
+        `equal-love:song:visible-song-${index}`,
+        visible.group,
+        `Visible song ${index}`,
+      ),
+  );
+  const parsed = journeyContract.parseJourneyDocument(JSON.stringify(document));
+  assert.equal(parsed.status, "valid");
+  const projected = createMemorySourceCandidates(parsed);
+  assert.equal(projected.status, "ready");
+  assert.equal(MEMORY_SONG_LIMIT, 3);
+  assert.deepEqual(
+    projected.candidates[0].songs.map((song) => song.title),
+    ["Visible song 0", "Visible song 1", "Visible song 2"],
+  );
+});
+
 test("only checked C0 fields reach the shared draw plan and DOM preview", () => {
   const selection = disclosure({
     includeMode: true,
+    nickname: visible.nickname,
     highlightIndexes: [0],
     songIndexes: [0],
     includeSummary: true,
@@ -587,6 +877,7 @@ test("only checked C0 fields reach the shared draw plan and DOM preview", () => 
   });
   const snapshot = snapshotFor(selection);
   assert.deepEqual(snapshot.selected, {
+    nickname: { consent: true, value: visible.nickname },
     mode: { consent: true, value: "in-person" },
     highlights: [{ consent: true, value: visible.selectedHighlight }],
     songs: [
@@ -608,6 +899,7 @@ test("only checked C0 fields reach the shared draw plan and DOM preview", () => 
     visible.group,
     visible.event,
     visible.date,
+    visible.nickname,
     visible.selectedHighlight,
     visible.selectedSong,
     visible.summary,
@@ -624,14 +916,26 @@ test("only checked C0 fields reach the shared draw plan and DOM preview", () => 
   assert.ok(canvasText.includes(visible.selectedHighlight));
   assert.ok(canvasText.includes(visible.selectedSong));
   assert.ok(canvasText.includes(visible.summary));
+  assert.ok(canvasText.includes(visible.nickname));
   assertExcludesSensitiveText(canvasText);
 });
 
 test("invalid selections fail closed before preview or rendering", () => {
   const candidate = oneCandidate();
+  const fourSongCandidate = {
+    ...candidate,
+    songs: Array.from({ length: 4 }, (_, index) => ({
+      groupName: visible.group,
+      title: `Visible song ${index}`,
+    })),
+  };
   for (const selection of [
     disclosure({ highlightIndexes: [99] }),
+    disclosure({ highlightIndexes: [0, 1] }),
     disclosure({ songIndexes: [0, 0] }),
+    disclosure({
+      nickname: "x".repeat(snapshotContract.MEMORY_NICKNAME_MAX_LENGTH + 1),
+    }),
     disclosure({ includeSummary: true, summary: "   " }),
     disclosure({ includePerformanceName: true }),
   ]) {
@@ -640,21 +944,22 @@ test("invalid selections fail closed before preview or rendering", () => {
       false,
     );
   }
+  assert.equal(
+    createMemorySnapshot(
+      fourSongCandidate,
+      disclosure({ songIndexes: [0, 1, 2, 3] }),
+      messages.localGroupName,
+    ).ok,
+    false,
+  );
 
-  const longCandidate = {
-    ...candidate,
+  const oversizedSnapshot = whitelistedSnapshot({
     highlights: Array.from(
       { length: 14 },
       (_, index) => `${index}-${"x".repeat(38)}`,
     ),
-  };
-  const snapshot = createMemorySnapshot(
-    longCandidate,
-    disclosure({ highlightIndexes: Array.from({ length: 14 }, (_, i) => i) }),
-    messages.localGroupName,
-  );
-  assert.equal(snapshot.ok, true);
-  assert.deepEqual(createMemoryDrawPlan(snapshot.snapshot, messages), {
+  });
+  assert.deepEqual(createMemoryDrawPlan(oversizedSnapshot, messages), {
     ok: false,
     reason: "content-too-long",
   });
@@ -686,7 +991,7 @@ test("the maximum legal 13-line preview stays fully reviewable at 390px", async 
   assert.ok(previewHtml.includes(longUnbrokenGroup));
   for (const highlight of highlights)
     assert.ok(previewHtml.includes(highlight));
-  assert.ok(previewHtml.includes(planned.plan.privacyLine));
+  assert.ok(previewHtml.includes("ATLAS MEMORY"));
 
   const css = await readFile(
     join(sourceRoot, "components", "memory", "memory-page.module.css"),
@@ -704,14 +1009,13 @@ test("the maximum legal 13-line preview stays fully reviewable at 390px", async 
   assert.match(mobilePreview, /aspect-ratio:\s*auto/);
   assert.match(mobilePreview, /overflow:\s*visible/);
 
-  const mobilePrivacy = sourceBlock(
+  const mobileBrand = sourceBlock(
     mobileBlock,
-    ".previewCard [data-memory-preview-privacy]",
+    ".previewCard [data-memory-preview-brand]",
   );
-  assert.match(mobilePrivacy, /position:\s*static/);
-  assert.match(mobilePrivacy, /display:\s*block/);
-  assert.doesNotMatch(mobilePrivacy, /display:\s*none/);
-  assert.match(mobilePrivacy, /overflow-wrap:\s*anywhere/);
+  assert.match(mobileBrand, /position:\s*static/);
+  assert.doesNotMatch(mobileBrand, /display:\s*none/);
+  assert.match(mobileBrand, /overflow-wrap:\s*anywhere/);
 
   const groupBlock = sourceBlock(
     css,
@@ -838,7 +1142,7 @@ test("required group, event, and date bounds fail before PNG encoding", async ()
       name: "wide localized date",
       snapshot: whitelistedSnapshot(),
       measureWidth(text) {
-        return text.includes(visible.date) ? 500 : Array.from(text).length * 10;
+        return text.includes(visible.date) ? 600 : Array.from(text).length * 10;
       },
     },
   ];
@@ -873,7 +1177,7 @@ test("changing Canvas metrics cannot validate a different replacement layout", a
     measureWidth(text) {
       if (text === visible.event) {
         exactEventMeasurements += 1;
-        if (exactEventMeasurements >= 4) return 500;
+        if (exactEventMeasurements >= 4) return 600;
       }
       return Array.from(text).length * 10;
     },
@@ -1471,6 +1775,315 @@ test("the production implementation uses native PNG and has no Journey write pat
   assert.doesNotMatch(productionSource, /\b(?:mock|stub|demo)\b/i);
 });
 
+test("the Memory candidate picker preserves values across the full keyboard contract", () => {
+  const candidate = oneCandidate();
+  const alternate = {
+    ...candidate,
+    event: {
+      ...candidate.event,
+      eventName:
+        '＝LOVE STADIUM LIVE「Beyond "KYUN"♡」with a deliberately long event title',
+    },
+    mode: "archive",
+  };
+  const options = buildMemoryCandidatePickerOptions(
+    [candidate, alternate],
+    messages,
+  );
+  assert.deepEqual(options, [
+    {
+      value: "",
+      primary: messages.candidatePlaceholder,
+      secondary: null,
+    },
+    {
+      value: "0",
+      primary: candidate.event.eventName,
+      secondary: `${candidate.event.groupName} · ${candidate.event.date} · ${messages.card.modes[candidate.mode]}`,
+    },
+    {
+      value: "1",
+      primary: alternate.event.eventName,
+      secondary: `${alternate.event.groupName} · ${alternate.event.date} · ${messages.card.modes[alternate.mode]}`,
+    },
+  ]);
+
+  const keyCases = [
+    [false, "Enter", 1, 1, { type: "open", activeIndex: 1 }],
+    [false, " ", 1, 1, { type: "open", activeIndex: 1 }],
+    [false, "ArrowDown", 1, 1, { type: "open", activeIndex: 1 }],
+    [false, "ArrowUp", 1, 1, { type: "open", activeIndex: 0 }],
+    [false, "Home", 1, 1, { type: "open", activeIndex: 0 }],
+    [false, "End", 1, 1, { type: "open", activeIndex: 2 }],
+    [true, "ArrowDown", 1, 1, { type: "move", activeIndex: 2 }],
+    [true, "ArrowDown", 2, 1, { type: "move", activeIndex: 2 }],
+    [true, "ArrowUp", 1, 1, { type: "move", activeIndex: 0 }],
+    [true, "ArrowUp", 0, 1, { type: "move", activeIndex: 0 }],
+    [true, "Home", 2, 1, { type: "move", activeIndex: 0 }],
+    [true, "End", 0, 1, { type: "move", activeIndex: 2 }],
+    [true, "Enter", 2, 1, { type: "commit", activeIndex: 2 }],
+    [true, " ", 0, 1, { type: "commit", activeIndex: 0 }],
+    [true, "Tab", 2, 1, { type: "commit-and-tab", activeIndex: 2 }],
+    [true, "Escape", 2, 1, { type: "close" }],
+    [true, "x", 1, 1, { type: "none" }],
+  ];
+  for (const [isOpen, key, activeIndex, selectedIndex, expected] of keyCases) {
+    assert.deepEqual(
+      resolveMemoryCandidatePickerKey({
+        activeIndex,
+        isOpen,
+        key,
+        optionCount: options.length,
+        selectedIndex,
+      }),
+      expected,
+      `${isOpen ? "open" : "closed"} ${key}`,
+    );
+  }
+
+  const committedValues = [];
+  assert.equal(
+    commitMemoryCandidatePickerOption(options, 0, (value) =>
+      committedValues.push(value),
+    ),
+    true,
+  );
+  assert.equal(
+    commitMemoryCandidatePickerOption(options, 1, (value) =>
+      committedValues.push(value),
+    ),
+    true,
+  );
+  assert.equal(
+    commitMemoryCandidatePickerOption(options, 2, (value) =>
+      committedValues.push(value),
+    ),
+    true,
+  );
+  assert.equal(
+    commitMemoryCandidatePickerOption(options, 99, (value) =>
+      committedValues.push(value),
+    ),
+    false,
+  );
+  assert.deepEqual(committedValues, ["", "0", "1"]);
+
+  const closedHtml = renderToStaticMarkup(
+    react.createElement(MemoryCandidatePicker, {
+      candidates: [candidate],
+      messages,
+      onValueChange() {},
+      value: "",
+    }),
+  );
+  assert.match(closedHtml, /role="combobox"/);
+  assert.match(closedHtml, /aria-expanded="false"/);
+  assert.match(closedHtml, /aria-haspopup="listbox"/);
+  const controlledListboxId = closedHtml.match(/aria-controls="([^"]+)"/)?.[1];
+  assert.ok(controlledListboxId);
+  assert.match(
+    closedHtml,
+    new RegExp(`id="${controlledListboxId}" role="listbox"`),
+  );
+  assert.match(closedHtml, /role="option"/);
+  assert.match(closedHtml, /aria-selected="true"/);
+  assert.doesNotMatch(closedHtml, /aria-activedescendant/);
+  assert.doesNotMatch(closedHtml, /<(?:select|option)\b/);
+
+  const selectedHtml = renderToStaticMarkup(
+    react.createElement(MemoryCandidatePicker, {
+      candidates: [candidate],
+      messages,
+      onValueChange() {},
+      value: "0",
+    }),
+  );
+  assert.match(selectedHtml, new RegExp(candidate.event.eventName));
+  assert.match(selectedHtml, new RegExp(candidate.event.date));
+});
+
+test("the Memory editor uses the concise two-column design and safe defaults", async () => {
+  const pageSource = await readFile(
+    join(sourceRoot, "components", "memory", "MemoryPage.tsx"),
+    "utf8",
+  );
+  const pickerSource = await readFile(
+    join(sourceRoot, "components", "memory", "MemoryCandidatePicker.tsx"),
+    "utf8",
+  );
+  const previewSource = await readFile(
+    join(sourceRoot, "components", "memory", "MemoryPreview.tsx"),
+    "utf8",
+  );
+  const messageSource = await readFile(
+    join(sourceRoot, "i18n", "memory", "messages.ts"),
+    "utf8",
+  );
+  const drawSource = await readFile(
+    join(sourceRoot, "share", "memory-draw-plan.ts"),
+    "utf8",
+  );
+  const css = await readFile(
+    join(sourceRoot, "components", "memory", "memory-page.module.css"),
+    "utf8",
+  );
+
+  assert.match(messageSource, /title: "制作一张 Memory"/);
+  assert.equal(messageSource.match(/只有你勾选的内容会进入图片。/g)?.length, 1);
+  assert.doesNotMatch(
+    `${pageSource}\n${previewSource}\n${messageSource}`,
+    /隐私白名单|privacy whitelist|allowlist|minimum disclosure/i,
+  );
+
+  const defaults = sourceBlock(
+    pageSource,
+    "function defaultDisclosureForCandidate(",
+  );
+  assert.match(defaults, /includeMode:\s*false/);
+  assert.match(defaults, /nickname/);
+  assert.match(defaults, /highlightIndexes:[\s\S]*\? \[0\] : \[\]/);
+  assert.match(defaults, /songIndexes:[\s\S]*\.map\(\(_, index\) => index\)/);
+  assert.match(pageSource, /displayCandidate\.exactMyPickHref \?/);
+  assert.match(pageSource, /href=\{displayCandidate\.exactMyPickHref\}/);
+  assert.match(pageSource, /className=\{styles\.workspace\}/);
+  assert.match(pageSource, /MEMORY_NICKNAME_MAX_LENGTH/);
+  assert.match(pageSource, /messages\.nicknameLabel/);
+  assert.match(pageSource, /nickname:\s*event\.target\.value\.slice/);
+  assert.match(pageSource, /updateSelection\(\{/);
+  assert.match(css, /\.nicknameInput[\s\S]*?min-height:\s*2\.75rem/);
+  assert.match(
+    css,
+    /\.nicknameInput[\s\S]*?border-radius:\s*var\(--atlas-radius-sm\)/,
+  );
+
+  const nativePickerTags = [];
+  for (const [fileName, source] of [
+    ["MemoryPage.tsx", pageSource],
+    ["MemoryCandidatePicker.tsx", pickerSource],
+  ]) {
+    const sourceAst = typescript.createSourceFile(
+      fileName,
+      source,
+      typescript.ScriptTarget.Latest,
+      true,
+      typescript.ScriptKind.TSX,
+    );
+    const visit = (node) => {
+      if (
+        (typescript.isJsxOpeningElement(node) ||
+          typescript.isJsxSelfClosingElement(node)) &&
+        ["select", "option"].includes(node.tagName.getText(sourceAst))
+      ) {
+        nativePickerTags.push(node.tagName.getText(sourceAst));
+      }
+      typescript.forEachChild(node, visit);
+    };
+    visit(sourceAst);
+  }
+  assert.deepEqual(nativePickerTags, []);
+  assert.match(pageSource, /<MemoryCandidatePicker/);
+  assert.match(pageSource, /onValueChange=\{selectCandidate\}/);
+  assert.match(pickerSource, /role="combobox"/);
+  assert.match(pickerSource, /aria-controls=\{listboxId\}/);
+  assert.match(pickerSource, /aria-haspopup="listbox"/);
+  assert.match(pickerSource, /aria-activedescendant=/);
+  assert.match(pickerSource, /role="listbox"/);
+  assert.match(pickerSource, /role="option"/);
+  assert.match(pickerSource, /aria-selected=\{active\}/);
+  assert.match(pickerSource, /hidden=\{!isOpen\}/);
+  assert.match(pickerSource, /scrollIntoView\(\{ block: "nearest"/);
+  assert.match(pickerSource, /document\.addEventListener\("pointerdown"/);
+  assert.match(pickerSource, /event\.key/);
+  assert.match(pickerSource, /findAdjacentTabStop/);
+  assert.match(
+    pickerSource,
+    /action\.type === "commit-and-tab"[\s\S]*?event\.preventDefault\(\)[\s\S]*?requestAnimationFrame/,
+  );
+
+  assert.doesNotMatch(`${drawSource}\n${css}`, /\bInter\b/);
+  assert.match(drawSource, /system-ui/);
+  assert.match(css, /grid-template-columns:\s*minmax\(0,\s*1\.35fr\)/);
+  assert.match(css, /width:\s*min\(calc\(100% - 2rem\),\s*76rem\)/);
+  assert.match(css, /\.backLink[\s\S]*?min-height:\s*2\.75rem/);
+  const directRuleBodies = (selector) =>
+    [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+      .filter((match) =>
+        match[1].split(",").some((candidate) => candidate.trim() === selector),
+      )
+      .map((match) => match[2])
+      .join("\n");
+  for (const selector of [
+    ".candidateTrigger",
+    ".candidateListbox",
+    ".candidateOption",
+    ".myPickLink",
+    ".primaryButton",
+  ]) {
+    assert.match(
+      directRuleBodies(selector),
+      /border-radius:\s*var\(--atlas-radius-sm\)/,
+      selector,
+    );
+  }
+  const candidateTriggerRules = directRuleBodies(".candidateTrigger");
+  for (const geometry of [
+    /width:\s*100%/,
+    /min-width:\s*0/,
+    /min-height:\s*2\.75rem/,
+    /padding:\s*0\.625rem 0\.75rem 0\.625rem 0\.875rem/,
+    /border:\s*1px solid var\(--atlas-border-strong\)/,
+    /background:\s*var\(--atlas-surface\)/,
+  ]) {
+    assert.match(candidateTriggerRules, geometry);
+  }
+  const candidateFocusRules = directRuleBodies(
+    ".candidateTrigger:focus-visible",
+  );
+  assert.match(candidateFocusRules, /border-color:\s*var\(--atlas-focus\)/);
+  assert.match(
+    candidateFocusRules,
+    /outline:\s*3px solid var\(--atlas-focus\)/,
+  );
+  assert.match(candidateFocusRules, /outline-offset:\s*2px/);
+  const candidateListboxRules = directRuleBodies(".candidateListbox");
+  for (const containment of [
+    /inset-inline:\s*0/,
+    /width:\s*100%/,
+    /max-width:\s*100%/,
+    /max-height:\s*min\(22rem,\s*calc\(100dvh - 2rem\)\)/,
+    /overflow-x:\s*hidden/,
+    /overflow-y:\s*auto/,
+    /overscroll-behavior:\s*contain/,
+    /background:\s*var\(--atlas-menu-surface\)/,
+    /box-shadow:\s*var\(--atlas-shadow-menu\)/,
+  ]) {
+    assert.match(candidateListboxRules, containment);
+  }
+  const candidateOptionRules = directRuleBodies(".candidateOption");
+  assert.match(candidateOptionRules, /width:\s*100%/);
+  assert.match(candidateOptionRules, /min-width:\s*0/);
+  assert.match(candidateOptionRules, /min-height:\s*2\.75rem/);
+  for (const textSelector of [
+    ".candidateOptionPrimary",
+    ".candidateOptionSecondary",
+  ]) {
+    const textRules = directRuleBodies(textSelector);
+    assert.match(textRules, /overflow-wrap:\s*anywhere/);
+    assert.match(textRules, /white-space:\s*normal/);
+  }
+  assert.doesNotMatch(css, /\.candidateSelect/);
+  assert.doesNotMatch(
+    css,
+    /(?:\.candidateTrigger|\.candidateListbox|\.candidateOption|\.myPickLink|\.primaryButton)[\s\S]{0,220}?border-radius:\s*999px/,
+  );
+  assert.match(
+    css,
+    /\.previewCard[\s\S]*?aspect-ratio:\s*1200 \/ 630[\s\S]*?border-radius:\s*0/,
+  );
+  assert.doesNotMatch(drawSource, /privacyLine/);
+  assert.doesNotMatch(previewSource, /data-memory-preview-privacy/);
+});
+
 test("the route is fixed, noindex, localized by the one existing U1 shell", async () => {
   const routeSource = await readFile(
     join(sourceRoot, "app", "memory", "page.tsx"),
@@ -1488,6 +2101,10 @@ test("the route is fixed, noindex, localized by the one existing U1 shell", asyn
     join(sourceRoot, "i18n", "memory", "messages.ts"),
     "utf8",
   );
+  const clientRouteSource = await readFile(
+    join(sourceRoot, "components", "memory", "MemoryRouteClient.tsx"),
+    "utf8",
+  );
   const routeEntries = await readdir(join(sourceRoot, "app", "memory"), {
     withFileTypes: true,
   });
@@ -1503,9 +2120,38 @@ test("the route is fixed, noindex, localized by the one existing U1 shell", asyn
   assert.match(routeSource, /robots:\s*{/);
   assert.match(routeSource, /index:\s*false/);
   assert.match(routeSource, /follow:\s*false/);
+  assert.match(
+    routeSource,
+    /description:\s*"Turn one saved Atlas experience into a Memory PNG\."/,
+  );
+  assert.doesNotMatch(routeSource, /private, local-first/i);
+  assert.match(routeSource, /GENERATED_PUBLIC_ATLAS_PROJECTION/);
+  assert.match(routeSource, /resolveStaticPublicReference/);
+  assert.match(routeSource, /eventPresentationOptions/);
+  assert.match(routeSource, /<MemoryRouteClient/);
+  assert.match(routeSource, /contextRecords=/);
+  assert.match(routeSource, /sourceRevision=/);
+  assert.doesNotMatch(routeSource, /<MemoryPage\b/);
   assert.doesNotMatch(
     routeSource,
     /params|generateStaticParams|AtlasShell|ShellProvider/,
+  );
+  assert.match(clientRouteSource, /^"use client";/);
+  assert.match(clientRouteSource, /useMemo/);
+  assert.match(clientRouteSource, /createMemoryContextResolver/);
+  assert.match(
+    clientRouteSource,
+    /reference\.sourceRevision !== sourceRevision/,
+  );
+  assert.match(clientRouteSource, /status: "stale"/);
+  assert.match(clientRouteSource, /status: "missing"/);
+  assert.match(
+    clientRouteSource,
+    /resolvePublicContext=\{resolvePublicContext\}/,
+  );
+  assert.doesNotMatch(
+    clientRouteSource,
+    /localStorage|sessionStorage|server-only/,
   );
   assert.equal((rootLayoutSource.match(/<AtlasShell\b/g) ?? []).length, 1);
   assert.match(pageSource, /useShell\(\)/);
@@ -1520,7 +2166,74 @@ test("the route is fixed, noindex, localized by the one existing U1 shell", asyn
     "ko",
     "zh-CN",
   ]);
-  assert.equal((pageSource.match(/<select\b/g) ?? []).length, 1);
+  assert.equal((pageSource.match(/<(?:select|option)\b/g) ?? []).length, 0);
+});
+
+test("the Memory route resolver only enriches exact revision records", () => {
+  const currentRevision = "projection-revision";
+  const currentReference = {
+    entityId: sensitive.eventId,
+    sourceRevision: currentRevision,
+    fallback: {
+      groupName: visible.group,
+      title: visible.event,
+      date: visible.date,
+      venueName: null,
+    },
+  };
+  const resolver = createMemoryContextResolver(currentRevision, [
+    {
+      entityId: sensitive.eventId,
+      sourceRevision: currentRevision,
+      groupName: "Canonical Group",
+      eventName: "Canonical Event",
+      performanceName: "Canonical Performance",
+      date: "2026-08-26",
+      venueName: "Canonical Venue",
+      exactMyPickHref: "https://mypick.kozueginko.com/live/canonical-event/",
+    },
+    {
+      entityId: "equal-love:event:stale-record",
+      sourceRevision: "older-revision",
+      groupName: "Stale Group",
+      eventName: "Stale Event",
+      performanceName: null,
+      date: visible.date,
+      venueName: null,
+      exactMyPickHref: "https://mypick.kozueginko.com/live/stale-event/",
+    },
+  ]);
+
+  assert.deepEqual(resolver(currentReference), {
+    status: "resolved",
+    context: {
+      reference: currentReference,
+      groupName: "Canonical Group",
+      eventName: "Canonical Event",
+      performanceName: "Canonical Performance",
+      date: "2026-08-26",
+      venueName: "Canonical Venue",
+      exactMyPickHref: "https://mypick.kozueginko.com/live/canonical-event/",
+    },
+  });
+  assert.deepEqual(
+    resolver({ ...currentReference, sourceRevision: "older-revision" }),
+    { status: "stale" },
+  );
+  assert.deepEqual(
+    resolver({
+      ...currentReference,
+      entityId: "equal-love:event:not-in-projection",
+    }),
+    { status: "missing" },
+  );
+  assert.deepEqual(
+    resolver({
+      ...currentReference,
+      entityId: "equal-love:event:stale-record",
+    }),
+    { status: "missing" },
+  );
 });
 
 test("empty and unsafe local reads fail closed without synthetic data", () => {

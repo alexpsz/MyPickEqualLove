@@ -14,12 +14,15 @@ export function MemoryPreview({ className, plan }: MemoryPreviewProps) {
       data-memory-template={plan.templateId}
     >
       <div data-memory-preview-heading>
-        <p data-memory-preview-group>{plan.groupName}</p>
+        <p data-memory-preview-group>{`ATLAS × ${plan.groupName}`}</p>
         <h3 data-memory-preview-title>{plan.eventName}</h3>
         <p data-memory-preview-date>
           <strong>{plan.dateLabel}</strong>
           <span>{plan.date}</span>
         </p>
+        {plan.nicknameLine === null ? null : (
+          <p data-memory-preview-nickname>{plan.nicknameLine}</p>
+        )}
       </div>
 
       <div data-memory-preview-details>
@@ -39,7 +42,7 @@ export function MemoryPreview({ className, plan }: MemoryPreviewProps) {
         )}
       </div>
 
-      <p data-memory-preview-privacy>{plan.privacyLine}</p>
+      <p data-memory-preview-brand>ATLAS MEMORY</p>
     </article>
   );
 }

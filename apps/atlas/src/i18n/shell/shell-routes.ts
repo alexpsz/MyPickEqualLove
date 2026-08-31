@@ -1,6 +1,8 @@
 export const SHELL_ROUTES = {
   home: "/",
+  events: "/events/",
   journey: "/journey/",
+  memory: "/memory/",
   localEvent: "/local-event/",
 } as const;
 
@@ -18,7 +20,9 @@ export function isCurrentShellRoute(
   pathname: string | null | undefined,
   route: ShellRoute,
 ): boolean {
-  return (
-    typeof pathname === "string" && normalizeShellPathname(pathname) === route
-  );
+  if (typeof pathname !== "string") return false;
+  const normalized = normalizeShellPathname(pathname);
+  return route === SHELL_ROUTES.events
+    ? normalized.startsWith(SHELL_ROUTES.events)
+    : normalized === route;
 }

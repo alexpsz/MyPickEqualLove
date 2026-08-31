@@ -3,9 +3,11 @@ import { SHELL_LOCALES, type ShellLocale } from "./messages";
 export const SHELL_PREFERENCES_STORAGE_KEY = "atlas.shell.preferences.v1";
 
 export type ShellTheme = "light" | "dark";
+export type ShellLocalePreference = "auto" | ShellLocale;
 
 export interface ShellPreferences {
   locale: ShellLocale;
+  localePreference: ShellLocalePreference;
   theme: ShellTheme;
 }
 
@@ -18,6 +20,7 @@ export interface ShellPreferenceBootstrapInput {
 
 export const DEFAULT_SHELL_PREFERENCES: ShellPreferences = {
   locale: "en",
+  localePreference: "auto",
   theme: "light",
 };
 
@@ -25,6 +28,12 @@ const BCP47_LANGUAGE_TAG = /^([a-z]{2,3})(?:-[a-z0-9]{1,8})*$/i;
 
 export function isShellLocale(value: string | undefined): value is ShellLocale {
   return SHELL_LOCALES.includes(value as ShellLocale);
+}
+
+export function isShellLocalePreference(
+  value: string | undefined,
+): value is ShellLocalePreference {
+  return value === "auto" || isShellLocale(value);
 }
 
 export function isShellTheme(value: string | undefined): value is ShellTheme {
@@ -48,6 +57,9 @@ export function parseShellPreferences(
     return {
       locale: isShellLocale(preferences.locale)
         ? preferences.locale
+        : undefined,
+      localePreference: isShellLocalePreference(preferences.localePreference)
+        ? preferences.localePreference
         : undefined,
       theme: isShellTheme(preferences.theme) ? preferences.theme : undefined,
     };
@@ -93,11 +105,15 @@ export function resolveShellPreferences({
   storedValue,
 }: ShellPreferenceBootstrapInput): ShellPreferences {
   const storedPreferences = parseShellPreferences(storedValue);
+  const browserLocale = resolveShellLocale(browserLocales, browserLanguage);
+  const localePreference =
+    storedPreferences.localePreference ??
+    storedPreferences.locale ??
+    DEFAULT_SHELL_PREFERENCES.localePreference;
 
   return {
-    locale:
-      storedPreferences.locale ??
-      resolveShellLocale(browserLocales, browserLanguage),
+    locale: localePreference === "auto" ? browserLocale : localePreference,
+    localePreference,
     theme: storedPreferences.theme ?? (prefersDark ? "dark" : "light"),
   };
 }

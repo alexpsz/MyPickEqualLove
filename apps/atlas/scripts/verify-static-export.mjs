@@ -17,13 +17,42 @@ const ATLAS_ROOT = path.resolve(SCRIPT_DIRECTORY, "..");
 const EXPECTED_OUTPUT = path.join(ATLAS_ROOT, "out");
 const EXPECTED_NEXT = path.join(ATLAS_ROOT, ".next");
 
-const PRODUCT_ROUTES = ["", "journey", "local-event", "memory"];
-const PRODUCT_HTML_FILES = [
-  "index.html",
-  "journey/index.html",
-  "local-event/index.html",
-  "memory/index.html",
+const PUBLIC_PROJECTION = JSON.parse(
+  readFileSync(
+    path.join(ATLAS_ROOT, "src/generated/public-atlas-projection.v1.json"),
+    "utf8",
+  ),
+);
+const EVENT_DETAIL_ROUTES = PUBLIC_PROJECTION.groups.flatMap((group) =>
+  group.events.flatMap((event) => {
+    const eventLocalId = event.id.split(":")[2];
+    return [
+      `events/${group.siteId}/${eventLocalId}`,
+      ...event.performances.map(
+        (performance) =>
+          `events/${group.siteId}/${eventLocalId}/${performance.id.split(":")[3]}`,
+      ),
+    ];
+  }),
+);
+const PRODUCT_ROUTES = [
+  "",
+  "events",
+  ...EVENT_DETAIL_ROUTES,
+  "journey",
+  "local-event",
+  "memory",
 ];
+const STATIC_PRODUCT_ROUTES = [
+  "",
+  "events",
+  "journey",
+  "local-event",
+  "memory",
+];
+const PRODUCT_HTML_FILES = PRODUCT_ROUTES.map((route) =>
+  route ? `${route}/index.html` : "index.html",
+);
 const FALLBACK_ROUTES = ["404", "_not-found"];
 const REQUIRED_NEXT_FILES = [
   "BUILD_ID",
@@ -35,6 +64,12 @@ const REQUIRED_NEXT_FILES = [
 ];
 const REQUIRED_NEXT_ROUTE_ENTRIES = new Map([
   ["/page", "/"],
+  ["/events/page", "/events"],
+  ["/events/[siteId]/[eventLocalId]/page", "/events/[siteId]/[eventLocalId]"],
+  [
+    "/events/[siteId]/[eventLocalId]/[performanceLocalId]/page",
+    "/events/[siteId]/[eventLocalId]/[performanceLocalId]",
+  ],
   ["/journey/page", "/journey"],
   ["/local-event/page", "/local-event"],
   ["/memory/page", "/memory"],
@@ -46,6 +81,15 @@ const OPTIONAL_NEXT_ROUTE_ENTRIES = new Map([
 ]);
 const REQUIRED_NEXT_APP_PATH_ENTRIES = new Map([
   ["/page", "app/page.js"],
+  ["/events/page", "app/events/page.js"],
+  [
+    "/events/[siteId]/[eventLocalId]/page",
+    "app/events/[siteId]/[eventLocalId]/page.js",
+  ],
+  [
+    "/events/[siteId]/[eventLocalId]/[performanceLocalId]/page",
+    "app/events/[siteId]/[eventLocalId]/[performanceLocalId]/page.js",
+  ],
   ["/journey/page", "app/journey/page.js"],
   ["/local-event/page", "app/local-event/page.js"],
   ["/memory/page", "app/memory/page.js"],
@@ -66,15 +110,50 @@ const EXPECTED_PUBLIC_ROUTES = new Set([
   "/",
   "/_global-error",
   "/_not-found",
+  "/events",
+  ...EVENT_DETAIL_ROUTES.map((route) => `/${route}`),
   "/journey",
   "/local-event",
   "/memory",
   "/robots.txt",
 ]);
+const EXPECTED_STATIC_MANIFEST_ROUTES = new Set([
+  "/",
+  "/_global-error",
+  "/_not-found",
+  "/events",
+  "/journey",
+  "/local-event",
+  "/memory",
+  "/robots.txt",
+]);
+const EXPECTED_DYNAMIC_ROUTE_PROFILES = new Map([
+  [
+    "/events/[siteId]/[eventLocalId]",
+    {
+      routeKeys: ["nxtPsiteId", "nxtPeventLocalId"],
+      regex: "^/events/([^/]+?)/([^/]+?)(?:/)?$",
+      namedRegex:
+        "^/events/(?<nxtPsiteId>[^/]+?)/(?<nxtPeventLocalId>[^/]+?)(?:/)?$",
+      dataRoute: "/events/[siteId]/[eventLocalId].rsc",
+      dataRouteRegex: "^/events/([^/]+?)/([^/]+?)\\.rsc$",
+    },
+  ],
+  [
+    "/events/[siteId]/[eventLocalId]/[performanceLocalId]",
+    {
+      routeKeys: ["nxtPsiteId", "nxtPeventLocalId", "nxtPperformanceLocalId"],
+      regex: "^/events/([^/]+?)/([^/]+?)/([^/]+?)(?:/)?$",
+      namedRegex:
+        "^/events/(?<nxtPsiteId>[^/]+?)/(?<nxtPeventLocalId>[^/]+?)/(?<nxtPperformanceLocalId>[^/]+?)(?:/)?$",
+      dataRoute: "/events/[siteId]/[eventLocalId]/[performanceLocalId].rsc",
+      dataRouteRegex: "^/events/([^/]+?)/([^/]+?)/([^/]+?)\\.rsc$",
+    },
+  ],
+]);
 const FORBIDDEN_ROUTE_SEGMENTS = new Set([
   "covers",
   "event",
-  "events",
   "live",
   "og",
   "performance",
@@ -728,11 +807,37 @@ function routeArtifactPaths(route) {
   return paths;
 }
 
-const ALLOWED_OUTPUT_ROUTE_ARTIFACTS = new Set(
-  [...PRODUCT_ROUTES, ...FALLBACK_ROUTES].flatMap((route) => [
-    ...routeArtifactPaths(route),
+function dynamicEventRouteArtifactPaths(route) {
+  const prefix = `${route}/`;
+  const paths = new Set([
+    `${prefix}index.html`,
+    `${prefix}index.txt`,
+    `${prefix}__next._full.txt`,
+    `${prefix}__next._head.txt`,
+    `${prefix}__next._index.txt`,
+    `${prefix}__next._tree.txt`,
+    `${prefix}__next.events.txt`,
+  ]);
+  const routeParameters = ["$d$siteId", "$d$eventLocalId"];
+  if (route.split("/").length === 4) {
+    routeParameters.push("$d$performanceLocalId");
+  }
+  let segmentPath = `${prefix}__next.events`;
+  for (const parameter of routeParameters) {
+    segmentPath = `${segmentPath}/${parameter}`;
+    paths.add(`${segmentPath}.txt`);
+  }
+  paths.add(`${segmentPath}/__PAGE__.txt`);
+  return paths;
+}
+
+const ALLOWED_OUTPUT_ROUTE_ARTIFACTS = new Set([
+  ...STATIC_PRODUCT_ROUTES.flatMap((route) => [...routeArtifactPaths(route)]),
+  ...EVENT_DETAIL_ROUTES.flatMap((route) => [
+    ...dynamicEventRouteArtifactPaths(route),
   ]),
-);
+  ...FALLBACK_ROUTES.flatMap((route) => [...routeArtifactPaths(route)]),
+]);
 ALLOWED_OUTPUT_ROUTE_ARTIFACTS.add("404.html");
 ALLOWED_OUTPUT_ROUTE_ARTIFACTS.add("_not-found.html");
 ALLOWED_OUTPUT_ROUTE_ARTIFACTS.add("robots.txt");
@@ -740,12 +845,30 @@ ALLOWED_OUTPUT_ROUTE_ARTIFACTS.add("robots.txt");
 const PAGE_ROUTE_DIRECTORIES = new Set([
   "_global-error",
   "_not-found",
+  "events",
   "journey",
   "local-event",
   "memory",
 ]);
 
+const EVENT_APP_PAGE_PATTERN =
+  /^events(?:\/\[siteId\]\/\[eventLocalId\](?:\/\[performanceLocalId\])?)?\/page/;
+
+function isAcceptedConcreteEventArtifact(remainder) {
+  return EVENT_DETAIL_ROUTES.some(
+    (route) =>
+      (/\.(?:html|meta|rsc)$/.test(remainder) &&
+        remainder === `${route}.html`) ||
+      remainder === `${route}.meta` ||
+      remainder === `${route}.rsc` ||
+      remainder.startsWith(`${route}.segments/`),
+  );
+}
+
 function isAllowedStaticAppArtifact(remainder) {
+  if (EVENT_APP_PAGE_PATTERN.test(remainder)) {
+    return /page(?:[-._][a-z0-9_-]+)?\.js(?:\.map)?$/i.test(remainder);
+  }
   const segments = remainder.split("/");
   if (segments.length === 1) {
     return /^(?:layout|page)(?:[-._][a-z0-9_-]+)?\.js(?:\.map)?$/i.test(
@@ -764,13 +887,19 @@ function isAllowedStaticAppArtifact(remainder) {
 }
 
 function isAllowedServerAppArtifact(remainder) {
+  if (EVENT_APP_PAGE_PATTERN.test(remainder)) {
+    return /page(?:\.js(?:\.nft\.json)?|_client-reference-manifest\.js)$/i.test(
+      remainder,
+    );
+  }
+  if (isAcceptedConcreteEventArtifact(remainder)) return true;
   const segments = remainder.split("/");
   if (segments.length === 1) {
     return (
       /^(?:layout|page)(?:\.js(?:\.nft\.json)?|_client-reference-manifest\.js)$/i.test(
         segments[0],
       ) ||
-      /^(?:index|journey|local-event|memory|_global-error|_not-found)\.(?:html|meta|rsc)$/i.test(
+      /^(?:index|events|journey|local-event|memory|_global-error|_not-found)\.(?:html|meta|rsc)$/i.test(
         segments[0],
       ) ||
       /^robots\.txt\.(?:body|meta)$/i.test(segments[0])
@@ -790,7 +919,7 @@ function isAllowedServerAppArtifact(remainder) {
   }
 
   const segmentRoute =
-    /^(index|journey|local-event|memory|_global-error|_not-found)\.segments$/i.exec(
+    /^(index|events|journey|local-event|memory|_global-error|_not-found)\.segments$/i.exec(
       first,
     );
   return (
@@ -801,6 +930,8 @@ function isAllowedServerAppArtifact(remainder) {
 }
 
 function isAllowedTypesAppArtifact(remainder) {
+  if (EVENT_APP_PAGE_PATTERN.test(remainder))
+    return remainder.endsWith("/page.ts");
   const segments = remainder.split("/");
   if (segments.length === 1) return /^(?:layout|page)\.ts$/i.test(segments[0]);
   if (segments.length !== 2) return false;
@@ -1082,13 +1213,44 @@ function inspectRoutesManifest(textFiles, violations) {
   const staticRoutePages = Array.isArray(manifest.staticRoutes)
     ? manifest.staticRoutes.map((route) => route?.page)
     : null;
-  if (!exactStringSet(staticRoutePages, EXPECTED_PUBLIC_ROUTES)) {
+  if (!exactStringSet(staticRoutePages, EXPECTED_STATIC_MANIFEST_ROUTES)) {
     violations.push(
       `.next: ${file} static routes do not match the exact Atlas profile`,
     );
   }
-  if (!Array.isArray(manifest.dynamicRoutes) || manifest.dynamicRoutes.length) {
-    violations.push(`.next: ${file} must not contain dynamic routes`);
+  const dynamicRoutePages = Array.isArray(manifest.dynamicRoutes)
+    ? manifest.dynamicRoutes.map((route) => route?.page)
+    : null;
+  if (
+    !exactStringSet(
+      dynamicRoutePages,
+      new Set(EXPECTED_DYNAMIC_ROUTE_PROFILES.keys()),
+    )
+  ) {
+    violations.push(
+      `.next: ${file} dynamic routes do not match the exact static-param Atlas profile`,
+    );
+  } else {
+    for (const route of manifest.dynamicRoutes) {
+      const profile = EXPECTED_DYNAMIC_ROUTE_PROFILES.get(route.page);
+      const routeKeys =
+        route.routeKeys !== null &&
+        !Array.isArray(route.routeKeys) &&
+        typeof route.routeKeys === "object"
+          ? Object.keys(route.routeKeys)
+          : null;
+      if (
+        profile === undefined ||
+        !exactStringSet(routeKeys, new Set(profile.routeKeys)) ||
+        Object.entries(route.routeKeys).some(([key, value]) => value !== key) ||
+        route.regex !== profile.regex ||
+        route.namedRegex !== profile.namedRegex
+      ) {
+        violations.push(
+          `.next: ${file} dynamic route metadata is not exact for ${String(route.page)}`,
+        );
+      }
+    }
   }
   if (!Array.isArray(manifest.dataRoutes) || manifest.dataRoutes.length) {
     violations.push(`.next: ${file} must not contain data routes`);
@@ -1126,13 +1288,43 @@ function inspectPrerenderManifest(textFiles, violations) {
       `.next: ${file} routes do not match the exact Atlas profile`,
     );
   }
+  const dynamicRouteKeys =
+    manifest.dynamicRoutes !== null &&
+    !Array.isArray(manifest.dynamicRoutes) &&
+    typeof manifest.dynamicRoutes === "object"
+      ? Object.keys(manifest.dynamicRoutes)
+      : null;
   if (
-    manifest.dynamicRoutes === null ||
-    Array.isArray(manifest.dynamicRoutes) ||
-    typeof manifest.dynamicRoutes !== "object" ||
-    Object.keys(manifest.dynamicRoutes).length > 0
+    !exactStringSet(
+      dynamicRouteKeys,
+      new Set(EXPECTED_DYNAMIC_ROUTE_PROFILES.keys()),
+    )
   ) {
-    violations.push(`.next: ${file} must not contain dynamic routes`);
+    violations.push(
+      `.next: ${file} dynamic routes do not match the exact static-param Atlas profile`,
+    );
+  } else {
+    for (const [route, profile] of EXPECTED_DYNAMIC_ROUTE_PROFILES) {
+      const entry = manifest.dynamicRoutes[route];
+      if (
+        entry === null ||
+        Array.isArray(entry) ||
+        typeof entry !== "object" ||
+        entry.fallback !== false ||
+        !Array.isArray(entry.fallbackRootParams) ||
+        entry.fallbackRootParams.length !== 0 ||
+        !Array.isArray(entry.fallbackRouteParams) ||
+        entry.fallbackRouteParams.length !== 0 ||
+        entry.routeRegex !== profile.regex ||
+        entry.dataRoute !== profile.dataRoute ||
+        entry.dataRouteRegex !== profile.dataRouteRegex ||
+        entry.prefetchDataRoute !== null
+      ) {
+        violations.push(
+          `.next: ${file} dynamic route is not a closed static-param route: ${route}`,
+        );
+      }
+    }
   }
   if (
     !Array.isArray(manifest.notFoundRoutes) ||

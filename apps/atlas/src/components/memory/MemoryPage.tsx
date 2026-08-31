@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { MEMORY_NICKNAME_MAX_LENGTH } from "../../contracts/memory-snapshot.js";
 import { useShell } from "../../i18n/shell/shell-context.js";
 import {
   getMemoryMessages,
@@ -31,8 +32,11 @@ import {
   createMemorySourceCandidates,
   type MemoryCandidateReadResult,
   type MemoryDisclosureSelection,
+  type MemoryPublicContextResolver,
   type MemorySnapshotBuildResult,
+  type MemorySourceCandidate,
 } from "../../share/memory-selection.js";
+import { MemoryCandidatePicker } from "./MemoryCandidatePicker.js";
 import { MemoryPreview } from "./MemoryPreview.js";
 
 import styles from "./memory-page.module.css";
@@ -40,6 +44,7 @@ import styles from "./memory-page.module.css";
 const EMPTY_DISCLOSURE: MemoryDisclosureSelection = {
   includePerformanceName: false,
   includeMode: false,
+  nickname: "",
   highlightIndexes: [],
   songIndexes: [],
   includeSummary: false,
@@ -67,6 +72,25 @@ function toggleIndex(indexes: readonly number[], index: number) {
   return indexes.includes(index)
     ? indexes.filter((candidate) => candidate !== index)
     : [...indexes, index];
+}
+
+function toggleSingleIndex(indexes: readonly number[], index: number) {
+  return indexes.includes(index) ? [] : [index];
+}
+
+function defaultDisclosureForCandidate(
+  candidate: MemorySourceCandidate,
+  nickname = "",
+): MemoryDisclosureSelection {
+  return {
+    includePerformanceName: candidate.event.performanceName !== null,
+    includeMode: false,
+    nickname,
+    highlightIndexes: candidate.highlights.length > 0 ? [0] : [],
+    songIndexes: candidate.songs.map((_, index) => index),
+    includeSummary: false,
+    summary: "",
+  };
 }
 
 interface MemoryPublicationSessionProps {
@@ -182,10 +206,9 @@ function MemoryPublicationSession({
   };
 
   return (
-    <section className={styles.panel}>
+    <section className={`${styles.panel} ${styles.previewPanel}`}>
       <div className={styles.sectionHeading}>
         <h2>{messages.previewTitle}</h2>
-        <p>{messages.previewDescription}</p>
       </div>
 
       {snapshotResult?.ok !== true ? (
@@ -202,34 +225,38 @@ function MemoryPublicationSession({
             className={styles.previewCard}
             plan={planResult.plan}
           />
-          <button
-            className={styles.primaryButton}
-            disabled={generating || sharing}
-            onClick={() => void handleGenerate()}
-            type="button"
-          >
-            {generating ? messages.generating : messages.generate}
-          </button>
+          <div className={styles.previewActions}>
+            <button
+              className={styles.primaryButton}
+              disabled={generating || sharing}
+              onClick={() => void handleGenerate()}
+              type="button"
+            >
+              {generating ? messages.generating : messages.generate}
+            </button>
+
+            {artifactBinding ? (
+              <div className={styles.actions}>
+                <button onClick={handleDownload} type="button">
+                  {messages.download}
+                </button>
+                {artifactBinding.shareSupported ? (
+                  <button
+                    disabled={sharing}
+                    onClick={() => void handleShare()}
+                    type="button"
+                  >
+                    {messages.share}
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
         </>
       )}
 
-      {artifactBinding ? (
-        <div className={styles.actions}>
-          <button onClick={handleDownload} type="button">
-            {messages.download}
-          </button>
-          {artifactBinding.shareSupported ? (
-            <button
-              disabled={sharing}
-              onClick={() => void handleShare()}
-              type="button"
-            >
-              {messages.share}
-            </button>
-          ) : (
-            <p>{messages.shareUnavailable}</p>
-          )}
-        </div>
+      {artifactBinding && !artifactBinding.shareSupported ? (
+        <p className={styles.assistiveCopy}>{messages.shareUnavailable}</p>
       ) : null}
 
       {noticeKey ? (
@@ -241,7 +268,11 @@ function MemoryPublicationSession({
   );
 }
 
-export function MemoryPage() {
+export interface MemoryPageProps {
+  readonly resolvePublicContext?: MemoryPublicContextResolver;
+}
+
+export function MemoryPage({ resolvePublicContext }: MemoryPageProps = {}) {
   const { locale, theme } = useShell();
   const messages = getMemoryMessages(locale);
   const environmentKey = createMemoryPublicationEnvironmentKey(locale, theme);
@@ -260,7 +291,10 @@ export function MemoryPage() {
     publicationGate.activate();
 
     const readJourney = async () => {
-      const next = createMemorySourceCandidates(await repository.read());
+      const next = createMemorySourceCandidates(
+        await repository.read(),
+        resolvePublicContext,
+      );
       if (!active) return;
       publicationGate.invalidate();
       setPublicationRevision((revision) => revision + 1);
@@ -287,7 +321,7 @@ export function MemoryPage() {
       publicationGate.deactivate();
       window.removeEventListener("storage", handleStorage);
     };
-  }, [publicationGate]);
+  }, [publicationGate, resolvePublicContext]);
 
   useEffect(() => {
     publicationGate.invalidate();
@@ -296,8 +330,17 @@ export function MemoryPage() {
   const candidates = readState.status === "ready" ? readState.candidates : [];
   const candidate =
     candidateIndex === null ? null : (candidates[candidateIndex] ?? null);
-  const snapshotResult = candidate
-    ? createMemorySnapshot(candidate, selection, messages.localGroupName)
+  const displayCandidate = candidate
+    ? {
+        ...candidate,
+        songs: candidate.songs.map((song) => ({
+          ...song,
+          groupName: candidate.event.groupName ?? song.groupName,
+        })),
+      }
+    : null;
+  const snapshotResult = displayCandidate
+    ? createMemorySnapshot(displayCandidate, selection, messages.localGroupName)
     : null;
   const planResult =
     snapshotResult?.ok === true
@@ -316,14 +359,24 @@ export function MemoryPage() {
 
   const selectCandidate = (value: string) => {
     invalidatePublication();
-    setCandidateIndex(value === "" ? null : Number(value));
-    setSelection(EMPTY_DISCLOSURE);
+    const nextIndex = value === "" ? null : Number(value);
+    const nextCandidate =
+      nextIndex === null ? null : (candidates[nextIndex] ?? null);
+    setCandidateIndex(nextCandidate === null ? null : nextIndex);
+    setSelection((current) =>
+      nextCandidate === null
+        ? { ...EMPTY_DISCLOSURE, nickname: current.nickname }
+        : defaultDisclosureForCandidate(nextCandidate, current.nickname),
+    );
   };
 
   return (
     <div className={styles.page}>
       <header className={styles.hero}>
-        <p className={styles.eyebrow}>{messages.eyebrow}</p>
+        <a className={styles.backLink} href="/journey/">
+          <span aria-hidden="true">←</span>
+          {messages.backToJourney}
+        </a>
         <h1>{messages.title}</h1>
         <p>{messages.description}</p>
       </header>
@@ -344,38 +397,45 @@ export function MemoryPage() {
         </section>
       ) : (
         <div className={styles.workspace}>
-          <section className={styles.panel}>
+          <section className={`${styles.panel} ${styles.editorPanel}`}>
             <div className={styles.sectionHeading}>
               <h2>{messages.selectionTitle}</h2>
-              <p>{messages.selectionDescription}</p>
             </div>
-            <label className={styles.selectField}>
-              <span>{messages.candidateLabel}</span>
-              <select
-                onChange={(event) => selectCandidate(event.target.value)}
-                value={candidateIndex === null ? "" : String(candidateIndex)}
-              >
-                <option value="">{messages.candidatePlaceholder}</option>
-                {candidates.map((item, index) => (
-                  <option key={index} value={index}>
-                    {`${item.event.groupName ?? messages.localGroupName} · ${item.event.eventName} · ${item.event.date} · ${messages.card.modes[item.mode]}`}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <MemoryCandidatePicker
+              candidates={candidates}
+              messages={messages}
+              onValueChange={selectCandidate}
+              value={candidateIndex === null ? "" : String(candidateIndex)}
+            />
 
-            {candidate ? (
+            {displayCandidate ? (
               <>
-                <div className={styles.requiredCard}>
-                  <h3>{messages.requiredTitle}</h3>
-                  <p>{messages.requiredDescription}</p>
+                <div className={styles.experienceCard}>
+                  <p className={styles.experienceGroup}>
+                    {displayCandidate.event.groupName ??
+                      messages.localGroupName}
+                  </p>
+                  <h3>{displayCandidate.event.eventName}</h3>
+                  {displayCandidate.event.performanceName ? (
+                    <p className={styles.experiencePerformance}>
+                      {displayCandidate.event.performanceName}
+                    </p>
+                  ) : null}
+                  <div className={styles.experienceMeta}>
+                    <span>{displayCandidate.event.date}</span>
+                    {displayCandidate.venueName ? (
+                      <span>{displayCandidate.venueName}</span>
+                    ) : null}
+                    <span className={styles.modePill}>
+                      {messages.card.modes[displayCandidate.mode]}
+                    </span>
+                  </div>
                 </div>
 
                 <fieldset className={styles.disclosure}>
-                  <legend>{messages.optionalTitle}</legend>
-                  <p>{messages.optionalDescription}</p>
+                  <legend>{messages.showTitle}</legend>
 
-                  {candidate.event.performanceName !== null ? (
+                  {displayCandidate.event.performanceName !== null ? (
                     <label className={styles.checkboxRow}>
                       <input
                         checked={selection.includePerformanceName}
@@ -405,14 +465,38 @@ export function MemoryPage() {
                     <span>{messages.includeMode}</span>
                   </label>
 
-                  {candidate.highlights.map((highlight, index) => (
+                  <label className={styles.nicknameField}>
+                    <span>{messages.nicknameLabel}</span>
+                    <span className={styles.nicknameInput}>
+                      <input
+                        maxLength={MEMORY_NICKNAME_MAX_LENGTH}
+                        onChange={(event) =>
+                          updateSelection({
+                            ...selection,
+                            nickname: event.target.value.slice(
+                              0,
+                              MEMORY_NICKNAME_MAX_LENGTH,
+                            ),
+                          })
+                        }
+                        placeholder={messages.nicknamePlaceholder}
+                        type="text"
+                        value={selection.nickname}
+                      />
+                      <span aria-hidden="true" className={styles.nicknameCount}>
+                        {selection.nickname.length}/{MEMORY_NICKNAME_MAX_LENGTH}
+                      </span>
+                    </span>
+                  </label>
+
+                  {displayCandidate.highlights.map((highlight, index) => (
                     <label className={styles.checkboxRow} key={index}>
                       <input
                         checked={selection.highlightIndexes.includes(index)}
                         onChange={() =>
                           updateSelection({
                             ...selection,
-                            highlightIndexes: toggleIndex(
+                            highlightIndexes: toggleSingleIndex(
                               selection.highlightIndexes,
                               index,
                             ),
@@ -424,7 +508,7 @@ export function MemoryPage() {
                     </label>
                   ))}
 
-                  {candidate.songs.map((song, index) => (
+                  {displayCandidate.songs.map((song, index) => (
                     <label className={styles.checkboxRow} key={index}>
                       <input
                         checked={selection.songIndexes.includes(index)}
@@ -474,15 +558,26 @@ export function MemoryPage() {
                         rows={3}
                         value={selection.summary}
                       />
-                      <small>{messages.summaryPrivacy}</small>
                     </label>
                   ) : null}
                 </fieldset>
+
+                {displayCandidate.exactMyPickHref ? (
+                  <a
+                    className={styles.myPickLink}
+                    href={displayCandidate.exactMyPickHref}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    {messages.makeMyPick}
+                    <span aria-hidden="true">↗</span>
+                  </a>
+                ) : null}
               </>
             ) : null}
           </section>
 
-          {candidate ? (
+          {displayCandidate ? (
             <MemoryPublicationSession
               environmentKey={environmentKey}
               key={`${environmentKey}:${publicationRevision}`}
@@ -494,6 +589,11 @@ export function MemoryPage() {
           ) : null}
         </div>
       )}
+
+      <p className={styles.privacyLine}>
+        <span aria-hidden="true">✓</span>
+        {messages.privacyLine}
+      </p>
     </div>
   );
 }

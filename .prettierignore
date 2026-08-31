@@ -1,2 +1,5 @@
 # 由 scripts/generate-share-validation-manifest.mjs 生成，格式必须与生成器一致
 src/projects/share-validation-manifest.json
+
+# 由 Atlas public projection 生成器写入，GO 校验要求字节级一致
+apps/atlas/src/generated/public-atlas-projection.v1.json

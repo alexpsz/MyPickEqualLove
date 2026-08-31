@@ -24,6 +24,10 @@ import {
   type JourneyLocale,
 } from "../../i18n/journey/translate";
 import { InlineConfirmation } from "./InlineConfirmation";
+import {
+  JourneyNativeSelect,
+  JourneyNativeTemporalInput,
+} from "./JourneyFormControls";
 import styles from "./journey-ui.module.css";
 
 export type JourneyMutation = (current: JourneyDocumentV1) => JourneyDocumentV1;
@@ -100,7 +104,7 @@ function ExperienceFields({
       <div className={styles.twoColumns}>
         <label className={styles.field}>
           <span>{journeyMessage(locale, "mode")}</span>
-          <select
+          <JourneyNativeSelect
             defaultValue={entry?.mode ?? "in-person"}
             disabled={disabled}
             name="mode"
@@ -114,19 +118,22 @@ function ExperienceFields({
             <option value="archive">
               {journeyMessage(locale, "modeArchive")}
             </option>
-          </select>
+          </JourneyNativeSelect>
         </label>
         <label className={styles.field}>
           <span>{journeyMessage(locale, "occurredAt")}</span>
-          <input
-            defaultValue={localDateTimeValue(
-              entry?.occurredAt ?? new Date().toISOString(),
-            )}
+          <JourneyNativeTemporalInput
+            defaultValue={
+              entry === undefined ? "" : localDateTimeValue(entry.occurredAt)
+            }
             disabled={disabled}
             name="occurredAt"
             required
             type="datetime-local"
           />
+          <span className={styles.fieldHint}>
+            {journeyMessage(locale, "occurredAtHint")}
+          </span>
         </label>
       </div>
       <label className={styles.field}>
@@ -256,11 +263,22 @@ export function JourneyRecordCard({
   return (
     <article className={styles.card} ref={cardRef} tabIndex={-1}>
       <header className={styles.cardHeader}>
+        <p className={styles.eyebrow}>
+          {record.subject.kind === "public-reference"
+            ? record.subject.reference.fallback.groupName
+            : journeyMessage(locale, "localOnly")}
+        </p>
+        <h2
+          className={styles.cardTitle}
+          lang={record.subject.kind === "public-reference" ? "ja" : undefined}
+        >
+          {fallback.title}
+        </h2>
         <div className={styles.metaRow}>
-          <span className={styles.badge}>
+          <span className={styles.meta}>
             {record.subject.kind === "local-custom-event"
               ? journeyMessage(locale, "localOnly")
-              : journeyMessage(locale, "publicMissing")}
+              : journeyMessage(locale, "publicCatalog")}
           </span>
           <span className={styles.meta}>
             {journeyMessage(locale, "experienceCount", {
@@ -268,7 +286,6 @@ export function JourneyRecordCard({
             })}
           </span>
         </div>
-        <h2 className={styles.cardTitle}>{fallback.title}</h2>
         <div className={styles.metaRow}>
           {fallback.date ? (
             <span className={styles.meta}>
@@ -276,40 +293,56 @@ export function JourneyRecordCard({
             </span>
           ) : null}
           {fallback.venueName ? (
-            <span className={styles.meta}>{fallback.venueName}</span>
+            <span
+              className={styles.meta}
+              lang={
+                record.subject.kind === "public-reference" ? "ja" : undefined
+              }
+            >
+              {fallback.venueName}
+            </span>
           ) : null}
         </div>
       </header>
 
       <div className={styles.cardBody}>
-        <form className={styles.compactForm} onSubmit={submitIntent}>
-          <label className={styles.field}>
-            <span>{journeyMessage(locale, "intent")}</span>
-            <select
-              defaultValue={record.intent ?? ""}
-              disabled={busy}
-              key={`${record.id}-intent-${record.updatedAt}`}
-              name="intent"
-            >
-              <option value="">{journeyMessage(locale, "intentNone")}</option>
-              <option value="interested">
-                {journeyMessage(locale, "intentInterested")}
-              </option>
-              <option value="planned">
-                {journeyMessage(locale, "intentPlanned")}
-              </option>
-            </select>
-          </label>
-          <div className={styles.actionRow}>
-            <button
-              className={styles.buttonSecondary}
-              disabled={busy}
-              type="submit"
-            >
-              {journeyMessage(locale, "saveIntent")}
-            </button>
-          </div>
-        </form>
+        {record.experienceEntries.length > 0 ? (
+          <p
+            className={`${styles.compactForm} ${styles.attendedStatus}`}
+            data-journey-status="attended"
+          >
+            {journeyMessage(locale, "intentAttended")}
+          </p>
+        ) : (
+          <form className={styles.compactForm} onSubmit={submitIntent}>
+            <label className={styles.field}>
+              <span>{journeyMessage(locale, "intent")}</span>
+              <JourneyNativeSelect
+                defaultValue={record.intent ?? ""}
+                disabled={busy}
+                key={`${record.id}-intent-${record.updatedAt}`}
+                name="intent"
+              >
+                <option value="">{journeyMessage(locale, "intentNone")}</option>
+                <option value="interested">
+                  {journeyMessage(locale, "intentInterested")}
+                </option>
+                <option value="planned">
+                  {journeyMessage(locale, "intentPlanned")}
+                </option>
+              </JourneyNativeSelect>
+            </label>
+            <div className={styles.actionRow}>
+              <button
+                className={styles.buttonSecondary}
+                disabled={busy}
+                type="submit"
+              >
+                {journeyMessage(locale, "saveIntent")}
+              </button>
+            </div>
+          </form>
+        )}
 
         {record.subject.kind === "local-custom-event" ? (
           <details className={styles.disclosure}>
@@ -323,6 +356,7 @@ export function JourneyRecordCard({
                     disabled={busy}
                     maxLength={256}
                     name="title"
+                    placeholder={journeyMessage(locale, "titlePlaceholder")}
                     required
                     type="text"
                   />
@@ -330,7 +364,7 @@ export function JourneyRecordCard({
                 <div className={styles.twoColumns}>
                   <label className={styles.field}>
                     <span>{journeyMessage(locale, "date")}</span>
-                    <input
+                    <JourneyNativeTemporalInput
                       defaultValue={record.subject.fallback.date ?? ""}
                       disabled={busy}
                       name="date"
@@ -344,6 +378,7 @@ export function JourneyRecordCard({
                       disabled={busy}
                       maxLength={256}
                       name="venue"
+                      placeholder={journeyMessage(locale, "venuePlaceholder")}
                       type="text"
                     />
                   </label>
@@ -360,7 +395,7 @@ export function JourneyRecordCard({
           </details>
         ) : (
           <p className={styles.muted}>
-            {journeyMessage(locale, "publicMissing")}
+            {journeyMessage(locale, "publicSubjectLocked")}
           </p>
         )}
 
@@ -486,40 +521,47 @@ export function JourneyRecordCard({
           </div>
         </details>
 
-        {confirmingJourneyDelete ? (
-          <InlineConfirmation
-            busy={busy}
-            confirmLabel="confirmDeleteJourney"
-            locale={locale}
-            message="deleteJourney"
-            onCancel={() => {
-              setConfirmingJourneyDelete(false);
-              focusAfterConfirmation(() => journeyDeleteButtonRef.current);
-            }}
-            onConfirm={() => {
-              void onMutate(interactionBinding, (current) =>
-                deleteJourneyRecord(
-                  current,
-                  record.id,
-                  new Date().toISOString(),
-                ),
-              ).finally(() => {
-                setConfirmingJourneyDelete(false);
-                focusAfterConfirmation(() => journeyDeleteButtonRef.current);
-              });
-            }}
-          />
-        ) : (
-          <button
-            className={styles.buttonDanger}
-            disabled={busy}
-            onClick={() => setConfirmingJourneyDelete(true)}
-            ref={journeyDeleteButtonRef}
-            type="button"
-          >
-            {journeyMessage(locale, "deleteJourney")}
-          </button>
-        )}
+        <details className={`${styles.disclosure} ${styles.dangerDisclosure}`}>
+          <summary>{journeyMessage(locale, "recordOptions")}</summary>
+          <div className={styles.disclosureContent}>
+            {confirmingJourneyDelete ? (
+              <InlineConfirmation
+                busy={busy}
+                confirmLabel="confirmDeleteJourney"
+                locale={locale}
+                message="deleteJourney"
+                onCancel={() => {
+                  setConfirmingJourneyDelete(false);
+                  focusAfterConfirmation(() => journeyDeleteButtonRef.current);
+                }}
+                onConfirm={() => {
+                  void onMutate(interactionBinding, (current) =>
+                    deleteJourneyRecord(
+                      current,
+                      record.id,
+                      new Date().toISOString(),
+                    ),
+                  ).finally(() => {
+                    setConfirmingJourneyDelete(false);
+                    focusAfterConfirmation(
+                      () => journeyDeleteButtonRef.current,
+                    );
+                  });
+                }}
+              />
+            ) : (
+              <button
+                className={styles.buttonDanger}
+                disabled={busy}
+                onClick={() => setConfirmingJourneyDelete(true)}
+                ref={journeyDeleteButtonRef}
+                type="button"
+              >
+                {journeyMessage(locale, "deleteJourney")}
+              </button>
+            )}
+          </div>
+        </details>
       </div>
     </article>
   );
