@@ -799,8 +799,10 @@ function routeArtifactPaths(route) {
     `${prefix}__next._tree.txt`,
   ]);
   if (route) {
-    paths.add(`${prefix}__next.${route}.txt`);
-    paths.add(`${prefix}__next.${route}/__PAGE__.txt`);
+    const pagePayload = `${prefix}__next.${route}`;
+    paths.add(`${pagePayload}.txt`);
+    paths.add(`${pagePayload}/__PAGE__.txt`);
+    paths.add(`${pagePayload}.__PAGE__.txt`);
   } else {
     paths.add("__next.__PAGE__.txt");
   }
@@ -822,12 +824,16 @@ function dynamicEventRouteArtifactPaths(route) {
   if (route.split("/").length === 4) {
     routeParameters.push("$d$performanceLocalId");
   }
-  let segmentPath = `${prefix}__next.events`;
+  let directorySegmentPath = `${prefix}__next.events`;
+  let flatSegmentPath = `${prefix}__next.events`;
   for (const parameter of routeParameters) {
-    segmentPath = `${segmentPath}/${parameter}`;
-    paths.add(`${segmentPath}.txt`);
+    directorySegmentPath = `${directorySegmentPath}/${parameter}`;
+    flatSegmentPath = `${flatSegmentPath}.${parameter}`;
+    paths.add(`${directorySegmentPath}.txt`);
+    paths.add(`${flatSegmentPath}.txt`);
   }
-  paths.add(`${segmentPath}/__PAGE__.txt`);
+  paths.add(`${directorySegmentPath}/__PAGE__.txt`);
+  paths.add(`${flatSegmentPath}.__PAGE__.txt`);
   return paths;
 }
 

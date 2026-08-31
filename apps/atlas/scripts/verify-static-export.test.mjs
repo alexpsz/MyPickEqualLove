@@ -442,6 +442,68 @@ test("strict verifier accepts the bounded personal build and remains read-only",
   });
 });
 
+test("exact flattened Linux route payloads pass without widening the route boundary", () => {
+  withFixture((fixture) => {
+    for (const route of [
+      "404",
+      "_not-found",
+      "events",
+      "journey",
+      "local-event",
+      "memory",
+    ]) {
+      writeFixtureFile(
+        fixture.outputDirectory,
+        `${route}/__next.${route}.__PAGE__.txt`,
+        "flat page payload",
+      );
+    }
+
+    for (const route of EVENT_ROUTES.slice(1)) {
+      const routeParameters = ["$d$siteId", "$d$eventLocalId"];
+      if (route.split("/").length === 4) {
+        routeParameters.push("$d$performanceLocalId");
+      }
+      let flatSegmentPath = `${route}/__next.events`;
+      for (const parameter of routeParameters) {
+        flatSegmentPath = `${flatSegmentPath}.${parameter}`;
+        writeFixtureFile(
+          fixture.outputDirectory,
+          `${flatSegmentPath}.txt`,
+          "flat segment payload",
+        );
+      }
+      writeFixtureFile(
+        fixture.outputDirectory,
+        `${flatSegmentPath}.__PAGE__.txt`,
+        "flat page payload",
+      );
+    }
+
+    assert.deepEqual(inspectFixture(fixture).violations, []);
+
+    writeFixtureFile(
+      fixture.outputDirectory,
+      "journey/__next.journey.$d$siteId.txt",
+      "invented segment",
+    );
+    writeFixtureFile(
+      fixture.outputDirectory,
+      "events/equal-love/kokuritsu_2026/__next.events.$d$siteId.$d$eventLocalId.$d$extra.__PAGE__.txt",
+      "invented page payload",
+    );
+    const result = inspectFixture(fixture);
+    assertViolation(
+      result,
+      /unexpected export artifact: journey\/__next\.journey\.\$d\$siteId\.txt/,
+    );
+    assertViolation(
+      result,
+      /unexpected export artifact: events\/equal-love\/kokuritsu_2026\/__next\.events\.\$d\$siteId\.\$d\$eventLocalId\.\$d\$extra\.__PAGE__\.txt/,
+    );
+  });
+});
+
 test("missing out and .next fail together with deterministic labels", () => {
   const root = mkdtempSync(path.join(tmpdir(), "atlas-missing-"));
   try {
