@@ -469,7 +469,7 @@ function options(fixture, overrides = {}) {
 }
 
 test("production audit binds the approved baseline and returns a three-seed GO", async () => {
-  const audit = await auditWorkspace({ auditDate: "2026-08-30" });
+  const audit = await auditWorkspace({ auditDate: "2026-09-01" });
   assert.equal(audit.ok, true, audit.errors.join("\n"));
   assert.deepEqual(audit.totals, {
     events: 4,

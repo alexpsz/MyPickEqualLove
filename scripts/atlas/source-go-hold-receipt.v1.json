@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "receiptId": "atlas-public-event-source-go-hold-v1",
-  "sourceCommit": "f939c9a17d5e58bab0c5a9440a7e768ac1af2ba8",
+  "sourceCommit": "a02fb7661ba3bdce4f5819e5454200ef0a83794c",
   "sourceRevisionAlgorithm": "sha256 of canonical UTF-8 atlas-public-source-revision-v1 input",
   "historicalBaseline": {
     "contractPath": "apps/atlas/src/contracts/baseline-receipt.ts",
@@ -41,15 +41,15 @@
   "evidenceFiles": [
     {
       "path": "scripts/atlas/evidence/equal-love-public-seed-approval.v1.json",
-      "sha256": "636cf768d19714a8cd7b6fa86b74fc50ab48f9f06dbccb7660c706075a775da1"
+      "sha256": "7359ebe49a9f055377305193b607a544dc1a9e1081f2b6fde9475d2a8787c308"
     },
     {
       "path": "scripts/atlas/evidence/nearly-equal-joy-public-seed-approval.v1.json",
-      "sha256": "375bf36e29f24060d1f3e64bc39bc3d7df27e471d72be53cbc8f1a5e3bcce690"
+      "sha256": "1316496a20508edfb0d9274ea29a51ff7084f4f524dbf6d152faa60566c71015"
     },
     {
       "path": "scripts/atlas/evidence/not-equal-me-public-seed-approval.v1.json",
-      "sha256": "b487d073e0e039ac326a857eac90df4f7f677b480d1ec0292f567e6ed693bd43"
+      "sha256": "69139f9943aac9f73fc5c53145822caa8e7c8d256c6c70bb09d87020aec0c3b0"
     }
   ],
   "seeds": [
@@ -58,7 +58,7 @@
       "sourcePath": "src/projects/equal-love/live-experiences.json",
       "sourceSha256": "141c7ec0a53ff7f770b4f97ab977080c545e483502a3f10bfb739a7c8e462ccf",
       "songsPath": "src/projects/equal-love/songs.json",
-      "songsSha256": "060774dab39fe3fda230f866e1d132fcc31cda01dc62137fc98c040e0670b141",
+      "referencedSongProjectionSha256": "bc1d79be6a3f74afab6ab1766f3d5ebf0b015227201c72317e7b5911f08e2a06",
       "baselineCounts": {
         "events": 2,
         "performances": 2,
@@ -130,7 +130,7 @@
       "sourcePath": "src/projects/nearly-equal-joy/live-experiences.json",
       "sourceSha256": "fe38418c78d3da0b07e3fd053f9b8c44efddc98657bf4029f09e43a7926ea464",
       "songsPath": "src/projects/nearly-equal-joy/songs.json",
-      "songsSha256": "737b6d68d3fb494304a261da55fda0711dd1105e1ef67387394271ace6a7efba",
+      "referencedSongProjectionSha256": "67c8c04ec0b145a34767e4501e35461c01514cc24532590054d97d40cdb47464",
       "baselineCounts": {
         "events": 1,
         "performances": 2,
@@ -195,7 +195,7 @@
       "sourcePath": "src/projects/not-equal-me/live-experiences.json",
       "sourceSha256": "b99f7764e2429cbeb3e8c2d57d7248b41df9884c2c4e3a35d3cb05846589f7f6",
       "songsPath": "src/projects/not-equal-me/songs.json",
-      "songsSha256": "f9b706462fd0f1fcfc700f4d1b9f6cc3fe3c6e303e39d50e6b9682603e582d82",
+      "referencedSongProjectionSha256": "067b3e2c32f03f61d47453861837c675d2215f75e309d77f870b935aae3eecf8",
       "baselineCounts": {
         "events": 1,
         "performances": 2,
