@@ -18,11 +18,11 @@ import {
 import { buildPlan } from "./label-archetypes.mjs";
 
 const CAMPAIGN_ID = "equal-love-archetype-21";
-const EXPECTED_SONG_COUNT = 85;
+const EXPECTED_SONG_COUNT = 87;
 
 function usage() {
   return `Usage:
-  node scripts/archetype/consolidate-archetypes.mjs --source-map <file> --input-dir <run-dir> --output <file> --write --confirm-count 85
+  node scripts/archetype/consolidate-archetypes.mjs --source-map <file> --input-dir <run-dir> --output <file> --write --confirm-count 87
   node scripts/archetype/consolidate-archetypes.mjs --source-map <file> --input-dir <run-dir> --output <file> --check`;
 }
 
@@ -103,7 +103,7 @@ export async function buildApprovedDocument({ sourceMapPath, inputDir }) {
     sourceMap.experienceId !== "standard-top10" ||
     sourceMap.songs.length !== EXPECTED_SONG_COUNT
   ) {
-    throw new Error("approved export requires the 85-song =LOVE standard map");
+    throw new Error("approved export requires the 87-song =LOVE standard map");
   }
 
   const repositorySongs = await readJson(
@@ -131,7 +131,7 @@ export async function buildApprovedDocument({ sourceMapPath, inputDir }) {
     .sort();
   if (canonicalJson(resultFiles) !== canonicalJson(expectedFiles)) {
     throw new Error(
-      "result directory must contain exactly the 85 source-map rows",
+      "result directory must contain exactly the 87 source-map rows",
     );
   }
 
@@ -151,7 +151,7 @@ export async function buildApprovedDocument({ sourceMapPath, inputDir }) {
     plan.frozenSongCount !== EXPECTED_SONG_COUNT ||
     plan.expectedRequestCount !== 0
   ) {
-    throw new Error("approved export requires a fully frozen 85-song run");
+    throw new Error("approved export requires a fully frozen 87-song run");
   }
   const checkpoint = await readJson(
     join(inputDir, "checkpoint.json"),

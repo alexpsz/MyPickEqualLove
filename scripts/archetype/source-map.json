@@ -1204,6 +1204,36 @@
       "qaFlags": []
     },
     {
+      "songId": "natsu-nagori-samaachuun",
+      "title": "夏名残サマーチューン",
+      "sourceMode": "official-mv",
+      "sourceUrl": "https://www.youtube.com/watch?v=_Bm66BRnM1A",
+      "videoId": "_Bm66BRnM1A",
+      "videoTitle": "＝LOVE（イコールラブ）/ 21st Single c/w『夏名残サマーチューン』【MV full】",
+      "channelId": "UCv7VutirxDn3RWIJXI68n_A",
+      "channelTitle": "＝LOVE（イコールラブ）公式チャンネル",
+      "durationSeconds": 241,
+      "clipScope": "single-song",
+      "sourceAuthority": "official",
+      "sourceNotes": "",
+      "qaFlags": []
+    },
+    {
+      "songId": "yume-no-tsuzuki",
+      "title": "夢の続き",
+      "sourceMode": "official-mv",
+      "sourceUrl": "https://www.youtube.com/watch?v=RjHjQlEjs_E",
+      "videoId": "RjHjQlEjs_E",
+      "videoTitle": "＝LOVE（イコールラブ）/ 21st Single c/w『夢の続き』【MV full】",
+      "channelId": "UCv7VutirxDn3RWIJXI68n_A",
+      "channelTitle": "＝LOVE（イコールラブ）公式チャンネル",
+      "durationSeconds": 232,
+      "clipScope": "single-song",
+      "sourceAuthority": "official",
+      "sourceNotes": "",
+      "qaFlags": []
+    },
+    {
       "songId": "kimi-dake-no-hanamichi",
       "title": "君だけの花道",
       "sourceMode": "official-art-track",

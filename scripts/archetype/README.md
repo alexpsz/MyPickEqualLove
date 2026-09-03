@@ -17,7 +17,7 @@ AI, backend, media downloader, or media cache.
 - REST schema revision: every request includes
   `Api-Revision: 2026-05-20`.
 - Generation: `--thinking-level` accepts only `low`, `medium`, or `high` and
-  defaults to `medium`; `minimal` is rejected. The 85-song production run uses
+  defaults to `medium`; `minimal` is rejected. The 87-song production run uses
   the default or explicitly passes `medium`. Every request fixes
   `max_output_tokens: 2048`. `high` is available for manual exception review,
   but there is no automatic retry pipeline. Sampling parameters (`temperature`,
@@ -112,7 +112,7 @@ node scripts/archetype/label-archetypes.mjs `
   --smoke
 ```
 
-For an exact one-song preflight from the complete 85-song source map:
+For an exact one-song preflight from the complete 87-song source map:
 
 ```powershell
 node scripts/archetype/label-archetypes.mjs `
@@ -177,20 +177,20 @@ low/medium/high calibration outputs retain comparable cost and latency evidence.
 
 After the complete Medium run is frozen and reviewed, promote only the minimal
 runtime fields into the static web-app document. `--write` requires the exact
-85-song confirmation; `--check` deterministically replays the checkpoint,
+87-song confirmation; `--check` deterministically replays the checkpoint,
 result hashes, prompt contract, source map, and repository song order:
 
 ```powershell
 node scripts/archetype/consolidate-archetypes.mjs `
   --source-map scripts/archetype/source-map.json `
-  --input-dir memory/archetype-runs/gemini-3.7-flash-medium-v1 `
+  --input-dir memory/archetype-runs/<complete-current-87-song-run> `
   --output src/projects/equal-love/archetype-21/song-affinities.json `
   --write `
-  --confirm-count 85
+  --confirm-count 87
 
 node scripts/archetype/consolidate-archetypes.mjs `
   --source-map scripts/archetype/source-map.json `
-  --input-dir memory/archetype-runs/gemini-3.7-flash-medium-v1 `
+  --input-dir memory/archetype-runs/<complete-current-87-song-run> `
   --output src/projects/equal-love/archetype-21/song-affinities.json `
   --check
 ```

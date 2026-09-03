@@ -3,15 +3,15 @@
   "projectId": "equal-love",
   "storefront": "JP",
   "artistId": 1273762750,
-  "snapshotRunId": "itunes-jp-2026-08-24",
-  "coverageNote": "The frozen artist lookup produced 80/85 exact-title matches versus the historical 79/85 observation. Human review added two manual candidates, so matchedSongCount is 82; Apple catalog coverage is informational and not an acceptance constant.",
-  "catalogSongCount": 85,
-  "matchedSongCount": 82,
-  "approvedSongCount": 82,
+  "snapshotRunId": "itunes-jp-2026-08-24-plus-2026-09-04",
+  "coverageNote": "The frozen artist lookup produced 80/85 exact-title matches versus the historical 79/85 observation. Human review added two manual candidates, and a 2026-09-04 exact collection lookup added both new 21st-single coupling tracks, so matchedSongCount is 84; Apple catalog coverage is informational and not an acceptance constant.",
+  "catalogSongCount": 87,
+  "matchedSongCount": 84,
+  "approvedSongCount": 84,
   "needsReviewCount": 3,
   "candidateCountDistribution": {
     "0": 3,
-    "1": 66,
+    "1": 68,
     "2": 16
   },
   "unmatchedSongIds": [
@@ -1911,6 +1911,50 @@
       "rankedTrackIds": [6792630529],
       "suggestedTrackId": 6792630529,
       "selectedTrackId": 6792630529,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "natsu-nagori-samaachuun",
+      "title": "夏名残サマーチューン",
+      "normalizedTitle": "夏名残サマーチューン",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 6803028235,
+          "trackName": "夏名残サマーチューン",
+          "collectionId": 6803028230,
+          "collectionName": "恋、はじめました。 - EP",
+          "releaseDate": "2026-08-26T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/23/5c/b1/235cb184-5038-73ad-7e5c-8890ea4e31e0/mzaf_11529146279619929645.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E5%A4%8F%E5%90%8D%E6%AE%8B%E3%82%B5%E3%83%9E%E3%83%BC%E3%83%81%E3%83%A5%E3%83%BC%E3%83%B3/6803028230?i=6803028235&uo=4"
+        }
+      ],
+      "rankedTrackIds": [6803028235],
+      "suggestedTrackId": 6803028235,
+      "selectedTrackId": 6803028235,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "yume-no-tsuzuki",
+      "title": "夢の続き",
+      "normalizedTitle": "夢の続き",
+      "candidateCount": 1,
+      "candidates": [
+        {
+          "trackId": 6803028238,
+          "trackName": "夢の続き",
+          "collectionId": 6803028230,
+          "collectionName": "恋、はじめました。 - EP",
+          "releaseDate": "2026-08-19T12:00:00Z",
+          "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/ad/97/76/ad977690-bc20-3ed1-44a6-a93717b761a3/mzaf_16239113312269653652.plus.aac.p.m4a",
+          "trackViewUrl": "https://music.apple.com/jp/album/%E5%A4%A2%E3%81%AE%E7%B6%9A%E3%81%8D/6803028230?i=6803028238&uo=4"
+        }
+      ],
+      "rankedTrackIds": [6803028238],
+      "suggestedTrackId": 6803028238,
+      "selectedTrackId": 6803028238,
       "needsReview": false,
       "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
     },

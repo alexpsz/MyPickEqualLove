@@ -3922,6 +3922,110 @@
     "ownershipEvidence": "verified-credits"
   },
   {
+    "id": "natsu-nagori-samaachuun",
+    "title": {
+      "ja": "夏名残サマーチューン",
+      "romaji": "natsu nagori samaachuun"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2026-08-26-koi-hajimemashita-cd-blu-ray-type-a",
+    "releaseTitle": {
+      "ja": "恋、はじめました。[CD+Blu-ray/Type A]",
+      "romaji": "koi , hajimemashita . [CD+Blu-ray/Type A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2026-08-26",
+    "trackNo": 2,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/natsu-nagori-samaachuun.jpg",
+    "coverSourceUrl": "https://aop-emtg-jp.s3.amazonaws.com/prod/public/equallove/contents/information/1d404703e7f88ff29a22d8a24666caed.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": ["2026", "coupling", "single"],
+    "officialUrl": "https://equal-love.jp/discography/detail/144/",
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "Sashihara Rino"
+      },
+      "composer": {
+        "ja": "Yuta Sakai",
+        "romaji": "Yuta Sakai"
+      },
+      "arranger": {
+        "ja": "Yuta Sakai",
+        "romaji": "Yuta Sakai"
+      }
+    },
+    "creditSourceUrl": "https://www.uta-net.com/song/398136/",
+    "ownershipEvidence": "verified-credits"
+  },
+  {
+    "id": "yume-no-tsuzuki",
+    "title": {
+      "ja": "夢の続き",
+      "romaji": "yume no tsuzuki"
+    },
+    "artist": {
+      "ja": "=LOVE",
+      "romaji": "=LOVE"
+    },
+    "releaseId": "2026-08-26-koi-hajimemashita-cd-blu-ray-type-a",
+    "releaseTitle": {
+      "ja": "恋、はじめました。[CD+Blu-ray/Type A]",
+      "romaji": "koi , hajimemashita . [CD+Blu-ray/Type A ]"
+    },
+    "releaseType": "single",
+    "releaseDate": "2026-08-26",
+    "trackNo": 3,
+    "trackType": "coupling",
+    "coverUrl": "/covers/equal-love/yume-no-tsuzuki.jpg",
+    "coverSourceUrl": "https://aop-emtg-jp.s3.amazonaws.com/prod/public/equallove/contents/information/1d404703e7f88ff29a22d8a24666caed.jpg",
+    "memberIds": [
+      "otani-emiri",
+      "oba-hana",
+      "otoshima-risa",
+      "saito-kiara",
+      "sasaki-maika",
+      "takamatsu-hitomi",
+      "takiwaki-shoko",
+      "noguchi-iori",
+      "morohashi-sana",
+      "yamamoto-anna"
+    ],
+    "tags": ["2026", "coupling", "single"],
+    "officialUrl": "https://equal-love.jp/discography/detail/144/",
+    "credits": {
+      "lyricist": {
+        "ja": "指原莉乃",
+        "romaji": "Sashihara Rino"
+      },
+      "composer": {
+        "ja": "齋藤奏太",
+        "romaji": "Saito Kanata"
+      },
+      "arranger": {
+        "ja": "脇眞富",
+        "romaji": "Waki Masatomi"
+      }
+    },
+    "creditSourceUrl": "https://www.uta-net.com/song/398135/",
+    "ownershipEvidence": "verified-credits"
+  },
+  {
     "id": "kimi-dake-no-hanamichi",
     "title": {
       "ja": "君だけの花道",

@@ -291,7 +291,7 @@ test("the production catalog keeps adjusted ranking and raw explanations semanti
   ]);
   assert.equal(result.isTie, false);
   assert.equal(result.winners[0].roleId, "archetype-21-anna");
-  assert.equal(result.winners[0].adjustedScore, 795);
+  assert.equal(result.winners[0].adjustedScore, 829);
   assert.deepEqual(result.winners[0].overlapTraits, [
     { traitId: "rhythm", contribution: 1.6 },
     { traitId: "uplift", contribution: 1.1 },

@@ -1285,6 +1285,38 @@
       "confidence": "high"
     },
     {
+      "songId": "natsu-nagori-samaachuun",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 1,
+        "rhythm": 0,
+        "growth": 0,
+        "drama": 0,
+        "ingenuity": 0,
+        "uplift": 2,
+        "cuteness": 2
+      },
+      "confidence": "medium"
+    },
+    {
+      "songId": "yume-no-tsuzuki",
+      "rubricVersion": "gemini-video-v1",
+      "status": "approved",
+      "scores": {
+        "drive": 0,
+        "care": 1,
+        "rhythm": 0,
+        "growth": 2,
+        "drama": 0,
+        "ingenuity": 0,
+        "uplift": 2,
+        "cuteness": 0
+      },
+      "confidence": "high"
+    },
+    {
       "songId": "kimi-dake-no-hanamichi",
       "rubricVersion": "gemini-video-v1",
       "status": "approved",

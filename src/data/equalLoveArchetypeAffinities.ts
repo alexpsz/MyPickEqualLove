@@ -2,7 +2,7 @@ import type { ApprovedSongAffinity } from "../schema/archetype";
 import { assertValidSongAffinity } from "../utils/archetypeAffinity";
 
 const CAMPAIGN_ID = "equal-love-archetype-21";
-const EXPECTED_APPROVED_SONG_COUNT = 85;
+const EXPECTED_APPROVED_SONG_COUNT = 87;
 
 export interface EqualLoveArchetypeAffinityDocument {
   schemaVersion: 1;
@@ -13,7 +13,7 @@ export interface EqualLoveArchetypeAffinityDocument {
 }
 
 /**
- * Typed integration boundary for the separately reviewed 85-song static file.
+ * Typed integration boundary for the separately reviewed 87-song static file.
  * This module deliberately contains no fallback rows or fabricated results.
  */
 export function parseEqualLoveArchetypeAffinityDocument(

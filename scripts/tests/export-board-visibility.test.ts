@@ -246,13 +246,13 @@ const realArchetypeResults = Array.from({ length: SONGS.length }, (_, offset) =>
   ),
 ).filter((result): result is EqualLoveArchetypeResult => Boolean(result));
 
-const realArchetypeCharacters = [
-  ...new Map(
-    realArchetypeResults
-      .flatMap((result) => result.characters)
-      .map((character) => [character.roleId, character]),
-  ).values(),
-];
+const realArchetypeCharacters = realArchetypeResults
+  .flatMap((result) => result.characters)
+  .filter(
+    (character, index, characters) =>
+      characters.findIndex(({ roleId }) => roleId === character.roleId) ===
+      index,
+  );
 
 if (realArchetypeCharacters.length < 3 || !realArchetypeResults[0]) {
   throw new Error("Expected at least three real production archetype winners.");
@@ -281,6 +281,10 @@ function renderDossierPoster(
       footerLabel: "MY PICK ARCHETYPE",
     }),
   );
+}
+
+function assertRenderedText(markup: string, text: string) {
+  assert.ok(markup.includes(renderToStaticMarkup(text)));
 }
 
 function renderDossierThroughExportBoard(
@@ -946,8 +950,8 @@ test("single archetype export is a dedicated fixed dossier with radar and Top 10
   assert.match(markup, /height:596px/);
   assert.match(markup, /height:615px/);
   assert.match(markup, /height:135px/);
-  assert.ok(markup.includes(character.displayName));
-  assert.ok(markup.includes(character.exportSummary));
+  assertRenderedText(markup, character.displayName);
+  assertRenderedText(markup, character.exportSummary);
   assert.equal((markup.match(/data-archetype-radar="true"/g) ?? []).length, 1);
   assert.match(markup, /data-archetype-radar-max="1200"/);
   assert.doesNotMatch(
@@ -1071,10 +1075,10 @@ test("localized dossier fields render from all four reviewed catalogs", () => {
     assert.ok(result);
     const markup = renderDossierPoster(result.characters, false, result);
     for (const character of result.characters) {
-      assert.ok(markup.includes(character.title));
-      assert.ok(markup.includes(character.className));
-      assert.ok(markup.includes(character.weaponName));
-      assert.ok(markup.includes(character.exportSummary));
+      assertRenderedText(markup, character.title);
+      assertRenderedText(markup, character.className);
+      assertRenderedText(markup, character.weaponName);
+      assertRenderedText(markup, character.exportSummary);
     }
   }
 });

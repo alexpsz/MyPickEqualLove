@@ -1125,6 +1125,34 @@
       "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
     },
     {
+      "songId": "natsu-nagori-samaachuun",
+      "title": "夏名残サマーチューン",
+      "trackId": 6803028235,
+      "trackName": "夏名残サマーチューン",
+      "collectionId": 6803028230,
+      "collectionName": "恋、はじめました。 - EP",
+      "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/23/5c/b1/235cb184-5038-73ad-7e5c-8890ea4e31e0/mzaf_11529146279619929645.plus.aac.p.m4a",
+      "trackViewUrl": "https://music.apple.com/jp/album/%E5%A4%8F%E5%90%8D%E6%AE%8B%E3%82%B5%E3%83%9E%E3%83%BC%E3%83%81%E3%83%A5%E3%83%BC%E3%83%B3/6803028230?i=6803028235&uo=4",
+      "matchMethod": "exact-normalized-title",
+      "candidateCount": 1,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
+      "songId": "yume-no-tsuzuki",
+      "title": "夢の続き",
+      "trackId": 6803028238,
+      "trackName": "夢の続き",
+      "collectionId": 6803028230,
+      "collectionName": "恋、はじめました。 - EP",
+      "previewUrl": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/ad/97/76/ad977690-bc20-3ed1-44a6-a93717b761a3/mzaf_16239113312269653652.plus.aac.p.m4a",
+      "trackViewUrl": "https://music.apple.com/jp/album/%E5%A4%A2%E3%81%AE%E7%B6%9A%E3%81%8D/6803028230?i=6803028238&uo=4",
+      "matchMethod": "exact-normalized-title",
+      "candidateCount": 1,
+      "needsReview": false,
+      "reviewNote": "Human-reviewed: the exact-title Apple candidate and local release metadata agree."
+    },
+    {
       "songId": "kimi-dake-no-hanamichi",
       "title": "君だけの花道",
       "trackId": 1677052439,

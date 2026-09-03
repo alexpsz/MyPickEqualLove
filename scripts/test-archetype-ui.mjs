@@ -7,7 +7,7 @@ import test from "node:test";
  *
  * Scope: the JSON that ships with the feature. Nothing here reads component
  * source — how the client wires these documents is a refactoring detail, while
- * the documents themselves span four locales, ten characters and 85 songs and
+ * the documents themselves span four locales, ten characters and 87 songs and
  * cannot be checked by eye.
  */
 
@@ -56,7 +56,7 @@ test("the approved affinity document closes over the shipped song catalog", () =
   assert.equal(document.campaignId, "equal-love-archetype-21");
   assert.equal(document.projectId, "equal-love");
   assert.equal(document.rubricVersion, "gemini-video-v1");
-  assert.equal(document.songAffinities.length, 85);
+  assert.equal(document.songAffinities.length, 87);
 
   // The three files must agree exactly, in order: a song added to the catalog
   // without a reviewed fingerprint would silently skew every match.
